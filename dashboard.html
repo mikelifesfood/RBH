@@ -96,6 +96,7 @@
   .st-new{background:#fdecec;color:#b01e28} .st-review{background:#fbf3d9;color:#8a6d10}
   .st-assigned{background:#e6eefb;color:#1f4f9e} .st-corrective{background:#efe7fb;color:#5b3fa0}
   .st-closed{background:#e6f4ec;color:#1f7a44} .st-muted{background:#eef0ee;color:#5c635c}
+  .bg-injury{background:#7a1018;color:#fff}
 
   .card-detail{border-top:1px solid var(--line);padding:14px 16px 16px;background:var(--surface)}
   .d-rows{display:grid;gap:2px}
@@ -132,7 +133,7 @@
   .notes-empty{color:var(--muted);font-size:13px}
 
   .metrics{background:var(--paper);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:14px 16px;margin-bottom:14px}
-  .stat-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+  .stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px}
   @media(max-width:640px){.stat-row{grid-template-columns:repeat(2,1fr)}}
   .stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
   .stat .n{font-family:var(--display);font-weight:800;font-size:24px;line-height:1}
@@ -318,7 +319,7 @@
     wrap.innerHTML=
       '<button class="card-head" type="button">'+
         '<div class="ch-top"><span class="ref">#'+esc(r.ref_no)+'</span><span class="ch-type">'+esc(r.report_type||"Report")+'</span></div>'+
-        '<div class="ch-badges">'+sev+'<span class="badge '+st.c+'" data-status-badge>'+esc(st.l)+'</span></div>'+
+        '<div class="ch-badges">'+(r.involves_injury?'<span class="badge bg-injury">Injury</span>':"")+sev+'<span class="badge '+st.c+'" data-status-badge>'+esc(st.l)+'</span></div>'+
         '<div class="ch-meta">'+esc(meta.join("  \u00b7  "))+'</div>'+
         '<div class="ch-desc">'+esc(r.description||"")+'</div>'+
         '<span class="chev">\u25b8</span>'+
@@ -334,7 +335,7 @@
   function detailHtml(r){
     var rows=[];
     function add(label,val){ if(val!=null && String(val).trim()!=="") rows.push('<div class="d-row"><div class="d-label">'+label+'</div><div class="d-val">'+esc(val)+'</div></div>'); }
-    add("Description", r.description); add("Hazard", r.hazard_category); add("Potential severity", r.potential_severity);
+    add("Description", r.description); add("Hazard", r.hazard_category); add("Potential severity", r.potential_severity); add("Involves injury", r.involves_injury?"Yes":"");
     add("Involved / witnesses", r.people_involved); add("Immediate action", r.immediate_action); add("Suggested fix", r.suggested_fix);
     add("Job site", r.job_site); add("Location on site", r.site_location); add("Observed at", r.observed_at?fmtDate(r.observed_at):"");
     add("Reported by", r.reporter_name||"Anonymous"); add("Role", r.reporter_role); add("Contact", r.reporter_contact);
@@ -458,7 +459,7 @@
     var m=$("metrics");
     if(!allReports.length){ m.style.display="none"; return; }
     m.style.display="block";
-    var total=allReports.length, cNew=0, cProg=0, cClosed=0, cOverdue=0;
+    var total=allReports.length, cNew=0, cProg=0, cClosed=0, cOverdue=0, cInjury=0;
     var byType={}, bySev={Critical:0,Serious:0,Moderate:0,Minor:0,Unspecified:0};
     var now=Date.now();
     allReports.forEach(function(r){
@@ -468,6 +469,7 @@
       if(r.due_date && r.status!=="closed" && r.status!=="no_action" && r.status!=="duplicate"){
         var d=new Date(r.due_date).getTime(); if(!isNaN(d) && d<now) cOverdue++;
       }
+      if(r.involves_injury) cInjury++;
       var t=r.report_type||"Other"; byType[t]=(byType[t]||0)+1;
       var s=sevShort(r.potential_severity);
       if(s==="Critical")bySev.Critical++; else if(s==="Serious")bySev.Serious++;
@@ -477,7 +479,7 @@
     function brk(title,obj){ var keys=Object.keys(obj).filter(function(k){return obj[k]>0;}); if(!keys.length) return "";
       return '<div class="brk"><h4>'+esc(title)+'</h4>'+keys.map(function(k){return '<div class="line"><span>'+esc(k)+'</span><span>'+obj[k]+'</span></div>';}).join("")+'</div>'; }
     m.innerHTML=
-      '<div class="stat-row">'+stat(total,"Total")+stat(cNew,"New")+stat(cProg,"In progress")+stat(cClosed,"Closed")+stat(cOverdue,"Overdue",cOverdue>0)+'</div>'+
+      '<div class="stat-row">'+stat(total,"Total")+stat(cNew,"New")+stat(cProg,"In progress")+stat(cClosed,"Closed")+stat(cInjury,"Injuries",cInjury>0)+stat(cOverdue,"Overdue",cOverdue>0)+'</div>'+
       '<div class="breaks">'+brk("By type",byType)+brk("By potential severity",bySev)+'</div>';
   }
 
@@ -487,7 +489,7 @@
     ["hazard_category","Hazard"],["potential_severity","Potential severity"],["description","Description"],
     ["people_involved","Involved / witnesses"],["immediate_action","Immediate action"],["suggested_fix","Suggested fix"],
     ["reporter_name","Reporter name"],["reporter_role","Reporter role"],["reporter_contact","Reporter contact"],
-    ["language","Form language"],["job_site","Job site"],["site_location","Location on site"],["observed_at","Observed at"],
+    ["language","Form language"],["involves_injury","Involves injury"],["job_site","Job site"],["site_location","Location on site"],["observed_at","Observed at"],
     ["priority","Priority"],["likelihood","Likelihood"],["assigned_to","Assigned to"],
     ["root_cause","Root cause"],["corrective_action","Corrective action"],["responsible_person","Responsible person"],
     ["due_date","Due date"],["closed_at","Closed at"],["id","Record ID"]
@@ -568,7 +570,7 @@
       txt("Generated: "+new Date().toLocaleString(), 8.5, "normal", [150,145,140]);
 
       heading("REPORT DETAILS");
-      field("Type", r.report_type); field("Hazard", r.hazard_category); field("Potential severity", r.potential_severity);
+      field("Type", r.report_type); field("Hazard", r.hazard_category); field("Potential severity", r.potential_severity); field("Involves injury", r.involves_injury?"Yes":"");
       field("Description", r.description); field("Involved / witnesses", r.people_involved);
       field("Immediate action taken", r.immediate_action); field("Suggested fix", r.suggested_fix);
       field("Job site", r.job_site); field("Location on site", r.site_location); field("Observed at", r.observed_at?fmtDate(r.observed_at):"");
