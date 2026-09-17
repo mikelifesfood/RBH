@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Public+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   :root{
     --red:#b01e28;--red-dark:#8a141c;--ink:#161616;--ink-bar:#141414;
@@ -130,6 +131,25 @@
   .note-body{font-size:13.5px;margin-top:6px;white-space:pre-wrap;word-break:break-word}
   .notes-empty{color:var(--muted);font-size:13px}
 
+  .metrics{background:var(--paper);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:14px 16px;margin-bottom:14px}
+  .stat-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+  @media(max-width:640px){.stat-row{grid-template-columns:repeat(2,1fr)}}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+  .stat .n{font-family:var(--display);font-weight:800;font-size:24px;line-height:1}
+  .stat .k{color:var(--muted);font-size:11px;margin-top:4px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+  .stat.alert .n{color:var(--red)}
+  .breaks{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:14px}
+  @media(max-width:640px){.breaks{grid-template-columns:1fr}}
+  .brk h4{font-family:var(--display);font-size:11px;text-transform:uppercase;letter-spacing:.3px;color:var(--muted);margin:0 0 5px}
+  .brk .line{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;border-bottom:1px solid var(--line)}
+  .brk .line:last-child{border-bottom:none}
+  .exp{background:var(--paper);border:1.5px solid var(--line-strong);border-radius:9px;padding:10px 13px;cursor:pointer;font-weight:600;font-size:13px;color:var(--ink)}
+  .exp:hover{border-color:var(--red)}
+  .exp:disabled{opacity:.7;cursor:default}
+  .detail-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .pdf-btn{background:var(--ink-bar);color:#fff;border:none;border-radius:9px;font-family:var(--display);font-weight:700;font-size:13px;padding:9px 15px;cursor:pointer}
+  .pdf-btn:hover{opacity:.92}
+  .pdf-btn:disabled{opacity:.6;cursor:default}
   .state{text-align:center;color:var(--muted);padding:48px 16px;font-size:14px}
 
   /* ---------- Modal ---------- */
@@ -176,6 +196,7 @@
     </div>
   </header>
   <div class="wrap">
+    <div class="metrics" id="metrics" style="display:none"></div>
     <div class="toolbar">
       <input type="text" class="search" id="search" placeholder="Search reports…">
       <select id="statusFilter">
@@ -189,6 +210,8 @@
         <option value="no_action">No action</option>
       </select>
       <button class="refresh" id="refresh">Refresh</button>
+      <button class="exp" id="expView" title="Download the reports currently shown as a CSV">Export view</button>
+      <button class="exp" id="expAll" title="Download every report in the database as a CSV">Export all</button>
       <span class="count" id="count"></span>
     </div>
     <div id="list"></div>
@@ -264,7 +287,7 @@
       allReports=rep.data||[]; attByReport={};
       var at=await sb.from("report_attachments").select("*");
       (at.data||[]).forEach(function(a){ (attByReport[a.report_id]=attByReport[a.report_id]||[]).push(a); });
-      applyFilters();
+      applyFilters(); renderMetrics();
     }catch(ex){ console.error(ex); listEl.innerHTML='<div class="state">Couldn\'t load reports. Please refresh.</div>'; }
   }
   $("refresh").addEventListener("click", loadReports);
@@ -316,7 +339,8 @@
     add("Job site", r.job_site); add("Location on site", r.site_location); add("Observed at", r.observed_at?fmtDate(r.observed_at):"");
     add("Reported by", r.reporter_name||"Anonymous"); add("Role", r.reporter_role); add("Contact", r.reporter_contact);
     add("Form language", r.language==="es"?"Spanish":r.language==="en"?"English":r.language); add("Submitted", fmtDate(r.created_at));
-    return '<div class="d-rows">'+rows.join("")+'</div>'+
+    return '<div class="detail-actions"><button class="pdf-btn" type="button">Download PDF</button></div>'+
+      '<div class="d-rows">'+rows.join("")+'</div>'+
       '<div class="d-section"><div class="d-sec-title">Status</div><div class="status-edit">'+
         '<select class="status-select">'+statusOptions(r.status||"new")+'</select>'+
         '<button class="status-save" type="button">Update status</button><span class="status-saved" hidden>Saved \u2713</span></div></div>'+
@@ -340,6 +364,7 @@
     var notesEl=detail.querySelector("[data-notes]");
     loadNotes(r.id, notesEl);
     detail.querySelector(".add-note").addEventListener("click", function(){ openNoteModal(r, wrap, notesEl); });
+    detail.querySelector(".pdf-btn").addEventListener("click", function(){ generatePdf(r, this); });
   }
 
   async function updateStatus(reportId, status, wrap){
@@ -352,6 +377,7 @@
       if(badge){ badge.className="badge "+st.c; badge.setAttribute("data-status-badge",""); badge.textContent=st.l; }
       var sel=wrap.querySelector(".status-select"); if(sel) sel.value=status;
     }
+    renderMetrics();
   }
 
   async function loadAtts(reportId, el){
@@ -426,6 +452,155 @@
     }catch(ex){ console.error(ex); err.textContent="Could not save the note. Please try again."; err.classList.add("show"); }
     finally{ btn.disabled=false; btn.textContent="Save note"; }
   });
+
+  /* ---------- Metrics ---------- */
+  function renderMetrics(){
+    var m=$("metrics");
+    if(!allReports.length){ m.style.display="none"; return; }
+    m.style.display="block";
+    var total=allReports.length, cNew=0, cProg=0, cClosed=0, cOverdue=0;
+    var byType={}, bySev={Critical:0,Serious:0,Moderate:0,Minor:0,Unspecified:0};
+    var now=Date.now();
+    allReports.forEach(function(r){
+      if(r.status==="new") cNew++;
+      if(r.status==="under_review"||r.status==="assigned"||r.status==="corrective_action") cProg++;
+      if(r.status==="closed") cClosed++;
+      if(r.due_date && r.status!=="closed" && r.status!=="no_action" && r.status!=="duplicate"){
+        var d=new Date(r.due_date).getTime(); if(!isNaN(d) && d<now) cOverdue++;
+      }
+      var t=r.report_type||"Other"; byType[t]=(byType[t]||0)+1;
+      var s=sevShort(r.potential_severity);
+      if(s==="Critical")bySev.Critical++; else if(s==="Serious")bySev.Serious++;
+      else if(s==="Moderate")bySev.Moderate++; else if(s==="Minor")bySev.Minor++; else bySev.Unspecified++;
+    });
+    function stat(n,k,alert){ return '<div class="stat'+(alert?" alert":"")+'"><div class="n">'+n+'</div><div class="k">'+k+'</div></div>'; }
+    function brk(title,obj){ var keys=Object.keys(obj).filter(function(k){return obj[k]>0;}); if(!keys.length) return "";
+      return '<div class="brk"><h4>'+esc(title)+'</h4>'+keys.map(function(k){return '<div class="line"><span>'+esc(k)+'</span><span>'+obj[k]+'</span></div>';}).join("")+'</div>'; }
+    m.innerHTML=
+      '<div class="stat-row">'+stat(total,"Total")+stat(cNew,"New")+stat(cProg,"In progress")+stat(cClosed,"Closed")+stat(cOverdue,"Overdue",cOverdue>0)+'</div>'+
+      '<div class="breaks">'+brk("By type",byType)+brk("By potential severity",bySev)+'</div>';
+  }
+
+  /* ---------- CSV export ---------- */
+  var CSV_COLS=[
+    ["ref_no","Reference"],["created_at","Submitted"],["status","Status"],["report_type","Type"],
+    ["hazard_category","Hazard"],["potential_severity","Potential severity"],["description","Description"],
+    ["people_involved","Involved / witnesses"],["immediate_action","Immediate action"],["suggested_fix","Suggested fix"],
+    ["reporter_name","Reporter name"],["reporter_role","Reporter role"],["reporter_contact","Reporter contact"],
+    ["language","Form language"],["job_site","Job site"],["site_location","Location on site"],["observed_at","Observed at"],
+    ["priority","Priority"],["likelihood","Likelihood"],["assigned_to","Assigned to"],
+    ["root_cause","Root cause"],["corrective_action","Corrective action"],["responsible_person","Responsible person"],
+    ["due_date","Due date"],["closed_at","Closed at"],["id","Record ID"]
+  ];
+  function csvCell(v){ v=(v==null?"":String(v)); return /[",\n\r]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; }
+  function reportsToCsv(reports, notesByReport){
+    var header=CSV_COLS.map(function(c){return c[1];}).concat(["Attachments","Notes"]);
+    var lines=[header.map(csvCell).join(",")];
+    reports.forEach(function(r){
+      var cells=CSV_COLS.map(function(c){return csvCell(r[c[0]]);});
+      var atts=(attByReport[r.id]||[]).map(function(a){return a.file_name||a.storage_path;}).join(" | ");
+      var notes=(notesByReport[r.id]||[]).map(function(n){
+        return fmtDate(n.created_at)+(n.author_email?(" "+n.author_email):"")+": "+(n.title||"")+(n.body?(" — "+n.body):"");
+      }).join("  ||  ");
+      cells.push(csvCell(atts), csvCell(notes));
+      lines.push(cells.join(","));
+    });
+    return lines.join("\r\n");
+  }
+  function downloadFile(content, filename, mime){
+    var blob=new Blob([content], {type:mime});
+    var url=URL.createObjectURL(blob), a=document.createElement("a");
+    a.href=url; a.download=filename; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1500);
+  }
+  async function fetchAllNotes(){
+    var map={};
+    try{ var res=await sb.from("report_notes").select("*").order("created_at",{ascending:true});
+      (res.data||[]).forEach(function(n){ (map[n.report_id]=map[n.report_id]||[]).push(n); }); }
+    catch(e){ console.error(e); }
+    return map;
+  }
+  async function exportCsv(which){
+    var btn = which==="all" ? $("expAll") : $("expView");
+    var lbl=btn.textContent; btn.disabled=true; btn.textContent="Exporting…";
+    try{
+      var notesMap=await fetchAllNotes();
+      var data = which==="all" ? allReports : filtered;
+      var csv=reportsToCsv(data, notesMap);
+      var stamp=new Date().toISOString().slice(0,10);
+      downloadFile("\ufeff"+csv, "rbh-safety-reports-"+which+"-"+stamp+".csv", "text/csv;charset=utf-8;");
+    }catch(e){ console.error(e); alert("Export failed. Please try again."); }
+    finally{ btn.disabled=false; btn.textContent=lbl; }
+  }
+  $("expView").addEventListener("click", function(){ exportCsv("view"); });
+  $("expAll").addEventListener("click", function(){ exportCsv("all"); });
+
+  /* ---------- After-action PDF ---------- */
+  async function generatePdf(r, btn){
+    if(!window.jspdf || !window.jspdf.jsPDF){ alert("PDF tool still loading — try again in a moment."); return; }
+    var lbl=btn.textContent; btn.disabled=true; btn.textContent="Generating…";
+    try{
+      var notes=[];
+      try{ var nr=await sb.from("report_notes").select("*").eq("report_id",r.id).order("created_at",{ascending:true}); notes=nr.data||[]; }catch(e){}
+      var atts=attByReport[r.id]||[];
+      var doc=new window.jspdf.jsPDF({unit:"pt",format:"letter"});
+      var W=doc.internal.pageSize.getWidth(), H=doc.internal.pageSize.getHeight();
+      var M=48, contentW=W-M*2, y=M;
+
+      function color(g){ if(typeof g==="number") doc.setTextColor(g); else doc.setTextColor(g[0],g[1],g[2]); }
+      function txt(str,size,style,g,indent){
+        size=size||10; style=style||"normal"; if(g==null)g=30; indent=indent||0;
+        doc.setFont("helvetica",style); doc.setFontSize(size); color(g);
+        var lh=size*1.34, lines=doc.splitTextToSize(String(str==null?"":str), contentW-indent);
+        for(var i=0;i<lines.length;i++){ y+=lh; if(y>H-56){ doc.addPage(); y=M+lh; } doc.text(lines[i], M+indent, y); }
+      }
+      function gap(px){ y+=(px==null?6:px); }
+      function heading(str){ gap(14); if(y>H-90){ doc.addPage(); y=M+14; } doc.setDrawColor(176,30,40); doc.setLineWidth(1.2); doc.line(M,y,M+contentW,y); gap(3); txt(str,11,"bold",[176,30,40]); gap(2); }
+      function field(label,value){ if(value==null||String(value).trim()==="") return; txt(label,8.5,"bold",[110,104,98]); txt(String(value),10.5,"normal",25); gap(3); }
+
+      // Header
+      try{ var logoSrc=(document.querySelector("#loginView img")||{}).src||""; if(logoSrc.indexOf("data:image")===0) doc.addImage(logoSrc,"PNG",M,y,58,36); }catch(e){}
+      doc.setFont("helvetica","bold"); doc.setFontSize(15); doc.setTextColor(20,20,20); doc.text("RBH INSULATION, INC.", M+70, y+16);
+      doc.setFont("helvetica","normal"); doc.setFontSize(10.5); doc.setTextColor(176,30,40); doc.text("Safety Report — After-Action Summary", M+70, y+31);
+      y+=44; doc.setDrawColor(176,30,40); doc.setLineWidth(2); doc.line(M,y,M+contentW,y); y+=4;
+      var st=(STATUS[r.status]||{l:r.status}).l;
+      txt("Report #"+r.ref_no+"     Status: "+st+"     Submitted: "+fmtDate(r.created_at), 9.5, "normal", [110,104,98]);
+      txt("Generated: "+new Date().toLocaleString(), 8.5, "normal", [150,145,140]);
+
+      heading("REPORT DETAILS");
+      field("Type", r.report_type); field("Hazard", r.hazard_category); field("Potential severity", r.potential_severity);
+      field("Description", r.description); field("Involved / witnesses", r.people_involved);
+      field("Immediate action taken", r.immediate_action); field("Suggested fix", r.suggested_fix);
+      field("Job site", r.job_site); field("Location on site", r.site_location); field("Observed at", r.observed_at?fmtDate(r.observed_at):"");
+
+      heading("REPORTER");
+      field("Name", r.reporter_name||"Anonymous"); field("Role", r.reporter_role); field("Contact", r.reporter_contact);
+      field("Form language", r.language==="es"?"Spanish":r.language==="en"?"English":r.language);
+
+      heading("INVESTIGATION & CORRECTIVE ACTION");
+      field("Root cause", r.root_cause||"Not yet recorded");
+      field("Corrective action", r.corrective_action||"Not yet recorded");
+      field("Responsible person", r.responsible_person||"Not yet assigned");
+      field("Due date", r.due_date||"—");
+      field("Date closed", r.closed_at?fmtDate(r.closed_at):"—");
+
+      heading("NOTES & ACTIVITY LOG");
+      if(!notes.length){ txt("No notes recorded.", 10, "italic", [110,104,98]); }
+      else notes.forEach(function(n){ txt(n.title||"(untitled)", 10.5, "bold", 25); txt(fmtDate(n.created_at)+(n.author_email?("   "+n.author_email):""), 8.5, "normal", [130,124,118]); if(n.body) txt(n.body, 10, "normal", 45); gap(5); });
+
+      heading("ATTACHMENTS");
+      if(!atts.length) txt("None.", 10, "italic", [110,104,98]);
+      else { atts.forEach(function(a){ txt("• "+(a.file_name||a.storage_path), 10, "normal", 45); }); gap(3); txt("Photos are viewable in the reviewer dashboard.", 8.5, "italic", [130,124,118]); }
+
+      var pages=doc.internal.getNumberOfPages();
+      for(var p=1;p<=pages;p++){ doc.setPage(p); doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(150,145,140);
+        doc.text("RBH Insulation, Inc.  ·  Confidential safety document  ·  License #558799", M, H-30);
+        doc.text("Page "+p+" of "+pages, W-M-58, H-30); }
+
+      doc.save("RBH-Safety-Report-"+(r.ref_no!=null?("No"+r.ref_no):String(r.id).slice(0,8))+".pdf");
+    }catch(e){ console.error(e); alert("Could not generate the PDF. Please try again."); }
+    finally{ btn.disabled=false; btn.textContent=lbl; }
+  }
 })();
 </script>
 </body>
