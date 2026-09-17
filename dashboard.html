@@ -288,6 +288,13 @@
   .btn-primary{background:var(--red);color:#fff;border:none;border-radius:10px;font-family:var(--display);font-weight:700;font-size:14px;padding:11px 18px;cursor:pointer}
   .btn-primary:hover{background:var(--red-dark)}
   .btn-primary:disabled{opacity:.7;cursor:default}
+  .noaction-box{margin-top:12px;padding:12px 13px;border:1px solid var(--line);border-radius:11px;background:var(--paper-2);display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+  .noaction-copy{min-width:220px;flex:1}
+  .noaction-copy b{display:block;font-family:var(--display);font-size:13.5px;margin-bottom:2px}
+  .noaction-copy span{display:block;color:var(--muted);font-size:12px;line-height:1.45}
+  .noaction-btn{background:var(--paper);border:1.5px solid var(--line-strong);color:var(--ink);border-radius:9px;padding:9px 12px;font-family:var(--display);font-weight:700;font-size:12.5px;cursor:pointer;white-space:nowrap}
+  .noaction-btn:hover{border-color:var(--red);color:var(--red)}
+  .disposition-warning{margin:0 0 14px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--paper-2);font-size:12px;color:var(--muted);line-height:1.5}
 
   /* ---------- Phase 1 safety operations workspace ---------- */
   .content{max-width:1160px;padding:24px}
@@ -528,6 +535,28 @@
   </div>
 </div>
 
+<!-- ============ CLOSE WITHOUT CORRECTIVE ACTION MODAL ============ -->
+<div class="modal-backdrop" id="dispositionBackdrop">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="dHeading">
+    <h3 id="dHeading">Close without corrective action</h3>
+    <p class="msub">Use this when the report was reviewed and no corrective action is needed.</p>
+    <div class="disposition-warning"><b>This report will leave the open work queues but remain in history.</b> The closure reason and your account will be saved with the report.</div>
+    <div class="login-err" id="dErr"></div>
+    <div class="field"><label for="dReason">Closure reason</label><select id="dReason">
+      <option value="no_issue">No issue found</option>
+      <option value="informational">Informational only</option>
+      <option value="not_safety">Not safety-related</option>
+      <option value="duplicate">Duplicate report</option>
+      <option value="other">Other</option>
+    </select></div>
+    <div class="field"><label for="dNote">Closure note <span style="font-weight:400;color:var(--muted)">(optional unless Other)</span></label><textarea id="dNote" placeholder="Briefly explain why no corrective action is needed."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="dCancel" type="button">Cancel</button>
+      <button class="btn-primary" id="dSave" type="button">Close report</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
   "use strict";
@@ -538,7 +567,7 @@
 
   var STATUS={ new:{l:"New",c:"st-new"}, under_review:{l:"Under review",c:"st-review"},
     assigned:{l:"Assigned",c:"st-assigned"}, corrective_action:{l:"Corrective action",c:"st-corrective"},
-    closed:{l:"Closed",c:"st-closed"}, duplicate:{l:"Duplicate",c:"st-muted"}, no_action:{l:"No action",c:"st-muted"} };
+    closed:{l:"Closed",c:"st-closed"}, duplicate:{l:"Duplicate",c:"st-muted"}, no_action:{l:"Closed — no action",c:"st-muted"} };
   var STATUS_KEYS=["new","under_review","assigned","corrective_action","closed","duplicate","no_action"];
 
   function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
@@ -554,6 +583,7 @@
   var allReports=[], filtered=[], attByReport={};
   var allProfiles=[], profileById={}, currentSession=null, currentProfile=null, currentRole="read_only";
   var modalReport=null, modalCard=null, modalNotesEl=null;
+  var dispositionReport=null, dispositionWrap=null, dispositionNotesEl=null;
   var NAV_VIEW_KEY="rbh_safety_active_view_v1", NAV_INCIDENT_KEY="rbh_safety_active_incident_v1";
 
   function storedView(){
@@ -712,6 +742,7 @@
       '<div class="d-section"><div class="d-sec-title">Status</div><div class="status-edit">'+
         '<select class="status-select">'+statusOptions(r.status||"new")+'</select>'+
         '<button class="status-save" type="button">Update status</button><span class="status-saved" hidden>Saved ✓</span></div>'+
+        '<div class="noaction-box" data-noaction-box><div class="noaction-copy"><b>No corrective action needed?</b><span>Close the report with a documented reason instead of creating a corrective action.</span></div><button class="noaction-btn" type="button" data-noaction-btn>Close without corrective action</button></div>'+
         '<div class="gate-msg" data-role-gate>This account can view this incident but does not have permission to update it.</div></div>'+
       '<div class="d-section"><div class="d-sec-title">Investigation &amp; corrective action</div><p class="muted small" style="margin:4px 0 8px">Document the cause, action needed, assignment, due date, and priority. Corrective actions must be verified before the incident can be closed.</p>'+
       '<div class="inv-grid">'+
@@ -743,9 +774,21 @@
     if(!canEdit && roleGate) roleGate.classList.add("show");
 
     var sel=detail.querySelector(".status-select"), save=detail.querySelector(".status-save"), saved=detail.querySelector(".status-saved");
+    var noActionBox=detail.querySelector("[data-noaction-box]"), noActionBtn=detail.querySelector("[data-noaction-btn]");
     if(!canEdit){ sel.disabled=true; save.disabled=true; }
+    if(noActionBox) noActionBox.style.display=(canVerify() && r.status!=="closed" && r.status!=="no_action" && r.status!=="duplicate")?"flex":"none";
+    if(noActionBtn) noActionBtn.addEventListener("click", function(){
+      if(!canVerify()){ toast("Only an Admin or Safety Manager can close a report without corrective action.","err"); return; }
+      openDispositionModal(r, wrap, detail.querySelector("[data-notes]"));
+    });
     save.addEventListener("click", async function(){
       if(!canEditReport(r)){ toast("You do not have permission to update this report.","err"); return; }
+      if(sel.value==="no_action" || sel.value==="duplicate"){
+        if(!canVerify()){ toast("Only an Admin or Safety Manager can close a report without corrective action.","err"); sel.value=r.status||"new"; return; }
+        openDispositionModal(r, wrap, detail.querySelector("[data-notes]"), sel.value);
+        sel.value=r.status||"new";
+        return;
+      }
       if(sel.value==="closed" && !canClose(r)){ if(gate) gate.classList.add("show"); sel.value=r.status||"new"; return; }
       if(gate) gate.classList.remove("show");
       save.disabled=true; var lbl=save.textContent; save.textContent="Saving…";
@@ -803,8 +846,10 @@
   async function updateStatus(reportId, status, wrap){
     var r=null; allReports.forEach(function(x){ if(x.id===reportId) r=x; });
     if(!r || !canEditReport(r)) throw new Error("NOT_AUTHORIZED");
+    if((status==="no_action" || status==="duplicate") && !canVerify()) throw new Error("MANAGER_REQUIRED");
     if(status==="closed" && !canClose(r)) throw new Error("CORRECTIVE_ACTION_NOT_VERIFIED");
-    var patch={ status:status, closed_at: status==="closed" ? new Date().toISOString() : null };
+    var resolved=(status==="closed" || status==="no_action" || status==="duplicate");
+    var patch={ status:status, closed_at: resolved ? new Date().toISOString() : null };
     var res=await sb.from("reports").update(patch).eq("id",reportId);
     if(res.error) throw res.error;
     if(r){ r.status=status; r.closed_at=patch.closed_at; }
@@ -817,6 +862,48 @@
     }
     renderMetrics(); renderHomeSnapshot();
   }
+
+  var DISPOSITION_LABELS={no_issue:"No issue found",informational:"Informational only",not_safety:"Not safety-related",duplicate:"Duplicate report",other:"Other"};
+  function openDispositionModal(r, wrap, notesEl, presetStatus){
+    if(!r || !canVerify()){ toast("Only an Admin or Safety Manager can close a report without corrective action.","err"); return; }
+    dispositionReport=r; dispositionWrap=wrap; dispositionNotesEl=notesEl;
+    $("dHeading").textContent="Close report #"+r.ref_no+" — no corrective action";
+    $("dReason").value=(presetStatus==="duplicate"?"duplicate":"no_issue");
+    $("dNote").value=""; $("dErr").classList.remove("show");
+    $("dispositionBackdrop").classList.add("open");
+    setTimeout(function(){ $("dReason").focus(); },40);
+  }
+  function closeDispositionModal(){
+    $("dispositionBackdrop").classList.remove("open");
+    dispositionReport=null; dispositionWrap=null; dispositionNotesEl=null;
+  }
+  $("dispositionBackdrop").addEventListener("click",function(e){ if(e.target===$("dispositionBackdrop")) closeDispositionModal(); });
+  $("dCancel").addEventListener("click",closeDispositionModal);
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape" && $("dispositionBackdrop").classList.contains("open")) closeDispositionModal(); });
+  $("dSave").addEventListener("click",async function(){
+    if(!dispositionReport) return;
+    if(!canVerify()){ toast("Only an Admin or Safety Manager can close a report without corrective action.","err"); closeDispositionModal(); return; }
+    var reason=$("dReason").value, note=$("dNote").value.trim(), err=$("dErr");
+    if(!reason){ err.textContent="Choose a closure reason."; err.classList.add("show"); return; }
+    if(reason==="other" && !note){ err.textContent="Add a short closure note when using Other."; err.classList.add("show"); return; }
+    err.classList.remove("show");
+    var btn=$("dSave"); btn.disabled=true; btn.textContent="Closing…";
+    try{
+      var status=(reason==="duplicate"?"duplicate":"no_action");
+      var label=DISPOSITION_LABELS[reason]||"No corrective action required";
+      var sess=(await sb.auth.getSession()).data.session; var email=(sess&&sess.user)?sess.user.email:null;
+      var body=note||"Reviewed and closed without corrective action.";
+      var ins=await sb.from("report_notes").insert({report_id:dispositionReport.id,title:"Closed without corrective action — "+label,body:body,author_email:email});
+      if(ins.error) throw ins.error;
+      var rid=dispositionReport.id, notesEl=dispositionNotesEl, wrap=dispositionWrap;
+      await updateStatus(rid,status,wrap);
+      closeDispositionModal();
+      if(notesEl) loadNotes(rid,notesEl);
+      applyFilters(); renderActions(); renderMyWork(); renderHomeSnapshot();
+      toast("Report closed — no corrective action required","ok");
+    }catch(ex){ console.error(ex); err.textContent="Could not close the report. Please try again."; err.classList.add("show"); }
+    finally{ btn.disabled=false; btn.textContent="Close report"; }
+  });
 
   async function loadAtts(reportId, el){
     var atts=attByReport[reportId]||[];
@@ -879,6 +966,7 @@
     if(!title){ err.textContent="Please enter a title for the note."; err.classList.add("show"); return; }
     err.classList.remove("show");
     if($("mStatus").value==="closed" && !canClose(modalReport)){ err.textContent="To close a report, document the root cause and corrective action, then complete and verify the corrective action."; err.classList.add("show"); return; }
+    if($("mStatus").value==="no_action" || $("mStatus").value==="duplicate"){ err.textContent="Use Close without corrective action in the Incident workspace so the closure reason is documented."; err.classList.add("show"); return; }
     var btn=$("mSave"); btn.disabled=true; btn.textContent="Saving…";
     try{
       var sess=(await sb.auth.getSession()).data.session; var email=(sess&&sess.user)?sess.user.email:null;
@@ -905,7 +993,7 @@
     allReports.forEach(function(r){
       if(r.status==="new") cNew++;
       if(r.status==="under_review"||r.status==="assigned"||r.status==="corrective_action") cProg++;
-      if(r.status==="closed") cClosed++;
+      if(r.status==="closed"||r.status==="no_action"||r.status==="duplicate") cClosed++;
       if(r.due_date && r.status!=="closed" && r.status!=="no_action" && r.status!=="duplicate"){
         var d=new Date(r.due_date).getTime(); if(!isNaN(d) && d<now) cOverdue++;
       }
