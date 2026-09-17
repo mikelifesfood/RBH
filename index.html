@@ -104,7 +104,8 @@
   .seg label:has(input:checked){border-color:var(--red);background:color-mix(in srgb,var(--red) 8%,var(--paper))}
   .seg label:has(input:checked) span{color:var(--red)}
 
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}
+  .grid2 .field{margin-top:0}
   @media (max-width:520px){.grid2{grid-template-columns:1fr}}
 
   .info{flex:0 0 auto;width:19px;height:19px;border-radius:50%;border:1.5px solid var(--line-strong);background:var(--surface);color:var(--muted);font-family:var(--display);font-weight:700;font-size:12px;line-height:1;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
