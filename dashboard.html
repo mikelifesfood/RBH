@@ -538,6 +538,35 @@
   var allReports=[], filtered=[], attByReport={};
   var allProfiles=[], profileById={}, currentSession=null, currentProfile=null, currentRole="read_only";
   var modalReport=null, modalCard=null, modalNotesEl=null;
+  var NAV_VIEW_KEY="rbh_safety_active_view_v1", NAV_INCIDENT_KEY="rbh_safety_active_incident_v1";
+
+  function storedView(){
+    try{ return localStorage.getItem(NAV_VIEW_KEY)||"home"; }catch(_e){ return "home"; }
+  }
+  function storeView(name){
+    try{
+      localStorage.setItem(NAV_VIEW_KEY,name);
+      if(name!=="incident") localStorage.removeItem(NAV_INCIDENT_KEY);
+    }catch(_e){}
+  }
+  function storeIncident(r,from){
+    try{ localStorage.setItem(NAV_INCIDENT_KEY,JSON.stringify({id:r&&r.id,from:from||"records"})); }catch(_e){}
+  }
+  function restoreSavedView(){
+    var name=storedView();
+    var allowed=["home","records","actions","metrics","users","incident"];
+    if(allowed.indexOf(name)<0) name="home";
+    if(name==="users" && currentRole!=="admin") name="home";
+    if(name==="incident") {
+      try{
+        var saved=JSON.parse(localStorage.getItem(NAV_INCIDENT_KEY)||"null");
+        var r=saved&&allReports.find(function(x){ return String(x.id)===String(saved.id); });
+        if(r){ openIncident(r,(saved&&saved.from)||"records"); return; }
+      }catch(_e){}
+      name="records";
+    }
+    showView(name);
+  }
 
   $("mStatus").innerHTML=statusOptions("new");
 
@@ -557,11 +586,20 @@
     }catch(_e){}
     await loadProfiles();
     applyRoleUi();
-    showView("home");
     await loadReports();
+    restoreSavedView();
   }
   sb.auth.getSession().then(function(res){ var s=res.data&&res.data.session; if(s) showApp(s); else showLogin(); });
-  sb.auth.onAuthStateChange(function(_e,s){ if(s) showApp(s); else showLogin(); });
+  sb.auth.onAuthStateChange(function(_e,s){
+    if(!s){ showLogin(); return; }
+    var sameUser=currentSession&&currentSession.user&&s.user&&String(currentSession.user.id)===String(s.user.id);
+    if(sameUser && appView.style.display==="block"){
+      currentSession=s;
+      $("who").textContent=(s.user&&s.user.email)||"";
+      return;
+    }
+    showApp(s);
+  });
 
   $("loginForm").addEventListener("submit", async function(e){
     e.preventDefault(); var err=$("loginErr"); err.classList.remove("show");
@@ -1086,6 +1124,7 @@
   }
   function openIncident(r, from){
     if(!r) return; lastOperationalView=from||((document.getElementById('view-actions')&&!document.getElementById('view-actions').hidden)?'actions':'records');
+    storeIncident(r,lastOperationalView);
     $("incidentTitle").textContent="#"+(r.ref_no||r.id)+" · "+(r.report_type||"Safety report");
     var meta=[]; if(r.job_site) meta.push(r.job_site); if(assigneeName(r)) meta.push("Assigned: "+assigneeName(r)); meta.push(fmtDate(r.created_at)); $("incidentMeta").textContent=meta.join(" · ");
     $("incidentSummary").innerHTML='<div class="is-badges">'+incidentBadgeHtml(r)+'</div><div class="is-desc">'+esc(r.description||"No description provided.")+'</div>';
@@ -1146,6 +1185,7 @@
 
   function showView(name){
     if(name==="users" && currentRole!=="admin") name="home";
+    storeView(name);
     ["home","records","actions","metrics","users","incident"].forEach(function(v){ var el=document.getElementById("view-"+v); if(el) el.hidden=(v!==name); });
     document.querySelectorAll(".nav-item").forEach(function(n){ n.classList.toggle("active", n.getAttribute("data-view")===name); });
     var pt=$("pageTitle"); if(pt) pt.textContent=PAGE_TITLES[name]||"";
