@@ -595,7 +595,7 @@
     function add(label,val){ if(val!=null && String(val).trim()!=="") rows.push('<div class="d-row"><div class="d-label">'+label+'</div><div class="d-val">'+esc(val)+'</div></div>'); }
     add("Description", r.description); add("Hazard", r.hazard_category); add("Potential severity", r.potential_severity); add("Involves injury", r.involves_injury?"Yes":"");
     add("Involved / witnesses", r.people_involved); add("Immediate action", r.immediate_action); add("Suggested fix", r.suggested_fix);
-    add("Job site", r.job_site); add("Location on site", r.site_location); add("Observed at", r.observed_at?fmtDate(r.observed_at):"");
+    add("Incident address", r.job_site); add("Specific location", r.site_location); add("Observed at", r.observed_at?fmtDate(r.observed_at):"");
     add("Reported by", r.reporter_name||"Anonymous"); add("Role", r.reporter_role); add("Contact", r.reporter_contact);
     add("Form language", r.language==="es"?"Spanish":r.language==="en"?"English":r.language); add("Submitted", fmtDate(r.created_at));
     return '<div class="detail-actions"><button class="pdf-btn" type="button">Download PDF</button></div>'+
@@ -789,7 +789,7 @@
     ["hazard_category","Hazard"],["potential_severity","Potential severity"],["description","Description"],
     ["people_involved","Involved / witnesses"],["immediate_action","Immediate action"],["suggested_fix","Suggested fix"],
     ["reporter_name","Reporter name"],["reporter_role","Reporter role"],["reporter_contact","Reporter contact"],
-    ["language","Form language"],["involves_injury","Involves injury"],["job_site","Job site"],["site_location","Location on site"],["observed_at","Observed at"],
+    ["language","Form language"],["involves_injury","Involves injury"],["job_site","Incident address"],["site_location","Specific location"],["observed_at","Observed at"],
     ["priority","Priority"],["likelihood","Likelihood"],["assigned_to","Assigned to"],
     ["root_cause","Root cause"],["corrective_action","Corrective action"],["responsible_person","Responsible person"],
     ["due_date","Due date"],["closed_at","Closed at"],["id","Record ID"]
@@ -875,7 +875,7 @@
       field("Type", r.report_type); field("Hazard", r.hazard_category); field("Potential severity", r.potential_severity); field("Involves injury", r.involves_injury?"Yes":"");
       field("Description", r.description); field("Involved / witnesses", r.people_involved);
       field("Immediate action taken", r.immediate_action); field("Suggested fix", r.suggested_fix);
-      field("Job site", r.job_site); field("Location on site", r.site_location); field("Observed at", r.observed_at?fmtDate(r.observed_at):"");
+      field("Incident address", r.job_site); field("Specific location", r.site_location); field("Observed at", r.observed_at?fmtDate(r.observed_at):"");
 
       heading("REPORTER");
       field("Name", r.reporter_name||"Anonymous"); field("Role", r.reporter_role); field("Contact", r.reporter_contact);
