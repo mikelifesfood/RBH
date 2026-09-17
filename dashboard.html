@@ -129,6 +129,11 @@
   .card{transition:box-shadow .12s,border-color .12s}
   .card:hover{box-shadow:var(--shadow)}
   .pr-high{background:#fdecec;color:#b01e28} .pr-medium{background:#fbf3d9;color:#8a6d10} .pr-low{background:#eef0ee;color:#5c635c}
+  .card.resolved{opacity:.55}
+  .card.resolved:hover{opacity:1}
+  .badge{font-size:11.5px;padding:4px 11px}
+  .ch-badges{gap:7px}
+  .ch-top .badge.sev{margin-left:2px}
   /* home tiles clickable */
   .home-stats{margin-bottom:18px}
   .hs{cursor:pointer;text-align:left;font-family:inherit;transition:.12s}
@@ -495,14 +500,15 @@
 
   function card(r){
     var st=STATUS[r.status]||{l:r.status||"",c:"st-muted"};
-    var sev=r.potential_severity?('<span class="badge '+sevClass(r.potential_severity)+'">'+esc(sevShort(r.potential_severity))+'</span>'):"";
-    var wrap=document.createElement("div"); wrap.className="card";
+    var sev=r.potential_severity?('<span class="badge sev '+sevClass(r.potential_severity)+'" title="Potential severity">'+esc(sevShort(r.potential_severity))+'</span>'):"";
+    var resolved=(r.status==="closed"||r.status==="no_action"||r.status==="duplicate");
+    var wrap=document.createElement("div"); wrap.className="card"+(resolved?" resolved":"");
     var meta=[fmtDate(r.created_at),(r.reporter_name||"Anonymous")]; if(r.hazard_category) meta.push(r.hazard_category); if(r.due_date) meta.push((isOverdue(r)?"Overdue \u2014 due ":"Due ")+shortDate(r.due_date));
-    var pri=r.priority?('<span class="badge pr-'+r.priority+'">'+({low:"Low",medium:"Med",high:"High"}[r.priority]||r.priority)+'</span>'):"";
+    var pri=r.priority?('<span class="badge pr-'+r.priority+'" title="Priority">'+({low:"Low priority",medium:"Medium priority",high:"High priority"}[r.priority]||r.priority)+'</span>'):"";
     wrap.innerHTML=
       '<button class="card-head" type="button">'+
-        '<div class="ch-top"><span class="ref">#'+esc(r.ref_no)+'</span><span class="ch-type">'+esc(r.report_type||"Report")+'</span></div>'+
-        '<div class="ch-badges">'+(isOverdue(r)?'<span class="badge bg-overdue" data-overdue-badge>Overdue</span>':"")+(r.involves_injury?'<span class="badge bg-injury">Injury</span>':"")+sev+pri+'<span class="badge '+st.c+'" data-status-badge>'+esc(st.l)+'</span></div>'+
+        '<div class="ch-top"><span class="ref">#'+esc(r.ref_no)+'</span><span class="ch-type">'+esc(r.report_type||"Report")+'</span>'+sev+'</div>'+
+        '<div class="ch-badges">'+(isOverdue(r)?'<span class="badge bg-overdue" data-overdue-badge>Overdue</span>':"")+(r.involves_injury?'<span class="badge bg-injury">Injury</span>':"")+pri+'<span class="badge '+st.c+'" data-status-badge title="Status">'+esc(st.l)+'</span></div>'+
         '<div class="ch-meta">'+esc(meta.join("  \u00b7  "))+'</div>'+
         '<div class="ch-desc">'+esc(r.description||"")+'</div>'+
         '<span class="chev">\u25b8</span>'+
