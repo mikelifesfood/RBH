@@ -133,6 +133,9 @@
   .notes-empty{color:var(--muted);font-size:13px}
 
   .metrics{background:var(--paper);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:14px 16px;margin-bottom:14px}
+  .compliance-note{background:var(--surface-2);border:1px solid var(--line);border-left:4px solid var(--red);border-radius:10px;padding:11px 14px;margin-bottom:14px;font-size:12px;color:var(--muted);line-height:1.55}
+  .compliance-note b{color:var(--ink);font-family:var(--display)}
+  .compliance-note a{color:var(--red);text-decoration:none;font-weight:600}
   .stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px}
   @media(max-width:640px){.stat-row{grid-template-columns:repeat(2,1fr)}}
   .stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
@@ -197,6 +200,9 @@
     </div>
   </header>
   <div class="wrap">
+    <div class="compliance-note">
+      <b>Compliance note.</b> This system logs and tracks hazards and near-misses in support of RBH's Injury &amp; Illness Prevention Program (8 CCR &sect;3203). It is <b>not</b> the Cal/OSHA Form 300 log and <b>not</b> the serious-injury report. A serious injury, illness, or death &mdash; inpatient hospitalization (beyond observation or diagnostic testing), amputation, loss of an eye, serious permanent disfigurement, or death &mdash; must be reported to the nearest Cal/OSHA district office <b>immediately, and no later than 8 hours</b> (8 CCR &sect;342). Cal/OSHA assistance line: <a href="tel:+18335790927">833-579-0927</a>.
+    </div>
     <div class="metrics" id="metrics" style="display:none"></div>
     <div class="toolbar">
       <input type="text" class="search" id="search" placeholder="Search reports…">
