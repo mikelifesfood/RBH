@@ -340,6 +340,33 @@
   .incident-body .d-rows{display:grid;grid-template-columns:1fr 1fr;gap:0 24px}
   .incident-body .d-row{grid-template-columns:135px 1fr}
   @media(max-width:800px){.incident-body .d-rows{grid-template-columns:1fr}.incident-header{flex-direction:column}.back-link{order:-1}.app-shell{grid-template-columns:1fr}}
+
+  /* ---------- Phase 2.6 guided record completion ---------- */
+  .record-progress{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px;margin:12px 0 18px;box-shadow:var(--shadow)}
+  .rp-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:12px}
+  .rp-head h3{font-family:var(--display);font-size:15px;margin:0 0 3px}.rp-head p{font-size:12px;color:var(--muted);margin:0;line-height:1.45}
+  .rp-next{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 10px;font-family:var(--display);font-size:11px;font-weight:800;white-space:nowrap;border:1px solid #9bc9aa;background:#edf8f1;color:#1f6f43}
+  .rp-next.complete{border-color:var(--line-strong);background:var(--paper-2);color:var(--muted)}
+  .rp-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+  .rp-step{display:grid;grid-template-columns:30px 1fr;gap:9px;align-items:start;border:1.5px solid var(--line);border-radius:11px;padding:10px 11px;min-height:78px}
+  .rp-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:12px;font-weight:900;border:1.5px solid currentColor}
+  .rp-copy b{display:block;font-family:var(--display);font-size:12.5px;margin-bottom:2px}.rp-copy span{display:block;font-size:11.5px;line-height:1.4}
+  .rp-state{margin-top:5px;font-size:10px!important;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+  .rp-step.rp-done,.rp-step.rp-na{background:var(--paper-2);border-color:var(--line);color:var(--muted)}
+  .rp-step.rp-current{background:#edf8f1;border-color:#77b48b;color:#1f6f43}
+  .rp-step.rp-needed{background:#fff2f2;border-color:#e1a4a4;color:#9b2828}
+  [data-theme="dark"] .rp-step.rp-current{background:#173225;border-color:#4d8a62;color:#a7e2b9}
+  [data-theme="dark"] .rp-step.rp-needed{background:#321d1d;border-color:#744040;color:#ffbaba}
+  .rp-legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:11px;color:var(--muted);font-size:10.5px}.rp-legend span{display:inline-flex;align-items:center;gap:5px}.rp-dot{width:8px;height:8px;border-radius:50%}.rp-dot.current{background:#2c8a50}.rp-dot.done{background:#9a9a9a}.rp-dot.needed{background:#c53535}
+  .step-section-title{display:flex;align-items:center;gap:8px;color:var(--ink);font-size:14px;text-transform:none;letter-spacing:0}
+  .step-section-num{width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;background:var(--ink);color:var(--paper);font-family:var(--display);font-size:11px;font-weight:900}
+  .step-section-note{font-size:12px;color:var(--muted);line-height:1.45;margin:5px 0 8px}
+  .closure-guide{margin-top:14px;border-radius:12px;border:1.5px solid var(--line);padding:12px 13px;display:grid;grid-template-columns:30px 1fr;gap:10px;align-items:start}
+  .closure-guide.cg-current{background:#edf8f1;border-color:#77b48b;color:#1f6f43}.closure-guide.cg-needed{background:#fff2f2;border-color:#e1a4a4;color:#9b2828}.closure-guide.cg-done{background:var(--paper-2);color:var(--muted)}
+  [data-theme="dark"] .closure-guide.cg-current{background:#173225;border-color:#4d8a62;color:#a7e2b9}[data-theme="dark"] .closure-guide.cg-needed{background:#321d1d;border-color:#744040;color:#ffbaba}
+  .closure-guide b{display:block;font-family:var(--display);font-size:13px;margin-bottom:2px}.closure-guide p{margin:0;font-size:11.5px;line-height:1.45}
+  @media(max-width:780px){.rp-grid{grid-template-columns:1fr 1fr}.rp-head{flex-direction:column}.rp-next{white-space:normal}}
+  @media(max-width:500px){.rp-grid{grid-template-columns:1fr}}
   .task-list{display:grid;gap:10px}
   .task-card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:15px 16px;display:grid;grid-template-columns:1fr auto;gap:6px 14px;cursor:pointer;text-align:left;color:var(--ink)}
   .task-card:hover{border-color:var(--red);box-shadow:var(--shadow)}
@@ -736,17 +763,20 @@
     add("Incident address", r.job_site); add("Specific location", r.site_location); add("Observed at", r.observed_at?fmtDate(r.observed_at):"");
     add("Reported by", r.reporter_name||"Anonymous"); add("Role", r.reporter_role); add("Contact", r.reporter_contact);
     add("Form language", r.language==="es"?"Spanish":r.language==="en"?"English":r.language); add("Submitted", fmtDate(r.created_at));
-    return '<div class="detail-actions"><button class="pdf-btn" type="button">Download PDF</button></div>'+
+    return '<div class="record-progress" data-record-progress></div>'+
+      '<div class="detail-actions"><button class="pdf-btn" type="button">Download PDF</button></div>'+
       urgentTriageHtml(r)+
+      '<div class="d-section"><div class="d-sec-title step-section-title"><span class="step-section-num">1</span>Review report &amp; status</div><p class="step-section-note">Confirm what was submitted, determine whether it needs action, and move the report out of New once review begins.</p>'+
       '<div class="d-rows">'+rows.join("")+'</div>'+
-      '<div class="d-section"><div class="d-sec-title">Status</div><div class="status-edit">'+
+      '<div class="status-edit">'+
         '<select class="status-select">'+statusOptions(r.status||"new")+'</select>'+
         '<button class="status-save" type="button">Update status</button><span class="status-saved" hidden>Saved ✓</span></div>'+
         '<div class="noaction-box" data-noaction-box><div class="noaction-copy"><b>No corrective action needed?</b><span>Close the report with a documented reason instead of creating a corrective action.</span></div><button class="noaction-btn" type="button" data-noaction-btn>Close without corrective action</button></div>'+
         '<div class="gate-msg" data-role-gate>This account can view this incident but does not have permission to update it.</div></div>'+
-      '<div class="d-section"><div class="d-sec-title">Investigation &amp; corrective action</div><p class="muted small" style="margin:4px 0 8px">Document the cause, action needed, assignment, due date, and priority. Corrective actions must be verified before the incident can be closed.</p>'+
+      '<div class="d-section"><div class="d-sec-title step-section-title"><span class="step-section-num">2</span>Investigate &amp; document root cause</div><p class="step-section-note">Record why the issue happened or what underlying condition allowed it to happen.</p>'+
+      '<div class="inv-grid"><label class="inv-l">Root cause<textarea class="inv-root"></textarea></label></div></div>'+
+      '<div class="d-section"><div class="d-sec-title step-section-title"><span class="step-section-num">3</span>Plan &amp; assign corrective action</div><p class="step-section-note">Define what will be fixed, who owns it, when it is due, and how important it is.</p>'+
       '<div class="inv-grid">'+
-      '<label class="inv-l">Root cause<textarea class="inv-root"></textarea></label>'+
       '<label class="inv-l">Corrective action<textarea class="inv-corr"></textarea></label>'+
       '<div class="assignment-grid">'+
       '<label class="inv-l">Assigned dashboard user<select class="inv-assignee">'+assignmentOptions(r.assigned_user_id)+'</select></label>'+
@@ -756,18 +786,89 @@
       '<label class="inv-l">Due date<input type="date" class="inv-due"></label>'+
       '<label class="inv-l">Priority<select class="inv-pri"><option value="">—</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label>'+
       '</div></div>'+
-      '<div class="inv-actions"><button class="inv-save" type="button">Save investigation</button><span class="inv-saved" hidden>Saved ✓</span></div>'+
+      '<div class="inv-actions"><button class="inv-save" type="button">Save investigation &amp; action plan</button><span class="inv-saved" hidden>Saved ✓</span></div>'+
       '<div class="gate-msg" data-gate>To close a report, document the root cause and corrective action, then complete and verify the corrective action.</div>'+
-      '<div class="action-workflow" data-action-workflow></div>'+
       '</div>'+
+      '<div class="d-section"><div class="d-sec-title step-section-title"><span class="step-section-num">4</span><span class="step-section-num">5</span>Complete &amp; verify corrective action</div><p class="step-section-note">The assigned owner documents what was completed. An Admin or Safety Manager then verifies the work or requests changes.</p><div class="action-workflow" data-action-workflow></div></div>'+
+      '<div class="closure-guide" data-closure-guide></div>'+
       '<div class="d-atts" data-atts></div>'+
       '<div class="d-section"><div class="d-sec-title-row"><span class="d-sec-title">Notes</span>'+
         '<button class="add-note" type="button">+ Add Note</button></div><div class="notes" data-notes></div></div>'+
       '<div class="d-section"><div class="d-sec-title">Activity log</div><div class="audit" data-audit></div></div>';
   }
 
+  function hasWorkflowValue(v){ return v!=null && String(v).trim()!==""; }
+  function workflowProgress(r){
+    var disposed=r && (r.status==="no_action" || r.status==="duplicate");
+    if(disposed){
+      return {complete:true,steps:[
+        {n:1,title:"Review report",state:"done",detail:"Reviewed and disposition recorded."},
+        {n:2,title:"Document root cause",state:"na",detail:"Not required for this closure."},
+        {n:3,title:"Plan corrective action",state:"na",detail:"Not required for this closure."},
+        {n:4,title:"Complete action",state:"na",detail:"Not required for this closure."},
+        {n:5,title:"Verify action",state:"na",detail:"Not required for this closure."},
+        {n:6,title:"Close record",state:"done",detail:"Record closed without corrective action."}
+      ]};
+    }
+    var owner=hasWorkflowValue(r.assigned_user_id)||hasWorkflowValue(r.responsible_person);
+    var step1=!!(r.status && r.status!=="new");
+    var step2=hasWorkflowValue(r.root_cause);
+    var missing3=[];
+    if(!hasWorkflowValue(r.corrective_action)) missing3.push("corrective action");
+    if(!owner) missing3.push("owner");
+    if(!hasWorkflowValue(r.due_date)) missing3.push("due date");
+    if(!hasWorkflowValue(r.priority)) missing3.push("priority");
+    var step3=missing3.length===0;
+    var step4=(r.action_status==="awaiting_verification" || r.action_status==="verified") && hasWorkflowValue(r.action_completion_note) && hasWorkflowValue(r.action_completed_at);
+    var step5=r.action_status==="verified";
+    var step6=r.status==="closed";
+    var done=[step1,step2,step3,step4,step5,step6];
+    var current=-1; for(var i=0;i<done.length;i++){ if(!done[i]){ current=i; break; } }
+    var changeMsg=r.action_status==="changes_requested"?"Reviewer requested changes. Update the completed work and resubmit.":"Document what was completed and submit it for verification.";
+    var details=[
+      step1?"Report acknowledged and moved out of New.":"Review the report and change status to Under review.",
+      step2?"Root cause documented.":"Enter the root cause of the issue.",
+      step3?"Action, owner, due date, and priority are set.":("Still needed: "+missing3.join(", ")+"."),
+      step4?"Completed work was submitted for review.":changeMsg,
+      step5?"Corrective action was verified.":"Admin or Safety Manager must verify the completed work.",
+      step6?"Record is closed.":"After verification, set Report Status to Closed."
+    ];
+    var titles=["Review report","Document root cause","Plan corrective action","Complete action","Verify action","Close record"];
+    var steps=titles.map(function(title,i){ return {n:i+1,title:title,state:done[i]?"done":(i===current?"current":"needed"),detail:details[i]}; });
+    return {complete:current===-1,steps:steps,current:current};
+  }
+  function renderRecordProgress(r, el){
+    if(!el) return; var p=workflowProgress(r);
+    var currentStep=p.current>=0?p.steps[p.current]:null;
+    var next=currentStep?('<span class="rp-next">Step '+currentStep.n+' · '+esc(currentStep.title)+'</span>'):'<span class="rp-next complete">Record complete</span>';
+    var cards=p.steps.map(function(st){
+      var label=st.state==="current"?"Current step":(st.state==="needed"?"Still needed":(st.state==="na"?"Not required":"Done"));
+      return '<div class="rp-step rp-'+st.state+'"><span class="rp-num">'+st.n+'</span><div class="rp-copy"><b>'+esc(st.title)+'</b><span>'+esc(st.detail)+'</span><span class="rp-state">'+label+'</span></div></div>';
+    }).join("");
+    el.innerHTML='<div class="rp-head"><div><h3>Record completion</h3><p>Follow the numbered steps in order. The colors update automatically as the record is completed.</p></div>'+next+'</div><div class="rp-grid">'+cards+'</div><div class="rp-legend"><span><i class="rp-dot current"></i>Green = current step</span><span><i class="rp-dot done"></i>Gray = completed / not required</span><span><i class="rp-dot needed"></i>Red = still needed before closure</span></div>';
+  }
+  function renderClosureGuide(r, el){
+    if(!el) return; var disposed=r.status==="no_action"||r.status==="duplicate";
+    if(r.status==="closed" || disposed){
+      el.className="closure-guide cg-done";
+      el.innerHTML='<span class="step-section-num">6</span><div><b>Close record — done</b><p>'+(disposed?'This report was reviewed and closed without corrective action.':'The corrective action was verified and the report is closed.')+'</p></div>';
+      return;
+    }
+    if(canClose(r)){
+      el.className="closure-guide cg-current";
+      el.innerHTML='<span class="step-section-num">6</span><div><b>Close record — current step</b><p>The corrective action is verified. Use the Report Status control in Step 1 and select Closed.</p></div>';
+      return;
+    }
+    el.className="closure-guide cg-needed";
+    el.innerHTML='<span class="step-section-num">6</span><div><b>Close record — still needed</b><p>Finish the red steps above first. The report cannot be closed until the corrective action is verified.</p></div>';
+  }
+  function refreshRecordWorkflow(r, detail){
+    if(!detail) return; renderRecordProgress(r, detail.querySelector("[data-record-progress]")); renderClosureGuide(r, detail.querySelector("[data-closure-guide]"));
+  }
+
   function buildDetail(r, detail, wrap){
     detail.innerHTML=detailHtml(r);
+    refreshRecordWorkflow(r, detail);
     var gate=detail.querySelector("[data-gate]"), roleGate=detail.querySelector("[data-role-gate]");
     var auditEl=detail.querySelector("[data-audit]");
     var canEdit=canEditReport(r);
@@ -792,7 +893,7 @@
       if(sel.value==="closed" && !canClose(r)){ if(gate) gate.classList.add("show"); sel.value=r.status||"new"; return; }
       if(gate) gate.classList.remove("show");
       save.disabled=true; var lbl=save.textContent; save.textContent="Saving…";
-      try{ await updateStatus(r.id, sel.value, wrap); saved.hidden=false; setTimeout(function(){saved.hidden=true;},2200); loadAudit(r.id, auditEl); toast("Status updated","ok"); }
+      try{ await updateStatus(r.id, sel.value, wrap); refreshRecordWorkflow(r, detail); saved.hidden=false; setTimeout(function(){saved.hidden=true;},2200); loadAudit(r.id, auditEl); toast("Status updated","ok"); }
       catch(ex){ console.error(ex); toast("Could not update status — please try again.","err"); }
       finally{ save.disabled=!canEditReport(r); save.textContent=lbl; }
     });
@@ -860,6 +961,7 @@
       var selx=wrap.querySelector(".status-select"); if(selx) selx.value=status;
       refreshOverdue(r, wrap);
     }
+    var currentBody=$("incidentBody"); if(currentBody && currentBody.getAttribute("data-report-id")===String(reportId)) refreshRecordWorkflow(r,currentBody);
     renderMetrics(); renderHomeSnapshot();
   }
 
@@ -1239,7 +1341,7 @@
     $("incidentTitle").textContent="#"+(r.ref_no||r.id)+" · "+(r.report_type||"Safety report");
     var meta=[]; if(r.job_site) meta.push(r.job_site); if(assigneeName(r)) meta.push("Assigned: "+assigneeName(r)); meta.push(fmtDate(r.created_at)); $("incidentMeta").textContent=meta.join(" · ");
     $("incidentSummary").innerHTML='<div class="is-badges">'+incidentBadgeHtml(r)+'</div><div class="is-desc">'+esc(r.description||"No description provided.")+'</div>';
-    var body=$("incidentBody"); body.innerHTML=''; buildDetail(r,body,null); showView('incident');
+    var body=$("incidentBody"); body.innerHTML=''; body.setAttribute("data-report-id",String(r.id)); buildDetail(r,body,null); showView('incident');
   }
   function renderHomeAttention(){
     var el=$("homeAttention"); if(!el) return; var items=allReports.filter(function(r){ return r.status!=="closed"&&r.status!=="no_action"&&r.status!=="duplicate"; });
@@ -1512,6 +1614,7 @@
       h+='<div class="ops-alert"><b>Verified corrective action</b>This incident now meets the corrective-action requirement for closure.</div>';
     }
     el.innerHTML=h;
+    refreshRecordWorkflow(r, detail);
 
     var completeBtn=el.querySelector(".btn-complete");
     if(completeBtn) completeBtn.addEventListener("click",async function(){
