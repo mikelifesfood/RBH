@@ -339,6 +339,26 @@
   .task-title{font-family:var(--display);font-weight:700;font-size:14px}.task-action{font-size:13px;grid-column:1/2}.task-meta{font-size:11.5px;color:var(--muted);grid-column:1/2}.task-due{grid-column:2;grid-row:1/4;align-self:center;text-align:right}.task-due b{display:block;font-family:var(--display);font-size:12px}.task-due span{font-size:11.5px;color:var(--muted)}
   .admin-info{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}.admin-info h3{font-family:var(--display);margin:0 0 4px;font-size:16px}.admin-info p{margin:0;color:var(--muted);font-size:13px}
 
+
+  /* ============ PHASE 2: operational workflow ============ */
+  .role-pill{display:inline-flex;align-items:center;width:max-content;margin-top:5px;padding:3px 7px;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;border:1px solid var(--line-strong);color:var(--muted)}
+  .role-pill.r-admin{background:#fce8e8;color:#8a1d1d;border-color:#efb4b4}.role-pill.r-safety_manager{background:#eef4ff;color:#264f83;border-color:#c8d8ed}.role-pill.r-supervisor{background:#fff5d8;color:#725300;border-color:#ead28b}.role-pill.r-read_only{background:var(--paper-2);color:var(--muted)}
+  .permission-note{margin:0 0 14px;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:var(--paper-2);font-size:12.5px;color:var(--muted)}.permission-note strong{color:var(--ink)}
+  .ops-alert{border:1px solid #e5c069;background:#fff8e7;border-radius:12px;padding:13px 14px;margin:12px 0;color:#654c09}.ops-alert.critical{border-color:#e0a0a0;background:#fff1f1;color:#862323}.ops-alert b{display:block;font-family:var(--display);font-size:13px;margin-bottom:2px}
+  [data-theme="dark"] .ops-alert{background:#2c2515;border-color:#5e4d22;color:#f1d986}[data-theme="dark"] .ops-alert.critical{background:#311c1c;border-color:#623232;color:#ffbcbc}
+  .assignment-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.action-workflow{border:1px solid var(--line);border-radius:13px;background:var(--paper-2);padding:14px;margin-top:12px}
+  .action-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:10px}.action-head h4{font-family:var(--display);font-size:14px;margin:0}.action-head p{font-size:11.5px;color:var(--muted);margin:3px 0 0}
+  .action-state{display:inline-flex;align-items:center;border-radius:999px;padding:5px 8px;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.035em;background:var(--paper);border:1px solid var(--line-strong)}
+  .as-awaiting_verification{background:#fff5d8;color:#725300;border-color:#ead28b}.as-verified{background:#e9f7ef;color:#23623c;border-color:#b9dfc9}.as-changes_requested{background:#fff0f0;color:#8a2929;border-color:#edbbbb}.as-in_progress{background:#eef4ff;color:#264f83;border-color:#c8d8ed}
+  .action-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.action-actions button{border-radius:9px;padding:9px 12px;font-size:12.5px;font-weight:800;cursor:pointer}.btn-complete{background:var(--ink);color:var(--paper);border:1px solid var(--ink)}.btn-verify{background:#1f6f43;color:white;border:1px solid #1f6f43}.btn-changes{background:var(--paper);color:#8a2929;border:1px solid #cf9999}
+  .action-help{font-size:11.5px;color:var(--muted);margin:8px 0 0;line-height:1.45}.user-row.phase2{display:grid;grid-template-columns:minmax(180px,1fr) 160px 120px 170px;gap:12px;align-items:center}.user-row.phase2 select{min-width:0;padding:8px 9px;border:1px solid var(--line-strong);border-radius:8px;background:var(--paper);color:var(--ink)}
+  .u-status{font-size:11.5px;font-weight:700}.u-status.off{color:var(--red)}.user-toggle{border:1px solid var(--line-strong);background:var(--paper);color:var(--ink);border-radius:8px;padding:8px 9px;font-size:11.5px;font-weight:800;cursor:pointer}.user-toggle:disabled{opacity:.45;cursor:not-allowed}
+  .role-legend{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0 16px}.role-card{border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--paper)}.role-card b{font-size:12px}.role-card span{display:block;font-size:11px;color:var(--muted);line-height:1.4;margin-top:3px}
+  .action-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:0 0 14px}.action-stat{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px}.action-stat b{font-family:var(--display);font-size:22px;display:block}.action-stat span{font-size:11.5px;color:var(--muted)}
+  .task-state{display:inline-block;margin-left:6px;font-size:10px;font-weight:800;text-transform:uppercase;color:var(--muted)}.due-signal{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.03em}.due-signal.over{color:var(--red)}.due-signal.soon{color:#8a6500}.assignment-name{font-weight:700}
+  @media(max-width:900px){.user-row.phase2{grid-template-columns:1fr 1fr}.role-legend,.action-summary{grid-template-columns:1fr 1fr}.assignment-grid{grid-template-columns:1fr}}
+  @media(max-width:560px){.user-row.phase2,.role-legend,.action-summary{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
@@ -373,7 +393,7 @@
         <button class="nav-item" data-view="users" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 8.5a3 3 0 0 1 0 5.8M17.5 20a5.5 5.5 0 0 0-1.6-3.9"/></svg>Admin</button>
       </nav>
       <div class="nav-spacer"></div>
-      <div class="sb-user"><span class="who" id="who"></span><div class="sb-actions"><button class="sb-theme" id="themeToggle" type="button" title="Toggle light/dark">\u25d0 Theme</button><button class="signout" id="signout" type="button">Sign out</button></div></div>
+      <div class="sb-user"><span class="who" id="who"></span><span class="role-pill r-read_only" id="rolePill">Read Only</span><div class="sb-actions"><button class="sb-theme" id="themeToggle" type="button" title="Toggle light/dark">\u25d0 Theme</button><button class="signout" id="signout" type="button">Sign out</button></div></div>
     </aside>
     <main class="main">
       <div class="topbar">
@@ -430,7 +450,8 @@
 
 
         <section class="view" id="view-actions" hidden>
-          <div class="section-head"><div><h2>Corrective Actions</h2><p>Open actions with an owner, due date, or documented corrective step.</p></div><span class="muted small" id="actionCount"></span></div>
+          <div class="section-head"><div><h2>Corrective Actions</h2><p>Track assigned fixes from action through verification and closure.</p></div><span class="muted small" id="actionCount"></span></div>
+          <div id="actionSummary" class="action-summary"></div>
           <div id="actionList" class="task-list"></div>
         </section>
 
@@ -449,11 +470,18 @@
         </section>
 
         <section class="view" id="view-users" hidden>
-          <div class="section-head"><div><h2>Admin</h2><p>Review dashboard access and recent user activity.</p></div></div>
-          <div class="admin-info"><h3>Dashboard access</h3><p>User authentication remains managed securely through the existing RBH account setup. This screen intentionally avoids exposing developer or database instructions in the application.</p></div>
+          <div class="section-head"><div><h2>Admin</h2><p>Manage application roles and dashboard access.</p></div></div>
+          <div class="admin-info"><h3>Role-based access</h3><p>Existing dashboard users retain administrative access after the Phase 2 migration. New users start as Read Only until an Admin assigns the appropriate role.</p></div>
+          <div class="role-legend">
+            <div class="role-card"><b>Admin</b><span>Full operational access plus user roles and account activation.</span></div>
+            <div class="role-card"><b>Safety Manager</b><span>Full incident, investigation, corrective-action, and verification access.</span></div>
+            <div class="role-card"><b>Supervisor</b><span>Can work reports and corrective actions assigned to their account.</span></div>
+            <div class="role-card"><b>Read Only</b><span>Can review reports, activity, and analytics without making changes.</span></div>
+          </div>
+          <div id="adminPermissionNote" class="permission-note"></div>
           <div class="users-head"><p class="muted" style="margin:0">Dashboard users, most recently active first.</p></div>
           <div id="usersList"></div>
-          <div class="users-help"><b>Need to add or remove access?</b><br>Use the organization's approved administrator process rather than sharing credentials.</div>
+          <div class="users-help"><b>Adding a new user</b><br>Create the approved dashboard login using the existing authentication process. Their profile appears here after their first sign-in, where an Admin can assign the correct role.</div>
         </section>
 
       </div>
@@ -508,14 +536,30 @@
   var $=function(id){return document.getElementById(id);};
   var loginView=$("loginView"), appView=$("appView"), listEl=$("list"), backdrop=$("backdrop");
   var allReports=[], filtered=[], attByReport={};
+  var allProfiles=[], profileById={}, currentSession=null, currentProfile=null, currentRole="read_only";
   var modalReport=null, modalCard=null, modalNotesEl=null;
 
   $("mStatus").innerHTML=statusOptions("new");
 
   /* ---------- auth ---------- */
-  function showLogin(){ appView.style.display="none"; loginView.style.display="flex"; }
-  function showApp(session){ loginView.style.display="none"; appView.style.display="block";
-    $("who").textContent=(session&&session.user&&session.user.email)||""; upsertProfile(session); showView("home"); loadReports(); }
+  function showLogin(){ appView.style.display="none"; loginView.style.display="flex"; currentSession=null; currentProfile=null; currentRole="read_only"; }
+  async function showApp(session){
+    currentSession=session; loginView.style.display="none"; appView.style.display="block";
+    $("who").textContent=(session&&session.user&&session.user.email)||"";
+    await upsertProfile(session);
+    try{
+      var activeCheck=await sb.rpc("rbh_current_user_active");
+      if(!activeCheck.error && activeCheck.data===false){
+        await sb.auth.signOut();
+        var le=$("loginErr"); if(le){ le.textContent="Your RBH Safety dashboard access is inactive. Contact an administrator."; le.classList.add("show"); }
+        return;
+      }
+    }catch(_e){}
+    await loadProfiles();
+    applyRoleUi();
+    showView("home");
+    await loadReports();
+  }
   sb.auth.getSession().then(function(res){ var s=res.data&&res.data.session; if(s) showApp(s); else showLogin(); });
   sb.auth.onAuthStateChange(function(_e,s){ if(s) showApp(s); else showLogin(); });
 
@@ -551,7 +595,7 @@
       if(injuryOnly && !r.involves_injury) return false;
       if(st==="open"){ if(r.status==="closed"||r.status==="no_action"||r.status==="duplicate") return false; }
       else if(st!=="all" && r.status!==st) return false;
-      if(q){ var hay=[r.ref_no,r.report_type,r.description,r.hazard_category,r.reporter_name,r.people_involved,r.potential_severity,r.reporter_role]
+      if(q){ var hay=[r.ref_no,r.report_type,r.description,r.hazard_category,r.reporter_name,r.people_involved,r.potential_severity,r.reporter_role,r.responsible_person,assigneeName(r),r.action_status,r.job_site]
         .map(function(x){return String(x==null?"":x).toLowerCase();}).join(" "); if(hay.indexOf(q)<0) return false; }
       return true;
     });
@@ -575,12 +619,12 @@
     var sev=r.potential_severity?('<span class="badge sev '+sevClass(r.potential_severity)+'" title="Potential severity">'+esc(sevShort(r.potential_severity))+'</span>'):"";
     var resolved=(r.status==="closed"||r.status==="no_action"||r.status==="duplicate");
     var wrap=document.createElement("div"); wrap.className="card"+(resolved?" resolved":""); wrap.setAttribute('data-report-id',r.id);
-    var meta=[fmtDate(r.created_at),(r.reporter_name||"Anonymous")]; if(r.hazard_category) meta.push(r.hazard_category); if(r.due_date) meta.push((isOverdue(r)?"Overdue \u2014 due ":"Due ")+shortDate(r.due_date));
+    var meta=[fmtDate(r.created_at),(r.reporter_name||"Anonymous")]; if(r.hazard_category) meta.push(r.hazard_category); if(assigneeName(r)) meta.push("Assigned: "+assigneeName(r)); if(r.due_date) meta.push((isOverdue(r)?"Overdue \u2014 due ":"Due ")+shortDate(r.due_date));
     var pri=r.priority?('<span class="badge pr-'+r.priority+'" title="Priority">'+({low:"Low priority",medium:"Medium priority",high:"High priority"}[r.priority]||r.priority)+'</span>'):"";
     wrap.innerHTML=
       '<button class="card-head" type="button">'+
         '<div class="ch-top"><span class="ref">#'+esc(r.ref_no)+'</span><span class="ch-type">'+esc(r.report_type||"Report")+'</span>'+sev+'</div>'+
-        '<div class="ch-badges">'+(isOverdue(r)?'<span class="badge bg-overdue" data-overdue-badge>Overdue</span>':"")+(r.involves_injury?'<span class="badge bg-injury">Injury</span>':"")+pri+'<span class="badge '+st.c+'" data-status-badge title="Status">'+esc(st.l)+'</span></div>'+
+        '<div class="ch-badges">'+(isOverdue(r)?'<span class="badge bg-overdue" data-overdue-badge>Overdue</span>':"")+(r.involves_injury?'<span class="badge bg-injury">Injury</span>':"")+pri+actionBadgeHtml(r)+'<span class="badge '+st.c+'" data-status-badge title="Status">'+esc(st.l)+'</span></div>'+
         '<div class="ch-meta">'+esc(meta.join("  \u00b7  "))+'</div>'+
         '<div class="ch-desc">'+esc(r.description||"")+'</div>'+
         '<span class="open-report">Open →</span>'+
@@ -588,6 +632,16 @@
     var head=wrap.querySelector(".card-head");
     head.addEventListener("click", function(){ openIncident(r); });
     return wrap;
+  }
+
+  function assignmentOptions(selected){
+    var opts=['<option value="">Unassigned</option>'];
+    allProfiles.filter(function(p){ return p.is_active!==false && p.app_role!=="read_only"; })
+      .sort(function(a,b){ return profileName(a).localeCompare(profileName(b)); })
+      .forEach(function(p){
+        opts.push('<option value="'+esc(p.id)+'"'+(String(p.id)===String(selected||"")?' selected':'')+'>'+esc(profileName(p))+' · '+esc(roleLabel(p.app_role))+'</option>');
+      });
+    return opts.join("");
   }
 
   function detailHtml(r){
@@ -599,21 +653,27 @@
     add("Reported by", r.reporter_name||"Anonymous"); add("Role", r.reporter_role); add("Contact", r.reporter_contact);
     add("Form language", r.language==="es"?"Spanish":r.language==="en"?"English":r.language); add("Submitted", fmtDate(r.created_at));
     return '<div class="detail-actions"><button class="pdf-btn" type="button">Download PDF</button></div>'+
+      urgentTriageHtml(r)+
       '<div class="d-rows">'+rows.join("")+'</div>'+
       '<div class="d-section"><div class="d-sec-title">Status</div><div class="status-edit">'+
         '<select class="status-select">'+statusOptions(r.status||"new")+'</select>'+
-        '<button class="status-save" type="button">Update status</button><span class="status-saved" hidden>Saved \u2713</span></div></div>'+
-      '<div class="d-section"><div class="d-sec-title">Investigation &amp; corrective action</div><p class="muted small" style="margin:4px 0 8px">Document the cause, action needed, owner, due date, and priority before closure.</p>'+
+        '<button class="status-save" type="button">Update status</button><span class="status-saved" hidden>Saved ✓</span></div>'+
+        '<div class="gate-msg" data-role-gate>This account can view this incident but does not have permission to update it.</div></div>'+
+      '<div class="d-section"><div class="d-sec-title">Investigation &amp; corrective action</div><p class="muted small" style="margin:4px 0 8px">Document the cause, action needed, assignment, due date, and priority. Corrective actions must be verified before the incident can be closed.</p>'+
       '<div class="inv-grid">'+
       '<label class="inv-l">Root cause<textarea class="inv-root"></textarea></label>'+
       '<label class="inv-l">Corrective action<textarea class="inv-corr"></textarea></label>'+
+      '<div class="assignment-grid">'+
+      '<label class="inv-l">Assigned dashboard user<select class="inv-assignee">'+assignmentOptions(r.assigned_user_id)+'</select></label>'+
+      '<label class="inv-l">Responsible person / crew<input type="text" class="inv-resp" placeholder="Optional if different from assignee"></label>'+
+      '</div>'+
       '<div class="inv-row">'+
-      '<label class="inv-l">Responsible person<input type="text" class="inv-resp"></label>'+
       '<label class="inv-l">Due date<input type="date" class="inv-due"></label>'+
-      '<label class="inv-l">Priority<select class="inv-pri"><option value="">\u2014</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label>'+
+      '<label class="inv-l">Priority<select class="inv-pri"><option value="">—</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label>'+
       '</div></div>'+
-      '<div class="inv-actions"><button class="inv-save" type="button">Save investigation</button><span class="inv-saved" hidden>Saved \u2713</span></div>'+
-      '<div class="gate-msg" data-gate>To close a report, record a root cause and corrective action first.</div>'+
+      '<div class="inv-actions"><button class="inv-save" type="button">Save investigation</button><span class="inv-saved" hidden>Saved ✓</span></div>'+
+      '<div class="gate-msg" data-gate>To close a report, document the root cause and corrective action, then complete and verify the corrective action.</div>'+
+      '<div class="action-workflow" data-action-workflow></div>'+
       '</div>'+
       '<div class="d-atts" data-atts></div>'+
       '<div class="d-section"><div class="d-sec-title-row"><span class="d-sec-title">Notes</span>'+
@@ -623,48 +683,73 @@
 
   function buildDetail(r, detail, wrap){
     detail.innerHTML=detailHtml(r);
-    var gate=detail.querySelector("[data-gate]");
+    var gate=detail.querySelector("[data-gate]"), roleGate=detail.querySelector("[data-role-gate]");
     var auditEl=detail.querySelector("[data-audit]");
-    // status editor
+    var canEdit=canEditReport(r);
+    if(!canEdit && roleGate) roleGate.classList.add("show");
+
     var sel=detail.querySelector(".status-select"), save=detail.querySelector(".status-save"), saved=detail.querySelector(".status-saved");
+    if(!canEdit){ sel.disabled=true; save.disabled=true; }
     save.addEventListener("click", async function(){
+      if(!canEditReport(r)){ toast("You do not have permission to update this report.","err"); return; }
       if(sel.value==="closed" && !canClose(r)){ if(gate) gate.classList.add("show"); sel.value=r.status||"new"; return; }
       if(gate) gate.classList.remove("show");
       save.disabled=true; var lbl=save.textContent; save.textContent="Saving…";
       try{ await updateStatus(r.id, sel.value, wrap); saved.hidden=false; setTimeout(function(){saved.hidden=true;},2200); loadAudit(r.id, auditEl); toast("Status updated","ok"); }
-      catch(ex){ console.error(ex); toast("Could not update status \u2014 please try again.","err"); }
-      finally{ save.disabled=false; save.textContent=lbl; }
+      catch(ex){ console.error(ex); toast("Could not update status — please try again.","err"); }
+      finally{ save.disabled=!canEditReport(r); save.textContent=lbl; }
     });
-    // investigation editor
+
     var invRoot=detail.querySelector(".inv-root"), invCorr=detail.querySelector(".inv-corr"),
-        invResp=detail.querySelector(".inv-resp"), invDue=detail.querySelector(".inv-due"),
-        invPri=detail.querySelector(".inv-pri"), invSave=detail.querySelector(".inv-save"), invSaved=detail.querySelector(".inv-saved");
+        invResp=detail.querySelector(".inv-resp"), invAssign=detail.querySelector(".inv-assignee"),
+        invDue=detail.querySelector(".inv-due"), invPri=detail.querySelector(".inv-pri"),
+        invSave=detail.querySelector(".inv-save"), invSaved=detail.querySelector(".inv-saved");
     invRoot.value=r.root_cause||""; invCorr.value=r.corrective_action||""; invResp.value=r.responsible_person||"";
-    invDue.value=r.due_date||""; invPri.value=r.priority||"";
+    invAssign.value=r.assigned_user_id||""; invDue.value=r.due_date||""; invPri.value=r.priority||"";
+    if(!canEdit){ [invRoot,invCorr,invResp,invAssign,invDue,invPri,invSave].forEach(function(x){ if(x) x.disabled=true; }); }
     invSave.addEventListener("click", async function(){
+      if(!canEditReport(r)){ toast("You do not have permission to update this report.","err"); return; }
       invSave.disabled=true; var lbl=invSave.textContent; invSave.textContent="Saving…";
       try{
-        var patch={ root_cause:invRoot.value.trim()||null, corrective_action:invCorr.value.trim()||null, responsible_person:invResp.value.trim()||null, due_date:invDue.value||null, priority:invPri.value||null };
+        var selectedProfile=invAssign.value?profileById[String(invAssign.value)]:null;
+        var nextActionStatus=r.action_status||"not_started";
+        if(invCorr.value.trim() && nextActionStatus==="not_started") nextActionStatus="in_progress";
+        var patch={
+          root_cause:invRoot.value.trim()||null,
+          corrective_action:invCorr.value.trim()||null,
+          assigned_user_id:invAssign.value||null,
+          responsible_person:invResp.value.trim()||(selectedProfile?profileName(selectedProfile):null),
+          due_date:invDue.value||null,
+          priority:invPri.value||null,
+          action_status:nextActionStatus
+        };
         var res=await sb.from("reports").update(patch).eq("id",r.id);
         if(res.error) throw res.error;
-        r.root_cause=patch.root_cause; r.corrective_action=patch.corrective_action; r.responsible_person=patch.responsible_person; r.due_date=patch.due_date; r.priority=patch.priority;
+        Object.keys(patch).forEach(function(k){ r[k]=patch[k]; });
         if(gate) gate.classList.remove("show");
         invSaved.hidden=false; setTimeout(function(){invSaved.hidden=true;},2200); toast("Investigation saved","ok");
+        renderActionWorkflow(r, detail.querySelector("[data-action-workflow]"), auditEl, detail);
         loadAudit(r.id, auditEl); refreshOverdue(r, wrap); renderMetrics(); renderHomeSnapshot();
-      }catch(ex){ console.error(ex); toast("Could not save \u2014 please try again.","err"); }
-      finally{ invSave.disabled=false; invSave.textContent=lbl; }
+      }catch(ex){ console.error(ex); toast("Could not save — please try again.","err"); }
+      finally{ invSave.disabled=!canEditReport(r); invSave.textContent=lbl; }
     });
-    // attachments, notes, audit
+
+    renderActionWorkflow(r, detail.querySelector("[data-action-workflow]"), auditEl, detail);
+
     loadAtts(r.id, detail.querySelector("[data-atts]"));
     var notesEl=detail.querySelector("[data-notes]");
     loadNotes(r.id, notesEl);
     loadAudit(r.id, auditEl);
-    detail.querySelector(".add-note").addEventListener("click", function(){ openNoteModal(r, wrap, notesEl); });
+    var noteBtn=detail.querySelector(".add-note");
+    if(!canAddNotes(r)) noteBtn.disabled=true;
+    noteBtn.addEventListener("click", function(){ if(canAddNotes(r)) openNoteModal(r, wrap, notesEl); });
     detail.querySelector(".pdf-btn").addEventListener("click", function(){ generatePdf(r, this); });
   }
 
   async function updateStatus(reportId, status, wrap){
     var r=null; allReports.forEach(function(x){ if(x.id===reportId) r=x; });
+    if(!r || !canEditReport(r)) throw new Error("NOT_AUTHORIZED");
+    if(status==="closed" && !canClose(r)) throw new Error("CORRECTIVE_ACTION_NOT_VERIFIED");
     var patch={ status:status, closed_at: status==="closed" ? new Date().toISOString() : null };
     var res=await sb.from("reports").update(patch).eq("id",reportId);
     if(res.error) throw res.error;
@@ -735,10 +820,11 @@
 
   $("mSave").addEventListener("click", async function(){
     if(!modalReport) return;
+    if(!canAddNotes(modalReport)){ toast("You do not have permission to add notes to this report.","err"); closeModal(); return; }
     var title=$("mTitleInput").value.trim(), body=$("mBody").value.trim(), err=$("mErr");
     if(!title){ err.textContent="Please enter a title for the note."; err.classList.add("show"); return; }
     err.classList.remove("show");
-    if($("mStatus").value==="closed" && !canClose(modalReport)){ err.textContent="To close a report, record a root cause and corrective action first."; err.classList.add("show"); return; }
+    if($("mStatus").value==="closed" && !canClose(modalReport)){ err.textContent="To close a report, document the root cause and corrective action, then complete and verify the corrective action."; err.classList.add("show"); return; }
     var btn=$("mSave"); btn.disabled=true; btn.textContent="Saving…";
     try{
       var sess=(await sb.auth.getSession()).data.session; var email=(sess&&sess.user)?sess.user.email:null;
@@ -791,8 +877,11 @@
     ["reporter_name","Reporter name"],["reporter_role","Reporter role"],["reporter_contact","Reporter contact"],
     ["language","Form language"],["involves_injury","Involves injury"],["job_site","Incident address"],["site_location","Specific location"],["observed_at","Observed at"],
     ["priority","Priority"],["likelihood","Likelihood"],["assigned_to","Assigned to"],
+    ["assigned_user_id","Assigned dashboard user ID"],["action_status","Corrective action status"],
     ["root_cause","Root cause"],["corrective_action","Corrective action"],["responsible_person","Responsible person"],
-    ["due_date","Due date"],["closed_at","Closed at"],["id","Record ID"]
+    ["due_date","Due date"],["action_completed_at","Action completed at"],["action_completion_note","Completion note"],
+    ["action_verified_at","Action verified at"],["action_verification_note","Verification note"],
+    ["closed_at","Closed at"],["id","Record ID"]
   ];
   function csvCell(v){ v=(v==null?"":String(v)); return /[",\n\r]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; }
   function reportsToCsv(reports, notesByReport){
@@ -884,7 +973,9 @@
       heading("INVESTIGATION & CORRECTIVE ACTION");
       field("Root cause", r.root_cause||"Not yet recorded");
       field("Corrective action", r.corrective_action||"Not yet recorded");
-      field("Responsible person", r.responsible_person||"Not yet assigned");
+      field("Assigned dashboard user", assigneeName(r)||"Not assigned");
+      field("Responsible person", r.responsible_person||"—");
+      field("Corrective action status", actionLabel(r.action_status||"not_started"));
       field("Due date", r.due_date||"—");
       field("Date closed", r.closed_at?fmtDate(r.closed_at):"—");
 
@@ -911,21 +1002,92 @@
   }
 
 
-  /* ================= Phase 1 workspaces ================= */
+  /* ================= Phase 2 workspaces ================= */
   var lastOperationalView="records";
+  var ROLE_LABELS={admin:"Admin",safety_manager:"Safety Manager",supervisor:"Supervisor",read_only:"Read Only"};
+  var ACTION_LABELS={not_started:"Not started",in_progress:"In progress",awaiting_verification:"Awaiting verification",verified:"Verified",changes_requested:"Changes requested"};
+
+  function roleLabel(v){ return ROLE_LABELS[v]||"Read Only"; }
+  function actionLabel(v){ return ACTION_LABELS[v]||"Not started"; }
+  function profileName(p){ return p?(p.full_name||p.email||"User"):""; }
+  function assigneeName(r){ var p=r&&r.assigned_user_id?profileById[String(r.assigned_user_id)]:null; return p?profileName(p):(r&&r.responsible_person?r.responsible_person:""); }
+  function isManager(){ return currentRole==="admin"||currentRole==="safety_manager"; }
+  function canVerify(){ return isManager(); }
+  function canEditReport(r){
+    if(isManager()) return true;
+    return currentRole==="supervisor" && currentSession && currentSession.user && String(r.assigned_user_id||"")===String(currentSession.user.id);
+  }
+  function canAddNotes(r){ return canEditReport(r); }
+  function canManageUsers(){ return currentRole==="admin"; }
+
+  function applyRoleUi(){
+    var pill=$("rolePill");
+    if(pill){ pill.textContent=roleLabel(currentRole); pill.className="role-pill r-"+currentRole; }
+    var adminNav=document.querySelector('.nav-item[data-view="users"]');
+    if(adminNav) adminNav.style.display=(currentRole==="admin"?"":"none");
+    var note=$("adminPermissionNote");
+    if(note){
+      note.innerHTML=canManageUsers()
+        ?'<strong>You are an Admin.</strong> You can change roles and activate/deactivate dashboard access.'
+        :'<strong>'+esc(roleLabel(currentRole))+' access.</strong> Only an Admin can change user roles or account activation.';
+    }
+  }
+
   function findReport(id){ for(var i=0;i<allReports.length;i++) if(String(allReports[i].id)===String(id)) return allReports[i]; return null; }
-  function reportAttentionRank(r){ var n=0; if(r.involves_injury) n+=100; if(isOverdue(r)) n+=80; if(r.status==="new") n+=40; var s=(r.potential_severity||"").toLowerCase(); if(s.indexOf("critical")===0)n+=35; else if(s.indexOf("serious")===0)n+=25; if(r.priority==="high")n+=20; return n; }
+  function daysUntilDue(r){
+    if(!r||!r.due_date) return null;
+    var d=new Date(r.due_date+"T23:59:59"), now=new Date();
+    return Math.ceil((d.getTime()-now.getTime())/86400000);
+  }
+  function escalationInfo(r){
+    var d=daysUntilDue(r);
+    if(d===null) return {level:0,label:"No due date",cls:""};
+    if(d<0){
+      var late=Math.abs(d);
+      if(late>=14) return {level:3,label:late+" days overdue · escalation 3",cls:"over"};
+      if(late>=7) return {level:2,label:late+" days overdue · escalation 2",cls:"over"};
+      return {level:1,label:late+" day"+(late===1?"":"s")+" overdue",cls:"over"};
+    }
+    if(d===0) return {level:1,label:"Due today",cls:"soon"};
+    if(d<=3) return {level:1,label:"Due in "+d+" day"+(d===1?"":"s"),cls:"soon"};
+    return {level:0,label:"Due "+shortDate(r.due_date),cls:""};
+  }
+  function isHighPotential(r){
+    var s=(r&&r.potential_severity||"").toLowerCase();
+    return !!(r&&r.involves_injury)||(s.indexOf("critical")===0)||(s.indexOf("serious")===0);
+  }
+  function urgentTriageHtml(r){
+    if(!isHighPotential(r)) return "";
+    var msg=r.involves_injury
+      ?"Injury report — review promptly and determine whether any regulatory or immediate-response steps apply."
+      :"Higher-potential event — prioritize review, assignment, and corrective action.";
+    return '<div class="ops-alert critical"><b>Priority triage</b>'+esc(msg)+'</div>';
+  }
+  function reportAttentionRank(r){
+    var n=0; if(r.involves_injury) n+=100; if(isOverdue(r)) n+=80;
+    if(r.action_status==="awaiting_verification") n+=70;
+    if(r.action_status==="changes_requested") n+=55;
+    if(r.status==="new") n+=40;
+    var s=(r.potential_severity||"").toLowerCase(); if(s.indexOf("critical")===0)n+=35; else if(s.indexOf("serious")===0)n+=25;
+    if(r.priority==="high")n+=20; n+=Math.min(escalationInfo(r).level*8,24); return n;
+  }
+  function actionBadgeHtml(r){
+    var a=r.action_status||"not_started";
+    if(!actionEligible(r) && a==="not_started") return "";
+    return '<span class="badge action-state as-'+esc(a)+'">'+esc(actionLabel(a))+'</span>';
+  }
   function incidentBadgeHtml(r){
     var st=STATUS[r.status]||{l:r.status||"",c:"st-muted"}; var out='';
     if(isOverdue(r)) out+='<span class="badge bg-overdue">Overdue</span>'; if(r.involves_injury) out+='<span class="badge bg-injury">Injury</span>';
     if(r.potential_severity) out+='<span class="badge '+sevClass(r.potential_severity)+'">'+esc(sevShort(r.potential_severity))+'</span>';
     if(r.priority) out+='<span class="badge pr-'+esc(r.priority)+'">'+esc(r.priority.charAt(0).toUpperCase()+r.priority.slice(1))+' priority</span>';
+    out+=actionBadgeHtml(r);
     out+='<span class="badge '+st.c+'">'+esc(st.l)+'</span>'; return out;
   }
   function openIncident(r, from){
     if(!r) return; lastOperationalView=from||((document.getElementById('view-actions')&&!document.getElementById('view-actions').hidden)?'actions':'records');
     $("incidentTitle").textContent="#"+(r.ref_no||r.id)+" · "+(r.report_type||"Safety report");
-    var meta=[]; if(r.job_site) meta.push(r.job_site); meta.push(fmtDate(r.created_at)); $("incidentMeta").textContent=meta.join(" · ");
+    var meta=[]; if(r.job_site) meta.push(r.job_site); if(assigneeName(r)) meta.push("Assigned: "+assigneeName(r)); meta.push(fmtDate(r.created_at)); $("incidentMeta").textContent=meta.join(" · ");
     $("incidentSummary").innerHTML='<div class="is-badges">'+incidentBadgeHtml(r)+'</div><div class="is-desc">'+esc(r.description||"No description provided.")+'</div>';
     var body=$("incidentBody"); body.innerHTML=''; buildDetail(r,body,null); showView('incident');
   }
@@ -933,18 +1095,47 @@
     var el=$("homeAttention"); if(!el) return; var items=allReports.filter(function(r){ return r.status!=="closed"&&r.status!=="no_action"&&r.status!=="duplicate"; });
     items.sort(function(a,b){ return reportAttentionRank(b)-reportAttentionRank(a) || new Date(b.created_at)-new Date(a.created_at); }); items=items.slice(0,5);
     if(!items.length){ el.innerHTML='<div class="notes-empty">Nothing needs attention right now.</div>'; return; }
-    el.innerHTML=''; items.forEach(function(r){ var b=document.createElement('button'); b.className='attention-item'; b.type='button'; var tag=isOverdue(r)?'Overdue':(r.involves_injury?'Injury':(r.status==='new'?'New':'Open'));
-      b.innerHTML='<span class="a-title">#'+esc(r.ref_no)+' · '+esc(r.report_type||'Report')+'</span><span class="a-meta">'+esc((r.job_site?r.job_site+' · ':'')+fmtDate(r.created_at))+'</span><span class="a-tag badge '+(tag==='Overdue'?'bg-overdue':tag==='Injury'?'bg-injury':'st-new')+'">'+tag+'</span>'; b.addEventListener('click',function(){ openIncident(r,'home'); }); el.appendChild(b); });
+    el.innerHTML=''; items.forEach(function(r){
+      var b=document.createElement('button'); b.className='attention-item'; b.type='button';
+      var tag=r.action_status==="awaiting_verification"?'Verify':(isOverdue(r)?'Overdue':(r.involves_injury?'Injury':(r.status==='new'?'New':'Open')));
+      b.innerHTML='<span class="a-title">#'+esc(r.ref_no)+' · '+esc(r.report_type||'Report')+'</span><span class="a-meta">'+esc((r.job_site?r.job_site+' · ':'')+(assigneeName(r)?'Assigned: '+assigneeName(r)+' · ':'')+fmtDate(r.created_at))+'</span><span class="a-tag badge '+(tag==='Overdue'?'bg-overdue':tag==='Injury'?'bg-injury':tag==='Verify'?'as-awaiting_verification':'st-new')+'">'+tag+'</span>';
+      b.addEventListener('click',function(){ openIncident(r,'home'); }); el.appendChild(b);
+    });
   }
-  function actionEligible(r){ return !!(r.corrective_action || r.responsible_person || r.due_date || r.status==='corrective_action'); }
+  function actionEligible(r){ return !!(r.corrective_action || r.responsible_person || r.assigned_user_id || r.due_date || r.status==='corrective_action' || (r.action_status&&r.action_status!=="not_started")); }
+  function renderActionSummary(arr){
+    var el=$("actionSummary"); if(!el) return;
+    var overdue=0,soon=0,verify=0,mine=0;
+    arr.forEach(function(r){
+      var d=daysUntilDue(r); if(d!==null&&d<0) overdue++; else if(d!==null&&d<=3) soon++;
+      if(r.action_status==="awaiting_verification") verify++;
+      if(currentSession&&currentSession.user&&String(r.assigned_user_id||"")===String(currentSession.user.id)) mine++;
+    });
+    function s(n,l){ return '<div class="action-stat"><b>'+n+'</b><span>'+l+'</span></div>'; }
+    el.innerHTML=s(overdue,"Overdue")+s(soon,"Due in 3 days")+s(verify,"Awaiting verification")+s(mine,"Assigned to me");
+  }
   function renderActions(){
-    var el=$("actionList"), count=$("actionCount"); if(!el) return; var arr=allReports.filter(function(r){ return actionEligible(r) && r.status!=="closed"&&r.status!=="no_action"&&r.status!=="duplicate"; });
-    arr.sort(function(a,b){ if(isOverdue(a)!==isOverdue(b)) return isOverdue(a)?-1:1; var ad=a.due_date?new Date(a.due_date).getTime():8640000000000000,bd=b.due_date?new Date(b.due_date).getTime():8640000000000000; return ad-bd; });
+    var el=$("actionList"), count=$("actionCount"); if(!el) return;
+    var arr=allReports.filter(function(r){ return actionEligible(r) && r.status!=="closed"&&r.status!=="no_action"&&r.status!=="duplicate"; });
+    arr.sort(function(a,b){
+      if(a.action_status==="awaiting_verification"&&b.action_status!=="awaiting_verification") return -1;
+      if(b.action_status==="awaiting_verification"&&a.action_status!=="awaiting_verification") return 1;
+      if(isOverdue(a)!==isOverdue(b)) return isOverdue(a)?-1:1;
+      var ad=a.due_date?new Date(a.due_date).getTime():8640000000000000,bd=b.due_date?new Date(b.due_date).getTime():8640000000000000; return ad-bd;
+    });
+    renderActionSummary(arr);
     if(count) count.textContent=arr.length+(arr.length===1?' open action':' open actions');
-    var nav=$("navActionCount"); if(nav) nav.textContent=arr.length?String(arr.length):'';
+    var nav=$("navActionCount"); if(nav){ var urgent=arr.filter(function(r){return isOverdue(r)||r.action_status==="awaiting_verification";}).length; nav.textContent=urgent?String(urgent):''; }
     if(!arr.length){ el.innerHTML='<div class="state">No open corrective actions yet.</div>'; return; }
-    el.innerHTML=''; arr.forEach(function(r){ var b=document.createElement('button'); b.type='button'; b.className='task-card'; var due=r.due_date?shortDate(r.due_date):'No due date';
-      b.innerHTML='<div class="task-title">#'+esc(r.ref_no)+' · '+esc(r.report_type||'Report')+'</div><div class="task-action">'+esc(r.corrective_action||'Corrective action needs to be documented.')+'</div><div class="task-meta">'+esc((r.responsible_person?'Owner: '+r.responsible_person:'Owner not assigned')+(r.job_site?' · '+r.job_site:''))+'</div><div class="task-due"><b'+(isOverdue(r)?' style="color:var(--red)"':'')+'>'+(isOverdue(r)?'OVERDUE':'DUE')+'</b><span>'+esc(due)+'</span></div>'; b.addEventListener('click',function(){ openIncident(r,'actions'); }); el.appendChild(b); });
+    el.innerHTML=''; arr.forEach(function(r){
+      var b=document.createElement('button'); b.type='button'; b.className='task-card';
+      var escInfo=escalationInfo(r), assignee=assigneeName(r)||"Not assigned";
+      b.innerHTML='<div class="task-title">#'+esc(r.ref_no)+' · '+esc(r.report_type||'Report')+'<span class="task-state">'+esc(actionLabel(r.action_status||"not_started"))+'</span></div>'+
+        '<div class="task-action">'+esc(r.corrective_action||'Corrective action needs to be documented.')+'</div>'+
+        '<div class="task-meta">Assigned: <span class="assignment-name">'+esc(assignee)+'</span>'+(r.job_site?' · '+esc(r.job_site):'')+'</div>'+
+        '<div class="task-due"><b class="due-signal '+escInfo.cls+'">'+esc(escInfo.label)+'</b><span>'+(r.due_date?esc(shortDate(r.due_date)):'No due date')+'</span></div>';
+      b.addEventListener('click',function(){ openIncident(r,'actions'); }); el.appendChild(b);
+    });
   }
 
   /* ================= App shell: navigation, home, users ================= */
@@ -954,6 +1145,7 @@
   function closeSidebar(){ if(sidebarEl) sidebarEl.classList.remove("open"); if(sbBackdrop) sbBackdrop.classList.remove("show"); }
 
   function showView(name){
+    if(name==="users" && currentRole!=="admin") name="home";
     ["home","records","actions","metrics","users","incident"].forEach(function(v){ var el=document.getElementById("view-"+v); if(el) el.hidden=(v!==name); });
     document.querySelectorAll(".nav-item").forEach(function(n){ n.classList.toggle("active", n.getAttribute("data-view")===name); });
     var pt=$("pageTitle"); if(pt) pt.textContent=PAGE_TITLES[name]||"";
@@ -969,26 +1161,71 @@
 
   async function upsertProfile(session){
     if(!session||!session.user) return;
-    try{ await sb.from("profiles").upsert({ id:session.user.id, email:session.user.email, last_active:new Date().toISOString() }, { onConflict:"id" }); }
-    catch(e){ console.error("profile upsert", e); }
+    try{
+      var res=await sb.from("profiles").upsert({ id:session.user.id, email:session.user.email, last_active:new Date().toISOString() }, { onConflict:"id" }).select("*").maybeSingle();
+      if(res.error) console.warn("profile upsert",res.error);
+    }catch(e){ console.error("profile upsert", e); }
   }
-  async function loadUsers(){
-    var el=$("usersList"); el.innerHTML='<div class="state">Loading team…</div>';
+
+  async function loadProfiles(){
+    allProfiles=[]; profileById={}; currentProfile=null; currentRole="read_only";
     try{
       var res=await sb.from("profiles").select("*").order("last_active",{ascending:false});
       if(res.error) throw res.error;
-      var rows=res.data||[];
+      allProfiles=res.data||[];
+      allProfiles.forEach(function(p){ profileById[String(p.id)]=p; });
+      if(currentSession&&currentSession.user) currentProfile=profileById[String(currentSession.user.id)]||null;
+      currentRole=(currentProfile&&currentProfile.app_role)||"read_only";
+    }catch(ex){
+      console.error("load profiles", ex);
+      try{
+        var roleRes=await sb.rpc("rbh_current_app_role");
+        if(!roleRes.error&&roleRes.data) currentRole=roleRes.data;
+      }catch(_e){}
+    }
+  }
+
+  async function updateUserAccess(user, patch){
+    if(!canManageUsers()){ toast("Admin access is required.","err"); return; }
+    try{
+      if(String(user.id)===String(currentSession&&currentSession.user&&currentSession.user.id) && patch.is_active===false){
+        toast("You cannot deactivate your own account.","err"); return;
+      }
+      var res=await sb.from("profiles").update(patch).eq("id",user.id);
+      if(res.error) throw res.error;
+      Object.keys(patch).forEach(function(k){ user[k]=patch[k]; });
+      toast("User access updated","ok");
+      await loadProfiles(); applyRoleUi(); loadUsers();
+    }catch(ex){ console.error(ex); toast("Could not update user access.","err"); }
+  }
+
+  async function loadUsers(){
+    var el=$("usersList"); el.innerHTML='<div class="state">Loading team…</div>';
+    try{
+      if(!allProfiles.length) await loadProfiles();
+      var rows=allProfiles.slice().sort(function(a,b){return new Date(b.last_active||0)-new Date(a.last_active||0);});
       if(!rows.length){ el.innerHTML='<div class="state">No users have signed in yet.</div>'; return; }
       el.innerHTML=""; var box=document.createElement("div"); box.className="user-rows";
       rows.forEach(function(u){
-        var d=document.createElement("div"); d.className="user-row";
-        d.innerHTML='<div class="u-main"><div class="u-name"></div><div class="u-email"></div></div><div class="u-active"></div>';
+        var d=document.createElement("div"); d.className="user-row phase2";
+        var roleOptions=Object.keys(ROLE_LABELS).map(function(k){return '<option value="'+k+'"'+(u.app_role===k?' selected':'')+'>'+ROLE_LABELS[k]+'</option>';}).join("");
+        d.innerHTML='<div class="u-main"><div class="u-name"></div><div class="u-email"></div></div>'+
+          '<select class="u-role" aria-label="Application role">'+roleOptions+'</select>'+
+          '<div class="u-status"></div>'+
+          '<div><button class="user-toggle" type="button"></button><div class="u-active" style="margin-top:4px"></div></div>';
         d.querySelector(".u-name").textContent=u.full_name||u.email||"(unknown)";
         d.querySelector(".u-email").textContent=u.full_name?(u.email||""):"";
+        var st=d.querySelector(".u-status"); st.textContent=u.is_active===false?"Inactive":"Active"; st.classList.toggle("off",u.is_active===false);
         d.querySelector(".u-active").textContent="Last active "+(u.last_active?fmtDate(u.last_active):"—");
+        var rs=d.querySelector(".u-role"), tog=d.querySelector(".user-toggle");
+        rs.disabled=!canManageUsers(); tog.disabled=!canManageUsers() || (currentSession&&currentSession.user&&String(u.id)===String(currentSession.user.id));
+        tog.textContent=u.is_active===false?"Reactivate":"Deactivate";
+        rs.addEventListener("change",function(){ updateUserAccess(u,{app_role:rs.value}); });
+        tog.addEventListener("click",function(){ updateUserAccess(u,{is_active:!(u.is_active!==false)}); });
         box.appendChild(d);
       });
       el.appendChild(box);
+      applyRoleUi();
     }catch(ex){ console.error(ex); el.innerHTML='<div class="state">Could not load users.</div>'; }
   }
 
@@ -1009,12 +1246,84 @@
     if(isOverdue(r)){ if(!ex){ var b=document.createElement("span"); b.className="badge bg-overdue"; b.setAttribute("data-overdue-badge",""); b.textContent="Overdue"; badges.insertBefore(b, badges.firstChild); } }
     else if(ex){ ex.remove(); }
   }
-  function canClose(r){ return !!(r && r.root_cause && String(r.root_cause).trim() && r.corrective_action && String(r.corrective_action).trim()); }
+  function canClose(r){
+    return !!(r && r.root_cause && String(r.root_cause).trim() && r.corrective_action && String(r.corrective_action).trim() && r.action_status==="verified");
+  }
+
+  function renderActionWorkflow(r, el, auditEl, detail){
+    if(!el) return;
+    var status=r.action_status||"not_started", assignee=assigneeName(r)||"Not assigned", due=escalationInfo(r);
+    var completed=r.action_completed_at?("Completed "+fmtDate(r.action_completed_at)):"";
+    var verified=r.action_verified_at?("Verified "+fmtDate(r.action_verified_at)):"";
+    var h='<div class="action-head"><div><h4>Corrective-action workflow</h4><p>'+esc(assignee)+(r.due_date?' · '+esc(due.label):' · no due date')+'</p></div><span class="action-state as-'+esc(status)+'">'+esc(actionLabel(status))+'</span></div>';
+    if(completed) h+='<div class="action-help">'+esc(completed)+(r.action_completion_note?' — '+esc(r.action_completion_note):'')+'</div>';
+    if(verified) h+='<div class="action-help">'+esc(verified)+(r.action_verification_note?' — '+esc(r.action_verification_note):'')+'</div>';
+    if(status==="changes_requested" && r.action_verification_note) h+='<div class="ops-alert"><b>Changes requested</b>'+esc(r.action_verification_note)+'</div>';
+
+    if(status!=="verified"){
+      if(canEditReport(r)){
+        h+='<label class="inv-l">Completion / update note<textarea class="action-note" placeholder="What was completed or changed?"></textarea></label>'+
+          '<div class="action-actions"><button class="btn-complete" type="button">'+(status==="awaiting_verification"?"Update completion":"Mark action complete")+'</button></div>'+
+          '<p class="action-help">Marking complete sends the corrective action to a Safety Manager/Admin for verification.</p>';
+      }
+      if(status==="awaiting_verification" && canVerify()){
+        h+='<label class="inv-l">Verification note<textarea class="verify-note" placeholder="Optional verification note or reason changes are needed"></textarea></label>'+
+          '<div class="action-actions"><button class="btn-verify" type="button">Verify corrective action</button><button class="btn-changes" type="button">Request changes</button></div>';
+      }
+    } else {
+      h+='<div class="ops-alert"><b>Verified corrective action</b>This incident now meets the corrective-action requirement for closure.</div>';
+    }
+    el.innerHTML=h;
+
+    var completeBtn=el.querySelector(".btn-complete");
+    if(completeBtn) completeBtn.addEventListener("click",async function(){
+      if(!r.corrective_action || !String(r.corrective_action).trim()){ toast("Document the corrective action before marking it complete.","err"); return; }
+      if(!r.assigned_user_id && !r.responsible_person){ toast("Assign an owner before marking the action complete.","err"); return; }
+      completeBtn.disabled=true;
+      try{
+        var note=(el.querySelector(".action-note")&&el.querySelector(".action-note").value.trim())||null;
+        var uid=currentSession&&currentSession.user?currentSession.user.id:null;
+        var patch={action_status:"awaiting_verification",action_completed_at:new Date().toISOString(),action_completed_by:uid,action_completion_note:note,action_verified_at:null,action_verified_by:null};
+        var res=await sb.from("reports").update(patch).eq("id",r.id); if(res.error) throw res.error;
+        Object.keys(patch).forEach(function(k){r[k]=patch[k];});
+        toast("Corrective action sent for verification","ok"); renderActionWorkflow(r,el,auditEl,detail); loadAudit(r.id,auditEl); renderHomeSnapshot();
+      }catch(ex){console.error(ex);toast("Could not update corrective action.","err");}
+    });
+
+    var verifyBtn=el.querySelector(".btn-verify");
+    if(verifyBtn) verifyBtn.addEventListener("click",async function(){
+      verifyBtn.disabled=true;
+      try{
+        var note=(el.querySelector(".verify-note")&&el.querySelector(".verify-note").value.trim())||null;
+        var patch={action_status:"verified",action_verified_at:new Date().toISOString(),action_verified_by:currentSession.user.id,action_verification_note:note};
+        var res=await sb.from("reports").update(patch).eq("id",r.id); if(res.error) throw res.error;
+        Object.keys(patch).forEach(function(k){r[k]=patch[k];});
+        toast("Corrective action verified","ok"); renderActionWorkflow(r,el,auditEl,detail); loadAudit(r.id,auditEl); renderHomeSnapshot();
+      }catch(ex){console.error(ex);toast("Could not verify corrective action.","err");}
+    });
+
+    var changesBtn=el.querySelector(".btn-changes");
+    if(changesBtn) changesBtn.addEventListener("click",async function(){
+      var note=(el.querySelector(".verify-note")&&el.querySelector(".verify-note").value.trim())||"Additional work is required before verification.";
+      changesBtn.disabled=true;
+      try{
+        var patch={action_status:"changes_requested",action_verification_note:note,action_verified_at:null,action_verified_by:null};
+        var res=await sb.from("reports").update(patch).eq("id",r.id); if(res.error) throw res.error;
+        Object.keys(patch).forEach(function(k){r[k]=patch[k];});
+        toast("Changes requested","ok"); renderActionWorkflow(r,el,auditEl,detail); loadAudit(r.id,auditEl); renderHomeSnapshot();
+      }catch(ex){console.error(ex);toast("Could not request changes.","err");}
+    });
+  }
+
   function fmtChange(a){
     if(a.field==="status") return "Status: "+(STATUS[a.old_value]?STATUS[a.old_value].l:(a.old_value||"—"))+" → "+(STATUS[a.new_value]?STATUS[a.new_value].l:(a.new_value||"—"));
     if(a.field==="priority") return "Priority: "+(a.old_value||"—")+" → "+(a.new_value||"—");
     if(a.field==="responsible_person") return "Responsible person: "+(a.old_value||"—")+" → "+(a.new_value||"—");
     if(a.field==="due_date") return "Due date: "+(a.old_value||"—")+" → "+(a.new_value||"—");
+    if(a.field==="assigned_user_id") return "Dashboard assignment updated";
+    if(a.field==="action_status") return "Corrective action: "+actionLabel(a.old_value)+" → "+actionLabel(a.new_value);
+    if(a.field==="action_completed_at") return "Corrective action marked complete";
+    if(a.field==="action_verified_at") return "Corrective action verified";
     if(a.field==="root_cause") return "Root cause updated";
     if(a.field==="corrective_action") return "Corrective action updated";
     return (a.field||"field")+" changed";
@@ -1074,11 +1383,11 @@
 
   function renderHomeStats(){
     var el=$("homeStats"); if(!el) return;
-    var open=0,nw=0,inj=0,ov=0;
-    allReports.forEach(function(r){ if(r.status!=="closed"&&r.status!=="no_action"&&r.status!=="duplicate") open++; if(r.status==="new") nw++; if(r.involves_injury) inj++; if(isOverdue(r)) ov++; });
+    var open=0,nw=0,inj=0,ov=0,verify=0;
+    allReports.forEach(function(r){ if(r.status!=="closed"&&r.status!=="no_action"&&r.status!=="duplicate") open++; if(r.status==="new") nw++; if(r.involves_injury) inj++; if(isOverdue(r)) ov++; if(r.action_status==="awaiting_verification") verify++; });
     function tile(n,k,f,al){ return '<button class="hs'+(al&&n>0?" alert":"")+'" data-filter="'+f+'" type="button"><div class="hs-n">'+n+'</div><div class="hs-k">'+k+'</div></button>'; }
-    el.innerHTML=tile(open,"Open","open")+tile(nw,"New","new")+tile(ov,"Overdue","overdue",true)+tile(inj,"Injuries","injuries",true);
-    el.querySelectorAll(".hs").forEach(function(b){ b.addEventListener("click", function(){ goToRecords(b.getAttribute("data-filter")); }); });
+    el.innerHTML=tile(open,"Open","open")+tile(nw,"New","new")+tile(ov,"Overdue","overdue",true)+tile(verify,"To verify","actions",true)+tile(inj,"Injuries","injuries",true);
+    el.querySelectorAll(".hs").forEach(function(b){ b.addEventListener("click", function(){ var f=b.getAttribute("data-filter"); if(f==="actions") showView("actions"); else goToRecords(f); }); });
   }
 
   async function renderHomeActivity(){
