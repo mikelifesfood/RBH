@@ -97,6 +97,22 @@
   .st-assigned{background:#e6eefb;color:#1f4f9e} .st-corrective{background:#efe7fb;color:#5b3fa0}
   .st-closed{background:#e6f4ec;color:#1f7a44} .st-muted{background:#eef0ee;color:#5c635c}
   .bg-injury{background:#7a1018;color:#fff}
+  .bg-overdue{background:#b01e28;color:#fff}
+  .inv-grid{display:grid;gap:12px;margin-top:10px}
+  .inv-l{display:flex;flex-direction:column;gap:5px;font-weight:600;font-size:13px;color:var(--ink)}
+  .inv-l textarea{min-height:70px}
+  .inv-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  @media(max-width:600px){.inv-row{grid-template-columns:1fr}}
+  .inv-actions{display:flex;align-items:center;gap:10px;margin-top:10px}
+  .inv-save{background:var(--paper);border:1.5px solid var(--line-strong);border-radius:9px;padding:10px 15px;font-weight:600;font-size:13px;cursor:pointer;color:var(--ink)}
+  .inv-save:hover{border-color:var(--red)}
+  .inv-saved{color:var(--ok);font-weight:700;font-size:12.5px}
+  .gate-msg{display:none;margin-top:8px;color:var(--red);font-size:12.5px;font-weight:600}
+  .gate-msg.show{display:block}
+  .audit{display:grid;gap:8px;margin-top:10px}
+  .audit-row{border-left:3px solid var(--line-strong);padding:2px 0 2px 12px}
+  .au-line{font-size:13.5px}
+  .au-meta{color:var(--muted);font-size:11.5px;margin-top:1px}
 
   .card-detail{border-top:1px solid var(--line);padding:14px 16px 16px;background:var(--surface)}
   .d-rows{display:grid;gap:2px}
@@ -425,7 +441,7 @@
     wrap.innerHTML=
       '<button class="card-head" type="button">'+
         '<div class="ch-top"><span class="ref">#'+esc(r.ref_no)+'</span><span class="ch-type">'+esc(r.report_type||"Report")+'</span></div>'+
-        '<div class="ch-badges">'+(r.involves_injury?'<span class="badge bg-injury">Injury</span>':"")+sev+'<span class="badge '+st.c+'" data-status-badge>'+esc(st.l)+'</span></div>'+
+        '<div class="ch-badges">'+(isOverdue(r)?'<span class="badge bg-overdue" data-overdue-badge>Overdue</span>':"")+(r.involves_injury?'<span class="badge bg-injury">Injury</span>':"")+sev+'<span class="badge '+st.c+'" data-status-badge>'+esc(st.l)+'</span></div>'+
         '<div class="ch-meta">'+esc(meta.join("  \u00b7  "))+'</div>'+
         '<div class="ch-desc">'+esc(r.description||"")+'</div>'+
         '<span class="chev">\u25b8</span>'+
@@ -451,38 +467,78 @@
       '<div class="d-section"><div class="d-sec-title">Status</div><div class="status-edit">'+
         '<select class="status-select">'+statusOptions(r.status||"new")+'</select>'+
         '<button class="status-save" type="button">Update status</button><span class="status-saved" hidden>Saved \u2713</span></div></div>'+
+      '<div class="d-section"><div class="d-sec-title">Investigation &amp; corrective action</div>'+
+      '<div class="inv-grid">'+
+      '<label class="inv-l">Root cause<textarea class="inv-root"></textarea></label>'+
+      '<label class="inv-l">Corrective action<textarea class="inv-corr"></textarea></label>'+
+      '<div class="inv-row">'+
+      '<label class="inv-l">Responsible person<input type="text" class="inv-resp"></label>'+
+      '<label class="inv-l">Due date<input type="date" class="inv-due"></label>'+
+      '<label class="inv-l">Priority<select class="inv-pri"><option value="">\u2014</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label>'+
+      '</div></div>'+
+      '<div class="inv-actions"><button class="inv-save" type="button">Save investigation</button><span class="inv-saved" hidden>Saved \u2713</span></div>'+
+      '<div class="gate-msg" data-gate>To close a report, record a root cause and corrective action first.</div>'+
+      '</div>'+
       '<div class="d-atts" data-atts></div>'+
       '<div class="d-section"><div class="d-sec-title-row"><span class="d-sec-title">Notes</span>'+
-        '<button class="add-note" type="button">+ Add Note</button></div><div class="notes" data-notes></div></div>';
+        '<button class="add-note" type="button">+ Add Note</button></div><div class="notes" data-notes></div></div>'+
+      '<div class="d-section"><div class="d-sec-title">Activity log</div><div class="audit" data-audit></div></div>';
   }
 
   function buildDetail(r, detail, wrap){
     detail.innerHTML=detailHtml(r);
+    var gate=detail.querySelector("[data-gate]");
+    var auditEl=detail.querySelector("[data-audit]");
     // status editor
     var sel=detail.querySelector(".status-select"), save=detail.querySelector(".status-save"), saved=detail.querySelector(".status-saved");
     save.addEventListener("click", async function(){
+      if(sel.value==="closed" && !canClose(r)){ if(gate) gate.classList.add("show"); sel.value=r.status||"new"; return; }
+      if(gate) gate.classList.remove("show");
       save.disabled=true; var lbl=save.textContent; save.textContent="Saving…";
-      try{ await updateStatus(r.id, sel.value, wrap); saved.hidden=false; setTimeout(function(){saved.hidden=true;},2200); }
+      try{ await updateStatus(r.id, sel.value, wrap); saved.hidden=false; setTimeout(function(){saved.hidden=true;},2200); loadAudit(r.id, auditEl); }
       catch(ex){ console.error(ex); alert("Could not update status. Please try again."); }
       finally{ save.disabled=false; save.textContent=lbl; }
     });
-    // attachments + notes
+    // investigation editor
+    var invRoot=detail.querySelector(".inv-root"), invCorr=detail.querySelector(".inv-corr"),
+        invResp=detail.querySelector(".inv-resp"), invDue=detail.querySelector(".inv-due"),
+        invPri=detail.querySelector(".inv-pri"), invSave=detail.querySelector(".inv-save"), invSaved=detail.querySelector(".inv-saved");
+    invRoot.value=r.root_cause||""; invCorr.value=r.corrective_action||""; invResp.value=r.responsible_person||"";
+    invDue.value=r.due_date||""; invPri.value=r.priority||"";
+    invSave.addEventListener("click", async function(){
+      invSave.disabled=true; var lbl=invSave.textContent; invSave.textContent="Saving…";
+      try{
+        var patch={ root_cause:invRoot.value.trim()||null, corrective_action:invCorr.value.trim()||null, responsible_person:invResp.value.trim()||null, due_date:invDue.value||null, priority:invPri.value||null };
+        var res=await sb.from("reports").update(patch).eq("id",r.id);
+        if(res.error) throw res.error;
+        r.root_cause=patch.root_cause; r.corrective_action=patch.corrective_action; r.responsible_person=patch.responsible_person; r.due_date=patch.due_date; r.priority=patch.priority;
+        if(gate) gate.classList.remove("show");
+        invSaved.hidden=false; setTimeout(function(){invSaved.hidden=true;},2200);
+        loadAudit(r.id, auditEl); refreshOverdue(r, wrap); renderMetrics();
+      }catch(ex){ console.error(ex); alert("Could not save. Please try again."); }
+      finally{ invSave.disabled=false; invSave.textContent=lbl; }
+    });
+    // attachments, notes, audit
     loadAtts(r.id, detail.querySelector("[data-atts]"));
     var notesEl=detail.querySelector("[data-notes]");
     loadNotes(r.id, notesEl);
+    loadAudit(r.id, auditEl);
     detail.querySelector(".add-note").addEventListener("click", function(){ openNoteModal(r, wrap, notesEl); });
     detail.querySelector(".pdf-btn").addEventListener("click", function(){ generatePdf(r, this); });
   }
 
   async function updateStatus(reportId, status, wrap){
-    var res=await sb.from("reports").update({status:status}).eq("id",reportId);
+    var r=null; allReports.forEach(function(x){ if(x.id===reportId) r=x; });
+    var patch={ status:status, closed_at: status==="closed" ? new Date().toISOString() : null };
+    var res=await sb.from("reports").update(patch).eq("id",reportId);
     if(res.error) throw res.error;
-    var r=null; allReports.forEach(function(x){ if(x.id===reportId) r=x; }); if(r) r.status=status;
+    if(r){ r.status=status; r.closed_at=patch.closed_at; }
     if(wrap){
       var st=STATUS[status]||{l:status,c:"st-muted"};
       var badge=wrap.querySelector("[data-status-badge]");
       if(badge){ badge.className="badge "+st.c; badge.setAttribute("data-status-badge",""); badge.textContent=st.l; }
-      var sel=wrap.querySelector(".status-select"); if(sel) sel.value=status;
+      var selx=wrap.querySelector(".status-select"); if(selx) selx.value=status;
+      refreshOverdue(r, wrap);
     }
     renderMetrics();
   }
@@ -546,6 +602,7 @@
     var title=$("mTitleInput").value.trim(), body=$("mBody").value.trim(), err=$("mErr");
     if(!title){ err.textContent="Please enter a title for the note."; err.classList.add("show"); return; }
     err.classList.remove("show");
+    if($("mStatus").value==="closed" && !canClose(modalReport)){ err.textContent="To close a report, record a root cause and corrective action first."; err.classList.add("show"); return; }
     var btn=$("mSave"); btn.disabled=true; btn.textContent="Saving…";
     try{
       var sess=(await sb.auth.getSession()).data.session; var email=(sess&&sess.user)?sess.user.email:null;
@@ -651,6 +708,8 @@
       var notes=[];
       try{ var nr=await sb.from("report_notes").select("*").eq("report_id",r.id).order("created_at",{ascending:true}); notes=nr.data||[]; }catch(e){}
       var atts=attByReport[r.id]||[];
+      var audit=[];
+      try{ var ar=await sb.from("report_audit").select("*").eq("report_id",r.id).order("created_at",{ascending:true}); audit=ar.data||[]; }catch(e){}
       var doc=new window.jspdf.jsPDF({unit:"pt",format:"letter"});
       var W=doc.internal.pageSize.getWidth(), H=doc.internal.pageSize.getHeight();
       var M=48, contentW=W-M*2, y=M;
@@ -692,9 +751,13 @@
       field("Due date", r.due_date||"—");
       field("Date closed", r.closed_at?fmtDate(r.closed_at):"—");
 
-      heading("NOTES & ACTIVITY LOG");
+      heading("NOTES");
       if(!notes.length){ txt("No notes recorded.", 10, "italic", [110,104,98]); }
       else notes.forEach(function(n){ txt(n.title||"(untitled)", 10.5, "bold", 25); txt(fmtDate(n.created_at)+(n.author_email?("   "+n.author_email):""), 8.5, "normal", [130,124,118]); if(n.body) txt(n.body, 10, "normal", 45); gap(5); });
+
+      heading("ACTIVITY LOG");
+      if(!audit.length){ txt("No changes recorded.", 10, "italic", [110,104,98]); }
+      else audit.forEach(function(a){ txt(fmtChange(a), 10, "normal", 30); txt(fmtDate(a.created_at)+"   "+(a.actor_email||"system"), 8.5, "normal", [130,124,118]); gap(3); });
 
       heading("ATTACHMENTS");
       if(!atts.length) txt("None.", 10, "italic", [110,104,98]);
@@ -771,6 +834,44 @@
   var _hc=$("homeCreate"); if(_hc) _hc.addEventListener("click", function(){ window.open("index.html","_blank","noopener"); });
   var _hb=$("hamburger"); if(_hb) _hb.addEventListener("click", openSidebar);
   if(sbBackdrop) sbBackdrop.addEventListener("click", closeSidebar);
+
+
+  /* ================= Corrective action / overdue / audit ================= */
+  function isOverdue(r){ return !!(r.due_date && r.status!=="closed" && r.status!=="no_action" && r.status!=="duplicate" && (new Date(r.due_date).getTime() < Date.now())); }
+  function refreshOverdue(r, wrap){
+    if(!wrap||!r) return; var badges=wrap.querySelector(".ch-badges"); if(!badges) return;
+    var ex=badges.querySelector("[data-overdue-badge]");
+    if(isOverdue(r)){ if(!ex){ var b=document.createElement("span"); b.className="badge bg-overdue"; b.setAttribute("data-overdue-badge",""); b.textContent="Overdue"; badges.insertBefore(b, badges.firstChild); } }
+    else if(ex){ ex.remove(); }
+  }
+  function canClose(r){ return !!(r && r.root_cause && String(r.root_cause).trim() && r.corrective_action && String(r.corrective_action).trim()); }
+  function fmtChange(a){
+    if(a.field==="status") return "Status: "+(STATUS[a.old_value]?STATUS[a.old_value].l:(a.old_value||"—"))+" → "+(STATUS[a.new_value]?STATUS[a.new_value].l:(a.new_value||"—"));
+    if(a.field==="priority") return "Priority: "+(a.old_value||"—")+" → "+(a.new_value||"—");
+    if(a.field==="responsible_person") return "Responsible person: "+(a.old_value||"—")+" → "+(a.new_value||"—");
+    if(a.field==="due_date") return "Due date: "+(a.old_value||"—")+" → "+(a.new_value||"—");
+    if(a.field==="root_cause") return "Root cause updated";
+    if(a.field==="corrective_action") return "Corrective action updated";
+    return (a.field||"field")+" changed";
+  }
+  async function loadAudit(reportId, el){
+    if(!el) return; el.innerHTML='<div class="notes-empty">Loading activity…</div>';
+    try{
+      var res=await sb.from("report_audit").select("*").eq("report_id",reportId).order("created_at",{ascending:false});
+      if(res.error) throw res.error;
+      var rows=res.data||[];
+      if(!rows.length){ el.innerHTML='<div class="notes-empty">No changes recorded yet.</div>'; return; }
+      el.innerHTML=""; var box=document.createElement("div"); box.className="audit";
+      rows.forEach(function(a){
+        var d=document.createElement("div"); d.className="audit-row";
+        d.innerHTML='<div class="au-line"></div><div class="au-meta"></div>';
+        d.querySelector(".au-line").textContent=fmtChange(a);
+        d.querySelector(".au-meta").textContent=fmtDate(a.created_at)+" · "+(a.actor_email||"system");
+        box.appendChild(d);
+      });
+      el.appendChild(box);
+    }catch(ex){ console.error(ex); el.innerHTML='<div class="notes-empty">Could not load activity.</div>'; }
+  }
 
 })();
 </script>
