@@ -311,25 +311,16 @@
       </div>
     </fieldset>
 
-    <!-- Jobsite/location is intentionally included in Phase 1 to improve follow-up and trend data. -->
+    <!-- Incident address/location is captured as free text for fast field reporting. -->
     <fieldset id="whereWhen" data-step="2">
       <legend data-i18n="s2_legend">Where &amp; when</legend>
-      <p class="step-note" data-i18n="where_note">Location helps the safety team respond faster. Use the closest match — it is okay if you are not sure.</p>
+      <p class="step-note" data-i18n="where_note">Enter the address where the incident or safety concern occurred. If you do not know the exact address, use the closest address or cross streets.</p>
 
       <div class="field">
-        <label class="lab" for="site"><span data-i18n="l_site">Job site / project</span>
-          <button type="button" class="info" data-i18n-tip="tip_site" data-tip="Pick the site from the list. If it isn't there, choose “Not listed” and type it in. Your office keeps this list up to date." aria-label="More info">i</button>
+        <label class="lab" for="site"><span data-i18n="l_site">Address of incident</span>
+          <button type="button" class="info" data-i18n-tip="tip_site" data-tip="Enter the street address where the incident or safety concern occurred. If the exact address is unknown, use the closest address or cross streets." aria-label="More info">i</button>
         </label>
-        <select id="site" name="site">
-          <option value="" selected disabled data-i18n="ph_site_sel">Select a job site…</option>
-          <option value="Warehouse / yard — 13105 Crenshaw Blvd, Hawthorne" data-i18n="site_wh">Warehouse / yard — 13105 Crenshaw Blvd, Hawthorne</option>
-          <option value="Residential — Manhattan Beach" data-i18n="site_mb">Residential — Manhattan Beach</option>
-          <option value="Residential — Santa Monica" data-i18n="site_sm">Residential — Santa Monica</option>
-          <option value="Commercial — Downtown LA high-rise" data-i18n="site_dtla">Commercial — Downtown LA high-rise</option>
-          <option value="Commercial — Long Beach" data-i18n="site_lb">Commercial — Long Beach</option>
-          <option value="__other" data-i18n="site_other">Not listed / other…</option>
-        </select>
-        <input type="text" id="siteOther" name="siteOther" data-i18n-ph="ph_site_other" placeholder="Type the site name or address" style="display:none;margin-top:10px">
+        <input type="text" id="site" name="site" autocomplete="street-address" data-i18n-ph="ph_site_address" placeholder="e.g. 123 Main St, Los Angeles, CA">
       </div>
 
       <div class="field">
@@ -533,7 +524,7 @@
       title_p:"See a hazard, close call, injury, or unsafe work practice? Tell the safety team. Most reports take about a minute.",
       intro_eye:"RBH Safety", intro_h:"Speak up early. Help prevent the next incident.", intro_p:"Share what you saw. You can report anonymously, and you do not need to know every detail before sending a concern.",
       trust_fast_b:"Fast",trust_fast_s:"About 1 minute",trust_anon_b:"Anonymous",trust_anon_s:"Name is optional",trust_mobile_b:"Jobsite ready",trust_mobile_s:"Works on your phone",
-      where_note:"Location helps the safety team respond faster. Use the closest match — it is okay if you are not sure.", what_note:"Stick to the facts. A short, clear description is enough.", camera_btn:"Take a photo or add a file", review_h:"Quick review", review_p:"Make sure the main details look right. You can go back to change anything.", btn_back:"Back", btn_next:"Continue",
+      where_note:"Enter the address where the incident or safety concern occurred. If you do not know the exact address, use the closest address or cross streets.", what_note:"Stick to the facts. A short, clear description is enough.", camera_btn:"Take a photo or add a file", review_h:"Quick review", review_p:"Make sure the main details look right. You can go back to change anything.", btn_back:"Back", btn_next:"Continue",
       emg_strong:"Emergency or injury right now?",
       emg_small:"Call 911 and your site supervisor immediately. This form is for reporting hazards and near misses — not active emergencies.",
       s1_legend:"What are you reporting?",
@@ -544,16 +535,9 @@
       t_oth_n:"Other", t_oth_d:"Anything else worth flagging",
       err_type:"Please choose what you're reporting.",
       s2_legend:"Where & when",
-      l_site:"Job site / project",
-      tip_site:"Pick the site from the list. If it isn't there, choose “Not listed” and type it in. Your office keeps this list up to date.",
-      ph_site_sel:"Select a job site…",
-      site_wh:"Warehouse / yard — 13105 Crenshaw Blvd, Hawthorne",
-      site_mb:"Residential — Manhattan Beach",
-      site_sm:"Residential — Santa Monica",
-      site_dtla:"Commercial — Downtown LA high-rise",
-      site_lb:"Commercial — Long Beach",
-      site_other:"Not listed / other…",
-      ph_site_other:"Type the site name or address",
+      l_site:"Address of incident",
+      tip_site:"Enter the street address where the incident or safety concern occurred. If the exact address is unknown, use the closest address or cross streets.",
+      ph_site_address:"e.g. 123 Main St, Los Angeles, CA",
       l_loc:"Specific spot on the site",
       tip_loc:"Where exactly? e.g. “attic above unit 3,” “north scaffold, 2nd level,” “equipment yard by the trucks.”",
       ph_loc:"e.g. attic above unit 3, north scaffold",
@@ -604,7 +588,7 @@
       btn_copy:"Copy report", btn_copied:"Copied ✓", btn_again:"Submit another report",
       footer_internal:"Internal safety reporting form",
       sum_head:"RBH INSULATION — SAFETY / NEAR-MISS REPORT", sum_submitted:"Submitted",
-      s_type:"Report type", s_site:"Job site", s_loc:"Specific location", s_when:"When observed",
+      s_type:"Report type", s_site:"Incident address", s_loc:"Specific location", s_when:"When observed",
       s_desc:"Description", s_haz:"Hazard type", s_sev:"Potential severity", s_inv:"Involved / witnesses",
       s_imm:"Immediate action", s_fix:"Suggested fix", s_att:"Attachments", s_by:"Reported by",
       s_role:"Role", s_contact:"Contact", s_anon:"(anonymous)", s_files:"file(s)",
@@ -624,7 +608,7 @@
       title_p:"¿Vio un peligro, casi accidente, lesión o práctica insegura? Avise al equipo de seguridad. La mayoría de los reportes toma alrededor de un minuto.",
       intro_eye:"Seguridad RBH", intro_h:"Hable pronto. Ayude a prevenir el próximo incidente.", intro_p:"Comparta lo que vio. Puede reportar de forma anónima y no necesita conocer todos los detalles antes de enviar una inquietud.",
       trust_fast_b:"Rápido",trust_fast_s:"Aproximadamente 1 minuto",trust_anon_b:"Anónimo",trust_anon_s:"El nombre es opcional",trust_mobile_b:"Listo para obra",trust_mobile_s:"Funciona en su teléfono",
-      where_note:"La ubicación ayuda al equipo de seguridad a responder más rápido. Use la opción más cercana; está bien si no está seguro.", what_note:"Describa los hechos. Una explicación corta y clara es suficiente.", camera_btn:"Tomar foto o agregar archivo", review_h:"Revisión rápida", review_p:"Confirme que los datos principales estén correctos. Puede regresar para cambiar algo.", btn_back:"Atrás", btn_next:"Continuar",
+      where_note:"Ingrese la dirección donde ocurrió el incidente o problema de seguridad. Si no conoce la dirección exacta, use la dirección más cercana o las calles de cruce.", what_note:"Describa los hechos. Una explicación corta y clara es suficiente.", camera_btn:"Tomar foto o agregar archivo", review_h:"Revisión rápida", review_p:"Confirme que los datos principales estén correctos. Puede regresar para cambiar algo.", btn_back:"Atrás", btn_next:"Continuar",
       emg_strong:"¿Emergencia o lesión en este momento?",
       emg_small:"Llame al 911 y a su supervisor de inmediato. Este formulario es para reportar peligros y casi accidentes, no emergencias activas.",
       s1_legend:"¿Qué desea reportar?",
@@ -635,16 +619,9 @@
       t_oth_n:"Otro", t_oth_d:"Cualquier otra cosa que valga la pena señalar",
       err_type:"Por favor elija qué desea reportar.",
       s2_legend:"Dónde y cuándo",
-      l_site:"Obra / proyecto",
-      tip_site:"Elija la obra de la lista. Si no está, seleccione «No está en la lista» y escríbala. Su oficina mantiene esta lista actualizada.",
-      ph_site_sel:"Seleccione una obra…",
-      site_wh:"Almacén / patio — 13105 Crenshaw Blvd, Hawthorne",
-      site_mb:"Residencial — Manhattan Beach",
-      site_sm:"Residencial — Santa Monica",
-      site_dtla:"Comercial — Edificio alto en Downtown LA",
-      site_lb:"Comercial — Long Beach",
-      site_other:"No está en la lista / otra…",
-      ph_site_other:"Escriba el nombre o la dirección de la obra",
+      l_site:"Dirección del incidente",
+      tip_site:"Ingrese la dirección donde ocurrió el incidente o problema de seguridad. Si no conoce la dirección exacta, use la dirección más cercana o las calles de cruce.",
+      ph_site_address:"p. ej. 123 Main St, Los Angeles, CA",
       l_loc:"Lugar específico en la obra",
       tip_loc:"¿Dónde exactamente? p. ej. «ático sobre la unidad 3», «andamio norte, nivel 2», «patio de equipos junto a los camiones».",
       ph_loc:"p. ej. ático sobre la unidad 3, andamio norte",
@@ -695,7 +672,7 @@
       btn_copy:"Copiar reporte", btn_copied:"Copiado ✓", btn_again:"Enviar otro reporte",
       footer_internal:"Formulario interno de reporte de seguridad",
       sum_head:"RBH INSULATION — REPORTE DE SEGURIDAD / CASI ACCIDENTE", sum_submitted:"Enviado",
-      s_type:"Tipo de reporte", s_site:"Obra", s_loc:"Lugar específico", s_when:"Cuándo se observó",
+      s_type:"Tipo de reporte", s_site:"Dirección del incidente", s_loc:"Lugar específico", s_when:"Cuándo se observó",
       s_desc:"Descripción", s_haz:"Tipo de peligro", s_sev:"Gravedad potencial", s_inv:"Involucrados / testigos",
       s_imm:"Acción inmediata", s_fix:"Solución sugerida", s_att:"Adjuntos", s_by:"Reportado por",
       s_role:"Función", s_contact:"Contacto", s_anon:"(anónimo)", s_files:"archivo(s)",
@@ -763,12 +740,8 @@
   window.addEventListener('scroll',hideTip,true);
   document.addEventListener('keydown',function(e){ if(e.key==='Escape') hideTip(); });
 
-  /* ---------------- Other job site ---------------- */
-  var site=document.getElementById('site'), siteOther=document.getElementById('siteOther');
-  site.addEventListener('change',function(){
-    if(site.value==='__other'){ siteOther.style.display='block'; siteOther.focus(); }
-    else{ siteOther.style.display='none'; }
-  });
+  /* ---------------- Incident address ---------------- */
+  var site=document.getElementById('site');
 
   /* ---------------- Injury guardrail ---------------- */
   var injuryWarn=document.getElementById('injuryWarn');
@@ -811,7 +784,7 @@
     var type=form.querySelector('input[name="reportType"]:checked'); var inj=form.querySelector('input[name="injury"]:checked'); var grid=document.getElementById('reviewGrid'); if(!grid) return;
     var siteVal=currentSite(); var rows='';
     rows+=reviewRow(CUR==='es'?'Tipo':'Type',type?type.value:''); rows+=reviewRow(CUR==='es'?'Lesión':'Injury',inj&&inj.value==='yes'?(CUR==='es'?'Sí':'Yes'):(CUR==='es'?'No':'No'));
-    rows+=reviewRow(CUR==='es'?'Lugar':'Site',siteVal); rows+=reviewRow(CUR==='es'?'Descripción':'Description',val('description')); rows+=reviewRow(CUR==='es'?'Peligro':'Hazard',val('hazard')); rows+=reviewRow(CUR==='es'?'Acción inmediata':'Immediate action',val('immediate')); rows+=reviewRow(CUR==='es'?'Archivos':'Files',files.length?String(files.length):''); rows+=reviewRow(CUR==='es'?'Reportado por':'Reported by',val('name')||(CUR==='es'?'Anónimo':'Anonymous'));
+    rows+=reviewRow(CUR==='es'?'Dirección':'Address',siteVal); rows+=reviewRow(CUR==='es'?'Descripción':'Description',val('description')); rows+=reviewRow(CUR==='es'?'Peligro':'Hazard',val('hazard')); rows+=reviewRow(CUR==='es'?'Acción inmediata':'Immediate action',val('immediate')); rows+=reviewRow(CUR==='es'?'Archivos':'Files',files.length?String(files.length):''); rows+=reviewRow(CUR==='es'?'Reportado por':'Reported by',val('name')||(CUR==='es'?'Anónimo':'Anonymous'));
     grid.innerHTML=rows;
   }
   document.getElementById('stepNext').addEventListener('click',function(){ if(!validateStep(currentStep)) return; if(currentStep<totalSteps){ currentStep++; updateStep(true); } });
@@ -872,7 +845,7 @@
   });
   function val(id){ var el=document.getElementById(id); return el?el.value.trim():''; }
   function radio(name){ var el=form.querySelector('input[name="'+name+'"]:checked'); return el?el.value:''; }
-  function currentSite(){ return site.value==='__other' ? siteOther.value.trim() : (site.value||''); }
+  function currentSite(){ return site ? site.value.trim() : ''; }
 
   function buildPayload(type){
     return {
@@ -963,7 +936,7 @@
     };
     document.getElementById('againBtn').onclick=function(){
       var b=form.querySelector('button.submit'); b.disabled=false; b.textContent=t('btn_submit');
-      form.reset(); files=[]; render(); siteOther.style.display='none'; clearErr(); hideSendErr();
+      form.reset(); files=[]; render(); clearErr(); hideSendErr();
       if(injuryWarn) injuryWarn.classList.remove('show');
       s.classList.remove('show'); form.style.display=''; currentStep=1; updateStep();
       window.scrollTo({top:0,behavior:'smooth'});
@@ -971,17 +944,16 @@
   }
 
 
-  function prefillSiteFromUrl(){
+  function prefillAddressFromUrl(){
     try{
-      var p=new URLSearchParams(window.location.search), q=p.get('site'); if(!q) return;
-      var matched=false; Array.prototype.forEach.call(site.options,function(o){ if(o.value && o.value!=='__other' && o.value.toLowerCase()===q.toLowerCase()){ site.value=o.value; matched=true; } });
-      if(!matched){ site.value='__other'; siteOther.style.display='block'; siteOther.value=q; }
+      var p=new URLSearchParams(window.location.search), q=p.get('address')||p.get('site');
+      if(q && site) site.value=q;
     }catch(e){}
   }
 
   /* ---------------- Init: auto-detect Spanish ---------------- */
   var pref=(navigator.language||navigator.userLanguage||'en').toLowerCase();
-  setLang(pref.indexOf('es')===0 ? 'es' : 'en'); prefillSiteFromUrl(); updateStep();
+  setLang(pref.indexOf('es')===0 ? 'es' : 'en'); prefillAddressFromUrl(); updateStep();
 })();
 </script>
 </body>
