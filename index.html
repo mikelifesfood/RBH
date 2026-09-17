@@ -154,6 +154,13 @@
   .succ-ref{font-family:var(--display);font-weight:700;font-size:16px;color:var(--ink);margin:14px 0 0}
   .succ-ref b{color:var(--red)}
   .att-failed{color:var(--muted);font-size:12.5px;margin:10px 0 0}
+  .yn{display:flex;gap:10px;flex-wrap:wrap;margin-top:2px}
+  .yn-opt{flex:1;min-width:170px;position:relative;border:1.5px solid var(--line-strong);border-radius:10px;padding:12px 14px 12px 40px;cursor:pointer;background:var(--surface);font-size:14px;transition:.12s}
+  .yn-opt input{position:absolute;left:13px;top:14px}
+  .yn-opt:has(input:checked){border-color:var(--red);background:color-mix(in srgb,var(--red) 7%,var(--paper))}
+  .injury-warn{display:none;margin-top:12px;background:color-mix(in srgb,var(--red) 10%,var(--paper));border:1.5px solid var(--red);border-radius:10px;padding:12px 14px;color:var(--red);font-size:13.5px;font-weight:600;line-height:1.5}
+  .injury-warn.show{display:block}
+  .legal-note{color:var(--muted);font-size:11.5px;text-align:center;margin:14px auto 0;max-width:60ch;line-height:1.55}
   footer.pg{color:var(--muted);font-size:12px;text-align:center;margin-top:26px;line-height:1.5}
 </style>
 </head>
@@ -211,6 +218,18 @@
           <span class="t-desc" data-i18n="t_oth_d">Anything else worth flagging</span></label>
       </div>
       <div class="errmsg" id="err-type" data-i18n="err_type">Please choose what you're reporting.</div>
+    </fieldset>
+
+    <fieldset>
+      <legend data-i18n="inj_legend">Was anyone hurt?</legend>
+      <div class="field">
+        <label class="lab"><span data-i18n="inj_q">Did this involve an actual injury or illness (not just a close call)?</span></label>
+        <div class="yn" role="radiogroup" aria-label="Injury">
+          <label class="yn-opt"><input type="radio" name="injury" value="no" checked><span data-i18n="inj_no">No — near miss / hazard only</span></label>
+          <label class="yn-opt"><input type="radio" name="injury" value="yes"><span data-i18n="inj_yes">Yes — someone was hurt</span></label>
+        </div>
+        <div class="injury-warn" id="injuryWarn" data-i18n="inj_warn">If anyone was hurt, tell your supervisor right now — and call 911 if it's serious. A real injury must be reported to your supervisor immediately; this form does not replace that.</div>
+      </div>
     </fieldset>
 
     <!-- "Where & when" section (job site, specific location, date/time) is hidden for now.
@@ -370,6 +389,7 @@
       <button type="submit" class="submit" data-i18n="btn_submit">Send report to the safety team</button>
       <div class="send-err" id="sendErr" role="alert"></div>
       <p class="form-foot" data-i18n="foot_submit">Takes about a minute. Report early — even if you're not sure it's a big deal.</p>
+      <p class="legal-note" data-i18n="legal_note">RBH does not retaliate against anyone who reports a safety concern in good faith (California Labor Code §6310). This information is used only to investigate and improve job-site safety.</p>
     </div>
   </form>
 
@@ -496,7 +516,13 @@
       s_role:"Role", s_contact:"Contact", s_anon:"(anonymous)", s_files:"file(s)",
       btn_sending:"Sending…", succ_ref:"Your reference number",
       err_send:"Couldn't send your report. Please check your internet connection and try again.",
-      att_failed:"Note: some photos couldn't be uploaded, but your report was saved."
+      att_failed:"Note: some photos couldn't be uploaded, but your report was saved.",
+      inj_legend:"Was anyone hurt?",
+      inj_q:"Did this involve an actual injury or illness (not just a close call)?",
+      inj_no:"No — near miss / hazard only",
+      inj_yes:"Yes — someone was hurt",
+      inj_warn:"If anyone was hurt, tell your supervisor right now — and call 911 if it's serious. A real injury must be reported to your supervisor immediately; this form does not replace that.",
+      legal_note:"RBH does not retaliate against anyone who reports a safety concern in good faith (California Labor Code §6310). This information is used only to investigate and improve job-site safety."
     },
     es:{
       phone_q:"¿Preguntas? Llame a la oficina",
@@ -579,7 +605,13 @@
       s_role:"Función", s_contact:"Contacto", s_anon:"(anónimo)", s_files:"archivo(s)",
       btn_sending:"Enviando…", succ_ref:"Su número de referencia",
       err_send:"No se pudo enviar su reporte. Verifique su conexión a internet e intente de nuevo.",
-      att_failed:"Nota: algunas fotos no se pudieron subir, pero su reporte se guardó."
+      att_failed:"Nota: algunas fotos no se pudieron subir, pero su reporte se guardó.",
+      inj_legend:"¿Alguien se lastimó?",
+      inj_q:"¿Hubo una lesión o enfermedad real (no solo un casi accidente)?",
+      inj_no:"No — solo casi accidente / peligro",
+      inj_yes:"Sí — alguien se lastimó",
+      inj_warn:"Si alguien se lastimó, avise a su supervisor de inmediato — y llame al 911 si es grave. Una lesión real debe reportarse al supervisor de inmediato; este formulario no reemplaza eso.",
+      legal_note:"RBH no toma represalias contra quien reporte un problema de seguridad de buena fe (Código Laboral de California §6310). Esta información se usa únicamente para investigar y mejorar la seguridad en la obra."
     }
   };
 
@@ -639,6 +671,15 @@
   site.addEventListener('change',function(){
     if(site.value==='__other'){ siteOther.style.display='block'; siteOther.focus(); }
     else{ siteOther.style.display='none'; }
+  });
+
+  /* ---------------- Injury guardrail ---------------- */
+  var injuryWarn=document.getElementById('injuryWarn');
+  Array.prototype.forEach.call(document.querySelectorAll('input[name="injury"]'), function(rb){
+    rb.addEventListener('change', function(){
+      var y=document.querySelector('input[name="injury"]:checked');
+      injuryWarn.classList.toggle('show', !!y && y.value==='yes');
+    });
   });
 
   /* ---------------- File attachments ---------------- */
@@ -710,6 +751,7 @@
       reporter_role:val('role'),
       reporter_contact:val('contact'),
       language:CUR,
+      involves_injury:(function(){ var el=form.querySelector('input[name="injury"]:checked'); return el?el.value==="yes":false; })(),
       job_site:currentSite(),
       site_location:val('location'),
       observed_at:val('observed')
@@ -786,6 +828,7 @@
     document.getElementById('againBtn').onclick=function(){
       var b=form.querySelector('button.submit'); b.disabled=false; b.textContent=t('btn_submit');
       form.reset(); files=[]; render(); siteOther.style.display='none'; clearErr(); hideSendErr();
+      if(injuryWarn) injuryWarn.classList.remove('show');
       s.classList.remove('show'); form.style.display='';
       window.scrollTo({top:0,behavior:'smooth'});
     };
