@@ -351,7 +351,7 @@
   .action-state{display:inline-flex;align-items:center;border-radius:999px;padding:5px 8px;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.035em;background:var(--paper);border:1px solid var(--line-strong)}
   .as-awaiting_verification{background:#fff5d8;color:#725300;border-color:#ead28b}.as-verified{background:#e9f7ef;color:#23623c;border-color:#b9dfc9}.as-changes_requested{background:#fff0f0;color:#8a2929;border-color:#edbbbb}.as-in_progress{background:#eef4ff;color:#264f83;border-color:#c8d8ed}
   .action-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.action-actions button{border-radius:9px;padding:9px 12px;font-size:12.5px;font-weight:800;cursor:pointer}.btn-complete{background:var(--ink);color:var(--paper);border:1px solid var(--ink)}.btn-verify{background:#1f6f43;color:white;border:1px solid #1f6f43}.btn-changes{background:var(--paper);color:#8a2929;border:1px solid #cf9999}
-  .action-help{font-size:11.5px;color:var(--muted);margin:8px 0 0;line-height:1.45}.user-row.phase2{display:grid;grid-template-columns:minmax(180px,1fr) 160px 120px 170px;gap:12px;align-items:center}.user-row.phase2 select{min-width:0;padding:8px 9px;border:1px solid var(--line-strong);border-radius:8px;background:var(--paper);color:var(--ink)}
+  .action-help{font-size:11.5px;color:var(--muted);margin:8px 0 0;line-height:1.45}.action-context{border:1px solid var(--line);background:var(--paper);border-radius:10px;padding:11px 12px;margin:10px 0}.action-context b{display:block;font-family:var(--display);font-size:12px;margin-bottom:4px}.action-context p{margin:0;font-size:12.5px;line-height:1.5;white-space:pre-wrap}.action-meta{font-size:11.5px;color:var(--muted);margin:6px 0 10px}.user-row.phase2{display:grid;grid-template-columns:minmax(180px,1fr) 160px 120px 170px;gap:12px;align-items:center}.user-row.phase2 select{min-width:0;padding:8px 9px;border:1px solid var(--line-strong);border-radius:8px;background:var(--paper);color:var(--ink)}
   .u-status{font-size:11.5px;font-weight:700}.u-status.off{color:var(--red)}.user-toggle{border:1px solid var(--line-strong);background:var(--paper);color:var(--ink);border-radius:8px;padding:8px 9px;font-size:11.5px;font-weight:800;cursor:pointer}.user-toggle:disabled{opacity:.45;cursor:not-allowed}
   .role-legend{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0 16px}.role-card{border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--paper)}.role-card b{font-size:12px}.role-card span{display:block;font-size:11px;color:var(--muted);line-height:1.4;margin-top:3px}
   .action-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:0 0 14px}.action-stat{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px}.action-stat b{font-family:var(--display);font-size:22px;display:block}.action-stat span{font-size:11.5px;color:var(--muted)}
@@ -1376,21 +1376,51 @@
     var completed=r.action_completed_at?("Completed "+fmtDate(r.action_completed_at)):"";
     var verified=r.action_verified_at?("Verified "+fmtDate(r.action_verified_at)):"";
     var h='<div class="action-head"><div><h4>Corrective-action workflow</h4><p>'+esc(assignee)+(r.due_date?' · '+esc(due.label):' · no due date')+'</p></div><span class="action-state as-'+esc(status)+'">'+esc(actionLabel(status))+'</span></div>';
-    if(completed) h+='<div class="action-help">'+esc(completed)+(r.action_completion_note?' — '+esc(r.action_completion_note):'')+'</div>';
-    if(verified) h+='<div class="action-help">'+esc(verified)+(r.action_verification_note?' — '+esc(r.action_verification_note):'')+'</div>';
-    if(status==="changes_requested" && r.action_verification_note) h+='<div class="ops-alert"><b>Changes requested</b>'+esc(r.action_verification_note)+'</div>';
+
+    if(r.corrective_action && String(r.corrective_action).trim()){
+      h+='<div class="action-context"><b>Corrective action to complete</b><p>'+esc(r.corrective_action)+'</p></div>';
+    }
+
+    if(status==="changes_requested" && r.action_verification_note){
+      h+='<div class="ops-alert"><b>Changes requested by reviewer</b>'+esc(r.action_verification_note)+'</div>';
+    }
 
     if(status!=="verified"){
       if(canEditReport(r)){
-        h+='<label class="inv-l">Completion / update note<textarea class="action-note" placeholder="What was completed or changed?"></textarea></label>'+
-          '<div class="action-actions"><button class="btn-complete" type="button">'+(status==="awaiting_verification"?"Update completion":"Mark action complete")+'</button></div>'+
-          '<p class="action-help">Marking complete sends the corrective action to a Safety Manager/Admin for verification.</p>';
+        var noteLabel=status==="awaiting_verification"?'Completed work submitted':(status==="changes_requested"?'Update completed work':'Completion note');
+        var noteHelp=status==="awaiting_verification"?'This is the completed-work note currently waiting for verification. Update it only if the description needs to be corrected.':(status==="changes_requested"?'Update the note to explain what was changed, then resubmit it for verification.':'Describe what was actually completed. This note will be shown to the reviewer and is required before submission.');
+        var buttonLabel=status==="awaiting_verification"?'Update submitted note':(status==="changes_requested"?'Resubmit for verification':'Mark action complete');
+        h+='<label class="inv-l">'+noteLabel+'<textarea class="action-note" placeholder="What was completed or changed?">'+esc(r.action_completion_note||'')+'</textarea></label>'+ 
+          '<p class="action-help">'+noteHelp+'</p>'+ 
+          '<div class="action-actions"><button class="btn-complete" type="button">'+buttonLabel+'</button></div>';
+      } else if(r.action_completion_note){
+        h+='<div class="action-context"><b>Completed work submitted</b><p>'+esc(r.action_completion_note)+'</p></div>';
       }
+
+      if(completed){
+        var completedBy=r.action_completed_by&&profileById[String(r.action_completed_by)]?profileName(profileById[String(r.action_completed_by)]):'';
+        h+='<div class="action-meta">'+esc(completed)+(completedBy?' by '+esc(completedBy):'')+'</div>';
+      }
+
       if(status==="awaiting_verification" && canVerify()){
-        h+='<label class="inv-l">Verification note<textarea class="verify-note" placeholder="Optional verification note or reason changes are needed"></textarea></label>'+
+        h+='<label class="inv-l">Reviewer verification note <span style="font-weight:400;color:var(--muted)">(optional)</span><textarea class="verify-note" placeholder="What did you verify? If requesting changes, explain what still needs to be done."></textarea></label>'+ 
           '<div class="action-actions"><button class="btn-verify" type="button">Verify corrective action</button><button class="btn-changes" type="button">Request changes</button></div>';
       }
     } else {
+      if(r.action_completion_note){
+        h+='<div class="action-context"><b>Completed work</b><p>'+esc(r.action_completion_note)+'</p></div>';
+      }
+      if(completed){
+        var completedBy2=r.action_completed_by&&profileById[String(r.action_completed_by)]?profileName(profileById[String(r.action_completed_by)]):'';
+        h+='<div class="action-meta">'+esc(completed)+(completedBy2?' by '+esc(completedBy2):'')+'</div>';
+      }
+      if(r.action_verification_note){
+        h+='<div class="action-context"><b>Verification note</b><p>'+esc(r.action_verification_note)+'</p></div>';
+      }
+      if(verified){
+        var verifiedBy=r.action_verified_by&&profileById[String(r.action_verified_by)]?profileName(profileById[String(r.action_verified_by)]):'';
+        h+='<div class="action-meta">'+esc(verified)+(verifiedBy?' by '+esc(verifiedBy):'')+'</div>';
+      }
       h+='<div class="ops-alert"><b>Verified corrective action</b>This incident now meets the corrective-action requirement for closure.</div>';
     }
     el.innerHTML=h;
@@ -1401,9 +1431,12 @@
       if(!r.assigned_user_id && !r.responsible_person){ toast("Assign an owner before marking the action complete.","err"); return; }
       completeBtn.disabled=true;
       try{
-        var note=(el.querySelector(".action-note")&&el.querySelector(".action-note").value.trim())||null;
+        var note=(el.querySelector(".action-note")&&el.querySelector(".action-note").value.trim())||"";
+        if(!note){ toast("Add a completion note describing what was done before submitting for verification.","err"); completeBtn.disabled=false; return; }
         var uid=currentSession&&currentSession.user?currentSession.user.id:null;
-        var patch={action_status:"awaiting_verification",action_completed_at:new Date().toISOString(),action_completed_by:uid,action_completion_note:note,action_verified_at:null,action_verified_by:null};
+        var keepCompletedAt=(status==="awaiting_verification" && r.action_completed_at)?r.action_completed_at:new Date().toISOString();
+        var keepCompletedBy=(status==="awaiting_verification" && r.action_completed_by)?r.action_completed_by:uid;
+        var patch={action_status:"awaiting_verification",action_completed_at:keepCompletedAt,action_completed_by:keepCompletedBy,action_completion_note:note,action_verified_at:null,action_verified_by:null};
         var res=await sb.from("reports").update(patch).eq("id",r.id); if(res.error) throw res.error;
         Object.keys(patch).forEach(function(k){r[k]=patch[k];});
         toast("Corrective action sent for verification","ok"); renderActionWorkflow(r,el,auditEl,detail); loadAudit(r.id,auditEl); renderHomeSnapshot(); renderMyWork();
