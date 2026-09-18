@@ -448,7 +448,10 @@
   .permission-note{margin:0 0 14px;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:var(--paper-2);font-size:12.5px;color:var(--muted)}.permission-note strong{color:var(--ink)}
   .ops-alert{border:1px solid #e5c069;background:#fff8e7;border-radius:12px;padding:13px 14px;margin:12px 0;color:#654c09}.ops-alert.critical{border-color:#e0a0a0;background:#fff1f1;color:#862323}.ops-alert b{display:block;font-family:var(--display);font-size:13px;margin-bottom:2px}
   .calosha-screen-copy{font-size:12px;line-height:1.5;margin-top:7px}.calosha-screen-copy strong{font-weight:800}.calosha-link{display:inline-block;margin-top:9px;font-size:12px;font-weight:800;color:#7a1018;text-decoration:underline;text-underline-offset:2px}.calosha-link:hover{color:#4f0b10}
-  [data-theme="dark"] .ops-alert{background:#2c2515;border-color:#5e4d22;color:#f1d986}[data-theme="dark"] .ops-alert.critical{background:#311c1c;border-color:#623232;color:#ffbcbc}[data-theme="dark"] .calosha-link{color:#ffbcbc}
+  /* ---------- Phase 2.9.5 Regulatory Review 1.0 ---------- */
+  .reg-review{margin-top:18px;border:1px solid var(--line);border-left:4px solid var(--red);border-radius:12px;background:var(--surface-2);padding:14px 15px}.reg-review-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.reg-review-head b{font-family:var(--display);font-size:14px}.reg-review-head p{margin:3px 0 0;color:var(--muted);font-size:12px;line-height:1.45}.reg-chip{font-family:var(--display);font-size:10.5px;font-weight:800;border-radius:999px;padding:5px 9px;white-space:nowrap}.reg-chip-unset{background:#eef0ee;color:#5c635c}.reg-chip-pending{background:#fbf3d9;color:#8a6d10}.reg-chip-yes{background:#fdecec;color:#b01e28}.reg-chip-no{background:#e6f4ec;color:#1f7a44}.reg-review-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:13px}.reg-review-help{color:var(--muted);font-size:11.5px;line-height:1.5;margin-top:9px}.reg-review-state{display:none;margin-top:10px;border-radius:9px;padding:9px 11px;font-size:12px;font-weight:650;line-height:1.4}.reg-review-state.show{display:block}.reg-review-state.pending{background:#fff8e7;color:#654c09;border:1px solid #e5c069}.reg-review-state.yes{background:#fff1f1;color:#862323;border:1px solid #e0a0a0}.reg-review-state.no{background:#eef8f2;color:#1f6b3e;border:1px solid #b9dfc8}.reg-review-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:11px}.reg-save{background:var(--paper);border:1.5px solid var(--line-strong);border-radius:9px;padding:9px 13px;font-family:var(--display);font-weight:700;font-size:12.5px;cursor:pointer;color:var(--ink)}.reg-save:hover{border-color:var(--red)}.reg-save:disabled{opacity:.6;cursor:not-allowed}.reg-saved{color:var(--ok);font-weight:700;font-size:12.5px}.reg-required{display:none;color:var(--red);font-size:12px;font-weight:700;margin-top:8px}.reg-required.show{display:block}
+  [data-theme="dark"] .ops-alert{background:#2c2515;border-color:#5e4d22;color:#f1d986}[data-theme="dark"] .ops-alert.critical{background:#311c1c;border-color:#623232;color:#ffbcbc}[data-theme="dark"] .calosha-link{color:#ffbcbc}[data-theme="dark"] .reg-review-state.pending{background:#2c2515;border-color:#5e4d22;color:#f1d986}[data-theme="dark"] .reg-review-state.yes{background:#311c1c;border-color:#623232;color:#ffbcbc}[data-theme="dark"] .reg-review-state.no{background:#173022;border-color:#2e6241;color:#a8e0bc}
+  @media(max-width:620px){.reg-review-grid{grid-template-columns:1fr}.reg-review-head{align-items:flex-start}.reg-chip{margin-top:1px}}
   .assignment-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.action-workflow{border:1px solid var(--line);border-radius:13px;background:var(--paper-2);padding:14px;margin-top:12px}
   .action-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:10px}.action-head h4{font-family:var(--display);font-size:14px;margin:0}.action-head p{font-size:11.5px;color:var(--muted);margin:3px 0 0}
   .action-state{display:inline-flex;align-items:center;border-radius:999px;padding:5px 8px;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.035em;background:var(--paper);border:1px solid var(--line-strong)}
@@ -958,6 +961,50 @@
     return opts.join("");
   }
 
+  var CALOSHA_SCREEN_LABELS={pending:"Pending - follow-up required",yes:"Yes - possible §342 event",no:"No - criteria not currently identified"};
+  function caloshaScreenLabel(v){ return CALOSHA_SCREEN_LABELS[v]||"Not screened"; }
+  function caloshaScreenComplete(r){
+    if(!r||!r.involves_injury) return true;
+    var s=String(r.calosha_screening_status||"");
+    if(["pending","yes","no"].indexOf(s)<0) return false;
+    if((s==="pending"||s==="yes")&&!r.calosha_awareness_at) return false;
+    return true;
+  }
+  function localDateTimeValue(v){
+    if(!v) return "";
+    var d=new Date(v); if(isNaN(d.getTime())) return "";
+    function z(n){return String(n).padStart(2,"0");}
+    return d.getFullYear()+"-"+z(d.getMonth()+1)+"-"+z(d.getDate())+"T"+z(d.getHours())+":"+z(d.getMinutes());
+  }
+  function regulatoryReviewHtml(r){
+    if(!r||!r.involves_injury) return "";
+    var st=String(r.calosha_screening_status||"");
+    var chipClass=st?st:"unset";
+    var chipText=caloshaScreenLabel(st);
+    return '<div class="reg-review" data-regulatory-review>'+
+      '<div class="reg-review-head"><div><b>Cal/OSHA serious-event screening</b><p>Management screening only. This does not submit a report to Cal/OSHA or replace a legal determination.</p></div><span class="reg-chip reg-chip-'+esc(chipClass)+'" data-reg-chip>'+esc(chipText)+'</span></div>'+
+      '<div class="reg-review-grid">'+
+        '<label class="inv-l">Screening result<select class="reg-status"><option value="">— Select result —</option><option value="pending"'+(st==="pending"?' selected':'')+'>Pending — more information needed</option><option value="yes"'+(st==="yes"?' selected':'')+'>Yes — possible §342 serious event; escalate now</option><option value="no"'+(st==="no"?' selected':'')+'>No — serious-event criteria not currently identified</option></select></label>'+
+        '<label class="inv-l">When RBH first knew of the potentially serious outcome<input type="datetime-local" class="reg-awareness" value="'+esc(localDateTimeValue(r.calosha_awareness_at))+'"></label>'+
+      '</div>'+
+      '<div class="reg-review-help">For a Yes or Pending result, record the time RBH first knew, or with diligent inquiry would have known, of the potentially serious outcome. Do not delay required reporting while completing this screen.</div>'+
+      '<div class="reg-review-state" data-reg-state></div>'+
+      '<div class="reg-required" data-reg-required></div>'+
+      '<div class="reg-review-actions"><button class="reg-save" type="button">Save regulatory review</button><span class="reg-saved" hidden>Saved ✓</span><a class="calosha-link" href="https://www.dir.ca.gov/dosh/report-accident-or-injury.html" target="_blank" rel="noopener">Official Cal/OSHA reporting instructions ↗</a></div>'+
+    '</div>';
+  }
+  function refreshRegulatoryCardUi(card){
+    if(!card) return;
+    var sel=card.querySelector(".reg-status"), state=card.querySelector("[data-reg-state]"), chip=card.querySelector("[data-reg-chip]");
+    var v=sel?sel.value:"";
+    if(chip){ chip.textContent=caloshaScreenLabel(v); chip.className="reg-chip reg-chip-"+(v||"unset"); }
+    if(!state) return;
+    state.className="reg-review-state"; state.textContent="";
+    if(v==="yes"){ state.classList.add("show","yes"); state.textContent="Escalate immediately. This application does not report the event to Cal/OSHA."; }
+    else if(v==="pending"){ state.classList.add("show","pending"); state.textContent="Follow-up is still required. If serious-event criteria may be met, do not wait on this application before escalating."; }
+    else if(v==="no"){ state.classList.add("show","no"); state.textContent="Screening recorded as criteria not currently identified. Reassess if new facts become available."; }
+  }
+
   function detailHtml(r){
     var rows=[];
     function add(label,val){ if(val!=null && String(val).trim()!=="") rows.push('<div class="d-row"><div class="d-label">'+label+'</div><div class="d-val">'+esc(val)+'</div></div>'); }
@@ -976,6 +1023,7 @@
         '<div class="wizard-task"><b>Your job on this step</b><span>Read the report, review any photos/files, and either continue the investigation or close it with no corrective action.</span></div>'+
         '<div class="d-rows">'+rows.join("")+'</div>'+
         '<div class="d-atts" data-atts></div>'+
+        regulatoryReviewHtml(r)+
         '<div class="noaction-box" data-noaction-box><div class="noaction-copy"><b>Nothing to correct?</b><span>Close this report with a documented reason instead of creating unnecessary corrective-action work.</span></div><button class="noaction-btn" type="button" data-noaction-btn>Close — no action required</button></div>'+
         '<div class="wizard-footer"><div class="wizard-footer-copy">Completing this step acknowledges the report and moves it into review.</div><div class="wizard-footer-actions"><button class="wizard-primary" data-step-complete="1" type="button">Complete review →</button></div></div>'+
         '<div class="gate-msg" data-role-gate>This account can view this incident but does not have permission to update it.</div>'+
@@ -1196,9 +1244,45 @@
     var canEdit=canEditReport(r);
     if(!canEdit && gate) gate.classList.add("show");
 
+    var regCard=detail.querySelector("[data-regulatory-review]"), regStatus=regCard?regCard.querySelector(".reg-status"):null, regAwareness=regCard?regCard.querySelector(".reg-awareness"):null, regSave=regCard?regCard.querySelector(".reg-save"):null, regSaved=regCard?regCard.querySelector(".reg-saved"):null, regRequired=regCard?regCard.querySelector("[data-reg-required]"):null;
+    if(regCard){
+      refreshRegulatoryCardUi(regCard);
+      if(regStatus) regStatus.addEventListener("change",function(){ if(regRequired) regRequired.classList.remove("show"); refreshRegulatoryCardUi(regCard); });
+      if(!canVerify() || isResolvedReport(r)){ [regStatus,regAwareness,regSave].forEach(function(x){if(x)x.disabled=true;}); }
+    }
+    async function persistRegulatoryReview(showToast){
+      if(!r.involves_injury) return true;
+      if(!regCard || !regStatus || !regAwareness) return false;
+      if(!canVerify()){ toast("Only an Admin or Safety Manager can complete the regulatory screening.","err"); return false; }
+      var status=regStatus.value, awareRaw=regAwareness.value;
+      if(!status){ if(regRequired){regRequired.textContent="Choose a screening result before completing this review.";regRequired.classList.add("show");} toast("Choose a regulatory screening result.","err"); return false; }
+      if((status==="yes"||status==="pending")&&!awareRaw){ if(regRequired){regRequired.textContent="Record when RBH first knew of the potentially serious outcome for a Yes or Pending screening.";regRequired.classList.add("show");} toast("Add the RBH awareness date and time.","err"); return false; }
+      var awareIso=null;
+      if(awareRaw){
+        var d=new Date(awareRaw);
+        if(isNaN(d.getTime())){ if(regRequired){regRequired.textContent="Enter a valid awareness date and time.";regRequired.classList.add("show");} return false; }
+        if(d.getTime()>Date.now()+300000){ if(regRequired){regRequired.textContent="The awareness time cannot be in the future.";regRequired.classList.add("show");} toast("Check the awareness date and time.","err"); return false; }
+        awareIso=d.toISOString();
+      }
+      if(regRequired) regRequired.classList.remove("show");
+      var patch={calosha_screening_status:status,calosha_awareness_at:awareIso};
+      var changed=String(r.calosha_screening_status||"")!==String(status||"") || String(r.calosha_awareness_at||"")!==String(awareIso||"");
+      if(changed){ var res=await sb.from("reports").update(patch).eq("id",r.id); if(res.error) throw res.error; r.calosha_screening_status=status; r.calosha_awareness_at=awareIso; }
+      refreshRegulatoryCardUi(regCard);
+      if(regSaved){regSaved.hidden=false;setTimeout(function(){regSaved.hidden=true;},2200);}
+      if(changed) loadAudit(r.id,auditEl);
+      if(showToast) toast("Regulatory screening saved","ok");
+      return true;
+    }
+    if(regSave) regSave.addEventListener("click",async function(){ regSave.disabled=true; try{await persistRegulatoryReview(true);}catch(ex){console.error(ex);toast("Could not save the regulatory screening.","err");}finally{if(regSave.isConnected)regSave.disabled=!canVerify()||isResolvedReport(r);} });
+
     var noActionBox=detail.querySelector("[data-noaction-box]"), noActionBtn=detail.querySelector("[data-noaction-btn]");
     if(noActionBox) noActionBox.style.display=(canVerify() && r.status!=="closed" && r.status!=="no_action" && r.status!=="duplicate")?"flex":"none";
-    if(noActionBtn) noActionBtn.addEventListener("click",function(){ if(!canVerify()){toast("Only an Admin or Safety Manager can close a report without corrective action.","err");return;} openDispositionModal(r,wrap,detail.querySelector("[data-notes]")); });
+    if(noActionBtn) noActionBtn.addEventListener("click",async function(){
+      if(!canVerify()){toast("Only an Admin or Safety Manager can close a report without corrective action.","err");return;}
+      if(r.involves_injury){ try{ if(!(await persistRegulatoryReview(false))) return; }catch(ex){console.error(ex);toast("Could not save the regulatory screening.","err");return;} }
+      openDispositionModal(r,wrap,detail.querySelector("[data-notes]"));
+    });
 
     var invRoot=detail.querySelector(".inv-root"), invCorr=detail.querySelector(".inv-corr"), invResp=detail.querySelector(".inv-resp"), invAssign=detail.querySelector(".inv-assignee"), invDue=detail.querySelector(".inv-due"), invPri=detail.querySelector(".inv-pri");
     var rootSave=detail.querySelector(".root-save"), rootSaved=detail.querySelector(".root-saved"), actionPlanSave=detail.querySelector(".action-plan-save"), actionPlanSaved=detail.querySelector(".action-plan-saved");
@@ -1238,7 +1322,10 @@
 
     var complete1=detail.querySelector('[data-step-complete="1"]'); if(complete1) complete1.addEventListener("click",async function(){
       if(!canEditReport(r)){toast("You do not have permission to complete this step.","err");return;} complete1.disabled=true;
-      try{ if(r.status==="new") await updateStatus(r.id,"under_review",wrap); refreshRecordWorkflow(r,detail); setWizardStep(detail,r,2,true); loadAudit(r.id,auditEl); toast("Review complete — continue to Investigation","ok"); }
+      try{
+        if(r.involves_injury && !(await persistRegulatoryReview(false))) return;
+        if(r.status==="new") await updateStatus(r.id,"under_review",wrap); refreshRecordWorkflow(r,detail); setWizardStep(detail,r,2,true); loadAudit(r.id,auditEl); toast("Review complete — continue to Investigation","ok");
+      }
       catch(ex){console.error(ex);toast("Could not complete the review.","err");} finally{if(complete1.isConnected)complete1.disabled=!canEditReport(r);} });
 
     var complete2=detail.querySelector('[data-step-complete="2"]'); if(complete2) complete2.addEventListener("click",async function(){
@@ -1445,6 +1532,7 @@
     ["people_involved","Involved / witnesses"],["immediate_action","Immediate action"],["suggested_fix","Suggested fix"],
     ["reporter_name","Reporter name"],["reporter_role","Reporter role"],["reporter_contact","Reporter contact"],
     ["language","Form language"],["involves_injury","Involves injury"],["job_site","Incident address"],["site_location","Specific location"],["observed_at","Observed at"],
+    ["calosha_screening_status","Cal/OSHA serious-event screening"],["calosha_awareness_at","RBH awareness time"],
     ["priority","Priority"],["likelihood","Likelihood"],["assigned_to","Assigned to"],
     ["assigned_user_id","Assigned dashboard user ID"],["action_status","Corrective action status"],
     ["root_cause","Root cause"],["corrective_action","Corrective action"],["responsible_person","Responsible person"],
@@ -1495,7 +1583,7 @@
   $("expView").addEventListener("click", function(){ exportCsv("view"); });
   $("expAll").addEventListener("click", function(){ exportCsv("all"); });
 
-  /* ---------- After-action PDF | Phase 2.9.4 ---------- */
+  /* ---------- After-action PDF | Phase 2.9.5 ---------- */
   async function generatePdf(r, btn){
     if(!window.jspdf || !window.jspdf.jsPDF){ toast("PDF is still loading - try again in a moment.","err"); return; }
     var lbl=btn.textContent; btn.disabled=true; btn.textContent="Generating...";
@@ -1717,6 +1805,14 @@
         {label:"Reviewed by",value:reviewAudit?auditActor(reviewAudit.actor_email):""}
       ]);
       fileBox("Original report photos and files",originalAtts.map(function(a){return a.file_name||a.storage_path;}),"No original files attached");
+      if(r.involves_injury){
+        subhead("Cal/OSHA serious-event screening");
+        pairRow([
+          {label:"Screening result",value:caloshaScreenLabel(r.calosha_screening_status)},
+          {label:"RBH awareness time",value:r.calosha_awareness_at?pdfDate(r.calosha_awareness_at):"Not recorded"}
+        ]);
+        wideField("Screening note","Management screening only. This application does not submit a report to Cal/OSHA and the screening does not replace required regulatory reporting.",{skipEmpty:false});
+      }
 
       section(2,"Investigation","Document the underlying reason the issue happened or was allowed to happen.");
       wideField("Root cause",r.root_cause,{skipEmpty:false,emptyText:"Not yet recorded"});
@@ -2256,6 +2352,8 @@
     if(a.field==="action_verification_note") return "Verification / change-request note updated";
     if(a.field==="root_cause") return "Root cause updated";
     if(a.field==="corrective_action") return "Corrective action updated";
+    if(a.field==="calosha_screening_status") return "Cal/OSHA screening: "+caloshaScreenLabel(a.old_value)+" → "+caloshaScreenLabel(a.new_value);
+    if(a.field==="calosha_awareness_at") return a.new_value?"RBH awareness time recorded":"RBH awareness time cleared";
     if(a.field==="closed_at") return a.new_value?"Closure timestamp recorded":"Closure timestamp cleared";
     return (a.field||"Record field")+" updated";
   }
@@ -2276,6 +2374,7 @@
       return "Report status updated";
     }
     if(fields.some(function(f){return ["corrective_action","assigned_user_id","responsible_person","due_date","priority"].indexOf(f)>=0;})) return "Corrective-action plan updated";
+    if(fields.indexOf("calosha_screening_status")>=0 || fields.indexOf("calosha_awareness_at")>=0) return "Regulatory screening updated";
     if(fields.indexOf("root_cause")>=0) return "Root cause updated";
     if(fields.indexOf("action_completion_note")>=0) return "Completion note saved";
     if(fields.indexOf("action_verification_note")>=0) return "Verification note saved";
