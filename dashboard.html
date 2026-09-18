@@ -406,6 +406,41 @@
   .admin-info{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}.admin-info h3{font-family:var(--display);margin:0 0 4px;font-size:16px}.admin-info p{margin:0;color:var(--muted);font-size:13px}
 
 
+
+  /* ---------- Phase 2.9 guided incident wizard ---------- */
+  .wizard-shell{display:grid;gap:14px}
+  .wizard-process{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px 15px;box-shadow:var(--shadow);position:sticky;top:74px;z-index:12}
+  .wizard-process-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:11px}
+  .wizard-process-copy b{display:block;font-family:var(--display);font-size:14px;margin-bottom:2px}.wizard-process-copy span{display:block;color:var(--muted);font-size:11.5px;line-height:1.35}
+  .wizard-top-actions{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+  .wizard-save,.wizard-primary,.wizard-close,.wizard-high{border-radius:9px;padding:9px 13px;font-family:var(--display);font-weight:800;font-size:12px;cursor:pointer;white-space:nowrap}
+  .wizard-save{background:var(--paper);border:1.5px solid var(--line-strong);color:var(--ink)}.wizard-save:hover{border-color:var(--red)}
+  .wizard-primary,.wizard-close{background:#285da8;border:1.5px solid #285da8;color:#fff}.wizard-primary:hover,.wizard-close:hover{filter:brightness(.95)}
+  .wizard-high{background:#fff5d8;border:1.5px solid #e1c66f;color:#725300}.wizard-high:hover{border-color:#cba838}
+  .wizard-save:disabled,.wizard-primary:disabled,.wizard-close:disabled,.wizard-high:disabled{opacity:.5;cursor:not-allowed}
+  .process-flow{display:flex;align-items:stretch;width:100%;overflow-x:auto;padding:1px 0 2px;scrollbar-width:thin}
+  .process-step{position:relative;min-width:132px;flex:1;border:0;color:#5f625f;background:#e9ebe9;padding:10px 22px 10px 27px;text-align:center;font-family:var(--display);font-weight:800;font-size:11px;line-height:1.18;cursor:pointer;clip-path:polygon(0 0,calc(100% - 13px) 0,100% 50%,calc(100% - 13px) 100%,0 100%,13px 50%);margin-left:-8px}
+  .process-step:first-child{margin-left:0;clip-path:polygon(0 0,calc(100% - 13px) 0,100% 50%,calc(100% - 13px) 100%,0 100%)}
+  .process-step .ps-num{display:block;font-size:9px;font-weight:700;opacity:.75;margin-bottom:2px}.process-step .ps-check{font-size:11px;margin-right:4px}
+  .process-step.ps-done{background:#59b77c;color:#fff}.process-step.ps-current{background:#2f65ad;color:#fff}.process-step.ps-blocked{background:#b92c34;color:#fff}.process-step.ps-future{background:#e8e9e8;color:#666}.process-step.ps-na{background:#efefef;color:#929292}.process-step.ps-viewing{box-shadow:inset 0 0 0 3px rgba(255,255,255,.92),inset 0 0 0 5px rgba(30,36,42,.28)}
+  .process-step:disabled{cursor:not-allowed}.process-step:not(:disabled):hover{filter:brightness(.96)}
+  .wizard-panel{background:var(--paper);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:18px}
+  .wizard-panel[hidden]{display:none!important}
+  .wizard-step-head{display:flex;align-items:flex-start;gap:12px;padding-bottom:13px;margin-bottom:14px;border-bottom:1px solid var(--line)}
+  .wizard-step-badge{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:0 0 auto;background:#2f65ad;color:#fff;font-family:var(--display);font-size:15px;font-weight:900}
+  .wizard-step-copy h3{font-family:var(--display);font-size:20px;margin:0 0 3px}.wizard-step-copy p{margin:0;color:var(--muted);font-size:12.5px;line-height:1.45}
+  .wizard-task{border-left:4px solid #2f65ad;background:#eef4ff;border-radius:8px;padding:11px 12px;margin:0 0 14px}.wizard-task b{display:block;font-family:var(--display);font-size:12.5px;margin-bottom:2px}.wizard-task span{font-size:12px;line-height:1.45;color:#395879}
+  [data-theme="dark"] .wizard-task{background:#17263b;border-left-color:#6e9de0}.wizard-required{display:none;border:1px solid #e1a4a4;background:#fff2f2;color:#91262d;border-radius:9px;padding:9px 11px;font-size:12px;font-weight:700;margin:10px 0}.wizard-required.show{display:block}[data-theme="dark"] .wizard-required{background:#321d1d;border-color:#744040;color:#ffbaba}
+  .wizard-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line);margin-top:18px;padding-top:14px}
+  .wizard-footer-copy{font-size:11.5px;color:var(--muted);max-width:520px;line-height:1.4}.wizard-footer-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-left:auto}
+  .wizard-context{background:var(--paper-2);border:1px solid var(--line);border-radius:11px;padding:12px 13px;margin:10px 0}.wizard-context b{font-family:var(--display);font-size:12.5px}.wizard-context p{margin:4px 0 0;font-size:12.5px;line-height:1.5;white-space:pre-wrap}
+  .close-checklist{display:grid;gap:7px;margin:12px 0}.close-check{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-size:12.5px}.close-check.ok{background:#edf8f1;color:#23623c;border-color:#b9dfc9}.close-check.missing{background:#fff2f2;color:#91262d;border-color:#e1a4a4}
+  .record-support{background:var(--paper);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}.record-support summary{cursor:pointer;list-style:none;padding:14px 16px;font-family:var(--display);font-weight:800;font-size:13px;display:flex;justify-content:space-between;align-items:center}.record-support summary::-webkit-details-marker{display:none}.record-support summary:after{content:"▾";color:var(--muted)}.record-support[open] summary:after{content:"▴"}.record-support-body{padding:0 16px 16px;border-top:1px solid var(--line)}
+  .support-grid{display:grid;grid-template-columns:minmax(0,.75fr) minmax(0,1.25fr);gap:16px;margin-top:14px}.support-grid .d-section{margin:0;padding:0;border:0}
+  .readonly-step-note{border:1px solid var(--line);background:var(--paper-2);border-radius:10px;padding:11px 12px;color:var(--muted);font-size:12px;line-height:1.45}
+  @media(max-width:900px){.wizard-process{position:static}.process-step{min-width:120px}.support-grid{grid-template-columns:1fr}}
+  @media(max-width:620px){.wizard-process-head{align-items:stretch;flex-direction:column}.wizard-top-actions{justify-content:stretch}.wizard-top-actions button{flex:1}.wizard-panel{padding:14px}.wizard-footer-actions{width:100%;margin-left:0}.wizard-footer-actions button{flex:1}.process-flow{padding-bottom:4px}.process-step{min-width:118px}.wizard-step-copy h3{font-size:18px}}
+
   /* ============ PHASE 2: operational workflow ============ */
   .role-pill{display:inline-flex;align-items:center;width:max-content;margin-top:5px;padding:3px 7px;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;border:1px solid var(--line-strong);color:var(--muted)}
   .role-pill.r-admin{background:#fce8e8;color:#8a1d1d;border-color:#efb4b4}.role-pill.r-safety_manager{background:#eef4ff;color:#264f83;border-color:#c8d8ed}.role-pill.r-supervisor{background:#fff5d8;color:#725300;border-color:#ead28b}.role-pill.r-read_only{background:var(--paper-2);color:var(--muted)}
@@ -586,7 +621,7 @@
     <div class="login-err" id="mErr"></div>
     <div class="field"><label for="mTitleInput">Title</label><input type="text" id="mTitleInput" maxlength="140" placeholder="e.g. Called the site foreman"></div>
     <div class="field"><label for="mBody">Description</label><textarea id="mBody" placeholder="What did you do or find? (optional)"></textarea></div>
-    <div class="field"><label for="mStatus">Also update status (optional)</label><select id="mStatus"></select></div>
+    <div class="field" style="display:none" aria-hidden="true"><label for="mStatus">Status</label><select id="mStatus" tabindex="-1"></select></div>
     <div class="modal-actions">
       <button class="btn-secondary" id="mCancel" type="button">Cancel</button>
       <button class="btn-primary" id="mSave" type="button">Save note</button>
@@ -795,40 +830,64 @@
     add("Incident address", r.job_site); add("Specific location", r.site_location); add("Observed at", r.observed_at?fmtDate(r.observed_at):"");
     add("Reported by", r.reporter_name||"Anonymous"); add("Role", r.reporter_role); add("Contact", r.reporter_contact);
     add("Form language", r.language==="es"?"Spanish":r.language==="en"?"English":r.language); add("Submitted", fmtDate(r.created_at));
-    return '<div class="record-progress" data-record-progress></div>'+
-      '<div class="detail-actions"><button class="pdf-btn" type="button">Download PDF</button></div>'+
+    return '<div class="wizard-shell">'+
+      '<div class="record-progress" data-record-progress></div>'+
       urgentTriageHtml(r)+
-      '<div class="d-section"><div class="d-sec-title step-section-title"><span class="step-section-num">1</span>Review report &amp; status</div><p class="step-section-note">Confirm what was submitted, determine whether it needs action, and move the report out of New once review begins.</p>'+
-      '<div class="d-rows">'+rows.join("")+'</div>'+
-      '<div class="status-edit">'+
-        '<select class="status-select">'+statusOptions(r.status||"new")+'</select>'+
-        '<button class="status-save" type="button">Save review status</button><span class="status-saved" hidden>Saved ✓</span></div>'+
-        '<div class="noaction-box" data-noaction-box><div class="noaction-copy"><b>No corrective action needed?</b><span>Close the report with a documented reason instead of creating a corrective action.</span></div><button class="noaction-btn" type="button" data-noaction-btn>Close without corrective action</button></div>'+
-        '<div class="gate-msg" data-role-gate>This account can view this incident but does not have permission to update it.</div></div>'+
-      '<div class="d-section"><div class="d-sec-title step-section-title"><span class="step-section-num">2</span>Investigate &amp; document root cause</div><p class="step-section-note">Record why the issue happened or what underlying condition allowed it to happen.</p>'+
-      '<div class="inv-grid"><label class="inv-l">Root cause<textarea class="inv-root"></textarea></label></div>'+
-      '<div class="inv-actions"><button class="root-save section-save" type="button">Save root cause</button><span class="root-saved section-saved" hidden>Saved ✓</span></div></div>'+
-      '<div class="d-section"><div class="d-sec-title step-section-title"><span class="step-section-num">3</span>Plan &amp; assign corrective action</div><p class="step-section-note">Define what will be fixed, who owns it, when it is due, and how important it is.</p>'+
-      '<div class="inv-grid">'+
-      '<label class="inv-l">Corrective action<textarea class="inv-corr"></textarea></label>'+
-      '<div class="assignment-grid">'+
-      '<label class="inv-l">Assigned dashboard user<select class="inv-assignee">'+assignmentOptions(r.assigned_user_id)+'</select></label>'+
-      '<label class="inv-l">Responsible person / crew<input type="text" class="inv-resp" placeholder="Optional if different from assignee"></label>'+
-      '</div>'+
-      '<div class="inv-row">'+
-      '<label class="inv-l">Due date<input type="date" class="inv-due"></label>'+
-      '<label class="inv-l">Priority<select class="inv-pri"><option value="">—</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label>'+
-      '</div></div>'+
-      '<div class="inv-actions"><button class="action-plan-save section-save" type="button">Save action plan</button><span class="action-plan-saved section-saved" hidden>Saved ✓</span></div>'+
-      '<div class="gate-msg" data-gate>To close a report, document the root cause and corrective action, then complete and verify the corrective action.</div>'+
-      '</div>'+
-      '<div class="d-section"><div class="d-sec-title step-section-title"><span class="step-section-num">4</span><span class="step-section-num">5</span>Complete &amp; verify corrective action</div><p class="step-section-note">The assigned owner documents what was completed. An Admin or Safety Manager then verifies the work or requests changes.</p><div class="action-workflow" data-action-workflow></div></div>'+
-      '<div class="closure-guide" data-closure-guide></div>'+
-      '<div class="d-atts" data-atts></div>'+
-      '<div class="d-section"><div class="d-sec-title-row"><span class="d-sec-title">Notes</span>'+
-        '<button class="add-note" type="button">+ Add Note</button></div><div class="notes" data-notes></div></div>'+
-      '<div class="final-save-bar"><div class="final-save-copy"><b>Finished making record updates?</b><span>Save the review status, root cause, and action plan together. Completion and verification notes use their own Save / Submit buttons above.</span></div><button class="save-all" type="button">Save all changes</button><span class="save-all-saved" hidden>All saved ✓</span></div>'+
-      '<div class="d-section"><div class="d-sec-title">Activity timeline</div><p class="step-section-note">A readable history of submissions, updates, notes, evidence, verification, and closure.</p><div class="audit" data-audit></div></div>';
+
+      '<section class="wizard-panel" data-wizard-step="1" hidden>'+
+        '<div class="wizard-step-head"><span class="wizard-step-badge">1</span><div class="wizard-step-copy"><h3>Review the report</h3><p>Confirm what was submitted and decide whether the report needs further action.</p></div></div>'+
+        '<div class="wizard-task"><b>Your job on this step</b><span>Read the report, review any photos/files, and either continue the investigation, mark it high priority, or close it with no corrective action.</span></div>'+
+        '<div class="d-rows">'+rows.join("")+'</div>'+
+        '<div class="d-atts" data-atts></div>'+
+        '<div class="noaction-box" data-noaction-box><div class="noaction-copy"><b>Nothing to correct?</b><span>Close this report with a documented reason instead of creating unnecessary corrective-action work.</span></div><button class="noaction-btn" type="button" data-noaction-btn>Close — no action required</button></div>'+
+        '<div class="wizard-footer"><div class="wizard-footer-copy">Completing this step acknowledges the report and moves it into review. If the report is urgent, use Mark high priority first.</div><div class="wizard-footer-actions"><button class="wizard-high" data-mark-high type="button">Mark high priority</button><button class="wizard-primary" data-step-complete="1" type="button">Complete review →</button></div></div>'+
+        '<div class="gate-msg" data-role-gate>This account can view this incident but does not have permission to update it.</div>'+
+      '</section>'+
+
+      '<section class="wizard-panel" data-wizard-step="2" hidden>'+
+        '<div class="wizard-step-head"><span class="wizard-step-badge">2</span><div class="wizard-step-copy"><h3>Investigation</h3><p>Document why the issue happened or what underlying condition allowed it to happen.</p></div></div>'+
+        '<div class="wizard-task"><b>Your job on this step</b><span>Enter a clear root cause. Keep it simple and factual — describe the underlying reason, not just what happened.</span></div>'+
+        '<label class="inv-l">Root cause<textarea class="inv-root" placeholder="What caused or allowed this issue to happen?"></textarea></label>'+
+        '<div class="wizard-required" data-required="2">Root cause is required before this step can be completed.</div>'+
+        '<div class="wizard-footer"><div class="wizard-footer-copy">Save Draft keeps your work here without advancing the record.</div><div class="wizard-footer-actions"><button class="wizard-save root-save" data-step-save="2" type="button">Save draft</button><span class="root-saved section-saved" hidden>Saved ✓</span><button class="wizard-primary" data-step-complete="2" type="button">Complete investigation →</button></div></div>'+
+      '</section>'+
+
+      '<section class="wizard-panel" data-wizard-step="3" hidden>'+
+        '<div class="wizard-step-head"><span class="wizard-step-badge">3</span><div class="wizard-step-copy"><h3>Corrective action plan</h3><p>Define what needs to be fixed, who owns the work, and when it must be completed.</p></div></div>'+
+        '<div class="wizard-task"><b>Your job on this step</b><span>Give the assigned person a clear action. An action, owner, due date, and priority are all required before the work can be assigned.</span></div>'+
+        '<div class="inv-grid">'+
+          '<label class="inv-l">Corrective action required<textarea class="inv-corr" placeholder="What needs to be corrected or changed?"></textarea></label>'+
+          '<div class="assignment-grid"><label class="inv-l">Assigned dashboard user<select class="inv-assignee">'+assignmentOptions(r.assigned_user_id)+'</select></label><label class="inv-l">Responsible person / crew<input type="text" class="inv-resp" placeholder="Optional if different from assignee"></label></div>'+
+          '<div class="inv-row"><label class="inv-l">Due date<input type="date" class="inv-due"></label><label class="inv-l">Priority<select class="inv-pri"><option value="">— Choose priority —</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label></div>'+
+        '</div>'+
+        '<div class="wizard-required" data-required="3"></div>'+
+        '<div class="wizard-footer"><div class="wizard-footer-copy">Save Draft lets you leave a partially completed plan. Save & Assign validates the required fields and sends the work to the assigned user.</div><div class="wizard-footer-actions"><button class="wizard-save action-plan-save" data-step-save="3" type="button">Save draft</button><span class="action-plan-saved section-saved" hidden>Saved ✓</span><button class="wizard-primary" data-step-complete="3" type="button">Save &amp; assign action →</button></div></div>'+
+      '</section>'+
+
+      '<section class="wizard-panel" data-wizard-step="4" hidden>'+
+        '<div class="wizard-step-head"><span class="wizard-step-badge">4</span><div class="wizard-step-copy"><h3>Complete corrective action</h3><p>The assigned owner documents what was actually completed and can attach evidence of the fix.</p></div></div>'+
+        '<div class="wizard-task"><b>Your job on this step</b><span>Complete the assigned work, describe exactly what you did, attach evidence if helpful, then submit it for verification.</span></div>'+
+        '<div class="action-workflow" data-action-completion></div>'+
+      '</section>'+
+
+      '<section class="wizard-panel" data-wizard-step="5" hidden>'+
+        '<div class="wizard-step-head"><span class="wizard-step-badge">5</span><div class="wizard-step-copy"><h3>Verify corrective action</h3><p>Review what was completed and the supporting evidence before approving the correction.</p></div></div>'+
+        '<div class="wizard-task"><b>Your job on this step</b><span>Confirm the corrective action was actually completed. Verify it if acceptable, or request changes with a clear explanation.</span></div>'+
+        '<div class="action-workflow" data-action-verification></div>'+
+      '</section>'+
+
+      '<section class="wizard-panel" data-wizard-step="6" hidden>'+
+        '<div class="wizard-step-head"><span class="wizard-step-badge">6</span><div class="wizard-step-copy"><h3>Close record</h3><p>Perform one final check and close the incident when every required step is complete.</p></div></div>'+
+        '<div class="wizard-task"><b>Your job on this step</b><span>Review the checklist below. When every required item is complete, close the record.</span></div>'+
+        '<div data-close-step></div>'+
+      '</section>'+
+
+      '<details class="record-support" open><summary>Notes &amp; activity history</summary><div class="record-support-body"><div class="support-grid">'+
+        '<div class="d-section"><div class="d-sec-title-row"><span class="d-sec-title">Notes</span><button class="add-note" type="button">+ Add Note</button></div><div class="notes" data-notes></div></div>'+
+        '<div class="d-section"><div class="d-sec-title">Activity timeline</div><p class="step-section-note">A readable history of submissions, updates, evidence, verification, and closure.</p><div class="audit" data-audit></div></div>'+
+      '</div></div></details>'+
+      '<div class="detail-actions"><button class="pdf-btn" type="button">Download PDF</button></div>'+
+    '</div>';
   }
 
   function hasWorkflowValue(v){ return v!=null && String(v).trim()!==""; }
@@ -872,164 +931,174 @@
     return {complete:current===-1,steps:steps,current:current};
   }
   function renderRecordProgress(r, el){
-    if(!el) return; var p=workflowProgress(r);
-    var currentStep=p.current>=0?p.steps[p.current]:null;
-    var next=currentStep?('<span class="rp-next">Step '+currentStep.n+' · '+esc(currentStep.title)+'</span>'):'<span class="rp-next complete">Record complete</span>';
-    var cards=p.steps.map(function(st){
-      var label=st.state==="current"?"Current step":(st.state==="needed"?"Still needed":(st.state==="na"?"Not required":"Done"));
-      return '<div class="rp-step rp-'+st.state+'"><span class="rp-num">'+st.n+'</span><div class="rp-copy"><b>'+esc(st.title)+'</b><span>'+esc(st.detail)+'</span><span class="rp-state">'+label+'</span></div></div>';
+    if(!el) return;
+    var p=workflowProgress(r), detail=el.closest("#incidentBody")||el.parentElement;
+    var active=parseInt((detail&&detail.dataset.wizardStep)||"0",10)||recommendedWizardStep(r);
+    var activeState=p.steps[active-1]||null;
+    var blocked=(active===4 && r.action_status==="changes_requested");
+    var arrows=p.steps.map(function(st){
+      var cls=st.state==="done"?"ps-done":(st.state==="current"?(blocked&&st.n===4?"ps-blocked":"ps-current"):(st.state==="na"?"ps-na":"ps-future"));
+      if(st.n===active && st.state!=="current") cls+=" ps-viewing";
+      var accessible=wizardStepAccessible(r,st.n);
+      var icon=st.state==="done"?'<span class="ps-check">✓</span>':'';
+      return '<button type="button" class="process-step '+cls+'" data-wizard-nav="'+st.n+'"'+(accessible?'':' disabled')+'><span class="ps-num">STEP '+st.n+'</span>'+icon+esc(wizardShortTitle(st.n))+'</button>';
     }).join("");
-    el.innerHTML='<div class="rp-head"><div><h3>Record completion</h3><p>Follow the numbered steps in order. The colors update automatically as the record is completed.</p></div>'+next+'</div><div class="rp-grid">'+cards+'</div><div class="rp-legend"><span><i class="rp-dot current"></i>Green = current step</span><span><i class="rp-dot done"></i>Gray = completed / not required</span><span><i class="rp-dot needed"></i>Red = still needed before closure</span></div>';
+    var labels=wizardActionLabels(r,active);
+    var topSave=labels.save?'<button class="wizard-save" type="button" data-wizard-top-save>'+esc(labels.save)+'</button>':'';
+    var topPrimary=labels.complete?'<button class="wizard-primary" type="button" data-wizard-top-complete>'+esc(labels.complete)+'</button>':'';
+    var currentText=(activeState&&activeState.state==="done")?'Reviewing a completed step':('Step '+active+' of 6');
+    el.className="wizard-process";
+    el.innerHTML='<div class="wizard-process-head"><div class="wizard-process-copy"><b>'+esc(currentText)+' · '+esc(wizardLongTitle(active))+'</b><span>'+esc(wizardHelp(active,r))+'</span></div><div class="wizard-top-actions">'+topSave+topPrimary+'</div></div><div class="process-flow">'+arrows+'</div>';
   }
-  function renderClosureGuide(r, el){
-    if(!el) return; var disposed=r.status==="no_action"||r.status==="duplicate";
-    if(r.status==="closed" || disposed){
-      el.className="closure-guide cg-done";
-      el.innerHTML='<span class="step-section-num">6</span><div><b>Close record — done</b><p>'+(disposed?'This report was reviewed and closed without corrective action.':'The corrective action was verified and the report is closed.')+'</p></div>';
-      return;
-    }
-    if(canClose(r)){
-      el.className="closure-guide cg-current";
-      el.innerHTML='<span class="step-section-num">6</span><div><b>Close record — current step</b><p>The corrective action is verified. Use the Report Status control in Step 1 and select Closed.</p></div>';
-      return;
-    }
-    el.className="closure-guide cg-needed";
-    el.innerHTML='<span class="step-section-num">6</span><div><b>Close record — still needed</b><p>Finish the red steps above first. The report cannot be closed until the corrective action is verified.</p></div>';
+
+  function wizardShortTitle(n){ return ({1:"Review",2:"Investigation",3:"Action Plan",4:"Complete Action",5:"Verify",6:"Close"})[n]||"Step"; }
+  function wizardLongTitle(n){ return ({1:"Review Report",2:"Investigation",3:"Corrective Action Plan",4:"Complete Corrective Action",5:"Verify Corrective Action",6:"Close Record"})[n]||"Record"; }
+  function wizardHelp(n,r){
+    var map={1:"Review the submission and decide what happens next.",2:"Document the underlying cause.",3:"Define the fix, owner, due date, and priority.",4:"Document the completed work and submit it for review.",5:"Approve the correction or request changes.",6:"Confirm every required step is complete and close the record."};
+    if(n===4 && r.action_status==="changes_requested") return "Changes were requested. Update the work and resubmit it for verification.";
+    if(n===5 && !canVerify()) return "This step is waiting for an Admin or Safety Manager to verify the work.";
+    return map[n]||"Follow the guided steps.";
+  }
+  function recommendedWizardStep(r){ var p=workflowProgress(r); if(r.status==="closed"||r.status==="no_action"||r.status==="duplicate") return 6; return p.current>=0?p.current+1:6; }
+  function wizardStepAccessible(r,n){
+    var p=workflowProgress(r), st=p.steps[n-1]; if(!st) return false;
+    if(r.status==="closed") return true;
+    if(r.status==="no_action"||r.status==="duplicate") return n===1||n===6;
+    return st.state==="done"||st.state==="current";
+  }
+  function wizardActionLabels(r,n){
+    var p=workflowProgress(r), st=p.steps[n-1], isCurrent=st&&st.state==="current";
+    var canEdit=canEditReport(r);
+    if(!canEdit && !(n===5&&canVerify())) return {save:null,complete:null};
+    if(st&&st.state==="done" && n!==6) return {save:(n===2||n===3?"Save changes":null),complete:null};
+    if(!isCurrent && n!==6) return {save:null,complete:null};
+    if(n===1) return {save:null,complete:"Complete review →"};
+    if(n===2) return {save:"Save draft",complete:"Complete investigation →"};
+    if(n===3) return {save:"Save draft",complete:"Save & assign action →"};
+    if(n===4){ if(r.action_status==="awaiting_verification"||r.action_status==="verified") return {save:null,complete:null}; return {save:"Save completion note",complete:r.action_status==="changes_requested"?"Resubmit for verification →":"Submit for verification →"}; }
+    if(n===5){ if(!canVerify()||r.action_status!=="awaiting_verification") return {save:null,complete:null}; return {save:"Save verification note",complete:"Verify & continue →"}; }
+    if(n===6){ if(r.status==="closed"||r.status==="no_action"||r.status==="duplicate") return {save:null,complete:null}; return {save:null,complete:canClose(r)?"Close record":null}; }
+    return {save:null,complete:null};
+  }
+  function setWizardStep(detail,r,n,force){
+    if(!detail) return;
+    n=parseInt(n,10)||recommendedWizardStep(r);
+    if(!force && !wizardStepAccessible(r,n)){ toast("Finish the current step before moving forward.","err"); return; }
+    detail.dataset.wizardStep=String(n);
+    detail.querySelectorAll("[data-wizard-step]").forEach(function(panel){ panel.hidden=String(panel.getAttribute("data-wizard-step"))!==String(n); });
+    var p=workflowProgress(r), panel=detail.querySelector('[data-wizard-step="'+n+'"]'), state=p.steps[n-1]?p.steps[n-1].state:"needed";
+    if(panel){ var staticComplete=panel.querySelector('[data-step-complete="'+n+'"]'); if(staticComplete && n<=3) staticComplete.style.display=(state==="done"?"none":"inline-flex"); }
+    renderRecordProgress(r,detail.querySelector("[data-record-progress]"));
+    var panel=detail.querySelector('[data-wizard-step="'+n+'"]'); if(panel) panel.scrollIntoView({block:"start",behavior:"smooth"});
+  }
+  function initialWizardStep(r){ return recommendedWizardStep(r); }
+  function renderCloseStep(r,el,detail,auditEl){
+    if(!el) return;
+    var disposed=r.status==="no_action"||r.status==="duplicate", closed=r.status==="closed";
+    if(disposed){ el.innerHTML='<div class="ops-alert"><b>Record complete — no corrective action required</b>This report was reviewed and closed with a documented disposition.</div>'; return; }
+    var checks=[
+      [!!(r.status&&r.status!=="new"),"Report reviewed"],
+      [hasWorkflowValue(r.root_cause),"Root cause documented"],
+      [hasWorkflowValue(r.corrective_action),"Corrective action documented"],
+      [hasWorkflowValue(r.assigned_user_id)||hasWorkflowValue(r.responsible_person),"Corrective action owner assigned"],
+      [hasWorkflowValue(r.due_date),"Due date documented"],
+      [hasWorkflowValue(r.priority),"Priority documented"],
+      [r.action_status==="verified","Corrective action verified"]
+    ];
+    var list=checks.map(function(x){return '<div class="close-check '+(x[0]?'ok':'missing')+'"><b>'+(x[0]?'✓':'!')+'</b><span>'+esc(x[1])+'</span></div>';}).join("");
+    if(closed){ el.innerHTML='<div class="ops-alert"><b>Record complete</b>This incident is closed. The full history remains available below.</div><div class="close-checklist">'+list+'</div>'; return; }
+    var ready=canClose(r), button=ready&&canEditReport(r)?'<button class="wizard-close" type="button" data-step-complete="6">Close record</button>':'';
+    el.innerHTML='<div class="close-checklist">'+list+'</div>'+(ready?'<div class="wizard-context"><b>Ready to close</b><p>All required workflow steps are complete. Closing the record will preserve the full history and mark it resolved.</p></div>':'<div class="wizard-required show">Complete the missing checklist items before this record can be closed.</div>')+'<div class="wizard-footer"><div class="wizard-footer-copy">Closing is a deliberate final action. There is no autosave or automatic closure.</div><div class="wizard-footer-actions">'+button+'</div></div>';
+    var btn=el.querySelector('[data-step-complete="6"]');
+    if(btn) btn.addEventListener("click",async function(){
+      if(!canClose(r)){ toast("Complete and verify the corrective action before closing the record.","err"); return; }
+      btn.disabled=true; var old=btn.textContent; btn.textContent="Closing…";
+      try{ await updateStatus(r.id,"closed",null); $("incidentSummary").innerHTML='<div class="is-badges">'+incidentBadgeHtml(r)+'</div><div class="is-desc">'+esc(r.description||"No description provided.")+'</div>'; refreshRecordWorkflow(r,detail); loadAudit(r.id,auditEl); renderMyWork(); renderActions(); applyFilters(); toast("Record closed","ok"); }
+      catch(ex){ console.error(ex); toast("Could not close the record.","err"); }
+      finally{ if(btn.isConnected){btn.disabled=false;btn.textContent=old;} }
+    });
   }
   function refreshRecordWorkflow(r, detail){
-    if(!detail) return; renderRecordProgress(r, detail.querySelector("[data-record-progress]")); renderClosureGuide(r, detail.querySelector("[data-closure-guide]"));
+    if(!detail) return;
+    var n=parseInt(detail.dataset.wizardStep||"0",10)||initialWizardStep(r);
+    if(!wizardStepAccessible(r,n)) n=recommendedWizardStep(r);
+    renderCloseStep(r,detail.querySelector("[data-close-step]"),detail,detail.querySelector("[data-audit]"));
+    setWizardStep(detail,r,n,true);
   }
 
   function buildDetail(r, detail, wrap){
     detail.innerHTML=detailHtml(r);
-    refreshRecordWorkflow(r, detail);
-    var gate=detail.querySelector("[data-gate]"), roleGate=detail.querySelector("[data-role-gate]");
+    detail.dataset.wizardStep=String(initialWizardStep(r));
     var auditEl=detail.querySelector("[data-audit]");
+    var gate=detail.querySelector("[data-role-gate]");
     var canEdit=canEditReport(r);
-    if(!canEdit && roleGate) roleGate.classList.add("show");
+    if(!canEdit && gate) gate.classList.add("show");
 
-    var sel=detail.querySelector(".status-select"), save=detail.querySelector(".status-save"), saved=detail.querySelector(".status-saved");
     var noActionBox=detail.querySelector("[data-noaction-box]"), noActionBtn=detail.querySelector("[data-noaction-btn]");
-    if(!canEdit){ sel.disabled=true; save.disabled=true; }
     if(noActionBox) noActionBox.style.display=(canVerify() && r.status!=="closed" && r.status!=="no_action" && r.status!=="duplicate")?"flex":"none";
-    if(noActionBtn) noActionBtn.addEventListener("click", function(){
-      if(!canVerify()){ toast("Only an Admin or Safety Manager can close a report without corrective action.","err"); return; }
-      openDispositionModal(r, wrap, detail.querySelector("[data-notes]"));
-    });
+    if(noActionBtn) noActionBtn.addEventListener("click",function(){ if(!canVerify()){toast("Only an Admin or Safety Manager can close a report without corrective action.","err");return;} openDispositionModal(r,wrap,detail.querySelector("[data-notes]")); });
 
-    var invRoot=detail.querySelector(".inv-root"), invCorr=detail.querySelector(".inv-corr"),
-        invResp=detail.querySelector(".inv-resp"), invAssign=detail.querySelector(".inv-assignee"),
-        invDue=detail.querySelector(".inv-due"), invPri=detail.querySelector(".inv-pri"),
-        rootSave=detail.querySelector(".root-save"), rootSaved=detail.querySelector(".root-saved"),
-        actionPlanSave=detail.querySelector(".action-plan-save"), actionPlanSaved=detail.querySelector(".action-plan-saved"),
-        saveAll=detail.querySelector(".save-all"), saveAllSaved=detail.querySelector(".save-all-saved");
-    invRoot.value=r.root_cause||""; invCorr.value=r.corrective_action||""; invResp.value=r.responsible_person||"";
-    invAssign.value=r.assigned_user_id||""; invDue.value=r.due_date||""; invPri.value=r.priority||"";
-    if(!canEdit){ [invRoot,invCorr,invResp,invAssign,invDue,invPri,rootSave,actionPlanSave,saveAll].forEach(function(x){ if(x) x.disabled=true; }); }
+    var highBtn=detail.querySelector("[data-mark-high]");
+    if(highBtn){ highBtn.disabled=!canEdit; highBtn.addEventListener("click",async function(){
+      if(!canEditReport(r)){toast("You do not have permission to update this report.","err");return;}
+      highBtn.disabled=true; try{ var patch={priority:"high"}; if(r.status==="new") patch.status="under_review"; var res=await sb.from("reports").update(patch).eq("id",r.id); if(res.error) throw res.error; Object.keys(patch).forEach(function(k){r[k]=patch[k];}); $("incidentSummary").innerHTML='<div class="is-badges">'+incidentBadgeHtml(r)+'</div><div class="is-desc">'+esc(r.description||"No description provided.")+'</div>'; refreshRecordWorkflow(r,detail); loadAudit(r.id,auditEl); renderHomeSnapshot(); applyFilters(); toast("Report marked high priority","ok"); }
+      catch(ex){console.error(ex);toast("Could not mark this report high priority.","err");} finally{ if(highBtn.isConnected) highBtn.disabled=!canEditReport(r); }
+    }); }
 
-    async function persistReviewStatus(showToast){
-      if(!canEditReport(r)) throw new Error("NOT_AUTHORIZED");
-      if(sel.value==="no_action" || sel.value==="duplicate"){
-        if(!canVerify()){ toast("Only an Admin or Safety Manager can close a report without corrective action.","err"); sel.value=r.status||"new"; return false; }
-        openDispositionModal(r, wrap, detail.querySelector("[data-notes]"), sel.value); sel.value=r.status||"new"; return false;
-      }
-      if(sel.value==="closed" && !canClose(r)){ if(gate) gate.classList.add("show"); sel.value=r.status||"new"; return false; }
-      if(gate) gate.classList.remove("show");
-      if(sel.value!==r.status) await updateStatus(r.id, sel.value, wrap);
-      refreshRecordWorkflow(r, detail); loadAudit(r.id, auditEl);
-      if(showToast) toast("Review status saved","ok");
-      return true;
-    }
+    var invRoot=detail.querySelector(".inv-root"), invCorr=detail.querySelector(".inv-corr"), invResp=detail.querySelector(".inv-resp"), invAssign=detail.querySelector(".inv-assignee"), invDue=detail.querySelector(".inv-due"), invPri=detail.querySelector(".inv-pri");
+    var rootSave=detail.querySelector(".root-save"), rootSaved=detail.querySelector(".root-saved"), actionPlanSave=detail.querySelector(".action-plan-save"), actionPlanSaved=detail.querySelector(".action-plan-saved");
+    invRoot.value=r.root_cause||""; invCorr.value=r.corrective_action||""; invResp.value=r.responsible_person||""; invAssign.value=r.assigned_user_id||""; invDue.value=r.due_date||""; invPri.value=r.priority||"";
+    if(!canEdit){ [invRoot,invCorr,invResp,invAssign,invDue,invPri,rootSave,actionPlanSave].forEach(function(x){if(x)x.disabled=true;}); }
 
     async function persistRootCause(showToast){
       if(!canEditReport(r)) throw new Error("NOT_AUTHORIZED");
       var next=invRoot.value.trim()||null;
-      if((r.root_cause||null)!==next){
-        var res=await sb.from("reports").update({root_cause:next}).eq("id",r.id); if(res.error) throw res.error; r.root_cause=next;
-      }
-      refreshRecordWorkflow(r, detail); loadAudit(r.id,auditEl);
-      if(showToast) toast("Root cause saved","ok");
-      return true;
+      if((r.root_cause||null)!==next){ var res=await sb.from("reports").update({root_cause:next}).eq("id",r.id); if(res.error) throw res.error; r.root_cause=next; }
+      refreshRecordWorkflow(r,detail); loadAudit(r.id,auditEl); if(showToast) toast("Investigation saved","ok"); return true;
     }
-
-    function rerenderActionWorkflowPreserveDrafts(){
-      var wf=detail.querySelector("[data-action-workflow]");
-      if(!wf) return;
-      var a=wf.querySelector(".action-note"), v=wf.querySelector(".verify-note");
-      var actionDraft=a?a.value:null, verifyDraft=v?v.value:null;
-      renderActionWorkflow(r,wf,auditEl,detail);
-      var a2=wf.querySelector(".action-note"), v2=wf.querySelector(".verify-note");
-      if(a2 && actionDraft!==null) a2.value=actionDraft;
-      if(v2 && verifyDraft!==null) v2.value=verifyDraft;
-    }
-
-    async function persistActionPlan(showToast){
+    async function persistActionPlan(showToast,assign){
       if(!canEditReport(r)) throw new Error("NOT_AUTHORIZED");
       var selectedProfile=invAssign.value?profileById[String(invAssign.value)]:null;
-      var nextActionStatus=r.action_status||"not_started";
-      if(invCorr.value.trim() && nextActionStatus==="not_started") nextActionStatus="in_progress";
-      var patch={
-        corrective_action:invCorr.value.trim()||null,
-        assigned_user_id:invAssign.value||null,
-        responsible_person:invResp.value.trim()||(selectedProfile?profileName(selectedProfile):null),
-        due_date:invDue.value||null,
-        priority:invPri.value||null,
-        action_status:nextActionStatus
-      };
-      var changed={}; Object.keys(patch).forEach(function(k){ if(String(r[k]??"")!==String(patch[k]??"")) changed[k]=patch[k]; });
-      if(Object.keys(changed).length){ var res=await sb.from("reports").update(changed).eq("id",r.id); if(res.error) throw res.error; Object.keys(changed).forEach(function(k){r[k]=changed[k];}); }
-      if(gate) gate.classList.remove("show");
-      rerenderActionWorkflowPreserveDrafts();
-      loadAudit(r.id,auditEl); refreshOverdue(r,wrap); refreshRecordWorkflow(r,detail); renderMetrics(); renderHomeSnapshot(); renderMyWork();
-      if(showToast) toast("Action plan saved","ok");
-      return true;
+      var nextActionStatus=r.action_status||"not_started"; if(invCorr.value.trim()&&nextActionStatus==="not_started") nextActionStatus="in_progress";
+      var patch={corrective_action:invCorr.value.trim()||null,assigned_user_id:invAssign.value||null,responsible_person:invResp.value.trim()||(selectedProfile?profileName(selectedProfile):null),due_date:invDue.value||null,priority:invPri.value||null,action_status:nextActionStatus};
+      if(assign && r.status!=="closed" && r.status!=="no_action" && r.status!=="duplicate") patch.status="assigned";
+      var changed={}; Object.keys(patch).forEach(function(k){if(String(r[k]??"")!==String(patch[k]??""))changed[k]=patch[k];});
+      if(Object.keys(changed).length){var res=await sb.from("reports").update(changed).eq("id",r.id);if(res.error)throw res.error;Object.keys(changed).forEach(function(k){r[k]=changed[k];});}
+      $("incidentSummary").innerHTML='<div class="is-badges">'+incidentBadgeHtml(r)+'</div><div class="is-desc">'+esc(r.description||"No description provided.")+'</div>';
+      loadAudit(r.id,auditEl); refreshOverdue(r,wrap); refreshRecordWorkflow(r,detail); renderMetrics(); renderHomeSnapshot(); renderMyWork(); if(showToast) toast("Action plan saved","ok"); return true;
     }
 
-    save.addEventListener("click", async function(){
-      if(!canEditReport(r)){ toast("You do not have permission to update this report.","err"); return; }
-      save.disabled=true; var lbl=save.textContent; save.textContent="Saving…";
-      try{ var ok=await persistReviewStatus(true); if(ok){ saved.hidden=false; setTimeout(function(){saved.hidden=true;},2200); } }
-      catch(ex){ console.error(ex); toast("Could not save review status — please try again.","err"); }
-      finally{ save.disabled=!canEditReport(r); save.textContent=lbl; }
+    if(rootSave) rootSave.addEventListener("click",async function(){ rootSave.disabled=true; try{await persistRootCause(true);rootSaved.hidden=false;setTimeout(function(){rootSaved.hidden=true;},2200);}catch(ex){console.error(ex);toast("Could not save the investigation.","err");}finally{rootSave.disabled=!canEditReport(r);} });
+    if(actionPlanSave) actionPlanSave.addEventListener("click",async function(){ actionPlanSave.disabled=true; try{await persistActionPlan(true,false);actionPlanSaved.hidden=false;setTimeout(function(){actionPlanSaved.hidden=true;},2200);}catch(ex){console.error(ex);toast("Could not save the action plan.","err");}finally{actionPlanSave.disabled=!canEditReport(r);} });
+
+    detail.addEventListener("click",async function(e){
+      var nav=e.target.closest("[data-wizard-nav]"); if(nav){ setWizardStep(detail,r,parseInt(nav.getAttribute("data-wizard-nav"),10),false); return; }
+      if(e.target.closest("[data-wizard-top-save]")){ var n=parseInt(detail.dataset.wizardStep||"1",10); var b=detail.querySelector('[data-wizard-step="'+n+'"] [data-step-save="'+n+'"]'); if(b&&!b.disabled)b.click(); return; }
+      if(e.target.closest("[data-wizard-top-complete]")){ var n2=parseInt(detail.dataset.wizardStep||"1",10); var b2=detail.querySelector('[data-wizard-step="'+n2+'"] [data-step-complete="'+n2+'"]'); if(b2&&!b2.disabled)b2.click(); return; }
     });
 
-    rootSave.addEventListener("click", async function(){
-      if(!canEditReport(r)){ toast("You do not have permission to update this report.","err"); return; }
-      rootSave.disabled=true; var lbl=rootSave.textContent; rootSave.textContent="Saving…";
-      try{ await persistRootCause(true); rootSaved.hidden=false; setTimeout(function(){rootSaved.hidden=true;},2200); }
-      catch(ex){ console.error(ex); toast("Could not save root cause — please try again.","err"); }
-      finally{ rootSave.disabled=!canEditReport(r); rootSave.textContent=lbl; }
-    });
+    var complete1=detail.querySelector('[data-step-complete="1"]'); if(complete1) complete1.addEventListener("click",async function(){
+      if(!canEditReport(r)){toast("You do not have permission to complete this step.","err");return;} complete1.disabled=true;
+      try{ if(r.status==="new") await updateStatus(r.id,"under_review",wrap); refreshRecordWorkflow(r,detail); setWizardStep(detail,r,2,true); loadAudit(r.id,auditEl); toast("Review complete — continue to Investigation","ok"); }
+      catch(ex){console.error(ex);toast("Could not complete the review.","err");} finally{if(complete1.isConnected)complete1.disabled=!canEditReport(r);} });
 
-    actionPlanSave.addEventListener("click", async function(){
-      if(!canEditReport(r)){ toast("You do not have permission to update this report.","err"); return; }
-      actionPlanSave.disabled=true; var lbl=actionPlanSave.textContent; actionPlanSave.textContent="Saving…";
-      try{ await persistActionPlan(true); actionPlanSaved.hidden=false; setTimeout(function(){actionPlanSaved.hidden=true;},2200); }
-      catch(ex){ console.error(ex); toast("Could not save action plan — please try again.","err"); }
-      finally{ actionPlanSave.disabled=!canEditReport(r); actionPlanSave.textContent=lbl; }
-    });
+    var complete2=detail.querySelector('[data-step-complete="2"]'); if(complete2) complete2.addEventListener("click",async function(){
+      var req=detail.querySelector('[data-required="2"]'); if(!invRoot.value.trim()){if(req)req.classList.add("show");toast("Add the root cause before completing Investigation.","err");return;} if(req)req.classList.remove("show"); complete2.disabled=true;
+      try{await persistRootCause(false);setWizardStep(detail,r,3,true);toast("Investigation complete — build the corrective action plan","ok");}catch(ex){console.error(ex);toast("Could not complete Investigation.","err");}finally{if(complete2.isConnected)complete2.disabled=!canEditReport(r);} });
 
-    saveAll.addEventListener("click", async function(){
-      if(!canEditReport(r)){ toast("You do not have permission to update this report.","err"); return; }
-      saveAll.disabled=true; var lbl=saveAll.textContent; saveAll.textContent="Saving all…";
-      try{
-        var ok=await persistReviewStatus(false); if(ok===false) return;
-        await persistRootCause(false); await persistActionPlan(false);
-        saveAllSaved.hidden=false; setTimeout(function(){saveAllSaved.hidden=true;},2500); toast("All record changes saved","ok");
-      }catch(ex){ console.error(ex); toast("Could not save all changes — please try again.","err"); }
-      finally{ saveAll.disabled=!canEditReport(r); saveAll.textContent=lbl; }
-    });
+    var complete3=detail.querySelector('[data-step-complete="3"]'); if(complete3) complete3.addEventListener("click",async function(){
+      var miss=[]; if(!invCorr.value.trim())miss.push("corrective action"); if(!invAssign.value&&!invResp.value.trim())miss.push("owner"); if(!invDue.value)miss.push("due date"); if(!invPri.value)miss.push("priority"); var req=detail.querySelector('[data-required="3"]');
+      if(miss.length){if(req){req.textContent="Still required: "+miss.join(", ")+".";req.classList.add("show");}toast("Complete the required action-plan fields first.","err");return;} if(req)req.classList.remove("show"); complete3.disabled=true;
+      try{await persistActionPlan(false,true);renderActionWorkflow(r,detail.querySelector("[data-action-completion]"),auditEl,detail,"complete");renderActionWorkflow(r,detail.querySelector("[data-action-verification]"),auditEl,detail,"verify");setWizardStep(detail,r,4,true);toast("Action assigned — corrective work can begin","ok");}catch(ex){console.error(ex);toast("Could not assign the corrective action.","err");}finally{if(complete3.isConnected)complete3.disabled=!canEditReport(r);} });
 
-    renderActionWorkflow(r, detail.querySelector("[data-action-workflow]"), auditEl, detail);
+    renderActionWorkflow(r,detail.querySelector("[data-action-completion]"),auditEl,detail,"complete");
+    renderActionWorkflow(r,detail.querySelector("[data-action-verification]"),auditEl,detail,"verify");
+    renderCloseStep(r,detail.querySelector("[data-close-step]"),detail,auditEl);
+    refreshRecordWorkflow(r,detail);
 
-    loadAtts(r.id, detail.querySelector("[data-atts]"));
-    var notesEl=detail.querySelector("[data-notes]");
-    loadNotes(r.id, notesEl);
-    loadAudit(r.id, auditEl);
-    var noteBtn=detail.querySelector(".add-note");
-    if(!canAddNotes(r)) noteBtn.disabled=true;
-    noteBtn.addEventListener("click", function(){ if(canAddNotes(r)) openNoteModal(r, wrap, notesEl); });
-    detail.querySelector(".pdf-btn").addEventListener("click", function(){ generatePdf(r, this); });
+    loadAtts(r.id,detail.querySelector("[data-atts]")); var notesEl=detail.querySelector("[data-notes]"); loadNotes(r.id,notesEl); loadAudit(r.id,auditEl);
+    var noteBtn=detail.querySelector(".add-note"); if(!canAddNotes(r))noteBtn.disabled=true; noteBtn.addEventListener("click",function(){if(canAddNotes(r))openNoteModal(r,wrap,notesEl);});
+    detail.querySelector(".pdf-btn").addEventListener("click",function(){generatePdf(r,this);});
   }
 
   async function updateStatus(reportId, status, wrap){
@@ -1646,139 +1715,63 @@
     else if(ex){ ex.remove(); }
   }
   function canClose(r){
-    return !!(r && r.root_cause && String(r.root_cause).trim() && r.corrective_action && String(r.corrective_action).trim() && r.action_status==="verified");
+    var owner=!!(r && (hasWorkflowValue(r.assigned_user_id)||hasWorkflowValue(r.responsible_person)));
+    return !!(r && hasWorkflowValue(r.root_cause) && hasWorkflowValue(r.corrective_action) && owner && hasWorkflowValue(r.due_date) && hasWorkflowValue(r.priority) && r.action_status==="verified");
   }
 
-  function renderActionWorkflow(r, el, auditEl, detail){
-    if(!el) return;
+  function renderActionWorkflow(r, el, auditEl, detail, mode){
+    if(!el) return; mode=mode||"complete";
     var status=r.action_status||"not_started", assignee=assigneeName(r)||"Not assigned", due=escalationInfo(r);
-    var completed=r.action_completed_at?("Completed "+fmtDate(r.action_completed_at)):"";
-    var verified=r.action_verified_at?("Verified "+fmtDate(r.action_verified_at)):"";
-    var h='<div class="action-head"><div><h4>Corrective-action workflow</h4><p>'+esc(assignee)+(r.due_date?' · '+esc(due.label):' · no due date')+'</p></div><span class="action-state as-'+esc(status)+'">'+esc(actionLabel(status))+'</span></div>';
+    var completed=r.action_completed_at?("Completed "+fmtDate(r.action_completed_at)):"", verified=r.action_verified_at?("Verified "+fmtDate(r.action_verified_at)):"";
+    var h='<div class="action-head"><div><h4>'+(mode==="verify"?'Verification review':'Assigned corrective action')+'</h4><p>'+esc(assignee)+(r.due_date?' · '+esc(due.label):' · no due date')+'</p></div><span class="action-state as-'+esc(status)+'">'+esc(actionLabel(status))+'</span></div>';
+    if(r.corrective_action&&String(r.corrective_action).trim()) h+='<div class="action-context"><b>Corrective action required</b><p>'+esc(r.corrective_action)+'</p></div>';
+    else h+='<div class="wizard-required show">The corrective action plan has not been completed yet.</div>';
 
-    if(r.corrective_action && String(r.corrective_action).trim()){
-      h+='<div class="action-context"><b>Corrective action to complete</b><p>'+esc(r.corrective_action)+'</p></div>';
-    }
-
-    if(status==="changes_requested" && r.action_verification_note){
-      h+='<div class="ops-alert"><b>Changes requested by reviewer</b>'+esc(r.action_verification_note)+'</div>';
-    }
-
-    if(status!=="verified"){
-      if(canEditReport(r)){
-        var noteLabel=status==="awaiting_verification"?'Completed work submitted':(status==="changes_requested"?'Update completed work':'Completion note');
-        var noteHelp=status==="awaiting_verification"?'This is the completed-work note currently waiting for verification. Update it only if the description needs to be corrected.':(status==="changes_requested"?'Update the note to explain what was changed, then resubmit it for verification.':'Describe what was actually completed. This note will be shown to the reviewer and is required before submission.');
-        var buttonLabel=status==="awaiting_verification"?'Update submitted note':(status==="changes_requested"?'Resubmit for verification':'Mark action complete');
-        var submitButton=status==="awaiting_verification"?'':('<button class="btn-complete" type="button">'+buttonLabel.replace("Mark action complete","Submit for verification")+'</button>');
-        h+='<label class="inv-l">'+noteLabel+'<textarea class="action-note" placeholder="What was completed or changed?">'+esc(r.action_completion_note||'')+'</textarea></label>'+ 
-          '<p class="action-help">'+noteHelp+'</p>'+ 
-          '<div class="action-actions"><button class="btn-save-completion section-save" type="button">Save completion note</button>'+submitButton+'<span class="completion-saved section-saved" hidden>Saved ✓</span></div>';
-      } else if(r.action_completion_note){
-        h+='<div class="action-context"><b>Completed work submitted</b><p>'+esc(r.action_completion_note)+'</p></div>';
-      }
-
-      if(completed){
-        var completedBy=r.action_completed_by&&profileById[String(r.action_completed_by)]?profileName(profileById[String(r.action_completed_by)]):'';
-        h+='<div class="action-meta">'+esc(completed)+(completedBy?' by '+esc(completedBy):'')+'</div>';
-      }
-
-      if(status==="awaiting_verification" && canVerify()){
-        h+='<label class="inv-l">Reviewer verification note <span style="font-weight:400;color:var(--muted)">(optional for verification)</span><textarea class="verify-note" placeholder="What did you verify? If requesting changes, explain what still needs to be done.">'+esc(r.action_verification_note||'')+'</textarea></label>'+ 
-          '<div class="action-actions"><button class="btn-save-verification section-save" type="button">Save verification note</button><button class="btn-verify" type="button">Verify corrective action</button><button class="btn-changes" type="button">Request changes</button><span class="verification-saved section-saved" hidden>Saved ✓</span></div>';
+    if(mode==="complete"){
+      if(status==="changes_requested"&&r.action_verification_note) h+='<div class="ops-alert critical"><b>Changes requested by reviewer</b>'+esc(r.action_verification_note)+'</div>';
+      if(status==="awaiting_verification"){ h+='<div class="ops-alert"><b>Waiting for verification</b>Your completed work has been submitted. An Admin or Safety Manager must review it before the record can move forward.</div>'; }
+      if(status==="verified"){ h+='<div class="ops-alert"><b>Corrective action verified</b>This step is complete.</div>'; }
+      if(canEditReport(r)&&status!=="verified"){
+        var label=status==="changes_requested"?'Update completed work':(status==="awaiting_verification"?'Completed work submitted':'What did you complete?');
+        var help=status==="changes_requested"?'Update the note to explain the corrected work, then resubmit it.':(status==="awaiting_verification"?'The submitted completion note is shown below. You can correct the wording while it is waiting for verification.':'Describe exactly what was done. This note is required before submission.');
+        h+='<label class="inv-l">'+label+'<textarea class="action-note" placeholder="Describe what was completed or changed.">'+esc(r.action_completion_note||'')+'</textarea></label><p class="action-help">'+help+'</p>';
+      } else if(r.action_completion_note){ h+='<div class="action-context"><b>Completed work submitted</b><p>'+esc(r.action_completion_note)+'</p></div>'; }
+      if(completed){var cb=r.action_completed_by&&profileById[String(r.action_completed_by)]?profileName(profileById[String(r.action_completed_by)]):'';h+='<div class="action-meta">'+esc(completed)+(cb?' by '+esc(cb):'')+'</div>';}
+      h+='<div class="evidence-panel" data-action-evidence></div>';
+      if(canEditReport(r)&&status!=="verified"){
+        var primary=(status==="awaiting_verification")?'':(status==="changes_requested"?'Resubmit for verification →':'Submit for verification →');
+        h+='<div class="wizard-footer"><div class="wizard-footer-copy">Save keeps the completion note as a draft. Submitting is the deliberate handoff to the reviewer.</div><div class="wizard-footer-actions"><button class="wizard-save btn-save-completion" data-step-save="4" type="button">Save completion note</button><span class="completion-saved section-saved" hidden>Saved ✓</span>'+(primary?'<button class="wizard-primary btn-complete" data-step-complete="4" type="button">'+primary+'</button>':'')+'</div></div>';
       }
     } else {
-      if(r.action_completion_note){
-        h+='<div class="action-context"><b>Completed work</b><p>'+esc(r.action_completion_note)+'</p></div>';
-      }
-      if(completed){
-        var completedBy2=r.action_completed_by&&profileById[String(r.action_completed_by)]?profileName(profileById[String(r.action_completed_by)]):'';
-        h+='<div class="action-meta">'+esc(completed)+(completedBy2?' by '+esc(completedBy2):'')+'</div>';
-      }
-      if(r.action_verification_note){
-        h+='<div class="action-context"><b>Verification note</b><p>'+esc(r.action_verification_note)+'</p></div>';
-      }
-      if(verified){
-        var verifiedBy=r.action_verified_by&&profileById[String(r.action_verified_by)]?profileName(profileById[String(r.action_verified_by)]):'';
-        h+='<div class="action-meta">'+esc(verified)+(verifiedBy?' by '+esc(verifiedBy):'')+'</div>';
-      }
-      h+='<div class="ops-alert"><b>Verified corrective action</b>This incident now meets the corrective-action requirement for closure.</div>';
+      if(r.action_completion_note) h+='<div class="action-context"><b>Completed work submitted</b><p>'+esc(r.action_completion_note)+'</p></div>';
+      if(completed){var cb2=r.action_completed_by&&profileById[String(r.action_completed_by)]?profileName(profileById[String(r.action_completed_by)]):'';h+='<div class="action-meta">'+esc(completed)+(cb2?' by '+esc(cb2):'')+'</div>';}
+      h+='<div class="evidence-panel" data-action-evidence></div>';
+      if(status==="awaiting_verification"&&canVerify()){
+        h+='<label class="inv-l">Reviewer verification note <span style="font-weight:400;color:var(--muted)">(optional when approving)</span><textarea class="verify-note" placeholder="What did you verify? If requesting changes, explain exactly what still needs to be done.">'+esc(r.action_verification_note||'')+'</textarea></label><div class="wizard-required" data-verify-required>Add a verification note explaining the requested changes.</div>'+
+          '<div class="wizard-footer"><div class="wizard-footer-copy">Save keeps your note without making a decision. Verify advances the record. Request Changes sends it back to Step 4.</div><div class="wizard-footer-actions"><button class="wizard-save btn-save-verification" data-step-save="5" type="button">Save verification note</button><span class="verification-saved section-saved" hidden>Saved ✓</span><button class="btn-changes" type="button">Request changes</button><button class="wizard-primary btn-verify" data-step-complete="5" type="button">Verify &amp; continue →</button></div></div>';
+      } else if(status==="verified"){
+        if(r.action_verification_note) h+='<div class="action-context"><b>Verification note</b><p>'+esc(r.action_verification_note)+'</p></div>';
+        if(verified){var vb=r.action_verified_by&&profileById[String(r.action_verified_by)]?profileName(profileById[String(r.action_verified_by)]):'';h+='<div class="action-meta">'+esc(verified)+(vb?' by '+esc(vb):'')+'</div>';}
+        h+='<div class="ops-alert"><b>Verification complete</b>The corrective action was approved. Continue to Close Record.</div>';
+      } else if(status==="changes_requested") h+='<div class="readonly-step-note">Changes were requested. Step 4 is active again so the assigned owner can update and resubmit the work.</div>';
+      else h+='<div class="readonly-step-note">This step becomes available after the assigned owner submits Step 4 for verification.</div>';
     }
-    h+='<div class="evidence-panel" data-action-evidence></div>';
     el.innerHTML=h;
-    renderActionEvidence(r, el.querySelector("[data-action-evidence]"), auditEl);
-    refreshRecordWorkflow(r, detail);
+    renderActionEvidence(r,el.querySelector("[data-action-evidence]"),auditEl);
 
-    var saveCompletionBtn=el.querySelector(".btn-save-completion");
-    if(saveCompletionBtn) saveCompletionBtn.addEventListener("click",async function(){
-      if(!canEditReport(r)){ toast("You do not have permission to update this corrective action.","err"); return; }
-      var note=(el.querySelector(".action-note")&&el.querySelector(".action-note").value.trim())||"";
-      saveCompletionBtn.disabled=true;
-      try{
-        var patch={action_completion_note:note||null};
-        if((r.action_status||"not_started")==="not_started" && note) patch.action_status="in_progress";
-        var res=await sb.from("reports").update(patch).eq("id",r.id); if(res.error) throw res.error;
-        Object.keys(patch).forEach(function(k){r[k]=patch[k];});
-        var flag=el.querySelector(".completion-saved"); if(flag){flag.hidden=false;setTimeout(function(){flag.hidden=true;},2200);}
-        toast("Completion note saved","ok"); renderActionWorkflow(r,el,auditEl,detail); loadAudit(r.id,auditEl); renderHomeSnapshot(); renderMyWork();
-      }catch(ex){console.error(ex);toast("Could not save completion note.","err");}
-      finally{ if(saveCompletionBtn && saveCompletionBtn.isConnected) saveCompletionBtn.disabled=false; }
+    var saveCompletionBtn=el.querySelector(".btn-save-completion"); if(saveCompletionBtn) saveCompletionBtn.addEventListener("click",async function(){
+      var note=(el.querySelector(".action-note")&&el.querySelector(".action-note").value.trim())||""; saveCompletionBtn.disabled=true;
+      try{var patch={action_completion_note:note||null};if((r.action_status||"not_started")==="not_started"&&note)patch.action_status="in_progress";var res=await sb.from("reports").update(patch).eq("id",r.id);if(res.error)throw res.error;Object.keys(patch).forEach(function(k){r[k]=patch[k];});var flag=el.querySelector(".completion-saved");if(flag){flag.hidden=false;setTimeout(function(){flag.hidden=true;},2200);}toast("Completion note saved","ok");loadAudit(r.id,auditEl);refreshRecordWorkflow(r,detail);renderHomeSnapshot();renderMyWork();}
+      catch(ex){console.error(ex);toast("Could not save completion note.","err");}finally{if(saveCompletionBtn.isConnected)saveCompletionBtn.disabled=false;}
     });
-
-    var completeBtn=el.querySelector(".btn-complete");
-    if(completeBtn) completeBtn.addEventListener("click",async function(){
-      if(!r.corrective_action || !String(r.corrective_action).trim()){ toast("Document the corrective action before marking it complete.","err"); return; }
-      if(!r.assigned_user_id && !r.responsible_person){ toast("Assign an owner before marking the action complete.","err"); return; }
-      completeBtn.disabled=true;
-      try{
-        var note=(el.querySelector(".action-note")&&el.querySelector(".action-note").value.trim())||"";
-        if(!note){ toast("Add a completion note describing what was done before submitting for verification.","err"); completeBtn.disabled=false; return; }
-        var uid=currentSession&&currentSession.user?currentSession.user.id:null;
-        var keepCompletedAt=(status==="awaiting_verification" && r.action_completed_at)?r.action_completed_at:new Date().toISOString();
-        var keepCompletedBy=(status==="awaiting_verification" && r.action_completed_by)?r.action_completed_by:uid;
-        var patch={action_status:"awaiting_verification",action_completed_at:keepCompletedAt,action_completed_by:keepCompletedBy,action_completion_note:note,action_verified_at:null,action_verified_by:null};
-        var res=await sb.from("reports").update(patch).eq("id",r.id); if(res.error) throw res.error;
-        Object.keys(patch).forEach(function(k){r[k]=patch[k];});
-        toast("Corrective action sent for verification","ok"); renderActionWorkflow(r,el,auditEl,detail); loadAudit(r.id,auditEl); renderHomeSnapshot(); renderMyWork();
-      }catch(ex){console.error(ex);toast("Could not update corrective action.","err");}
+    var completeBtn=el.querySelector(".btn-complete"); if(completeBtn) completeBtn.addEventListener("click",async function(){
+      var note=(el.querySelector(".action-note")&&el.querySelector(".action-note").value.trim())||""; if(!note){toast("Describe what was completed before submitting for verification.","err");return;} completeBtn.disabled=true;
+      try{var uid=currentSession&&currentSession.user?currentSession.user.id:null;var patch={action_status:"awaiting_verification",action_completed_at:new Date().toISOString(),action_completed_by:uid,action_completion_note:note,action_verified_at:null,action_verified_by:null,status:"corrective_action"};var res=await sb.from("reports").update(patch).eq("id",r.id);if(res.error)throw res.error;Object.keys(patch).forEach(function(k){r[k]=patch[k];});$("incidentSummary").innerHTML='<div class="is-badges">'+incidentBadgeHtml(r)+'</div><div class="is-desc">'+esc(r.description||"No description provided.")+'</div>';renderActionWorkflow(r,detail.querySelector("[data-action-completion]"),auditEl,detail,"complete");renderActionWorkflow(r,detail.querySelector("[data-action-verification]"),auditEl,detail,"verify");loadAudit(r.id,auditEl);renderHomeSnapshot();renderMyWork();refreshRecordWorkflow(r,detail);setWizardStep(detail,r,5,true);toast("Corrective action submitted for verification","ok");}
+      catch(ex){console.error(ex);toast("Could not submit the corrective action.","err");}finally{if(completeBtn.isConnected)completeBtn.disabled=false;}
     });
-
-    var saveVerificationBtn=el.querySelector(".btn-save-verification");
-    if(saveVerificationBtn) saveVerificationBtn.addEventListener("click",async function(){
-      if(!canVerify()){ toast("Only an Admin or Safety Manager can save a verification note.","err"); return; }
-      var note=(el.querySelector(".verify-note")&&el.querySelector(".verify-note").value.trim())||null;
-      saveVerificationBtn.disabled=true;
-      try{
-        var res=await sb.from("reports").update({action_verification_note:note}).eq("id",r.id); if(res.error) throw res.error; r.action_verification_note=note;
-        var flag=el.querySelector(".verification-saved"); if(flag){flag.hidden=false;setTimeout(function(){flag.hidden=true;},2200);}
-        toast("Verification note saved","ok"); loadAudit(r.id,auditEl);
-      }catch(ex){console.error(ex);toast("Could not save verification note.","err");}
-      finally{saveVerificationBtn.disabled=false;}
-    });
-
-    var verifyBtn=el.querySelector(".btn-verify");
-    if(verifyBtn) verifyBtn.addEventListener("click",async function(){
-      verifyBtn.disabled=true;
-      try{
-        var note=(el.querySelector(".verify-note")&&el.querySelector(".verify-note").value.trim())||null;
-        var patch={action_status:"verified",action_verified_at:new Date().toISOString(),action_verified_by:currentSession.user.id,action_verification_note:note};
-        var res=await sb.from("reports").update(patch).eq("id",r.id); if(res.error) throw res.error;
-        Object.keys(patch).forEach(function(k){r[k]=patch[k];});
-        toast("Corrective action verified","ok"); renderActionWorkflow(r,el,auditEl,detail); loadAudit(r.id,auditEl); renderHomeSnapshot(); renderMyWork();
-      }catch(ex){console.error(ex);toast("Could not verify corrective action.","err");}
-    });
-
-    var changesBtn=el.querySelector(".btn-changes");
-    if(changesBtn) changesBtn.addEventListener("click",async function(){
-      var note=(el.querySelector(".verify-note")&&el.querySelector(".verify-note").value.trim())||"";
-      if(!note){ toast("Add a verification note explaining what changes are needed.","err"); return; }
-      changesBtn.disabled=true;
-      try{
-        var patch={action_status:"changes_requested",action_verification_note:note,action_verified_at:null,action_verified_by:null};
-        var res=await sb.from("reports").update(patch).eq("id",r.id); if(res.error) throw res.error;
-        Object.keys(patch).forEach(function(k){r[k]=patch[k];});
-        toast("Changes requested","ok"); renderActionWorkflow(r,el,auditEl,detail); loadAudit(r.id,auditEl); renderHomeSnapshot(); renderMyWork();
-      }catch(ex){console.error(ex);toast("Could not request changes.","err");}
-    });
+    var saveVerificationBtn=el.querySelector(".btn-save-verification"); if(saveVerificationBtn) saveVerificationBtn.addEventListener("click",async function(){var note=(el.querySelector(".verify-note")&&el.querySelector(".verify-note").value.trim())||null;saveVerificationBtn.disabled=true;try{var res=await sb.from("reports").update({action_verification_note:note}).eq("id",r.id);if(res.error)throw res.error;r.action_verification_note=note;var flag=el.querySelector(".verification-saved");if(flag){flag.hidden=false;setTimeout(function(){flag.hidden=true;},2200);}toast("Verification note saved","ok");loadAudit(r.id,auditEl);}catch(ex){console.error(ex);toast("Could not save verification note.","err");}finally{saveVerificationBtn.disabled=false;}});
+    var verifyBtn=el.querySelector(".btn-verify"); if(verifyBtn) verifyBtn.addEventListener("click",async function(){verifyBtn.disabled=true;try{var note=(el.querySelector(".verify-note")&&el.querySelector(".verify-note").value.trim())||null;var patch={action_status:"verified",action_verified_at:new Date().toISOString(),action_verified_by:currentSession.user.id,action_verification_note:note};var res=await sb.from("reports").update(patch).eq("id",r.id);if(res.error)throw res.error;Object.keys(patch).forEach(function(k){r[k]=patch[k];});renderActionWorkflow(r,detail.querySelector("[data-action-completion]"),auditEl,detail,"complete");renderActionWorkflow(r,detail.querySelector("[data-action-verification]"),auditEl,detail,"verify");loadAudit(r.id,auditEl);renderHomeSnapshot();renderMyWork();refreshRecordWorkflow(r,detail);setWizardStep(detail,r,6,true);toast("Corrective action verified — ready for closure","ok");}catch(ex){console.error(ex);toast("Could not verify corrective action.","err");}finally{if(verifyBtn.isConnected)verifyBtn.disabled=false;}});
+    var changesBtn=el.querySelector(".btn-changes"); if(changesBtn) changesBtn.addEventListener("click",async function(){var note=(el.querySelector(".verify-note")&&el.querySelector(".verify-note").value.trim())||"";var req=el.querySelector("[data-verify-required]");if(!note){if(req)req.classList.add("show");toast("Explain what needs to change before sending the action back.","err");return;}if(req)req.classList.remove("show");changesBtn.disabled=true;try{var patch={action_status:"changes_requested",action_verification_note:note,action_verified_at:null,action_verified_by:null};var res=await sb.from("reports").update(patch).eq("id",r.id);if(res.error)throw res.error;Object.keys(patch).forEach(function(k){r[k]=patch[k];});renderActionWorkflow(r,detail.querySelector("[data-action-completion]"),auditEl,detail,"complete");loadAudit(r.id,auditEl);renderHomeSnapshot();renderMyWork();refreshRecordWorkflow(r,detail);setWizardStep(detail,r,4,true);toast("Changes requested — returned to the assigned owner","ok");}catch(ex){console.error(ex);toast("Could not request changes.","err");}finally{if(changesBtn.isConnected)changesBtn.disabled=false;}});
   }
 
   function isActionEvidence(a){ return !!(a && String(a.storage_path||"").indexOf("corrective-evidence/")===0); }
