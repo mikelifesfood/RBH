@@ -114,10 +114,37 @@
   @media(max-width:560px){.final-save-bar{align-items:stretch}.save-all{width:100%}}
   .gate-msg{display:none;margin-top:8px;color:var(--red);font-size:12.5px;font-weight:600}
   .gate-msg.show{display:block}
-  .audit{display:grid;gap:8px;margin-top:10px}
-  .audit-row{border-left:3px solid var(--line-strong);padding:2px 0 2px 12px}
-  .au-line{font-size:13.5px}
-  .au-meta{color:var(--muted);font-size:11.5px;margin-top:1px}
+  /* corrective-action evidence */
+  .evidence-panel{margin-top:16px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2);padding:13px 14px}
+  .evidence-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:9px}
+  .evidence-head b{font-family:var(--display);font-size:13.5px}.evidence-head span{display:block;color:var(--muted);font-size:12px;margin-top:2px;line-height:1.4}
+  .evidence-count{font-family:var(--display);font-size:11px;font-weight:700;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:4px 9px;white-space:nowrap}
+  .evidence-files{display:flex;flex-wrap:wrap;gap:9px;margin-top:8px}
+  .evidence-empty{color:var(--muted);font-size:12.5px;padding:7px 0}
+  .evidence-upload{margin-top:11px;padding-top:11px;border-top:1px solid var(--line);display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .evidence-file-input{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+  .evidence-pick,.evidence-upload-btn{border-radius:9px;padding:9px 12px;font-family:var(--display);font-weight:700;font-size:12.5px;cursor:pointer}
+  .evidence-pick{background:var(--paper);border:1.5px solid var(--line-strong);color:var(--ink)}.evidence-pick:hover{border-color:var(--red)}
+  .evidence-upload-btn{background:var(--ink-bar);border:1.5px solid var(--ink-bar);color:#fff}.evidence-upload-btn:disabled{opacity:.55;cursor:not-allowed}
+  .evidence-selected{color:var(--muted);font-size:12px;min-width:140px;flex:1}
+  .evidence-help{width:100%;color:var(--muted);font-size:11.5px;line-height:1.4}
+  .evidence-thumb{display:block;width:88px;height:88px;border-radius:9px;overflow:hidden;border:1px solid var(--line);background:var(--paper);position:relative}
+  .evidence-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .evidence-file{display:inline-flex;align-items:center;gap:7px;background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-size:12.5px;font-weight:600;color:var(--ink);text-decoration:none;max-width:240px}
+  .evidence-file span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.evidence-file:hover,.evidence-thumb:hover{border-color:var(--red)}
+
+  /* activity timeline */
+  .audit{margin-top:10px}
+  .timeline{position:relative;display:grid;gap:0;padding-left:2px}
+  .timeline:before{content:"";position:absolute;left:14px;top:14px;bottom:14px;width:2px;background:var(--line)}
+  .tl-item{position:relative;display:grid;grid-template-columns:30px 1fr;gap:10px;padding:7px 0 13px}
+  .tl-marker{position:relative;z-index:1;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:800;font-size:11px;border:2px solid var(--paper);box-shadow:0 0 0 1px var(--line);background:var(--surface-2);color:var(--muted)}
+  .tl-item.evidence .tl-marker{background:#e6eefb;color:#1f4f9e}.tl-item.note .tl-marker{background:#fbf3d9;color:#8a6d10}.tl-item.submit .tl-marker{background:#e6f4ec;color:#1f7a44}.tl-item.close .tl-marker{background:#e6f4ec;color:#1f7a44}.tl-item.action .tl-marker{background:#efe7fb;color:#5b3fa0}
+  .tl-card{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0}
+  .tl-title{font-family:var(--display);font-weight:700;font-size:13.5px}.tl-meta{color:var(--muted);font-size:11.5px;margin-top:2px}
+  .tl-detail{font-size:12.5px;margin-top:6px;white-space:pre-wrap;word-break:break-word;color:var(--ink)}
+  .tl-changes{display:grid;gap:3px;margin-top:7px;padding-top:7px;border-top:1px solid var(--line)}.tl-change{font-size:12px;color:var(--muted)}
+  @media(max-width:560px){.evidence-upload{align-items:stretch}.evidence-upload-btn,.evidence-pick{width:100%;text-align:center}.evidence-selected{width:100%}}
   /* toasts */
   .toasts{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:200;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
   .toast{background:var(--ink-bar);color:#fff;font-size:13.5px;font-weight:600;padding:11px 16px;border-radius:10px;box-shadow:0 10px 30px -8px rgba(0,0,0,.45);opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;max-width:90vw}
@@ -801,7 +828,7 @@
       '<div class="d-section"><div class="d-sec-title-row"><span class="d-sec-title">Notes</span>'+
         '<button class="add-note" type="button">+ Add Note</button></div><div class="notes" data-notes></div></div>'+
       '<div class="final-save-bar"><div class="final-save-copy"><b>Finished making record updates?</b><span>Save the review status, root cause, and action plan together. Completion and verification notes use their own Save / Submit buttons above.</span></div><button class="save-all" type="button">Save all changes</button><span class="save-all-saved" hidden>All saved ✓</span></div>'+
-      '<div class="d-section"><div class="d-sec-title">Activity log</div><div class="audit" data-audit></div></div>';
+      '<div class="d-section"><div class="d-sec-title">Activity timeline</div><p class="step-section-note">A readable history of submissions, updates, notes, evidence, verification, and closure.</p><div class="audit" data-audit></div></div>';
   }
 
   function hasWorkflowValue(v){ return v!=null && String(v).trim()!==""; }
@@ -1069,7 +1096,7 @@
   });
 
   async function loadAtts(reportId, el){
-    var atts=attByReport[reportId]||[];
+    var atts=(attByReport[reportId]||[]).filter(function(a){ return !isActionEvidence(a); });
     if(!atts.length){ el.innerHTML='<div class="muted small">No photos or files attached.</div>'; return; }
     el.innerHTML='<div class="muted small">Loading files\u2026</div>';
     try{
@@ -1093,7 +1120,7 @@
     try{
       var res=await sb.from("report_notes").select("*").eq("report_id",reportId).order("created_at",{ascending:false});
       if(res.error) throw res.error;
-      var notes=res.data||[];
+      var notes=(res.data||[]).filter(function(n){ return String(n.title||"").indexOf("[System]")!==0; });
       if(!notes.length){ el.innerHTML='<div class="notes-empty">No notes yet.</div>'; return; }
       el.innerHTML="";
       notes.forEach(function(n){
@@ -1140,6 +1167,7 @@
       var nEl=modalNotesEl, rid=modalReport.id;
       closeModal();
       if(nEl) loadNotes(rid, nEl);
+      var openAudit=document.querySelector("#incidentBody [data-audit]"); if(openAudit) loadAudit(rid,openAudit);
       toast("Note added","ok");
     }catch(ex){ console.error(ex); err.textContent="Could not save the note. Please try again."; err.classList.add("show"); }
     finally{ btn.disabled=false; btn.textContent="Save note"; }
@@ -1675,7 +1703,9 @@
       }
       h+='<div class="ops-alert"><b>Verified corrective action</b>This incident now meets the corrective-action requirement for closure.</div>';
     }
+    h+='<div class="evidence-panel" data-action-evidence></div>';
     el.innerHTML=h;
+    renderActionEvidence(r, el.querySelector("[data-action-evidence]"), auditEl);
     refreshRecordWorkflow(r, detail);
 
     var saveCompletionBtn=el.querySelector(".btn-save-completion");
@@ -1751,35 +1781,184 @@
     });
   }
 
+  function isActionEvidence(a){ return !!(a && String(a.storage_path||"").indexOf("corrective-evidence/")===0); }
+  async function refreshReportAttachments(reportId){
+    var res=await sb.from("report_attachments").select("*").eq("report_id",reportId);
+    if(res.error) throw res.error;
+    attByReport[reportId]=res.data||[];
+    return attByReport[reportId];
+  }
+  function evidenceLocked(r){ return r.status==="closed" || r.status==="no_action" || r.status==="duplicate" || r.action_status==="verified"; }
+  async function renderActionEvidence(r, el, auditEl){
+    if(!el) return;
+    var arr=(attByReport[r.id]||[]).filter(isActionEvidence);
+    var canUpload=canEditReport(r) && !evidenceLocked(r);
+    var countLabel=arr.length+(arr.length===1?" file":" files");
+    el.innerHTML='<div class="evidence-head"><div><b>Corrective-action evidence</b><span>Photos or files that show what was fixed. Evidence is optional, but useful when the correction can be visually confirmed.</span></div><span class="evidence-count">'+countLabel+'</span></div><div class="evidence-files" data-evidence-files>'+(arr.length?'<span class="evidence-empty">Loading evidence…</span>':'<span class="evidence-empty">No corrective-action evidence uploaded yet.</span>')+'</div>'+(canUpload?'<div class="evidence-upload"><input class="evidence-file-input" type="file" multiple accept="image/*,.pdf,.doc,.docx"><button class="evidence-pick" type="button">Choose evidence</button><span class="evidence-selected">No files selected</span><button class="evidence-upload-btn" type="button" disabled>Upload evidence</button><div class="evidence-help">Up to 5 files at a time, 10 MB each. Photos, PDF, Word documents, and common image formats are supported.</div></div>':'');
+    var filesEl=el.querySelector("[data-evidence-files]");
+    if(arr.length){
+      try{
+        var paths=arr.map(function(a){return a.storage_path;});
+        var signed=await sb.storage.from("report-attachments").createSignedUrls(paths,3600);
+        if(signed.error) throw signed.error;
+        filesEl.innerHTML="";
+        (signed.data||[]).forEach(function(d,i){
+          var a=arr[i]; if(!d||d.error||!d.signedUrl) return;
+          var isImg=String(a.mime_type||"").indexOf("image/")===0;
+          var link=document.createElement("a"); link.href=d.signedUrl; link.target="_blank"; link.rel="noopener"; link.title=a.file_name||"Evidence";
+          if(isImg){ link.className="evidence-thumb"; var img=document.createElement("img"); img.src=d.signedUrl; img.loading="lazy"; img.alt=a.file_name||"Corrective-action evidence"; link.appendChild(img); }
+          else { link.className="evidence-file"; link.innerHTML='<b>FILE</b><span></span>'; link.querySelector("span").textContent=a.file_name||"Evidence file"; }
+          filesEl.appendChild(link);
+        });
+        if(!filesEl.children.length) filesEl.innerHTML='<span class="evidence-empty">Evidence is saved, but the preview could not be loaded.</span>';
+      }catch(ex){ console.error(ex); filesEl.innerHTML='<span class="evidence-empty">Evidence is saved, but the preview could not be loaded.</span>'; }
+    }
+    if(!canUpload) return;
+    var input=el.querySelector(".evidence-file-input"), pick=el.querySelector(".evidence-pick"), selected=el.querySelector(".evidence-selected"), upload=el.querySelector(".evidence-upload-btn");
+    if(!input||!pick||!selected||!upload) return;
+    pick.addEventListener("click",function(){ input.click(); });
+    input.addEventListener("change",function(){
+      var files=Array.prototype.slice.call(input.files||[]);
+      selected.textContent=files.length?(files.length+" file"+(files.length===1?"":"s")+" selected"):"No files selected";
+      upload.disabled=!files.length;
+    });
+    upload.addEventListener("click",async function(){
+      var files=Array.prototype.slice.call(input.files||[]);
+      if(!files.length) return;
+      if(files.length>5){ toast("Choose no more than 5 evidence files at a time.","err"); return; }
+      for(var i=0;i<files.length;i++){ if(files[i].size>10*1024*1024){ toast("Each evidence file must be 10 MB or smaller.","err"); return; } }
+      upload.disabled=true; pick.disabled=true; upload.textContent="Uploading…";
+      var ok=0, failed=0;
+      for(var j=0;j<files.length;j++){
+        var f=files[j];
+        try{
+          var safe=(f.name||"evidence").replace(/[^a-zA-Z0-9._-]/g,"_"); if(safe.length>120) safe=safe.slice(-120);
+          var path="corrective-evidence/"+r.id+"/"+Date.now()+"_"+j+"_"+safe;
+          var up=await sb.storage.from("report-attachments").upload(path,f,{contentType:f.type||undefined,upsert:false});
+          if(up.error) throw up.error;
+          var meta=await sb.rpc("rbh_add_action_evidence",{p_report_id:String(r.id),p_storage_path:path,p_file_name:f.name,p_mime_type:f.type||null,p_size_bytes:f.size||null});
+          if(meta.error) throw meta.error;
+          ok++;
+        }catch(ex){ console.error(ex); failed++; }
+      }
+      try{ await refreshReportAttachments(r.id); }catch(ex){ console.error(ex); }
+      if(ok) toast(ok+" evidence file"+(ok===1?"":"s")+" uploaded","ok");
+      if(failed) toast(failed+" evidence file"+(failed===1?"":"s")+" could not be uploaded","err");
+      loadAudit(r.id,auditEl);
+      renderActionEvidence(r,el,auditEl);
+    });
+  }
+
+  function auditActor(email){
+    if(!email) return "System";
+    var low=String(email).toLowerCase();
+    for(var i=0;i<allProfiles.length;i++){ if(String(allProfiles[i].email||"").toLowerCase()===low) return profileName(allProfiles[i]); }
+    return email;
+  }
+  function auditAssignee(v){
+    if(!v) return "Unassigned";
+    var p=profileById[String(v)]; return p?profileName(p):"Assigned user";
+  }
   function fmtChange(a){
-    if(a.field==="status") return "Status: "+(STATUS[a.old_value]?STATUS[a.old_value].l:(a.old_value||"—"))+" → "+(STATUS[a.new_value]?STATUS[a.new_value].l:(a.new_value||"—"));
+    if(a.field==="status") return "Report status: "+(STATUS[a.old_value]?STATUS[a.old_value].l:(a.old_value||"—"))+" → "+(STATUS[a.new_value]?STATUS[a.new_value].l:(a.new_value||"—"));
     if(a.field==="priority") return "Priority: "+(a.old_value||"—")+" → "+(a.new_value||"—");
-    if(a.field==="responsible_person") return "Responsible person: "+(a.old_value||"—")+" → "+(a.new_value||"—");
-    if(a.field==="due_date") return "Due date: "+(a.old_value||"—")+" → "+(a.new_value||"—");
-    if(a.field==="assigned_user_id") return "Dashboard assignment updated";
-    if(a.field==="action_status") return "Corrective action: "+actionLabel(a.old_value)+" → "+actionLabel(a.new_value);
-    if(a.field==="action_completed_at") return "Corrective action marked complete";
-    if(a.field==="action_verified_at") return "Corrective action verified";
+    if(a.field==="responsible_person") return "Responsible person / crew: "+(a.old_value||"—")+" → "+(a.new_value||"—");
+    if(a.field==="due_date") return "Due date: "+(a.old_value?shortDate(a.old_value):"—")+" → "+(a.new_value?shortDate(a.new_value):"—");
+    if(a.field==="assigned_user_id") return "Assigned dashboard user: "+auditAssignee(a.old_value)+" → "+auditAssignee(a.new_value);
+    if(a.field==="action_status") return "Corrective-action status: "+actionLabel(a.old_value)+" → "+actionLabel(a.new_value);
+    if(a.field==="action_completed_at") return a.new_value?"Corrective action submitted as complete":"Completion submission cleared";
+    if(a.field==="action_verified_at") return a.new_value?"Corrective action verified":"Verification cleared";
     if(a.field==="action_completion_note") return "Completion note updated";
-    if(a.field==="action_verification_note") return "Verification note updated";
+    if(a.field==="action_verification_note") return "Verification / change-request note updated";
     if(a.field==="root_cause") return "Root cause updated";
     if(a.field==="corrective_action") return "Corrective action updated";
-    return (a.field||"field")+" changed";
+    if(a.field==="closed_at") return a.new_value?"Closure timestamp recorded":"Closure timestamp cleared";
+    return (a.field||"Record field")+" updated";
+  }
+  function auditGroupTitle(rows){
+    var fields=rows.map(function(a){return a.field;});
+    var actionRow=rows.find(function(a){return a.field==="action_status";});
+    if(actionRow){
+      if(actionRow.new_value==="awaiting_verification") return "Corrective action submitted for verification";
+      if(actionRow.new_value==="verified") return "Corrective action verified";
+      if(actionRow.new_value==="changes_requested") return "Changes requested on corrective action";
+      if(actionRow.new_value==="in_progress") return "Corrective action moved into progress";
+    }
+    var statusRow=rows.find(function(a){return a.field==="status";});
+    if(statusRow){
+      if(statusRow.new_value==="closed") return "Report closed";
+      if(statusRow.new_value==="no_action") return "Report closed — no action required";
+      if(statusRow.new_value==="duplicate") return "Report closed — duplicate";
+      return "Report status updated";
+    }
+    if(fields.some(function(f){return ["corrective_action","assigned_user_id","responsible_person","due_date","priority"].indexOf(f)>=0;})) return "Corrective-action plan updated";
+    if(fields.indexOf("root_cause")>=0) return "Root cause updated";
+    if(fields.indexOf("action_completion_note")>=0) return "Completion note saved";
+    if(fields.indexOf("action_verification_note")>=0) return "Verification note saved";
+    return rows.length>1?"Record updated":fmtChange(rows[0]);
+  }
+  function timelineKind(title, rows){
+    var t=String(title||"").toLowerCase();
+    if(t.indexOf("evidence")>=0) return "evidence";
+    if(t.indexOf("closed")>=0 || t.indexOf("verified")>=0) return "close";
+    if(t.indexOf("corrective")>=0 || (rows&&rows.some(function(a){return String(a.field||"").indexOf("action_")===0;}))) return "action";
+    if(t.indexOf("note")>=0) return "note";
+    return "update";
+  }
+  function timelineMarker(kind){ return kind==="submit"?"IN":kind==="evidence"?"EV":kind==="note"?"NT":kind==="close"?"OK":kind==="action"?"CA":"UP"; }
+  function groupAuditRows(rows){
+    var sorted=rows.slice().sort(function(a,b){return new Date(b.created_at)-new Date(a.created_at);});
+    var groups=[];
+    sorted.forEach(function(a){
+      var last=groups[groups.length-1], actor=String(a.actor_email||"system").toLowerCase(), at=new Date(a.created_at).getTime();
+      if(last && last.actor===actor && Math.abs(last.at-at)<=2200){ last.rows.push(a); if(at>last.at){last.at=at;last.created_at=a.created_at;} }
+      else groups.push({actor:actor,at:at,created_at:a.created_at,rows:[a]});
+    });
+    return groups;
   }
   async function loadAudit(reportId, el){
     if(!el) return; el.innerHTML='<div class="notes-empty">Loading activity…</div>';
     try{
-      var res=await sb.from("report_audit").select("*").eq("report_id",reportId).order("created_at",{ascending:false});
-      if(res.error) throw res.error;
-      var rows=res.data||[];
-      if(!rows.length){ el.innerHTML='<div class="notes-empty">No changes recorded yet.</div>'; return; }
-      el.innerHTML=""; var box=document.createElement("div"); box.className="audit";
-      rows.forEach(function(a){
-        var d=document.createElement("div"); d.className="audit-row";
-        d.innerHTML='<div class="au-line"></div><div class="au-meta"></div>';
-        d.querySelector(".au-line").textContent=fmtChange(a);
-        d.querySelector(".au-meta").textContent=fmtDate(a.created_at)+" · "+(a.actor_email||"system");
-        box.appendChild(d);
+      var results=await Promise.all([
+        sb.from("report_audit").select("*").eq("report_id",reportId).order("created_at",{ascending:false}),
+        sb.from("report_notes").select("*").eq("report_id",reportId).order("created_at",{ascending:false})
+      ]);
+      if(results[0].error) throw results[0].error;
+      if(results[1].error) throw results[1].error;
+      var audits=results[0].data||[], notes=results[1].data||[], events=[];
+      groupAuditRows(audits).forEach(function(g){
+        var title=auditGroupTitle(g.rows);
+        events.push({kind:timelineKind(title,g.rows),title:title,created_at:g.created_at,actor:auditActor(g.rows[0].actor_email),changes:g.rows.map(fmtChange)});
+      });
+      notes.forEach(function(n){
+        var title=String(n.title||"Note added"), system=title.indexOf("[System]")===0;
+        if(system) title=title.replace(/^\[System\]\s*/,"");
+        var kind=title.toLowerCase().indexOf("evidence")>=0?"evidence":(title.toLowerCase().indexOf("closed without corrective action")>=0?"close":"note");
+        events.push({kind:kind,title:system?title:("Note added — "+title),created_at:n.created_at,actor:auditActor(n.author_email),detail:n.body||""});
+      });
+      var report=allReports.find(function(r){return String(r.id)===String(reportId);});
+      if(report){
+        var who=report.reporter_name||"Anonymous reporter";
+        var detail=[report.report_type||"Safety report",report.job_site||""].filter(Boolean).join(" · ");
+        events.push({kind:"submit",title:"Report submitted",created_at:report.created_at,actor:who,detail:detail});
+      }
+      events.sort(function(a,b){return new Date(b.created_at)-new Date(a.created_at);});
+      if(!events.length){ el.innerHTML='<div class="notes-empty">No activity recorded yet.</div>'; return; }
+      el.innerHTML=""; var box=document.createElement("div"); box.className="timeline";
+      events.forEach(function(ev){
+        var item=document.createElement("div"); item.className="tl-item "+(ev.kind||"update");
+        var marker=document.createElement("div"); marker.className="tl-marker"; marker.textContent=timelineMarker(ev.kind);
+        var card=document.createElement("div"); card.className="tl-card";
+        var title=document.createElement("div"); title.className="tl-title"; title.textContent=ev.title;
+        var meta=document.createElement("div"); meta.className="tl-meta"; meta.textContent=fmtDate(ev.created_at)+" · "+(ev.actor||"System");
+        card.appendChild(title); card.appendChild(meta);
+        if(ev.detail){ var det=document.createElement("div"); det.className="tl-detail"; det.textContent=ev.detail; card.appendChild(det); }
+        if(ev.changes && ev.changes.length){
+          var changes=document.createElement("div"); changes.className="tl-changes";
+          ev.changes.forEach(function(c){ var row=document.createElement("div"); row.className="tl-change"; row.textContent=c; changes.appendChild(row); });
+          card.appendChild(changes);
+        }
+        item.appendChild(marker); item.appendChild(card); box.appendChild(item);
       });
       el.appendChild(box);
     }catch(ex){ console.error(ex); el.innerHTML='<div class="notes-empty">Could not load activity.</div>'; }
