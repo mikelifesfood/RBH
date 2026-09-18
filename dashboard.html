@@ -140,7 +140,7 @@
   .timeline:before{content:"";position:absolute;left:14px;top:14px;bottom:14px;width:2px;background:var(--line)}
   .tl-item{position:relative;display:grid;grid-template-columns:30px 1fr;gap:10px;padding:7px 0 13px}
   .tl-marker{position:relative;z-index:1;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:800;font-size:11px;border:2px solid var(--paper);box-shadow:0 0 0 1px var(--line);background:var(--surface-2);color:var(--muted)}
-  .tl-item.evidence .tl-marker{background:#e6eefb;color:#1f4f9e}.tl-item.note .tl-marker{background:#fbf3d9;color:#8a6d10}.tl-item.submit .tl-marker{background:#e6f4ec;color:#1f7a44}.tl-item.close .tl-marker{background:#e6f4ec;color:#1f7a44}.tl-item.action .tl-marker{background:#efe7fb;color:#5b3fa0}
+  .tl-item.evidence .tl-marker{background:#e6eefb;color:#1f4f9e}.tl-item.note .tl-marker{background:#fbf3d9;color:#8a6d10}.tl-item.restart .tl-marker{background:#fff1df;color:#a45b12}.tl-item.submit .tl-marker{background:#e6f4ec;color:#1f7a44}.tl-item.close .tl-marker{background:#e6f4ec;color:#1f7a44}.tl-item.action .tl-marker{background:#efe7fb;color:#5b3fa0}
   .tl-card{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0}
   .tl-title{font-family:var(--display);font-weight:700;font-size:13.5px}.tl-meta{color:var(--muted);font-size:11.5px;margin-top:2px}
   .tl-detail{font-size:12.5px;margin-top:6px;white-space:pre-wrap;word-break:break-word;color:var(--ink)}
@@ -251,6 +251,16 @@
   .exp:hover{border-color:var(--red)}
   .exp:disabled{opacity:.7;cursor:default}
   .detail-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .restart-workflow-btn{background:var(--paper);color:var(--red);border:1.5px solid color-mix(in srgb,var(--red) 58%,var(--line));border-radius:9px;font-family:var(--display);font-weight:700;font-size:13px;padding:9px 14px;cursor:pointer}
+  .restart-workflow-btn:hover{background:color-mix(in srgb,var(--red) 7%,var(--paper));border-color:var(--red)}
+  .restart-workflow-btn[hidden]{display:none!important}
+  .restart-warning{margin:0 0 14px;padding:12px 13px;border:1px solid #e4c574;border-radius:10px;background:#fff8df;font-size:12.5px;color:#665317;line-height:1.5}
+  .restart-warning b{color:#4f3e08}
+  .restart-preserve{margin:10px 0 0;padding-left:18px;color:var(--muted);font-size:12px;line-height:1.55}
+  .restart-preserve li{margin:2px 0}
+  .evidence-history{width:100%;margin-top:10px;border-top:1px solid var(--line);padding-top:9px}
+  .evidence-history summary{cursor:pointer;color:var(--muted);font-size:12px;font-weight:700}
+  .evidence-history .evidence-files{margin-top:9px}
   .pdf-btn{background:var(--ink-bar);color:#fff;border:none;border-radius:9px;font-family:var(--display);font-weight:700;font-size:13px;padding:9px 15px;cursor:pointer}
   .pdf-btn:hover{opacity:.92}
   .pdf-btn:disabled{opacity:.6;cursor:default}
@@ -584,7 +594,7 @@
     .record-support-body{padding:0 12px 12px}
     .support-grid{margin-top:12px}
     .detail-actions{margin-top:10px!important;margin-bottom:0!important}
-    .detail-actions .pdf-btn{width:100%;min-height:44px}
+    .detail-actions .pdf-btn,.detail-actions .restart-workflow-btn{width:100%;min-height:44px}
 
     /* Timeline cards remain narrow-screen safe. */
     .tl-item{grid-template-columns:28px minmax(0,1fr);gap:8px}
@@ -779,6 +789,36 @@
   </div>
 </div>
 
+<!-- ============ RESTART WORKFLOW MODAL ============ -->
+<div class="modal-backdrop" id="restartBackdrop">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="rHeading">
+    <h3 id="rHeading">Restart workflow</h3>
+    <p class="msub">Return the management workflow to Step 1 without erasing the permanent history.</p>
+    <div class="restart-warning"><b>This clears the current management work.</b> Root cause, corrective-action plan, assignment, due date, priority, completion, and verification values will be reset. This action cannot be undone from the screen.</div>
+    <ul class="restart-preserve">
+      <li>Original employee report and original attachments stay unchanged.</li>
+      <li>Cal/OSHA screening and RBH awareness time are preserved.</li>
+      <li>Notes, activity history, and prior corrective-action evidence are preserved.</li>
+      <li>A server-side snapshot of the cleared workflow is retained.</li>
+    </ul>
+    <div class="login-err" id="rErr"></div>
+    <div class="field"><label for="rReason">Reason for restart</label><select id="rReason">
+      <option value="">— Choose a reason —</option>
+      <option value="incorrect_investigation">Incorrect investigation path</option>
+      <option value="incorrect_action">Incorrect corrective action</option>
+      <option value="wrong_assignment">Wrong assignment</option>
+      <option value="new_information">New information received</option>
+      <option value="incorrect_data">Incorrect data entered</option>
+      <option value="other">Other</option>
+    </select></div>
+    <div class="field"><label for="rNote">Explanation <span style="font-weight:400;color:var(--muted)">(required)</span></label><textarea id="rNote" maxlength="1200" placeholder="Briefly explain why the workflow needs to restart."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="rCancel" type="button">Cancel</button>
+      <button class="btn-primary" id="rSave" type="button">Restart workflow</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
   "use strict";
@@ -806,6 +846,7 @@
   var allProfiles=[], profileById={}, currentSession=null, currentProfile=null, currentRole="read_only";
   var modalReport=null, modalCard=null, modalNotesEl=null;
   var dispositionReport=null, dispositionWrap=null, dispositionNotesEl=null;
+  var restartReport=null, restartReturnView="records";
   var NAV_VIEW_KEY="rbh_safety_active_view_v1", NAV_INCIDENT_KEY="rbh_safety_active_incident_v1";
 
   function storedView(){
@@ -1071,7 +1112,7 @@
         '<div class="d-section"><div class="d-sec-title-row"><span class="d-sec-title">Notes</span><button class="add-note" type="button">+ Add Note</button></div><div class="notes" data-notes></div></div>'+
         '<div class="d-section"><div class="d-sec-title">Activity timeline</div><p class="step-section-note">A readable history of submissions, updates, evidence, verification, and closure.</p><div class="audit" data-audit></div></div>'+
       '</div></div></details>'+
-      '<div class="detail-actions"><button class="pdf-btn" type="button">Download PDF</button></div>'+
+      '<div class="detail-actions"><button class="restart-workflow-btn" type="button" hidden>Restart workflow</button><button class="pdf-btn" type="button">Download PDF</button></div>'+
     '</div>';
   }
 
@@ -1344,6 +1385,8 @@
 
     loadAtts(r.id,detail.querySelector("[data-atts]")); var notesEl=detail.querySelector("[data-notes]"); loadNotes(r.id,notesEl); loadAudit(r.id,auditEl);
     var noteBtn=detail.querySelector(".add-note"); if(!canAddNotes(r))noteBtn.disabled=true; noteBtn.addEventListener("click",function(){if(canAddNotes(r))openNoteModal(r,wrap,notesEl);});
+    var restartBtn=detail.querySelector(".restart-workflow-btn");
+    if(restartBtn){ restartBtn.hidden=!canRestartWorkflow(r); restartBtn.addEventListener("click",function(){ if(canRestartWorkflow(r)) openRestartModal(r,lastOperationalView); }); }
     detail.querySelector(".pdf-btn").addEventListener("click",function(){generatePdf(r,this);});
   }
 
@@ -1408,6 +1451,44 @@
       toast("Report closed — no corrective action required","ok");
     }catch(ex){ console.error(ex); err.textContent="Could not close the report. Please try again."; err.classList.add("show"); }
     finally{ btn.disabled=false; btn.textContent="Close report"; }
+  });
+
+  function openRestartModal(r, returnView){
+    if(!r || !canRestartWorkflow(r)){ toast("Only an Admin or Safety Manager can restart an open workflow that has progressed beyond the initial report.","err"); return; }
+    restartReport=r; restartReturnView=returnView||lastOperationalView||"records";
+    $("rHeading").textContent="Restart workflow — Report #"+r.ref_no;
+    $("rReason").value=""; $("rNote").value=""; $("rErr").classList.remove("show");
+    $("restartBackdrop").classList.add("open");
+    setTimeout(function(){ $("rReason").focus(); },40);
+  }
+  function closeRestartModal(){
+    $("restartBackdrop").classList.remove("open"); restartReport=null; restartReturnView="records";
+  }
+  $("restartBackdrop").addEventListener("click",function(e){ if(e.target===$("restartBackdrop")) closeRestartModal(); });
+  $("rCancel").addEventListener("click",closeRestartModal);
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape" && $("restartBackdrop").classList.contains("open")) closeRestartModal(); });
+  $("rSave").addEventListener("click",async function(){
+    if(!restartReport) return;
+    if(!canRestartWorkflow(restartReport)){ toast("This workflow can no longer be restarted.","err"); closeRestartModal(); return; }
+    var code=$("rReason").value, note=$("rNote").value.trim(), err=$("rErr");
+    if(!code){ err.textContent="Choose a reason for the restart."; err.classList.add("show"); return; }
+    if(!note){ err.textContent="Add a short explanation so the restart is documented."; err.classList.add("show"); return; }
+    err.classList.remove("show");
+    var btn=$("rSave"); btn.disabled=true; var old=btn.textContent; btn.textContent="Restarting…";
+    var rid=restartReport.id, backView=restartReturnView;
+    try{
+      var res=await sb.rpc("rbh_restart_workflow",{p_report_id:String(rid),p_reason_code:code,p_reason:note});
+      if(res.error) throw res.error;
+      closeRestartModal();
+      await loadReports();
+      var fresh=allReports.find(function(x){return String(x.id)===String(rid);});
+      if(fresh){ openIncident(fresh,backView); }
+      else { showView(backView||"records"); }
+      toast("Workflow restarted — returned to Step 1","ok");
+    }catch(ex){
+      console.error(ex);
+      err.textContent=(ex&&ex.message)?ex.message:"Could not restart the workflow. Please try again."; err.classList.add("show");
+    }finally{ btn.disabled=false; btn.textContent=old; }
   });
 
   async function loadAtts(reportId, el){
@@ -1538,7 +1619,7 @@
     ["root_cause","Root cause"],["corrective_action","Corrective action"],["responsible_person","Responsible person"],
     ["due_date","Due date"],["action_completed_at","Action completed at"],["action_completion_note","Completion note"],
     ["action_verified_at","Action verified at"],["action_verification_note","Verification note"],
-    ["closed_at","Closed at"],["id","Record ID"]
+    ["closed_at","Closed at"],["workflow_restart_count","Workflow restart count"],["last_workflow_restart_at","Last workflow restart"],["id","Record ID"]
   ];
   function csvCell(v){ v=(v==null?"":String(v)); return /[",\n\r]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; }
   function reportsToCsv(reports, notesByReport){
@@ -1583,7 +1664,7 @@
   $("expView").addEventListener("click", function(){ exportCsv("view"); });
   $("expAll").addEventListener("click", function(){ exportCsv("all"); });
 
-  /* ---------- After-action PDF | Phase 2.9.5 ---------- */
+  /* ---------- After-action PDF | Phase 2.9.6 ---------- */
   async function generatePdf(r, btn){
     if(!window.jspdf || !window.jspdf.jsPDF){ toast("PDF is still loading - try again in a moment.","err"); return; }
     var lbl=btn.textContent; btn.disabled=true; btn.textContent="Generating...";
@@ -1773,7 +1854,10 @@
       workflowBar();
 
       var originalAtts=atts.filter(function(a){return !isActionEvidence(a);});
-      var evidenceAtts=atts.filter(isActionEvidence);
+      var evidenceAll=atts.filter(isActionEvidence);
+      var pdfRestartAt=r.last_workflow_restart_at?new Date(r.last_workflow_restart_at).getTime():null;
+      var evidenceAtts=evidenceAll.filter(function(a){ if(!pdfRestartAt) return true; var t=new Date(a.created_at||0).getTime(); return !isNaN(t)&&t>=pdfRestartAt; });
+      var priorEvidenceAtts=evidenceAll.filter(function(a){ if(!pdfRestartAt) return false; var t=new Date(a.created_at||0).getTime(); return !isNaN(t)&&t<pdfRestartAt; });
       var reviewAudit=audit.find(function(a){return a.field==="status" && a.new_value==="under_review";});
       var closureAudits=audit.filter(function(a){return a.field==="status" && (a.new_value==="closed"||a.new_value==="no_action"||a.new_value==="duplicate");});
       var closureAudit=closureAudits.length?closureAudits[closureAudits.length-1]:null;
@@ -1802,7 +1886,9 @@
         {label:"Reporter role",value:r.reporter_role},
         {label:"Reporter contact",value:r.reporter_contact},
         {label:"Review completed",value:reviewAudit?pdfDate(reviewAudit.created_at):""},
-        {label:"Reviewed by",value:reviewAudit?auditActor(reviewAudit.actor_email):""}
+        {label:"Reviewed by",value:reviewAudit?auditActor(reviewAudit.actor_email):""},
+        {label:"Workflow restarts",value:(r.workflow_restart_count?String(r.workflow_restart_count):"None")},
+        {label:"Last restart",value:r.last_workflow_restart_at?pdfDate(r.last_workflow_restart_at):""}
       ]);
       fileBox("Original report photos and files",originalAtts.map(function(a){return a.file_name||a.storage_path;}),"No original files attached");
       if(r.involves_injury){
@@ -1832,7 +1918,8 @@
         {label:"Completed on",value:r.action_completed_at?pdfDate(r.action_completed_at):""},
         {label:"Completed by",value:r.action_completed_by?userById(r.action_completed_by):""}
       ]);
-      fileBox("Corrective-action evidence",evidenceAtts.map(function(a){return a.file_name||a.storage_path;}),"No corrective-action evidence attached");
+      fileBox("Current-workflow corrective-action evidence",evidenceAtts.map(function(a){return a.file_name||a.storage_path;}),"No corrective-action evidence attached in the current workflow");
+      if(priorEvidenceAtts.length) fileBox("Preserved evidence from earlier workflow",priorEvidenceAtts.map(function(a){return a.file_name||a.storage_path;}),"");
 
       section(5,"Verify corrective action","Show the review decision and any verification or change-request note.");
       var verifyOutcome=actionLabel(r.action_status||"not_started");
@@ -1862,9 +1949,12 @@
 
       subhead("Activity history");
       timelineEvent("Report submitted",r.created_at,r.reporter_name||"Anonymous reporter");
-      groupAuditRows(audit).slice().reverse().forEach(function(g){
-        timelineEvent(auditGroupTitle(g.rows),g.created_at,auditActor(g.rows[0].actor_email));
+      var pdfHistory=[];
+      groupAuditRows(audit).forEach(function(g){ pdfHistory.push({title:auditGroupTitle(g.rows),created_at:g.created_at,actor:auditActor(g.rows[0].actor_email)}); });
+      notes.filter(function(n){return /^\[System\]\s*Workflow restarted/i.test(String(n.title||""));}).forEach(function(n){
+        pdfHistory.push({title:String(n.title||"").replace(/^\[System\]\s*/,""),created_at:n.created_at,actor:auditActor(n.author_email)});
       });
+      pdfHistory.sort(function(a,b){return new Date(a.created_at)-new Date(b.created_at);}).forEach(function(ev){ timelineEvent(ev.title,ev.created_at,ev.actor); });
 
       // Footers are added last so page counts are always correct.
       var pages=doc.internal.getNumberOfPages();
@@ -1898,6 +1988,14 @@
   function canEditReport(r){ return !isResolvedReport(r) && hasOperationalAccess(r); }
   function canAddNotes(r){ return hasOperationalAccess(r); }
   function canManageUsers(){ return currentRole==="admin"; }
+  function workflowHasProgress(r){
+    if(!r || isResolvedReport(r)) return false;
+    return r.status!=="new" || hasWorkflowValue(r.root_cause) || hasWorkflowValue(r.corrective_action) ||
+      hasWorkflowValue(r.assigned_user_id) || hasWorkflowValue(r.responsible_person) || hasWorkflowValue(r.due_date) ||
+      hasWorkflowValue(r.priority) || (r.action_status&&r.action_status!=="not_started") ||
+      hasWorkflowValue(r.action_completion_note) || hasWorkflowValue(r.action_verification_note);
+  }
+  function canRestartWorkflow(r){ return !!(r && canVerify() && workflowHasProgress(r)); }
 
   function applyRoleUi(){
     var pill=$("rolePill");
@@ -2271,28 +2369,35 @@
   function evidenceLocked(r){ return r.status==="closed" || r.status==="no_action" || r.status==="duplicate" || r.action_status==="verified"; }
   async function renderActionEvidence(r, el, auditEl){
     if(!el) return;
-    var arr=(attByReport[r.id]||[]).filter(isActionEvidence);
+    var allEvidence=(attByReport[r.id]||[]).filter(isActionEvidence);
+    var restartAt=r.last_workflow_restart_at?new Date(r.last_workflow_restart_at).getTime():null;
+    var arr=allEvidence.filter(function(a){ if(!restartAt) return true; var t=new Date(a.created_at||0).getTime(); return !isNaN(t)&&t>=restartAt; });
+    var priorEvidence=allEvidence.filter(function(a){ if(!restartAt) return false; var t=new Date(a.created_at||0).getTime(); return !isNaN(t)&&t<restartAt; });
     var canUpload=canEditReport(r) && !evidenceLocked(r);
     var countLabel=arr.length+(arr.length===1?" file":" files");
-    el.innerHTML='<div class="evidence-head"><div><b>Corrective-action evidence</b><span>Photos or files that show what was fixed. Evidence is optional, but useful when the correction can be visually confirmed.</span></div><span class="evidence-count">'+countLabel+'</span></div><div class="evidence-files" data-evidence-files>'+(arr.length?'<span class="evidence-empty">Loading evidence…</span>':'<span class="evidence-empty">No corrective-action evidence uploaded yet.</span>')+'</div>'+(canUpload?'<div class="evidence-upload"><input class="evidence-file-input" type="file" multiple accept="image/*,.pdf,.doc,.docx"><button class="evidence-pick" type="button">Choose evidence</button><span class="evidence-selected">No files selected</span><button class="evidence-upload-btn" type="button" disabled>Upload evidence</button><div class="evidence-help">Up to 5 files at a time, 10 MB each. Photos, PDF, Word documents, and common image formats are supported.</div></div>':'');
-    var filesEl=el.querySelector("[data-evidence-files]");
-    if(arr.length){
+    el.innerHTML='<div class="evidence-head"><div><b>Corrective-action evidence</b><span>Photos or files that show what was fixed in the current workflow. Evidence is optional, but useful when the correction can be visually confirmed.</span></div><span class="evidence-count">'+countLabel+'</span></div><div class="evidence-files" data-evidence-files>'+(arr.length?'<span class="evidence-empty">Loading evidence…</span>':'<span class="evidence-empty">No corrective-action evidence uploaded in the current workflow.</span>')+'</div>'+(priorEvidence.length?'<details class="evidence-history"><summary>Earlier workflow evidence ('+priorEvidence.length+')</summary><div class="evidence-files" data-prior-evidence-files><span class="evidence-empty">Loading preserved evidence…</span></div></details>':'')+(canUpload?'<div class="evidence-upload"><input class="evidence-file-input" type="file" multiple accept="image/*,.pdf,.doc,.docx"><button class="evidence-pick" type="button">Choose evidence</button><span class="evidence-selected">No files selected</span><button class="evidence-upload-btn" type="button" disabled>Upload evidence</button><div class="evidence-help">Up to 5 files at a time, 10 MB each. Photos, PDF, Word documents, and common image formats are supported.</div></div>':'');
+    async function renderEvidenceFiles(items,target){
+      if(!target||!items.length) return;
       try{
-        var paths=arr.map(function(a){return a.storage_path;});
+        var paths=items.map(function(a){return a.storage_path;});
         var signed=await sb.storage.from("report-attachments").createSignedUrls(paths,3600);
         if(signed.error) throw signed.error;
-        filesEl.innerHTML="";
+        target.innerHTML="";
         (signed.data||[]).forEach(function(d,i){
-          var a=arr[i]; if(!d||d.error||!d.signedUrl) return;
+          var a=items[i]; if(!d||d.error||!d.signedUrl) return;
           var isImg=String(a.mime_type||"").indexOf("image/")===0;
           var link=document.createElement("a"); link.href=d.signedUrl; link.target="_blank"; link.rel="noopener"; link.title=a.file_name||"Evidence";
           if(isImg){ link.className="evidence-thumb"; var img=document.createElement("img"); img.src=d.signedUrl; img.loading="lazy"; img.alt=a.file_name||"Corrective-action evidence"; link.appendChild(img); }
           else { link.className="evidence-file"; link.innerHTML='<b>FILE</b><span></span>'; link.querySelector("span").textContent=a.file_name||"Evidence file"; }
-          filesEl.appendChild(link);
+          target.appendChild(link);
         });
-        if(!filesEl.children.length) filesEl.innerHTML='<span class="evidence-empty">Evidence is saved, but the preview could not be loaded.</span>';
-      }catch(ex){ console.error(ex); filesEl.innerHTML='<span class="evidence-empty">Evidence is saved, but the preview could not be loaded.</span>'; }
+        if(!target.children.length) target.innerHTML='<span class="evidence-empty">Evidence is saved, but the preview could not be loaded.</span>';
+      }catch(ex){ console.error(ex); target.innerHTML='<span class="evidence-empty">Evidence is saved, but the preview could not be loaded.</span>'; }
     }
+    var filesEl=el.querySelector("[data-evidence-files]");
+    if(arr.length) await renderEvidenceFiles(arr,filesEl);
+    var priorEl=el.querySelector("[data-prior-evidence-files]");
+    if(priorEvidence.length) await renderEvidenceFiles(priorEvidence,priorEl);
     if(!canUpload) return;
     var input=el.querySelector(".evidence-file-input"), pick=el.querySelector(".evidence-pick"), selected=el.querySelector(".evidence-selected"), upload=el.querySelector(".evidence-upload-btn");
     if(!input||!pick||!selected||!upload) return;
@@ -2355,6 +2460,8 @@
     if(a.field==="calosha_screening_status") return "Cal/OSHA screening: "+caloshaScreenLabel(a.old_value)+" → "+caloshaScreenLabel(a.new_value);
     if(a.field==="calosha_awareness_at") return a.new_value?"RBH awareness time recorded":"RBH awareness time cleared";
     if(a.field==="closed_at") return a.new_value?"Closure timestamp recorded":"Closure timestamp cleared";
+    if(a.field==="workflow_restart_count") return "Workflow restart count: "+(a.old_value||"0")+" → "+(a.new_value||"0");
+    if(a.field==="last_workflow_restart_at") return a.new_value?"Workflow restart timestamp recorded":"Workflow restart timestamp cleared";
     return (a.field||"Record field")+" updated";
   }
   function auditGroupTitle(rows){
@@ -2382,13 +2489,14 @@
   }
   function timelineKind(title, rows){
     var t=String(title||"").toLowerCase();
+    if(t.indexOf("workflow restarted")>=0) return "restart";
     if(t.indexOf("evidence")>=0) return "evidence";
     if(t.indexOf("closed")>=0 || t.indexOf("verified")>=0) return "close";
     if(t.indexOf("corrective")>=0 || (rows&&rows.some(function(a){return String(a.field||"").indexOf("action_")===0;}))) return "action";
     if(t.indexOf("note")>=0) return "note";
     return "update";
   }
-  function timelineMarker(kind){ return kind==="submit"?"IN":kind==="evidence"?"EV":kind==="note"?"NT":kind==="close"?"OK":kind==="action"?"CA":"UP"; }
+  function timelineMarker(kind){ return kind==="submit"?"IN":kind==="restart"?"RS":kind==="evidence"?"EV":kind==="note"?"NT":kind==="close"?"OK":kind==="action"?"CA":"UP"; }
   function groupAuditRows(rows){
     var sorted=rows.slice().sort(function(a,b){return new Date(b.created_at)-new Date(a.created_at);});
     var groups=[];
@@ -2416,7 +2524,8 @@
       notes.forEach(function(n){
         var title=String(n.title||"Note added"), system=title.indexOf("[System]")===0;
         if(system) title=title.replace(/^\[System\]\s*/,"");
-        var kind=title.toLowerCase().indexOf("evidence")>=0?"evidence":(title.toLowerCase().indexOf("closed without corrective action")>=0?"close":"note");
+        var lowTitle=title.toLowerCase();
+        var kind=lowTitle.indexOf("workflow restarted")>=0?"restart":(lowTitle.indexOf("evidence")>=0?"evidence":(lowTitle.indexOf("closed without corrective action")>=0?"close":"note"));
         events.push({kind:kind,title:system?title:("Note added — "+title),created_at:n.created_at,actor:auditActor(n.author_email),detail:n.body||""});
       });
       var report=allReports.find(function(r){return String(r.id)===String(reportId);});
