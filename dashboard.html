@@ -2235,7 +2235,11 @@
   async function updateUserAccess(user, patch){
     if(!canManageUsers()){ toast("Admin access is required.","err"); return; }
     try{
-      if(String(user.id)===String(currentSession&&currentSession.user&&currentSession.user.id) && patch.is_active===false){
+      var isSelf=String(user.id)===String(currentSession&&currentSession.user&&currentSession.user.id);
+      if(isSelf && Object.prototype.hasOwnProperty.call(patch,'app_role')){
+        toast("You cannot change your own role. Ask another Admin if your access needs to change.","err"); return;
+      }
+      if(isSelf && patch.is_active===false){
         toast("You cannot deactivate your own account.","err"); return;
       }
       var res=await sb.from("profiles").update(patch).eq("id",user.id);
@@ -2265,7 +2269,19 @@
         var st=d.querySelector(".u-status"); st.textContent=u.is_active===false?"Inactive":"Active"; st.classList.toggle("off",u.is_active===false);
         d.querySelector(".u-active").textContent="Last active "+(u.last_active?fmtDate(u.last_active):"—");
         var rs=d.querySelector(".u-role"), tog=d.querySelector(".user-toggle");
-        rs.disabled=!canManageUsers(); tog.disabled=!canManageUsers() || (currentSession&&currentSession.user&&String(u.id)===String(currentSession.user.id));
+        var isSelf=currentSession&&currentSession.user&&String(u.id)===String(currentSession.user.id);
+        if(isSelf){
+          var selfNote=document.createElement('div');
+          selfNote.className='u-active';
+          selfNote.style.marginTop='4px';
+          selfNote.textContent='Your own role can only be changed by another Admin.';
+          d.querySelector('.u-main').appendChild(selfNote);
+        }
+        rs.disabled=!canManageUsers() || !!isSelf;
+        tog.disabled=!canManageUsers() || !!isSelf;
+        if(isSelf){
+          rs.title="You cannot change your own role. Ask another Admin if your access needs to change.";
+        }
         tog.textContent=u.is_active===false?"Reactivate":"Deactivate";
         rs.addEventListener("change",function(){ updateUserAccess(u,{app_role:rs.value}); });
         tog.addEventListener("click",function(){ updateUserAccess(u,{is_active:!(u.is_active!==false)}); });
