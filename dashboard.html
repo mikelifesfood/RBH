@@ -103,10 +103,15 @@
   .inv-l textarea{min-height:70px}
   .inv-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
   @media(max-width:600px){.inv-row{grid-template-columns:1fr}}
-  .inv-actions{display:flex;align-items:center;gap:10px;margin-top:10px}
-  .inv-save{background:var(--paper);border:1.5px solid var(--line-strong);border-radius:9px;padding:10px 15px;font-weight:600;font-size:13px;cursor:pointer;color:var(--ink)}
-  .inv-save:hover{border-color:var(--red)}
-  .inv-saved{color:var(--ok);font-weight:700;font-size:12.5px}
+  .inv-actions{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
+  .section-save{background:var(--paper);border:1.5px solid var(--line-strong);border-radius:9px;padding:10px 14px;font-family:var(--display);font-weight:700;font-size:13px;cursor:pointer;color:var(--ink)}
+  .section-save:hover{border-color:var(--red)}
+  .section-saved{color:var(--ok);font-weight:700;font-size:12.5px}
+  .final-save-bar{margin-top:20px;border:1.5px solid var(--line-strong);border-radius:14px;background:var(--paper);padding:15px 16px;display:flex;align-items:center;gap:14px;justify-content:space-between;flex-wrap:wrap}
+  .final-save-copy{min-width:220px;flex:1}.final-save-copy b{display:block;font-family:var(--display);font-size:14px;margin-bottom:2px}.final-save-copy span{display:block;color:var(--muted);font-size:12px;line-height:1.45}
+  .save-all{background:var(--ink-bar);color:#fff;border:none;border-radius:9px;padding:11px 16px;font-family:var(--display);font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap}.save-all:hover{opacity:.92}.save-all:disabled{opacity:.55;cursor:not-allowed}
+  .save-all-saved{color:var(--ok);font-weight:700;font-size:12.5px}
+  @media(max-width:560px){.final-save-bar{align-items:stretch}.save-all{width:100%}}
   .gate-msg{display:none;margin-top:8px;color:var(--red);font-size:12.5px;font-weight:600}
   .gate-msg.show{display:block}
   .audit{display:grid;gap:8px;margin-top:10px}
@@ -770,11 +775,12 @@
       '<div class="d-rows">'+rows.join("")+'</div>'+
       '<div class="status-edit">'+
         '<select class="status-select">'+statusOptions(r.status||"new")+'</select>'+
-        '<button class="status-save" type="button">Update status</button><span class="status-saved" hidden>Saved ✓</span></div>'+
+        '<button class="status-save" type="button">Save review status</button><span class="status-saved" hidden>Saved ✓</span></div>'+
         '<div class="noaction-box" data-noaction-box><div class="noaction-copy"><b>No corrective action needed?</b><span>Close the report with a documented reason instead of creating a corrective action.</span></div><button class="noaction-btn" type="button" data-noaction-btn>Close without corrective action</button></div>'+
         '<div class="gate-msg" data-role-gate>This account can view this incident but does not have permission to update it.</div></div>'+
       '<div class="d-section"><div class="d-sec-title step-section-title"><span class="step-section-num">2</span>Investigate &amp; document root cause</div><p class="step-section-note">Record why the issue happened or what underlying condition allowed it to happen.</p>'+
-      '<div class="inv-grid"><label class="inv-l">Root cause<textarea class="inv-root"></textarea></label></div></div>'+
+      '<div class="inv-grid"><label class="inv-l">Root cause<textarea class="inv-root"></textarea></label></div>'+
+      '<div class="inv-actions"><button class="root-save section-save" type="button">Save root cause</button><span class="root-saved section-saved" hidden>Saved ✓</span></div></div>'+
       '<div class="d-section"><div class="d-sec-title step-section-title"><span class="step-section-num">3</span>Plan &amp; assign corrective action</div><p class="step-section-note">Define what will be fixed, who owns it, when it is due, and how important it is.</p>'+
       '<div class="inv-grid">'+
       '<label class="inv-l">Corrective action<textarea class="inv-corr"></textarea></label>'+
@@ -786,7 +792,7 @@
       '<label class="inv-l">Due date<input type="date" class="inv-due"></label>'+
       '<label class="inv-l">Priority<select class="inv-pri"><option value="">—</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label>'+
       '</div></div>'+
-      '<div class="inv-actions"><button class="inv-save" type="button">Save investigation &amp; action plan</button><span class="inv-saved" hidden>Saved ✓</span></div>'+
+      '<div class="inv-actions"><button class="action-plan-save section-save" type="button">Save action plan</button><span class="action-plan-saved section-saved" hidden>Saved ✓</span></div>'+
       '<div class="gate-msg" data-gate>To close a report, document the root cause and corrective action, then complete and verify the corrective action.</div>'+
       '</div>'+
       '<div class="d-section"><div class="d-sec-title step-section-title"><span class="step-section-num">4</span><span class="step-section-num">5</span>Complete &amp; verify corrective action</div><p class="step-section-note">The assigned owner documents what was completed. An Admin or Safety Manager then verifies the work or requests changes.</p><div class="action-workflow" data-action-workflow></div></div>'+
@@ -794,6 +800,7 @@
       '<div class="d-atts" data-atts></div>'+
       '<div class="d-section"><div class="d-sec-title-row"><span class="d-sec-title">Notes</span>'+
         '<button class="add-note" type="button">+ Add Note</button></div><div class="notes" data-notes></div></div>'+
+      '<div class="final-save-bar"><div class="final-save-copy"><b>Finished making record updates?</b><span>Save the review status, root cause, and action plan together. Completion and verification notes use their own Save / Submit buttons above.</span></div><button class="save-all" type="button">Save all changes</button><span class="save-all-saved" hidden>All saved ✓</span></div>'+
       '<div class="d-section"><div class="d-sec-title">Activity log</div><div class="audit" data-audit></div></div>';
   }
 
@@ -882,54 +889,108 @@
       if(!canVerify()){ toast("Only an Admin or Safety Manager can close a report without corrective action.","err"); return; }
       openDispositionModal(r, wrap, detail.querySelector("[data-notes]"));
     });
-    save.addEventListener("click", async function(){
-      if(!canEditReport(r)){ toast("You do not have permission to update this report.","err"); return; }
-      if(sel.value==="no_action" || sel.value==="duplicate"){
-        if(!canVerify()){ toast("Only an Admin or Safety Manager can close a report without corrective action.","err"); sel.value=r.status||"new"; return; }
-        openDispositionModal(r, wrap, detail.querySelector("[data-notes]"), sel.value);
-        sel.value=r.status||"new";
-        return;
-      }
-      if(sel.value==="closed" && !canClose(r)){ if(gate) gate.classList.add("show"); sel.value=r.status||"new"; return; }
-      if(gate) gate.classList.remove("show");
-      save.disabled=true; var lbl=save.textContent; save.textContent="Saving…";
-      try{ await updateStatus(r.id, sel.value, wrap); refreshRecordWorkflow(r, detail); saved.hidden=false; setTimeout(function(){saved.hidden=true;},2200); loadAudit(r.id, auditEl); toast("Status updated","ok"); }
-      catch(ex){ console.error(ex); toast("Could not update status — please try again.","err"); }
-      finally{ save.disabled=!canEditReport(r); save.textContent=lbl; }
-    });
 
     var invRoot=detail.querySelector(".inv-root"), invCorr=detail.querySelector(".inv-corr"),
         invResp=detail.querySelector(".inv-resp"), invAssign=detail.querySelector(".inv-assignee"),
         invDue=detail.querySelector(".inv-due"), invPri=detail.querySelector(".inv-pri"),
-        invSave=detail.querySelector(".inv-save"), invSaved=detail.querySelector(".inv-saved");
+        rootSave=detail.querySelector(".root-save"), rootSaved=detail.querySelector(".root-saved"),
+        actionPlanSave=detail.querySelector(".action-plan-save"), actionPlanSaved=detail.querySelector(".action-plan-saved"),
+        saveAll=detail.querySelector(".save-all"), saveAllSaved=detail.querySelector(".save-all-saved");
     invRoot.value=r.root_cause||""; invCorr.value=r.corrective_action||""; invResp.value=r.responsible_person||"";
     invAssign.value=r.assigned_user_id||""; invDue.value=r.due_date||""; invPri.value=r.priority||"";
-    if(!canEdit){ [invRoot,invCorr,invResp,invAssign,invDue,invPri,invSave].forEach(function(x){ if(x) x.disabled=true; }); }
-    invSave.addEventListener("click", async function(){
+    if(!canEdit){ [invRoot,invCorr,invResp,invAssign,invDue,invPri,rootSave,actionPlanSave,saveAll].forEach(function(x){ if(x) x.disabled=true; }); }
+
+    async function persistReviewStatus(showToast){
+      if(!canEditReport(r)) throw new Error("NOT_AUTHORIZED");
+      if(sel.value==="no_action" || sel.value==="duplicate"){
+        if(!canVerify()){ toast("Only an Admin or Safety Manager can close a report without corrective action.","err"); sel.value=r.status||"new"; return false; }
+        openDispositionModal(r, wrap, detail.querySelector("[data-notes]"), sel.value); sel.value=r.status||"new"; return false;
+      }
+      if(sel.value==="closed" && !canClose(r)){ if(gate) gate.classList.add("show"); sel.value=r.status||"new"; return false; }
+      if(gate) gate.classList.remove("show");
+      if(sel.value!==r.status) await updateStatus(r.id, sel.value, wrap);
+      refreshRecordWorkflow(r, detail); loadAudit(r.id, auditEl);
+      if(showToast) toast("Review status saved","ok");
+      return true;
+    }
+
+    async function persistRootCause(showToast){
+      if(!canEditReport(r)) throw new Error("NOT_AUTHORIZED");
+      var next=invRoot.value.trim()||null;
+      if((r.root_cause||null)!==next){
+        var res=await sb.from("reports").update({root_cause:next}).eq("id",r.id); if(res.error) throw res.error; r.root_cause=next;
+      }
+      refreshRecordWorkflow(r, detail); loadAudit(r.id,auditEl);
+      if(showToast) toast("Root cause saved","ok");
+      return true;
+    }
+
+    function rerenderActionWorkflowPreserveDrafts(){
+      var wf=detail.querySelector("[data-action-workflow]");
+      if(!wf) return;
+      var a=wf.querySelector(".action-note"), v=wf.querySelector(".verify-note");
+      var actionDraft=a?a.value:null, verifyDraft=v?v.value:null;
+      renderActionWorkflow(r,wf,auditEl,detail);
+      var a2=wf.querySelector(".action-note"), v2=wf.querySelector(".verify-note");
+      if(a2 && actionDraft!==null) a2.value=actionDraft;
+      if(v2 && verifyDraft!==null) v2.value=verifyDraft;
+    }
+
+    async function persistActionPlan(showToast){
+      if(!canEditReport(r)) throw new Error("NOT_AUTHORIZED");
+      var selectedProfile=invAssign.value?profileById[String(invAssign.value)]:null;
+      var nextActionStatus=r.action_status||"not_started";
+      if(invCorr.value.trim() && nextActionStatus==="not_started") nextActionStatus="in_progress";
+      var patch={
+        corrective_action:invCorr.value.trim()||null,
+        assigned_user_id:invAssign.value||null,
+        responsible_person:invResp.value.trim()||(selectedProfile?profileName(selectedProfile):null),
+        due_date:invDue.value||null,
+        priority:invPri.value||null,
+        action_status:nextActionStatus
+      };
+      var changed={}; Object.keys(patch).forEach(function(k){ if(String(r[k]??"")!==String(patch[k]??"")) changed[k]=patch[k]; });
+      if(Object.keys(changed).length){ var res=await sb.from("reports").update(changed).eq("id",r.id); if(res.error) throw res.error; Object.keys(changed).forEach(function(k){r[k]=changed[k];}); }
+      if(gate) gate.classList.remove("show");
+      rerenderActionWorkflowPreserveDrafts();
+      loadAudit(r.id,auditEl); refreshOverdue(r,wrap); refreshRecordWorkflow(r,detail); renderMetrics(); renderHomeSnapshot(); renderMyWork();
+      if(showToast) toast("Action plan saved","ok");
+      return true;
+    }
+
+    save.addEventListener("click", async function(){
       if(!canEditReport(r)){ toast("You do not have permission to update this report.","err"); return; }
-      invSave.disabled=true; var lbl=invSave.textContent; invSave.textContent="Saving…";
+      save.disabled=true; var lbl=save.textContent; save.textContent="Saving…";
+      try{ var ok=await persistReviewStatus(true); if(ok){ saved.hidden=false; setTimeout(function(){saved.hidden=true;},2200); } }
+      catch(ex){ console.error(ex); toast("Could not save review status — please try again.","err"); }
+      finally{ save.disabled=!canEditReport(r); save.textContent=lbl; }
+    });
+
+    rootSave.addEventListener("click", async function(){
+      if(!canEditReport(r)){ toast("You do not have permission to update this report.","err"); return; }
+      rootSave.disabled=true; var lbl=rootSave.textContent; rootSave.textContent="Saving…";
+      try{ await persistRootCause(true); rootSaved.hidden=false; setTimeout(function(){rootSaved.hidden=true;},2200); }
+      catch(ex){ console.error(ex); toast("Could not save root cause — please try again.","err"); }
+      finally{ rootSave.disabled=!canEditReport(r); rootSave.textContent=lbl; }
+    });
+
+    actionPlanSave.addEventListener("click", async function(){
+      if(!canEditReport(r)){ toast("You do not have permission to update this report.","err"); return; }
+      actionPlanSave.disabled=true; var lbl=actionPlanSave.textContent; actionPlanSave.textContent="Saving…";
+      try{ await persistActionPlan(true); actionPlanSaved.hidden=false; setTimeout(function(){actionPlanSaved.hidden=true;},2200); }
+      catch(ex){ console.error(ex); toast("Could not save action plan — please try again.","err"); }
+      finally{ actionPlanSave.disabled=!canEditReport(r); actionPlanSave.textContent=lbl; }
+    });
+
+    saveAll.addEventListener("click", async function(){
+      if(!canEditReport(r)){ toast("You do not have permission to update this report.","err"); return; }
+      saveAll.disabled=true; var lbl=saveAll.textContent; saveAll.textContent="Saving all…";
       try{
-        var selectedProfile=invAssign.value?profileById[String(invAssign.value)]:null;
-        var nextActionStatus=r.action_status||"not_started";
-        if(invCorr.value.trim() && nextActionStatus==="not_started") nextActionStatus="in_progress";
-        var patch={
-          root_cause:invRoot.value.trim()||null,
-          corrective_action:invCorr.value.trim()||null,
-          assigned_user_id:invAssign.value||null,
-          responsible_person:invResp.value.trim()||(selectedProfile?profileName(selectedProfile):null),
-          due_date:invDue.value||null,
-          priority:invPri.value||null,
-          action_status:nextActionStatus
-        };
-        var res=await sb.from("reports").update(patch).eq("id",r.id);
-        if(res.error) throw res.error;
-        Object.keys(patch).forEach(function(k){ r[k]=patch[k]; });
-        if(gate) gate.classList.remove("show");
-        invSaved.hidden=false; setTimeout(function(){invSaved.hidden=true;},2200); toast("Investigation saved","ok");
-        renderActionWorkflow(r, detail.querySelector("[data-action-workflow]"), auditEl, detail);
-        loadAudit(r.id, auditEl); refreshOverdue(r, wrap); renderMetrics(); renderHomeSnapshot();
-      }catch(ex){ console.error(ex); toast("Could not save — please try again.","err"); }
-      finally{ invSave.disabled=!canEditReport(r); invSave.textContent=lbl; }
+        var ok=await persistReviewStatus(false); if(ok===false) return;
+        await persistRootCause(false); await persistActionPlan(false);
+        saveAllSaved.hidden=false; setTimeout(function(){saveAllSaved.hidden=true;},2500); toast("All record changes saved","ok");
+      }catch(ex){ console.error(ex); toast("Could not save all changes — please try again.","err"); }
+      finally{ saveAll.disabled=!canEditReport(r); saveAll.textContent=lbl; }
     });
 
     renderActionWorkflow(r, detail.querySelector("[data-action-workflow]"), auditEl, detail);
@@ -1580,9 +1641,10 @@
         var noteLabel=status==="awaiting_verification"?'Completed work submitted':(status==="changes_requested"?'Update completed work':'Completion note');
         var noteHelp=status==="awaiting_verification"?'This is the completed-work note currently waiting for verification. Update it only if the description needs to be corrected.':(status==="changes_requested"?'Update the note to explain what was changed, then resubmit it for verification.':'Describe what was actually completed. This note will be shown to the reviewer and is required before submission.');
         var buttonLabel=status==="awaiting_verification"?'Update submitted note':(status==="changes_requested"?'Resubmit for verification':'Mark action complete');
+        var submitButton=status==="awaiting_verification"?'':('<button class="btn-complete" type="button">'+buttonLabel.replace("Mark action complete","Submit for verification")+'</button>');
         h+='<label class="inv-l">'+noteLabel+'<textarea class="action-note" placeholder="What was completed or changed?">'+esc(r.action_completion_note||'')+'</textarea></label>'+ 
           '<p class="action-help">'+noteHelp+'</p>'+ 
-          '<div class="action-actions"><button class="btn-complete" type="button">'+buttonLabel+'</button></div>';
+          '<div class="action-actions"><button class="btn-save-completion section-save" type="button">Save completion note</button>'+submitButton+'<span class="completion-saved section-saved" hidden>Saved ✓</span></div>';
       } else if(r.action_completion_note){
         h+='<div class="action-context"><b>Completed work submitted</b><p>'+esc(r.action_completion_note)+'</p></div>';
       }
@@ -1593,8 +1655,8 @@
       }
 
       if(status==="awaiting_verification" && canVerify()){
-        h+='<label class="inv-l">Reviewer verification note <span style="font-weight:400;color:var(--muted)">(optional)</span><textarea class="verify-note" placeholder="What did you verify? If requesting changes, explain what still needs to be done."></textarea></label>'+ 
-          '<div class="action-actions"><button class="btn-verify" type="button">Verify corrective action</button><button class="btn-changes" type="button">Request changes</button></div>';
+        h+='<label class="inv-l">Reviewer verification note <span style="font-weight:400;color:var(--muted)">(optional for verification)</span><textarea class="verify-note" placeholder="What did you verify? If requesting changes, explain what still needs to be done.">'+esc(r.action_verification_note||'')+'</textarea></label>'+ 
+          '<div class="action-actions"><button class="btn-save-verification section-save" type="button">Save verification note</button><button class="btn-verify" type="button">Verify corrective action</button><button class="btn-changes" type="button">Request changes</button><span class="verification-saved section-saved" hidden>Saved ✓</span></div>';
       }
     } else {
       if(r.action_completion_note){
@@ -1616,6 +1678,22 @@
     el.innerHTML=h;
     refreshRecordWorkflow(r, detail);
 
+    var saveCompletionBtn=el.querySelector(".btn-save-completion");
+    if(saveCompletionBtn) saveCompletionBtn.addEventListener("click",async function(){
+      if(!canEditReport(r)){ toast("You do not have permission to update this corrective action.","err"); return; }
+      var note=(el.querySelector(".action-note")&&el.querySelector(".action-note").value.trim())||"";
+      saveCompletionBtn.disabled=true;
+      try{
+        var patch={action_completion_note:note||null};
+        if((r.action_status||"not_started")==="not_started" && note) patch.action_status="in_progress";
+        var res=await sb.from("reports").update(patch).eq("id",r.id); if(res.error) throw res.error;
+        Object.keys(patch).forEach(function(k){r[k]=patch[k];});
+        var flag=el.querySelector(".completion-saved"); if(flag){flag.hidden=false;setTimeout(function(){flag.hidden=true;},2200);}
+        toast("Completion note saved","ok"); renderActionWorkflow(r,el,auditEl,detail); loadAudit(r.id,auditEl); renderHomeSnapshot(); renderMyWork();
+      }catch(ex){console.error(ex);toast("Could not save completion note.","err");}
+      finally{ if(saveCompletionBtn && saveCompletionBtn.isConnected) saveCompletionBtn.disabled=false; }
+    });
+
     var completeBtn=el.querySelector(".btn-complete");
     if(completeBtn) completeBtn.addEventListener("click",async function(){
       if(!r.corrective_action || !String(r.corrective_action).trim()){ toast("Document the corrective action before marking it complete.","err"); return; }
@@ -1634,6 +1712,19 @@
       }catch(ex){console.error(ex);toast("Could not update corrective action.","err");}
     });
 
+    var saveVerificationBtn=el.querySelector(".btn-save-verification");
+    if(saveVerificationBtn) saveVerificationBtn.addEventListener("click",async function(){
+      if(!canVerify()){ toast("Only an Admin or Safety Manager can save a verification note.","err"); return; }
+      var note=(el.querySelector(".verify-note")&&el.querySelector(".verify-note").value.trim())||null;
+      saveVerificationBtn.disabled=true;
+      try{
+        var res=await sb.from("reports").update({action_verification_note:note}).eq("id",r.id); if(res.error) throw res.error; r.action_verification_note=note;
+        var flag=el.querySelector(".verification-saved"); if(flag){flag.hidden=false;setTimeout(function(){flag.hidden=true;},2200);}
+        toast("Verification note saved","ok"); loadAudit(r.id,auditEl);
+      }catch(ex){console.error(ex);toast("Could not save verification note.","err");}
+      finally{saveVerificationBtn.disabled=false;}
+    });
+
     var verifyBtn=el.querySelector(".btn-verify");
     if(verifyBtn) verifyBtn.addEventListener("click",async function(){
       verifyBtn.disabled=true;
@@ -1648,7 +1739,8 @@
 
     var changesBtn=el.querySelector(".btn-changes");
     if(changesBtn) changesBtn.addEventListener("click",async function(){
-      var note=(el.querySelector(".verify-note")&&el.querySelector(".verify-note").value.trim())||"Additional work is required before verification.";
+      var note=(el.querySelector(".verify-note")&&el.querySelector(".verify-note").value.trim())||"";
+      if(!note){ toast("Add a verification note explaining what changes are needed.","err"); return; }
       changesBtn.disabled=true;
       try{
         var patch={action_status:"changes_requested",action_verification_note:note,action_verified_at:null,action_verified_by:null};
@@ -1668,6 +1760,8 @@
     if(a.field==="action_status") return "Corrective action: "+actionLabel(a.old_value)+" → "+actionLabel(a.new_value);
     if(a.field==="action_completed_at") return "Corrective action marked complete";
     if(a.field==="action_verified_at") return "Corrective action verified";
+    if(a.field==="action_completion_note") return "Completion note updated";
+    if(a.field==="action_verification_note") return "Verification note updated";
     if(a.field==="root_cause") return "Root cause updated";
     if(a.field==="corrective_action") return "Corrective action updated";
     return (a.field||"field")+" changed";
