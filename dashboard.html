@@ -51,6 +51,7 @@
   .field{margin-bottom:14px}
   .field label{display:block;font-weight:600;font-size:13.5px;margin-bottom:6px}
   input[type=email],input[type=password],input[type=text],select,textarea{width:100%;font:inherit;color:var(--ink);background:var(--surface);border:1.5px solid var(--line-strong);border-radius:10px;padding:11px 12px;appearance:none;transition:border-color .12s,box-shadow .12s}
+  input[type=date]{width:100%;font:inherit;color:var(--ink);background:var(--surface);border:1.5px solid var(--line-strong);border-radius:10px;padding:11px 12px;min-height:46px;transition:border-color .12s,box-shadow .12s}
   textarea{min-height:104px;resize:vertical;line-height:1.5}
   input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 4px var(--focus)}
   select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236c6862' stroke-width='2.4'><path d='M6 9l6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px}
@@ -451,7 +452,7 @@
   .action-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:10px}.action-head h4{font-family:var(--display);font-size:14px;margin:0}.action-head p{font-size:11.5px;color:var(--muted);margin:3px 0 0}
   .action-state{display:inline-flex;align-items:center;border-radius:999px;padding:5px 8px;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.035em;background:var(--paper);border:1px solid var(--line-strong)}
   .as-awaiting_verification{background:#fff5d8;color:#725300;border-color:#ead28b}.as-verified{background:#e9f7ef;color:#23623c;border-color:#b9dfc9}.as-changes_requested{background:#fff0f0;color:#8a2929;border-color:#edbbbb}.as-in_progress{background:#eef4ff;color:#264f83;border-color:#c8d8ed}
-  .action-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.action-actions button{border-radius:9px;padding:9px 12px;font-size:12.5px;font-weight:800;cursor:pointer}.btn-complete{background:var(--ink);color:var(--paper);border:1px solid var(--ink)}.btn-verify{background:#1f6f43;color:white;border:1px solid #1f6f43}.btn-changes{background:var(--paper);color:#8a2929;border:1px solid #cf9999}
+  .action-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.action-actions button{border-radius:9px;padding:9px 12px;font-size:12.5px;font-weight:800;cursor:pointer}.btn-complete{background:var(--ink);color:var(--paper);border:1px solid var(--ink)}.btn-verify{background:#1f6f43;color:white;border:1px solid #1f6f43}.btn-changes{background:var(--paper);color:var(--ink);border:1.5px solid var(--line-strong);border-radius:9px;padding:9px 13px;font-family:var(--display);font-weight:800;font-size:12px;cursor:pointer;white-space:nowrap}.btn-changes:hover{border-color:var(--red);color:var(--red)}
   .action-help{font-size:11.5px;color:var(--muted);margin:8px 0 0;line-height:1.45}.action-context{border:1px solid var(--line);background:var(--paper);border-radius:10px;padding:11px 12px;margin:10px 0}.action-context b{display:block;font-family:var(--display);font-size:12px;margin-bottom:4px}.action-context p{margin:0;font-size:12.5px;line-height:1.5;white-space:pre-wrap}.action-meta{font-size:11.5px;color:var(--muted);margin:6px 0 10px}.user-row.phase2{display:grid;grid-template-columns:minmax(180px,1fr) 160px 120px 170px;gap:12px;align-items:center}.user-row.phase2 select{min-width:0;padding:8px 9px;border:1px solid var(--line-strong);border-radius:8px;background:var(--paper);color:var(--ink)}
   .u-status{font-size:11.5px;font-weight:700}.u-status.off{color:var(--red)}.user-toggle{border:1px solid var(--line-strong);background:var(--paper);color:var(--ink);border-radius:8px;padding:8px 9px;font-size:11.5px;font-weight:800;cursor:pointer}.user-toggle:disabled{opacity:.45;cursor:not-allowed}
   .role-legend{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0 16px}.role-card{border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--paper)}.role-card b{font-size:12px}.role-card span{display:block;font-size:11px;color:var(--muted);line-height:1.4;margin-top:3px}
@@ -466,6 +467,28 @@
   @media(max-width:560px){.user-row.phase2,.role-legend,.action-summary,.mywork-summary{grid-template-columns:1fr}.mywork-banner{align-items:flex-start;flex-direction:column}}
 
 
+
+  /* ---------- Phase 2.9.2 workflow UI cleanup ---------- */
+  /* High-priority shortcut removed; date/request-changes styling aligned; draft saves now save and return Home. */
+
+  /* ---------- Phase 2.9.3 closed-record review ---------- */
+  .resolved-review-banner{display:flex;align-items:flex-start;gap:10px;border:1px solid var(--line);background:var(--paper-2);border-radius:12px;padding:12px 14px;margin:-4px 0 14px;color:var(--ink)}
+  .resolved-review-banner b{font-family:var(--display);font-size:13px;white-space:nowrap}
+  .resolved-review-banner span{font-size:12px;color:var(--muted);line-height:1.45}
+  #incidentBody.resolved-review [data-wizard-step]{display:block!important;background:var(--paper-2);border-color:var(--line);box-shadow:none;margin-bottom:12px}
+  #incidentBody.resolved-review [data-wizard-step][hidden]{display:none!important}
+  #incidentBody.resolved-review .wizard-step-head{display:flex!important}
+  #incidentBody.resolved-review .wizard-step-badge{background:#777b80}
+  #incidentBody.resolved-review .wizard-task,#incidentBody.resolved-review [data-wizard-step]>.wizard-footer,#incidentBody.resolved-review [data-wizard-step] .wizard-footer{display:none!important}
+  #incidentBody.resolved-review input:disabled,#incidentBody.resolved-review textarea:disabled,#incidentBody.resolved-review select:disabled{opacity:1;color:var(--ink);-webkit-text-fill-color:var(--ink);background:#eeece9;border-color:var(--line);cursor:default}
+  #incidentBody.resolved-review .process-step.ps-done{cursor:pointer}
+  [data-theme="dark"] #incidentBody.resolved-review input:disabled,[data-theme="dark"] #incidentBody.resolved-review textarea:disabled,[data-theme="dark"] #incidentBody.resolved-review select:disabled{background:#292725}
+  @media(max-width:620px){
+    .resolved-review-banner{display:block;padding:11px 12px}.resolved-review-banner b{display:block;margin-bottom:4px;white-space:normal}
+    #incidentBody.resolved-review [data-wizard-step]{padding:12px}
+    #incidentBody.resolved-review .wizard-step-head{gap:9px;margin-bottom:10px;padding-bottom:10px}
+    #incidentBody.resolved-review .wizard-step-copy h3{font-size:16px}
+  }
 
   /* ---------- Phase 2.9.1 mobile incident streamlining ---------- */
   @media(max-width:620px){
@@ -929,15 +952,16 @@
     add("Form language", r.language==="es"?"Spanish":r.language==="en"?"English":r.language); add("Submitted", fmtDate(r.created_at));
     return '<div class="wizard-shell">'+
       '<div class="record-progress" data-record-progress></div>'+
+      '<div data-resolved-banner></div>'+
       urgentTriageHtml(r)+
 
       '<section class="wizard-panel" data-wizard-step="1" hidden>'+
         '<div class="wizard-step-head"><span class="wizard-step-badge">1</span><div class="wizard-step-copy"><h3>Review the report</h3><p>Confirm what was submitted and decide whether the report needs further action.</p></div></div>'+
-        '<div class="wizard-task"><b>Your job on this step</b><span>Read the report, review any photos/files, and either continue the investigation, mark it high priority, or close it with no corrective action.</span></div>'+
+        '<div class="wizard-task"><b>Your job on this step</b><span>Read the report, review any photos/files, and either continue the investigation or close it with no corrective action.</span></div>'+
         '<div class="d-rows">'+rows.join("")+'</div>'+
         '<div class="d-atts" data-atts></div>'+
         '<div class="noaction-box" data-noaction-box><div class="noaction-copy"><b>Nothing to correct?</b><span>Close this report with a documented reason instead of creating unnecessary corrective-action work.</span></div><button class="noaction-btn" type="button" data-noaction-btn>Close — no action required</button></div>'+
-        '<div class="wizard-footer"><div class="wizard-footer-copy">Completing this step acknowledges the report and moves it into review. If the report is urgent, use Mark high priority first.</div><div class="wizard-footer-actions"><button class="wizard-high" data-mark-high type="button">Mark high priority</button><button class="wizard-primary" data-step-complete="1" type="button">Complete review →</button></div></div>'+
+        '<div class="wizard-footer"><div class="wizard-footer-copy">Completing this step acknowledges the report and moves it into review.</div><div class="wizard-footer-actions"><button class="wizard-primary" data-step-complete="1" type="button">Complete review →</button></div></div>'+
         '<div class="gate-msg" data-role-gate>This account can view this incident but does not have permission to update it.</div>'+
       '</section>'+
 
@@ -946,7 +970,7 @@
         '<div class="wizard-task"><b>Your job on this step</b><span>Enter a clear root cause. Keep it simple and factual — describe the underlying reason, not just what happened.</span></div>'+
         '<label class="inv-l">Root cause<textarea class="inv-root" placeholder="What caused or allowed this issue to happen?"></textarea></label>'+
         '<div class="wizard-required" data-required="2">Root cause is required before this step can be completed.</div>'+
-        '<div class="wizard-footer"><div class="wizard-footer-copy">Save Draft keeps your work here without advancing the record.</div><div class="wizard-footer-actions"><button class="wizard-save root-save" data-step-save="2" type="button">Save draft</button><span class="root-saved section-saved" hidden>Saved ✓</span><button class="wizard-primary" data-step-complete="2" type="button">Complete investigation →</button></div></div>'+
+        '<div class="wizard-footer"><div class="wizard-footer-copy">Save and close saves your investigation without advancing the workflow, then returns you Home.</div><div class="wizard-footer-actions"><button class="wizard-save root-save" data-step-save="2" type="button">Save and close</button><span class="root-saved section-saved" hidden>Saved ✓</span><button class="wizard-primary" data-step-complete="2" type="button">Complete investigation →</button></div></div>'+
       '</section>'+
 
       '<section class="wizard-panel" data-wizard-step="3" hidden>'+
@@ -958,7 +982,7 @@
           '<div class="inv-row"><label class="inv-l">Due date<input type="date" class="inv-due"></label><label class="inv-l">Priority<select class="inv-pri"><option value="">— Choose priority —</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label></div>'+
         '</div>'+
         '<div class="wizard-required" data-required="3"></div>'+
-        '<div class="wizard-footer"><div class="wizard-footer-copy">Save Draft lets you leave a partially completed plan. Save & Assign validates the required fields and sends the work to the assigned user.</div><div class="wizard-footer-actions"><button class="wizard-save action-plan-save" data-step-save="3" type="button">Save draft</button><span class="action-plan-saved section-saved" hidden>Saved ✓</span><button class="wizard-primary" data-step-complete="3" type="button">Save &amp; assign action →</button></div></div>'+
+        '<div class="wizard-footer"><div class="wizard-footer-copy">Save and close saves the current plan without assigning it, then returns you Home. Save &amp; Assign validates the required fields and sends the work to the assigned user.</div><div class="wizard-footer-actions"><button class="wizard-save action-plan-save" data-step-save="3" type="button">Save and close</button><span class="action-plan-saved section-saved" hidden>Saved ✓</span><button class="wizard-primary" data-step-complete="3" type="button">Save &amp; assign action →</button></div></div>'+
       '</section>'+
 
       '<section class="wizard-panel" data-wizard-step="4" hidden>'+
@@ -988,6 +1012,7 @@
   }
 
   function hasWorkflowValue(v){ return v!=null && String(v).trim()!==""; }
+  function isResolvedReport(r){ return !!(r && (r.status==="closed" || r.status==="no_action" || r.status==="duplicate")); }
   function workflowProgress(r){
     var disposed=r && (r.status==="no_action" || r.status==="duplicate");
     if(disposed){
@@ -1043,9 +1068,11 @@
     var labels=wizardActionLabels(r,active);
     var topSave=labels.save?'<button class="wizard-save" type="button" data-wizard-top-save>'+esc(labels.save)+'</button>':'';
     var topPrimary=labels.complete?'<button class="wizard-primary" type="button" data-wizard-top-complete>'+esc(labels.complete)+'</button>':'';
-    var currentText=(activeState&&activeState.state==="done")?'Reviewing a completed step':('Step '+active+' of 6');
+    var resolved=isResolvedReport(r);
+    var currentText=resolved?'Closed record review':((activeState&&activeState.state==="done")?'Reviewing a completed step':('Step '+active+' of 6'));
+    var helpText=resolved?'Read-only record. All completed sections are shown below; on desktop, click a green step to jump to it. Notes can still be added.':wizardHelp(active,r);
     el.className="wizard-process";
-    el.innerHTML='<div class="wizard-process-head"><div class="wizard-process-copy"><b>'+esc(currentText)+' · '+esc(wizardLongTitle(active))+'</b><span>'+esc(wizardHelp(active,r))+'</span></div><div class="wizard-top-actions">'+topSave+topPrimary+'</div></div><div class="process-flow">'+arrows+'</div>';
+    el.innerHTML='<div class="wizard-process-head"><div class="wizard-process-copy"><b>'+esc(currentText)+(resolved?'':' · '+esc(wizardLongTitle(active)))+'</b><span>'+esc(helpText)+'</span></div><div class="wizard-top-actions">'+topSave+topPrimary+'</div></div><div class="process-flow">'+arrows+'</div>';
   }
 
   function wizardShortTitle(n){ return ({1:"Review",2:"Investigation",3:"Action Plan",4:"Complete Action",5:"Verify",6:"Close"})[n]||"Step"; }
@@ -1067,13 +1094,13 @@
     var p=workflowProgress(r), st=p.steps[n-1], isCurrent=st&&st.state==="current";
     var canEdit=canEditReport(r);
     if(!canEdit && !(n===5&&canVerify())) return {save:null,complete:null};
-    if(st&&st.state==="done" && n!==6) return {save:(n===2||n===3?"Save changes":null),complete:null};
+    if(st&&st.state==="done" && n!==6) return {save:(n===2||n===3?"Save and close":null),complete:null};
     if(!isCurrent && n!==6) return {save:null,complete:null};
     if(n===1) return {save:null,complete:"Complete review →"};
-    if(n===2) return {save:"Save draft",complete:"Complete investigation →"};
-    if(n===3) return {save:"Save draft",complete:"Save & assign action →"};
-    if(n===4){ if(r.action_status==="awaiting_verification"||r.action_status==="verified") return {save:null,complete:null}; return {save:"Save completion note",complete:r.action_status==="changes_requested"?"Resubmit for verification →":"Submit for verification →"}; }
-    if(n===5){ if(!canVerify()||r.action_status!=="awaiting_verification") return {save:null,complete:null}; return {save:"Save verification note",complete:"Verify & continue →"}; }
+    if(n===2) return {save:"Save and close",complete:"Complete investigation →"};
+    if(n===3) return {save:"Save and close",complete:"Save & assign action →"};
+    if(n===4){ if(r.action_status==="awaiting_verification"||r.action_status==="verified") return {save:null,complete:null}; return {save:"Save and close",complete:r.action_status==="changes_requested"?"Resubmit for verification →":"Submit for verification →"}; }
+    if(n===5){ if(!canVerify()||r.action_status!=="awaiting_verification") return {save:null,complete:null}; return {save:"Save and close",complete:"Verify & continue →"}; }
     if(n===6){ if(r.status==="closed"||r.status==="no_action"||r.status==="duplicate") return {save:null,complete:null}; return {save:null,complete:canClose(r)?"Close record":null}; }
     return {save:null,complete:null};
   }
@@ -1115,11 +1142,31 @@
       finally{ if(btn.isConnected){btn.disabled=false;btn.textContent=old;} }
     });
   }
+  function applyResolvedReviewMode(r,detail){
+    if(!detail || !isResolvedReport(r)) return false;
+    detail.classList.add("resolved-review");
+    var progress=workflowProgress(r);
+    detail.querySelectorAll("[data-wizard-step]").forEach(function(panel){
+      var n=parseInt(panel.getAttribute("data-wizard-step"),10), st=progress.steps[n-1];
+      panel.hidden=!!(st&&st.state==="na");
+      panel.querySelectorAll("input,textarea,select,button").forEach(function(control){ control.disabled=true; });
+    });
+    var banner=detail.querySelector("[data-resolved-banner]");
+    if(banner){
+      var disposition=(r.status==="no_action"||r.status==="duplicate")?"This report was closed without corrective action.":"This incident is closed and the workflow is locked.";
+      banner.innerHTML='<div class="resolved-review-banner"><b>Closed record · read only</b><span>'+esc(disposition)+' Review the preserved information below. Authorized users can still add a note in Notes &amp; activity history.</span></div>';
+    }
+    renderRecordProgress(r,detail.querySelector("[data-record-progress]"));
+    return true;
+  }
   function refreshRecordWorkflow(r, detail){
     if(!detail) return;
+    renderCloseStep(r,detail.querySelector("[data-close-step]"),detail,detail.querySelector("[data-audit]"));
+    if(isResolvedReport(r)){ applyResolvedReviewMode(r,detail); return; }
+    detail.classList.remove("resolved-review");
+    var banner=detail.querySelector("[data-resolved-banner]"); if(banner) banner.innerHTML="";
     var n=parseInt(detail.dataset.wizardStep||"0",10)||initialWizardStep(r);
     if(!wizardStepAccessible(r,n)) n=recommendedWizardStep(r);
-    renderCloseStep(r,detail.querySelector("[data-close-step]"),detail,detail.querySelector("[data-audit]"));
     setWizardStep(detail,r,n,true);
   }
 
@@ -1136,13 +1183,6 @@
     var noActionBox=detail.querySelector("[data-noaction-box]"), noActionBtn=detail.querySelector("[data-noaction-btn]");
     if(noActionBox) noActionBox.style.display=(canVerify() && r.status!=="closed" && r.status!=="no_action" && r.status!=="duplicate")?"flex":"none";
     if(noActionBtn) noActionBtn.addEventListener("click",function(){ if(!canVerify()){toast("Only an Admin or Safety Manager can close a report without corrective action.","err");return;} openDispositionModal(r,wrap,detail.querySelector("[data-notes]")); });
-
-    var highBtn=detail.querySelector("[data-mark-high]");
-    if(highBtn){ highBtn.disabled=!canEdit; highBtn.addEventListener("click",async function(){
-      if(!canEditReport(r)){toast("You do not have permission to update this report.","err");return;}
-      highBtn.disabled=true; try{ var patch={priority:"high"}; if(r.status==="new") patch.status="under_review"; var res=await sb.from("reports").update(patch).eq("id",r.id); if(res.error) throw res.error; Object.keys(patch).forEach(function(k){r[k]=patch[k];}); $("incidentSummary").innerHTML='<div class="is-badges">'+incidentBadgeHtml(r)+'</div><div class="is-desc">'+esc(r.description||"No description provided.")+'</div>'; refreshRecordWorkflow(r,detail); loadAudit(r.id,auditEl); renderHomeSnapshot(); applyFilters(); toast("Report marked high priority","ok"); }
-      catch(ex){console.error(ex);toast("Could not mark this report high priority.","err");} finally{ if(highBtn.isConnected) highBtn.disabled=!canEditReport(r); }
-    }); }
 
     var invRoot=detail.querySelector(".inv-root"), invCorr=detail.querySelector(".inv-corr"), invResp=detail.querySelector(".inv-resp"), invAssign=detail.querySelector(".inv-assignee"), invDue=detail.querySelector(".inv-due"), invPri=detail.querySelector(".inv-pri");
     var rootSave=detail.querySelector(".root-save"), rootSaved=detail.querySelector(".root-saved"), actionPlanSave=detail.querySelector(".action-plan-save"), actionPlanSaved=detail.querySelector(".action-plan-saved");
@@ -1167,11 +1207,15 @@
       loadAudit(r.id,auditEl); refreshOverdue(r,wrap); refreshRecordWorkflow(r,detail); renderMetrics(); renderHomeSnapshot(); renderMyWork(); if(showToast) toast("Action plan saved","ok"); return true;
     }
 
-    if(rootSave) rootSave.addEventListener("click",async function(){ rootSave.disabled=true; try{await persistRootCause(true);rootSaved.hidden=false;setTimeout(function(){rootSaved.hidden=true;},2200);}catch(ex){console.error(ex);toast("Could not save the investigation.","err");}finally{rootSave.disabled=!canEditReport(r);} });
-    if(actionPlanSave) actionPlanSave.addEventListener("click",async function(){ actionPlanSave.disabled=true; try{await persistActionPlan(true,false);actionPlanSaved.hidden=false;setTimeout(function(){actionPlanSaved.hidden=true;},2200);}catch(ex){console.error(ex);toast("Could not save the action plan.","err");}finally{actionPlanSave.disabled=!canEditReport(r);} });
+    if(rootSave) rootSave.addEventListener("click",async function(){ rootSave.disabled=true; try{await persistRootCause(true);rootSaved.hidden=false;setTimeout(function(){rootSaved.hidden=true;},2200);showView("home");}catch(ex){console.error(ex);toast("Could not save the investigation.","err");}finally{rootSave.disabled=!canEditReport(r);} });
+    if(actionPlanSave) actionPlanSave.addEventListener("click",async function(){ actionPlanSave.disabled=true; try{await persistActionPlan(true,false);actionPlanSaved.hidden=false;setTimeout(function(){actionPlanSaved.hidden=true;},2200);showView("home");}catch(ex){console.error(ex);toast("Could not save the action plan.","err");}finally{actionPlanSave.disabled=!canEditReport(r);} });
 
     detail.addEventListener("click",async function(e){
-      var nav=e.target.closest("[data-wizard-nav]"); if(nav){ setWizardStep(detail,r,parseInt(nav.getAttribute("data-wizard-nav"),10),false); return; }
+      var nav=e.target.closest("[data-wizard-nav]"); if(nav){
+        var navStep=parseInt(nav.getAttribute("data-wizard-nav"),10);
+        if(isResolvedReport(r)){ var target=detail.querySelector('[data-wizard-step="'+navStep+'"]'); if(target&&!target.hidden) target.scrollIntoView({block:"start",behavior:"smooth"}); return; }
+        setWizardStep(detail,r,navStep,false); return;
+      }
       if(e.target.closest("[data-wizard-top-save]")){ var n=parseInt(detail.dataset.wizardStep||"1",10); var b=detail.querySelector('[data-wizard-step="'+n+'"] [data-step-save="'+n+'"]'); if(b&&!b.disabled)b.click(); return; }
       if(e.target.closest("[data-wizard-top-complete]")){ var n2=parseInt(detail.dataset.wizardStep||"1",10); var b2=detail.querySelector('[data-wizard-step="'+n2+'"] [data-step-complete="'+n2+'"]'); if(b2&&!b2.disabled)b2.click(); return; }
     });
@@ -1323,15 +1367,16 @@
     var title=$("mTitleInput").value.trim(), body=$("mBody").value.trim(), err=$("mErr");
     if(!title){ err.textContent="Please enter a title for the note."; err.classList.add("show"); return; }
     err.classList.remove("show");
-    if($("mStatus").value==="closed" && !canClose(modalReport)){ err.textContent="To close a report, document the root cause and corrective action, then complete and verify the corrective action."; err.classList.add("show"); return; }
-    if($("mStatus").value==="no_action" || $("mStatus").value==="duplicate"){ err.textContent="Use Close without corrective action in the Incident workspace so the closure reason is documented."; err.classList.add("show"); return; }
+    var resolvedNote=isResolvedReport(modalReport);
+    if(!resolvedNote && $("mStatus").value==="closed" && !canClose(modalReport)){ err.textContent="To close a report, document the root cause and corrective action, then complete and verify the corrective action."; err.classList.add("show"); return; }
+    if(!resolvedNote && ($("mStatus").value==="no_action" || $("mStatus").value==="duplicate")){ err.textContent="Use Close without corrective action in the Incident workspace so the closure reason is documented."; err.classList.add("show"); return; }
     var btn=$("mSave"); btn.disabled=true; btn.textContent="Saving…";
     try{
       var sess=(await sb.auth.getSession()).data.session; var email=(sess&&sess.user)?sess.user.email:null;
       var ins=await sb.from("report_notes").insert({ report_id:modalReport.id, title:title, body:body||null, author_email:email });
       if(ins.error) throw ins.error;
       var newStatus=$("mStatus").value;
-      if(newStatus && newStatus!==modalReport.status){ await updateStatus(modalReport.id, newStatus, modalCard); }
+      if(!resolvedNote && newStatus && newStatus!==modalReport.status){ await updateStatus(modalReport.id, newStatus, modalCard); }
       var nEl=modalNotesEl, rid=modalReport.id;
       closeModal();
       if(nEl) loadNotes(rid, nEl);
@@ -1514,11 +1559,12 @@
   function assigneeName(r){ var p=r&&r.assigned_user_id?profileById[String(r.assigned_user_id)]:null; return p?profileName(p):(r&&r.responsible_person?r.responsible_person:""); }
   function isManager(){ return currentRole==="admin"||currentRole==="safety_manager"; }
   function canVerify(){ return isManager(); }
-  function canEditReport(r){
+  function hasOperationalAccess(r){
     if(isManager()) return true;
     return currentRole==="supervisor" && currentSession && currentSession.user && String(r.assigned_user_id||"")===String(currentSession.user.id);
   }
-  function canAddNotes(r){ return canEditReport(r); }
+  function canEditReport(r){ return !isResolvedReport(r) && hasOperationalAccess(r); }
+  function canAddNotes(r){ return hasOperationalAccess(r); }
   function canManageUsers(){ return currentRole==="admin"; }
 
   function applyRoleUi(){
@@ -1839,7 +1885,7 @@
       h+='<div class="evidence-panel" data-action-evidence></div>';
       if(canEditReport(r)&&status!=="verified"){
         var primary=(status==="awaiting_verification")?'':(status==="changes_requested"?'Resubmit for verification →':'Submit for verification →');
-        h+='<div class="wizard-footer"><div class="wizard-footer-copy">Save keeps the completion note as a draft. Submitting is the deliberate handoff to the reviewer.</div><div class="wizard-footer-actions"><button class="wizard-save btn-save-completion" data-step-save="4" type="button">Save completion note</button><span class="completion-saved section-saved" hidden>Saved ✓</span>'+(primary?'<button class="wizard-primary btn-complete" data-step-complete="4" type="button">'+primary+'</button>':'')+'</div></div>';
+        h+='<div class="wizard-footer"><div class="wizard-footer-copy">Save and close saves the completion note without submitting it, then returns you Home. Submitting is the deliberate handoff to the reviewer.</div><div class="wizard-footer-actions"><button class="wizard-save btn-save-completion" data-step-save="4" type="button">Save and close</button><span class="completion-saved section-saved" hidden>Saved ✓</span>'+(primary?'<button class="wizard-primary btn-complete" data-step-complete="4" type="button">'+primary+'</button>':'')+'</div></div>';
       }
     } else {
       if(r.action_completion_note) h+='<div class="action-context"><b>Completed work submitted</b><p>'+esc(r.action_completion_note)+'</p></div>';
@@ -1847,7 +1893,7 @@
       h+='<div class="evidence-panel" data-action-evidence></div>';
       if(status==="awaiting_verification"&&canVerify()){
         h+='<label class="inv-l">Reviewer verification note <span style="font-weight:400;color:var(--muted)">(optional when approving)</span><textarea class="verify-note" placeholder="What did you verify? If requesting changes, explain exactly what still needs to be done.">'+esc(r.action_verification_note||'')+'</textarea></label><div class="wizard-required" data-verify-required>Add a verification note explaining the requested changes.</div>'+
-          '<div class="wizard-footer"><div class="wizard-footer-copy">Save keeps your note without making a decision. Verify advances the record. Request Changes sends it back to Step 4.</div><div class="wizard-footer-actions"><button class="wizard-save btn-save-verification" data-step-save="5" type="button">Save verification note</button><span class="verification-saved section-saved" hidden>Saved ✓</span><button class="btn-changes" type="button">Request changes</button><button class="wizard-primary btn-verify" data-step-complete="5" type="button">Verify &amp; continue →</button></div></div>';
+          '<div class="wizard-footer"><div class="wizard-footer-copy">Save and close saves your verification note without making a decision, then returns you Home. Verify advances the record. Request Changes sends it back to Step 4.</div><div class="wizard-footer-actions"><button class="wizard-save btn-save-verification" data-step-save="5" type="button">Save and close</button><span class="verification-saved section-saved" hidden>Saved ✓</span><button class="btn-changes" type="button">Request changes</button><button class="wizard-primary btn-verify" data-step-complete="5" type="button">Verify &amp; continue →</button></div></div>';
       } else if(status==="verified"){
         if(r.action_verification_note) h+='<div class="action-context"><b>Verification note</b><p>'+esc(r.action_verification_note)+'</p></div>';
         if(verified){var vb=r.action_verified_by&&profileById[String(r.action_verified_by)]?profileName(profileById[String(r.action_verified_by)]):'';h+='<div class="action-meta">'+esc(verified)+(vb?' by '+esc(vb):'')+'</div>';}
@@ -1860,7 +1906,7 @@
 
     var saveCompletionBtn=el.querySelector(".btn-save-completion"); if(saveCompletionBtn) saveCompletionBtn.addEventListener("click",async function(){
       var note=(el.querySelector(".action-note")&&el.querySelector(".action-note").value.trim())||""; saveCompletionBtn.disabled=true;
-      try{var patch={action_completion_note:note||null};if((r.action_status||"not_started")==="not_started"&&note)patch.action_status="in_progress";var res=await sb.from("reports").update(patch).eq("id",r.id);if(res.error)throw res.error;Object.keys(patch).forEach(function(k){r[k]=patch[k];});var flag=el.querySelector(".completion-saved");if(flag){flag.hidden=false;setTimeout(function(){flag.hidden=true;},2200);}toast("Completion note saved","ok");loadAudit(r.id,auditEl);refreshRecordWorkflow(r,detail);renderHomeSnapshot();renderMyWork();}
+      try{var patch={action_completion_note:note||null};if((r.action_status||"not_started")==="not_started"&&note)patch.action_status="in_progress";var res=await sb.from("reports").update(patch).eq("id",r.id);if(res.error)throw res.error;Object.keys(patch).forEach(function(k){r[k]=patch[k];});var flag=el.querySelector(".completion-saved");if(flag){flag.hidden=false;setTimeout(function(){flag.hidden=true;},2200);}toast("Completion note saved","ok");loadAudit(r.id,auditEl);refreshRecordWorkflow(r,detail);renderHomeSnapshot();renderMyWork();showView("home");}
       catch(ex){console.error(ex);toast("Could not save completion note.","err");}finally{if(saveCompletionBtn.isConnected)saveCompletionBtn.disabled=false;}
     });
     var completeBtn=el.querySelector(".btn-complete"); if(completeBtn) completeBtn.addEventListener("click",async function(){
@@ -1868,7 +1914,7 @@
       try{var uid=currentSession&&currentSession.user?currentSession.user.id:null;var patch={action_status:"awaiting_verification",action_completed_at:new Date().toISOString(),action_completed_by:uid,action_completion_note:note,action_verified_at:null,action_verified_by:null,status:"corrective_action"};var res=await sb.from("reports").update(patch).eq("id",r.id);if(res.error)throw res.error;Object.keys(patch).forEach(function(k){r[k]=patch[k];});$("incidentSummary").innerHTML='<div class="is-badges">'+incidentBadgeHtml(r)+'</div><div class="is-desc">'+esc(r.description||"No description provided.")+'</div>';renderActionWorkflow(r,detail.querySelector("[data-action-completion]"),auditEl,detail,"complete");renderActionWorkflow(r,detail.querySelector("[data-action-verification]"),auditEl,detail,"verify");loadAudit(r.id,auditEl);renderHomeSnapshot();renderMyWork();refreshRecordWorkflow(r,detail);setWizardStep(detail,r,5,true);toast("Corrective action submitted for verification","ok");}
       catch(ex){console.error(ex);toast("Could not submit the corrective action.","err");}finally{if(completeBtn.isConnected)completeBtn.disabled=false;}
     });
-    var saveVerificationBtn=el.querySelector(".btn-save-verification"); if(saveVerificationBtn) saveVerificationBtn.addEventListener("click",async function(){var note=(el.querySelector(".verify-note")&&el.querySelector(".verify-note").value.trim())||null;saveVerificationBtn.disabled=true;try{var res=await sb.from("reports").update({action_verification_note:note}).eq("id",r.id);if(res.error)throw res.error;r.action_verification_note=note;var flag=el.querySelector(".verification-saved");if(flag){flag.hidden=false;setTimeout(function(){flag.hidden=true;},2200);}toast("Verification note saved","ok");loadAudit(r.id,auditEl);}catch(ex){console.error(ex);toast("Could not save verification note.","err");}finally{saveVerificationBtn.disabled=false;}});
+    var saveVerificationBtn=el.querySelector(".btn-save-verification"); if(saveVerificationBtn) saveVerificationBtn.addEventListener("click",async function(){var note=(el.querySelector(".verify-note")&&el.querySelector(".verify-note").value.trim())||null;saveVerificationBtn.disabled=true;try{var res=await sb.from("reports").update({action_verification_note:note}).eq("id",r.id);if(res.error)throw res.error;r.action_verification_note=note;var flag=el.querySelector(".verification-saved");if(flag){flag.hidden=false;setTimeout(function(){flag.hidden=true;},2200);}toast("Verification note saved","ok");loadAudit(r.id,auditEl);showView("home");}catch(ex){console.error(ex);toast("Could not save verification note.","err");}finally{saveVerificationBtn.disabled=false;}});
     var verifyBtn=el.querySelector(".btn-verify"); if(verifyBtn) verifyBtn.addEventListener("click",async function(){verifyBtn.disabled=true;try{var note=(el.querySelector(".verify-note")&&el.querySelector(".verify-note").value.trim())||null;var patch={action_status:"verified",action_verified_at:new Date().toISOString(),action_verified_by:currentSession.user.id,action_verification_note:note};var res=await sb.from("reports").update(patch).eq("id",r.id);if(res.error)throw res.error;Object.keys(patch).forEach(function(k){r[k]=patch[k];});renderActionWorkflow(r,detail.querySelector("[data-action-completion]"),auditEl,detail,"complete");renderActionWorkflow(r,detail.querySelector("[data-action-verification]"),auditEl,detail,"verify");loadAudit(r.id,auditEl);renderHomeSnapshot();renderMyWork();refreshRecordWorkflow(r,detail);setWizardStep(detail,r,6,true);toast("Corrective action verified — ready for closure","ok");}catch(ex){console.error(ex);toast("Could not verify corrective action.","err");}finally{if(verifyBtn.isConnected)verifyBtn.disabled=false;}});
     var changesBtn=el.querySelector(".btn-changes"); if(changesBtn) changesBtn.addEventListener("click",async function(){var note=(el.querySelector(".verify-note")&&el.querySelector(".verify-note").value.trim())||"";var req=el.querySelector("[data-verify-required]");if(!note){if(req)req.classList.add("show");toast("Explain what needs to change before sending the action back.","err");return;}if(req)req.classList.remove("show");changesBtn.disabled=true;try{var patch={action_status:"changes_requested",action_verification_note:note,action_verified_at:null,action_verified_by:null};var res=await sb.from("reports").update(patch).eq("id",r.id);if(res.error)throw res.error;Object.keys(patch).forEach(function(k){r[k]=patch[k];});renderActionWorkflow(r,detail.querySelector("[data-action-completion]"),auditEl,detail,"complete");loadAudit(r.id,auditEl);renderHomeSnapshot();renderMyWork();refreshRecordWorkflow(r,detail);setWizardStep(detail,r,4,true);toast("Changes requested — returned to the assigned owner","ok");}catch(ex){console.error(ex);toast("Could not request changes.","err");}finally{if(changesBtn.isConnected)changesBtn.disabled=false;}});
   }
