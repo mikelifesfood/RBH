@@ -465,6 +465,103 @@
   @media(max-width:900px){.user-row.phase2{grid-template-columns:1fr 1fr}.role-legend,.action-summary,.mywork-summary{grid-template-columns:1fr 1fr}.assignment-grid{grid-template-columns:1fr}.mywork-grid{grid-template-columns:1fr}}
   @media(max-width:560px){.user-row.phase2,.role-legend,.action-summary,.mywork-summary{grid-template-columns:1fr}.mywork-banner{align-items:flex-start;flex-direction:column}}
 
+
+
+  /* ---------- Phase 2.9.1 mobile incident streamlining ---------- */
+  @media(max-width:620px){
+    /* Keep the phone view truly single-column and prevent iOS form zoom/overflow. */
+    body{overflow-x:hidden}
+    .content{padding:12px}
+    #view-incident,.incident-header,.incident-summary,.incident-body,.wizard-shell,.wizard-process,.wizard-panel,.record-support{min-width:0;max-width:100%}
+    #view-incident .incident-body{background:transparent;border:0;box-shadow:none;padding:0}
+    .incident-header{gap:9px;margin-bottom:11px}
+    .incident-title h2{font-size:22px;line-height:1.15;margin-top:2px}
+    .incident-title p{font-size:12px}
+    .back-link{padding:8px 10px;font-size:12px}
+    .incident-summary{padding:12px 13px;margin-bottom:11px;border-radius:12px}
+    .incident-summary .is-desc{font-size:13.5px;line-height:1.45;margin-top:7px}
+    .is-badges{gap:5px}
+    .badge{font-size:10.5px;padding:3px 8px}
+
+    /* Mobile uses ONE current-step arrow rather than the full six-step ribbon. */
+    .wizard-shell{gap:11px}
+    .wizard-process{position:static;padding:10px;border-radius:12px}
+    .wizard-process-head{display:grid;grid-template-columns:1fr;gap:9px;margin:0}
+    .wizard-process-copy{
+      min-width:0;width:100%;background:#2f65ad;color:#fff;
+      padding:11px 28px 11px 13px;
+      clip-path:polygon(0 0,calc(100% - 14px) 0,100% 50%,calc(100% - 14px) 100%,0 100%);
+    }
+    .wizard-process-copy b{font-size:14px;line-height:1.25;margin:0;color:#fff}
+    .wizard-process-copy span{font-size:11px;line-height:1.35;margin-top:3px;color:rgba(255,255,255,.88)}
+    .process-flow{display:none!important}
+    .wizard-top-actions{display:grid;grid-template-columns:1fr;gap:7px;width:100%;justify-content:stretch}
+    .wizard-top-actions button{width:100%;min-height:44px;flex:none!important}
+
+    /* The current-step arrow already names the step, so remove the duplicate heading. */
+    .wizard-panel{padding:12px;border-radius:12px}
+    .wizard-step-head{display:none}
+    .wizard-task{margin:0 0 12px;padding:10px 11px;border-left-width:3px}
+    .wizard-task b{font-size:12px}
+    .wizard-task span{font-size:11.5px;line-height:1.4}
+    .wizard-context,.action-context,.ops-alert,.readonly-step-note{border-radius:9px}
+
+    /* Every editable field and field group stacks vertically. */
+    .inv-grid,.inv-row,.assignment-grid,.support-grid{display:grid!important;grid-template-columns:1fr!important;gap:10px!important}
+    .inv-l{min-width:0;font-size:12.5px;gap:5px}
+    .inv-l input,.inv-l select,.inv-l textarea,
+    input[type="text"],input[type="email"],input[type="password"],input[type="date"],select,textarea{
+      min-width:0;max-width:100%;width:100%;font-size:16px!important;
+    }
+    .inv-l textarea{min-height:112px}
+    input[type="date"]{-webkit-appearance:none;appearance:none}
+
+    /* Deliberate actions are large, stacked and easy to tap. */
+    .wizard-footer{display:block;margin-top:14px;padding-top:12px}
+    .wizard-footer-copy{display:none}
+    .wizard-footer-actions{display:grid;grid-template-columns:1fr;gap:7px;width:100%;margin:0}
+    .wizard-footer-actions button,.wizard-save,.wizard-primary,.wizard-close,.wizard-high,.btn-changes,.btn-verify,.btn-complete{
+      width:100%;min-height:46px;justify-content:center;text-align:center;white-space:normal
+    }
+    .section-saved{text-align:center;padding:2px 0}
+
+    /* Keep action/evidence information readable without side-by-side squeezing. */
+    .action-workflow{padding:11px;margin-top:0}
+    .action-head{flex-direction:column;align-items:flex-start;gap:7px}
+    .action-state{align-self:flex-start}
+    .action-actions{display:grid;grid-template-columns:1fr;gap:7px}
+    .action-actions button{width:100%;min-height:44px}
+    .evidence-panel{padding:11px;margin-top:12px}
+    .evidence-head{flex-direction:column;gap:6px}
+    .evidence-count{align-self:flex-start}
+    .evidence-files{gap:7px}
+    .evidence-thumb{width:76px;height:76px}
+    .evidence-file{max-width:100%;width:100%}
+    .evidence-upload{display:grid;grid-template-columns:1fr;gap:7px;align-items:stretch}
+    .evidence-pick,.evidence-upload-btn,.evidence-selected{width:100%;text-align:center;min-height:44px}
+    .evidence-selected{min-height:0;padding:2px 0}
+
+    /* Review/no-action and close sections also stay single-column. */
+    .noaction-box{display:grid;grid-template-columns:1fr;gap:10px;padding:11px}
+    .noaction-copy{min-width:0}
+    .noaction-btn{width:100%;min-height:44px;white-space:normal}
+    .close-check{align-items:flex-start}
+
+    /* History is reference material on mobile, not the main task. */
+    .record-support{border-radius:12px}
+    .record-support summary{padding:12px 13px;font-size:12.5px}
+    .record-support-body{padding:0 12px 12px}
+    .support-grid{margin-top:12px}
+    .detail-actions{margin-top:10px!important;margin-bottom:0!important}
+    .detail-actions .pdf-btn{width:100%;min-height:44px}
+
+    /* Timeline cards remain narrow-screen safe. */
+    .tl-item{grid-template-columns:28px minmax(0,1fr);gap:8px}
+    .tl-marker{width:26px;height:26px;font-size:10px}
+    .timeline:before{left:13px}
+    .tl-card{padding:9px 10px}
+  }
+
 </style>
 </head>
 <body>
@@ -1028,6 +1125,8 @@
 
   function buildDetail(r, detail, wrap){
     detail.innerHTML=detailHtml(r);
+    var mobileSupport=detail.querySelector(".record-support");
+    if(mobileSupport && window.matchMedia && window.matchMedia("(max-width: 620px)").matches) mobileSupport.removeAttribute("open");
     detail.dataset.wizardStep=String(initialWizardStep(r));
     var auditEl=detail.querySelector("[data-audit]");
     var gate=detail.querySelector("[data-role-gate]");
