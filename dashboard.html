@@ -420,7 +420,7 @@
   .wizard-high{background:#fff5d8;border:1.5px solid #e1c66f;color:#725300}.wizard-high:hover{border-color:#cba838}
   .wizard-save:disabled,.wizard-primary:disabled,.wizard-close:disabled,.wizard-high:disabled{opacity:.5;cursor:not-allowed}
   .process-flow{display:flex;align-items:stretch;width:100%;overflow-x:auto;padding:1px 0 2px;scrollbar-width:thin}
-  .process-step{position:relative;min-width:132px;flex:1;border:0;color:#5f625f;background:#e9ebe9;padding:10px 22px 10px 27px;text-align:center;font-family:var(--display);font-weight:800;font-size:11px;line-height:1.18;cursor:pointer;clip-path:polygon(0 0,calc(100% - 13px) 0,100% 50%,calc(100% - 13px) 100%,0 100%,13px 50%);margin-left:-8px}
+  .process-step{position:relative;min-width:132px;flex:0 0 calc((100% + 40px)/6);border:0;color:#5f625f;background:#e9ebe9;padding:10px 22px 10px 27px;text-align:center;font-family:var(--display);font-weight:800;font-size:11px;line-height:1.18;cursor:pointer;clip-path:polygon(0 0,calc(100% - 13px) 0,100% 50%,calc(100% - 13px) 100%,0 100%,13px 50%);margin-left:-8px}
   .process-step:first-child{margin-left:0;clip-path:polygon(0 0,calc(100% - 13px) 0,100% 50%,calc(100% - 13px) 100%,0 100%)}
   .process-step .ps-num{display:block;font-size:9px;font-weight:700;opacity:.75;margin-bottom:2px}.process-step .ps-check{font-size:11px;margin-right:4px}
   .process-step.ps-done{background:#59b77c;color:#fff}.process-step.ps-current{background:#2f65ad;color:#fff}.process-step.ps-blocked{background:#b92c34;color:#fff}.process-step.ps-future{background:#e8e9e8;color:#666}.process-step.ps-na{background:#efefef;color:#929292}.process-step.ps-viewing{box-shadow:inset 0 0 0 3px rgba(255,255,255,.92),inset 0 0 0 5px rgba(30,36,42,.28)}
@@ -467,6 +467,9 @@
   @media(max-width:560px){.user-row.phase2,.role-legend,.action-summary,.mywork-summary{grid-template-columns:1fr}.mywork-banner{align-items:flex-start;flex-direction:column}}
 
 
+
+  /* ---------- Phase 2.9.4 equal workflow arrows ---------- */
+  /* Six workflow arrows use an equal fixed share, accounting for the 8px overlap between adjacent chevrons. */
 
   /* ---------- Phase 2.9.2 workflow UI cleanup ---------- */
   /* High-priority shortcut removed; date/request-changes styling aligned; draft saves now save and return Home. */
