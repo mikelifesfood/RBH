@@ -880,9 +880,20 @@
     try{
       var rep=await sb.from("reports").select("*").order("created_at",{ascending:false});
       if(rep.error) throw rep.error;
-      allReports=rep.data||[]; attByReport={};
+      allReports=rep.data||[];
       var at=await sb.from("report_attachments").select("*");
-      (at.data||[]).forEach(function(a){ (attByReport[a.report_id]=attByReport[a.report_id]||[]).push(a); });
+      if(at.error) throw at.error;
+      // Build attachment state locally, then replace it in one step. This prevents
+      // overlapping report refreshes/auth events from pushing the same row twice
+      // into the shared in-memory attachment map.
+      var nextAttByReport={};
+      (at.data||[]).forEach(function(a){
+        var arr=nextAttByReport[a.report_id]=nextAttByReport[a.report_id]||[];
+        var key=String(a.id||a.storage_path||"");
+        var exists=arr.some(function(x){ return String(x.id||x.storage_path||"")===key; });
+        if(!exists) arr.push(a);
+      });
+      attByReport=nextAttByReport;
       applyFilters(); renderMetrics(); renderHomeSnapshot(); renderMyWork();
     }catch(ex){ console.error(ex); listEl.innerHTML='<div class="state">Couldn\'t load reports. Please refresh.</div>'; }
   }
@@ -1312,7 +1323,14 @@
   });
 
   async function loadAtts(reportId, el){
-    var atts=(attByReport[reportId]||[]).filter(function(a){ return !isActionEvidence(a); });
+    var seenAtts={};
+    var atts=(attByReport[reportId]||[]).filter(function(a){
+      if(isActionEvidence(a)) return false;
+      var key=String(a.id||a.storage_path||"");
+      if(seenAtts[key]) return false;
+      seenAtts[key]=true;
+      return true;
+    });
     if(!atts.length){ el.innerHTML='<div class="muted small">No photos or files attached.</div>'; return; }
     el.innerHTML='<div class="muted small">Loading files\u2026</div>';
     try{
@@ -2140,7 +2158,13 @@
   async function refreshReportAttachments(reportId){
     var res=await sb.from("report_attachments").select("*").eq("report_id",reportId);
     if(res.error) throw res.error;
-    attByReport[reportId]=res.data||[];
+    var seen={};
+    attByReport[reportId]=(res.data||[]).filter(function(a){
+      var key=String(a.id||a.storage_path||"");
+      if(seen[key]) return false;
+      seen[key]=true;
+      return true;
+    });
     return attByReport[reportId];
   }
   function evidenceLocked(r){ return r.status==="closed" || r.status==="no_action" || r.status==="duplicate" || r.action_status==="verified"; }
