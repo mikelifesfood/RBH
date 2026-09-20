@@ -616,6 +616,24 @@
     .tl-card{padding:9px 10px}
   }
 
+  /* ---------- My Profile drawer ---------- */
+  .sb-user{padding-top:10px}
+  .sb-profile-card{width:100%;display:grid;grid-template-columns:38px minmax(0,1fr) 16px;gap:10px;align-items:center;text-align:left;border:1px solid rgba(255,255,255,.13);background:linear-gradient(135deg,rgba(255,255,255,.08),rgba(255,255,255,.025));color:#fff;border-radius:12px;padding:10px;cursor:pointer;transition:transform .14s,border-color .14s,background .14s,box-shadow .14s}
+  .sb-profile-card:hover{transform:translateY(-1px);border-color:rgba(255,255,255,.28);background:linear-gradient(135deg,rgba(176,30,40,.27),rgba(255,255,255,.055));box-shadow:0 8px 18px -14px rgba(0,0,0,.8)}
+  .sb-avatar,.profile-head-avatar{display:flex;align-items:center;justify-content:center;border-radius:50%;font-family:var(--display);font-weight:800;letter-spacing:.02em;background:var(--gradient-red);color:#fff;box-shadow:0 7px 16px -11px rgba(176,30,40,.95)}
+  .sb-avatar{width:38px;height:38px;font-size:12px}.sb-profile-copy{min-width:0;display:flex;flex-direction:column;align-items:flex-start}.sb-profile-name{font-family:var(--display);font-size:12.5px;font-weight:700;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sb-profile-card .who{font-size:10.5px!important;line-height:1.3;color:#bcb7b1!important;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;word-break:normal!important}.sb-profile-card .role-pill{font-size:8.5px;margin-top:5px;padding:2px 6px;border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#f1eeea}.sb-profile-chev{font-size:22px;color:#d8d3ce;line-height:1}
+  .profile-backdrop{position:fixed;inset:0;z-index:90;background:rgba(16,14,13,.42);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);opacity:0;visibility:hidden;transition:opacity .2s,visibility .2s}
+  .profile-backdrop.open{opacity:1;visibility:visible}
+  .profile-drawer{position:absolute;right:0;top:0;height:100%;width:min(520px,100%);background:var(--paper);box-shadow:-24px 0 60px -28px rgba(0,0,0,.58);transform:translateX(102%);transition:transform .24s ease;display:flex;flex-direction:column;overflow:hidden}
+  .profile-backdrop.open .profile-drawer{transform:translateX(0)}
+  .profile-drawer-head{position:relative;background:radial-gradient(circle at 100% 0%,rgba(255,255,255,.2),transparent 31%),linear-gradient(135deg,#151515 0%,#261416 56%,#9d1922 125%);color:#fff;padding:22px 54px 20px 22px;min-height:116px;display:flex;align-items:center}
+  .profile-head-person{display:flex;gap:13px;align-items:center;min-width:0}.profile-head-avatar{width:48px;height:48px;flex:0 0 auto;font-size:15px;border:2px solid rgba(255,255,255,.28)}.profile-eyebrow{font-family:var(--display);font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#efb2b7;font-weight:800}.profile-drawer-head h2{font-family:var(--display);font-size:20px;line-height:1.15;margin:2px 0 4px}.profile-drawer-head p{font-size:11.5px;color:#d3ceca;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:330px}.profile-close{position:absolute;right:15px;top:15px;width:34px;height:34px;border:1px solid rgba(255,255,255,.22);border-radius:9px;background:rgba(255,255,255,.07);color:#fff;font-size:23px;line-height:1;cursor:pointer}.profile-close:hover{background:rgba(255,255,255,.14)}
+  .profile-tabs{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--line);background:var(--paper);padding:0 16px}.profile-tab{border:0;border-bottom:3px solid transparent;background:none;padding:13px 8px 11px;font-family:var(--display);font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer}.profile-tab:hover{color:var(--ink)}.profile-tab.active{color:var(--red);border-bottom-color:var(--red)}
+  .profile-scroll{overflow:auto;padding:20px 22px 26px}.profile-panel[hidden]{display:none}.profile-section-title{margin-bottom:16px}.profile-section-title h3{font-family:var(--display);font-size:18px;margin:0 0 3px}.profile-section-title p{font-size:12.5px;color:var(--muted);margin:0}.profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}.profile-span-2{grid-column:1/-1}.field-help{font-size:10.5px;line-height:1.4;color:var(--muted);margin-top:5px}.profile-grid input[readonly]{background:var(--surface-2);color:var(--muted)}
+  .profile-primary,.profile-secondary,.profile-danger{border-radius:10px;font-family:var(--display);font-weight:700;font-size:13px;padding:11px 15px;cursor:pointer;transition:transform .12s,border-color .12s,filter .12s}.profile-primary{background:var(--gradient-red);color:#fff;border:0;box-shadow:var(--button-shadow)}.profile-primary:hover{transform:translateY(-1px);filter:brightness(.97)}.profile-primary:disabled,.profile-secondary:disabled,.profile-danger:disabled{opacity:.6;cursor:default;transform:none}.profile-secondary{background:var(--paper);border:1.5px solid var(--line-strong);color:var(--ink)}.profile-secondary:hover{border-color:var(--red)}.profile-danger{background:#fff1f2;border:1.5px solid #e4a6ab;color:#8a141c}.profile-danger:hover{border-color:var(--red);background:#fce7e9}.profile-card-section{border:1px solid var(--line);border-radius:13px;padding:15px;background:var(--surface);margin-bottom:12px}.profile-card-section h4{font-family:var(--display);font-size:14px;margin:0 0 4px}.profile-card-section>p{font-size:11.5px;color:var(--muted);line-height:1.5;margin:0 0 12px}.profile-danger-zone{background:color-mix(in srgb,var(--red) 3%,var(--paper))}.profile-action-row{display:flex;gap:8px;flex-wrap:wrap}.feedback-context{font-size:10.5px;color:var(--muted);background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin:-4px 0 12px}.profile-help-list{display:grid;gap:10px}.profile-help-list div{display:grid;gap:2px}.profile-help-list b{font-size:12px}.profile-help-list span{font-size:11.5px;color:var(--muted);line-height:1.45}.profile-version{display:flex;justify-content:space-between;gap:12px;border-top:1px solid var(--line);padding-top:12px;color:var(--muted);font-size:10.5px}.profile-version b{font-weight:600;text-align:right}
+  .admin-subsection{margin-top:24px;padding-top:22px;border-top:1px solid var(--line)}.admin-subhead{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:12px}.admin-subhead h3{font-family:var(--display);font-size:18px;margin:0}.admin-subhead p{margin:2px 0 0;color:var(--muted);font-size:12px}.feedback-summary{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}.fb-sum{background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:7px 10px;font-size:10.5px;color:var(--muted)}.fb-sum b{color:var(--ink);font-size:13px;margin-right:4px}.feedback-admin-list{display:grid;gap:8px}.feedback-admin-card{border:1px solid var(--line);background:var(--paper);border-radius:11px;padding:12px}.feedback-admin-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.feedback-admin-title{font-family:var(--display);font-weight:700;font-size:13px}.feedback-admin-meta{font-size:10.5px;color:var(--muted);margin-top:2px}.feedback-admin-body{font-size:12px;line-height:1.5;margin:9px 0;white-space:pre-wrap}.feedback-admin-card select{width:auto;min-width:118px;padding:7px 30px 7px 9px;font-size:11px;border-radius:8px}.feedback-type-pill{display:inline-flex;margin-right:5px;padding:2px 6px;border-radius:999px;background:var(--surface-2);font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;color:var(--muted)}
+  @media(max-width:560px){.profile-scroll{padding:16px}.profile-grid{grid-template-columns:1fr}.profile-span-2{grid-column:auto}.profile-drawer-head{padding-left:16px}.profile-tabs{padding:0 8px}.profile-action-row{display:grid;grid-template-columns:1fr}.profile-action-row button{width:100%}.feedback-admin-top{display:grid;grid-template-columns:1fr}.feedback-admin-card select{width:100%}}
+
 </style>
 </head>
 <body>
@@ -651,7 +669,17 @@
         <button class="nav-item" data-view="users" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 8.5a3 3 0 0 1 0 5.8M17.5 20a5.5 5.5 0 0 0-1.6-3.9"/></svg>Admin</button>
       </nav>
       <div class="nav-spacer"></div>
-      <div class="sb-user"><span class="who" id="who"></span><span class="role-pill r-read_only" id="rolePill">Read Only</span><div class="sb-actions"><button class="signout" id="signout" type="button">Sign out</button></div></div>
+      <div class="sb-user">
+        <button class="sb-profile-card" id="profileOpen" type="button" aria-haspopup="dialog" aria-controls="profileDrawer">
+          <span class="sb-avatar" id="profileAvatar">RB</span>
+          <span class="sb-profile-copy">
+            <span class="sb-profile-name" id="profileDisplayName">My Profile</span>
+            <span class="who" id="who"></span>
+            <span class="role-pill r-read_only" id="rolePill">Read Only</span>
+          </span>
+          <span class="sb-profile-chev" aria-hidden="true">›</span>
+        </button>
+      </div>
     </aside>
     <main class="main">
       <div class="topbar">
@@ -750,6 +778,15 @@
           <div class="users-head"><p class="muted" style="margin:0">Dashboard users, most recently active first.</p></div>
           <div id="usersList"></div>
           <div class="users-help"><b>Adding a new user</b><br>Create the approved dashboard login using the existing authentication process. Their profile appears here after their first sign-in, where an Admin can assign the correct role.</div>
+
+          <div class="admin-subsection">
+            <div class="admin-subhead">
+              <div><h3>App Feedback</h3><p>Ideas, questions, and problems submitted from My Profile.</p></div>
+              <button class="refresh" id="feedbackRefresh" type="button">Refresh</button>
+            </div>
+            <div class="feedback-summary" id="feedbackSummary"></div>
+            <div class="feedback-admin-list" id="feedbackAdminList"><div class="state">Open Admin to load feedback.</div></div>
+          </div>
         </section>
 
       </div>
@@ -760,6 +797,79 @@
       </footer>
     </main>
   </div>
+</div>
+
+<!-- ============ MY PROFILE DRAWER ============ -->
+<div class="profile-backdrop" id="profileBackdrop" aria-hidden="true">
+  <aside class="profile-drawer" id="profileDrawer" role="dialog" aria-modal="true" aria-labelledby="profileDrawerTitle">
+    <div class="profile-drawer-head">
+      <div class="profile-head-person">
+        <span class="profile-head-avatar" id="profileHeadAvatar">RB</span>
+        <div><div class="profile-eyebrow">My Profile</div><h2 id="profileDrawerTitle">Account &amp; preferences</h2><p id="profileHeadEmail"></p></div>
+      </div>
+      <button class="profile-close" id="profileClose" type="button" aria-label="Close profile">×</button>
+    </div>
+
+    <div class="profile-tabs" role="tablist" aria-label="Profile sections">
+      <button class="profile-tab active" type="button" data-profile-tab="profile">Profile</button>
+      <button class="profile-tab" type="button" data-profile-tab="security">Security</button>
+      <button class="profile-tab" type="button" data-profile-tab="support">Support</button>
+    </div>
+
+    <div class="profile-scroll">
+      <section class="profile-panel" data-profile-panel="profile">
+        <div class="profile-section-title"><h3>Personal information</h3><p>Keep your contact and work information current.</p></div>
+        <form id="profileForm">
+          <div class="profile-grid">
+            <div class="field profile-span-2"><label for="profileFullName">Full name</label><input type="text" id="profileFullName" maxlength="120" autocomplete="name"></div>
+            <div class="field profile-span-2"><label for="profileEmail">Email</label><input type="email" id="profileEmail" readonly aria-readonly="true"><div class="field-help">Your login email is managed by the account administrator.</div></div>
+            <div class="field"><label for="profilePhone">Phone</label><input type="text" id="profilePhone" maxlength="40" autocomplete="tel" placeholder="Optional"></div>
+            <div class="field"><label for="profileJobTitle">Job title</label><input type="text" id="profileJobTitle" maxlength="100" placeholder="Optional"></div>
+            <div class="field"><label for="profileDepartment">Department</label><input type="text" id="profileDepartment" maxlength="100" placeholder="Optional"></div>
+            <div class="field"><label for="profileRole">App role</label><input type="text" id="profileRole" readonly aria-readonly="true"><div class="field-help">Only another Admin can change your access.</div></div>
+          </div>
+          <button class="profile-primary" id="profileSave" type="submit">Save Profile</button>
+        </form>
+      </section>
+
+      <section class="profile-panel" data-profile-panel="security" hidden>
+        <div class="profile-section-title"><h3>Password &amp; security</h3><p>Manage your RBH Safety sign-in.</p></div>
+        <form id="passwordForm" class="profile-card-section">
+          <div class="field"><label for="profileNewPassword">New password</label><input type="password" id="profileNewPassword" minlength="8" autocomplete="new-password" placeholder="At least 8 characters"></div>
+          <div class="field"><label for="profileConfirmPassword">Confirm new password</label><input type="password" id="profileConfirmPassword" minlength="8" autocomplete="new-password"></div>
+          <button class="profile-primary" id="passwordSave" type="submit">Change Password</button>
+        </form>
+        <div class="profile-card-section">
+          <h4>Password reset email</h4><p>Send a secure password-reset link to your account email address.</p>
+          <button class="profile-secondary" id="passwordReset" type="button">Send Reset Email</button>
+        </div>
+        <div class="profile-card-section profile-danger-zone">
+          <h4>Sessions</h4><p>Sign out of this browser, or sign out everywhere if you think another device should no longer have access.</p>
+          <div class="profile-action-row"><button class="profile-secondary" id="signout" type="button">Sign Out</button><button class="profile-danger" id="signoutAll" type="button">Sign Out Everywhere</button></div>
+        </div>
+      </section>
+
+      <section class="profile-panel" data-profile-panel="support" hidden>
+        <div class="profile-section-title"><h3>Feedback &amp; support</h3><p>Send feedback directly from the app. Admins can review it in the Admin section.</p></div>
+        <form id="feedbackForm" class="profile-card-section">
+          <div class="field"><label for="feedbackType">Feedback type</label><select id="feedbackType"><option value="suggestion">Suggestion</option><option value="problem">Something isn't working</option><option value="question">Question</option><option value="other">Other</option></select></div>
+          <div class="field"><label for="feedbackSubject">Subject</label><input type="text" id="feedbackSubject" maxlength="160" required placeholder="A short summary"></div>
+          <div class="field"><label for="feedbackMessage">Message</label><textarea id="feedbackMessage" maxlength="4000" required placeholder="Tell us what you noticed or what would make the app better."></textarea></div>
+          <div class="feedback-context" id="feedbackContext"></div>
+          <button class="profile-primary" id="feedbackSubmit" type="submit">Send Feedback</button>
+        </form>
+        <div class="profile-card-section">
+          <h4>Quick help</h4>
+          <div class="profile-help-list">
+            <div><b>Can't edit a report?</b><span>Your app role and report assignment control which workflow actions are available.</span></div>
+            <div><b>Need a different role?</b><span>For security, users cannot change their own role. Ask another RBH Safety Admin.</span></div>
+            <div><b>Something looks wrong?</b><span>Use the feedback form above and include what screen you were on and what you expected to happen.</span></div>
+          </div>
+        </div>
+        <div class="profile-version"><span>RBH Safety</span><b id="profileAppVersion">Version 2026.09.20 · Profile V1</b></div>
+      </section>
+    </div>
+  </aside>
 </div>
 
 <div id="toasts" class="toasts"></div>
@@ -861,6 +971,7 @@
   var dispositionReport=null, dispositionWrap=null, dispositionNotesEl=null;
   var restartReport=null, restartReturnView="records";
   var NAV_VIEW_KEY="rbh_safety_active_view_v1", NAV_INCIDENT_KEY="rbh_safety_active_incident_v1";
+  var APP_VERSION="2026.09.20 · Profile V1";
 
   function storedView(){
     try{ var v=localStorage.getItem(NAV_VIEW_KEY); return v||(currentRole==="supervisor"?"mywork":"home"); }catch(_e){ return currentRole==="supervisor"?"mywork":"home"; }
@@ -893,7 +1004,7 @@
   $("mStatus").innerHTML=statusOptions("new");
 
   /* ---------- auth ---------- */
-  function showLogin(){ appView.style.display="none"; loginView.style.display="flex"; currentSession=null; currentProfile=null; currentRole="read_only"; }
+  function showLogin(){ appView.style.display="none"; loginView.style.display="flex"; currentSession=null; currentProfile=null; currentRole="read_only"; if(typeof closeProfileDrawer==="function") closeProfileDrawer(); }
   async function showApp(session){
     currentSession=session; loginView.style.display="none"; appView.style.display="block";
     $("who").textContent=(session&&session.user&&session.user.email)||"";
@@ -930,7 +1041,7 @@
     catch(ex){ err.textContent="Incorrect email or password."; err.classList.add("show"); }
     finally{ btn.disabled=false; btn.textContent="Sign in"; }
   });
-  $("signout").addEventListener("click", async function(){ await sb.auth.signOut(); });
+  var _signout=$("signout"); if(_signout) _signout.addEventListener("click", async function(){ await sb.auth.signOut(); });
 
   /* ---------- data ---------- */
   async function loadReports(){
@@ -1983,6 +2094,134 @@
     finally{ btn.disabled=false; btn.textContent=lbl; }
   }
 
+
+  /* ================= My Profile V1 ================= */
+  function profileInitials(name,email){
+    var src=String(name||"").trim();
+    if(src){ var parts=src.split(/\s+/).filter(Boolean); return ((parts[0]||"").charAt(0)+(parts.length>1?(parts[parts.length-1]||"").charAt(0):"")).toUpperCase()||"RB"; }
+    var em=String(email||"").trim(); return em?em.charAt(0).toUpperCase():"RB";
+  }
+  function refreshProfileCard(){
+    var user=currentSession&&currentSession.user, email=(user&&user.email)||"";
+    var name=(currentProfile&&currentProfile.full_name)||"My Profile";
+    var initials=profileInitials(currentProfile&&currentProfile.full_name,email);
+    var dn=$("profileDisplayName"), av=$("profileAvatar"), hav=$("profileHeadAvatar"), he=$("profileHeadEmail");
+    if(dn) dn.textContent=name; if(av) av.textContent=initials; if(hav) hav.textContent=initials; if(he) he.textContent=email;
+    var who=$("who"); if(who) who.textContent=email;
+  }
+  function currentViewLabel(){ var pt=$("pageTitle"); return pt&&pt.textContent?pt.textContent:"RBH Safety"; }
+  function fillProfileForm(){
+    var user=currentSession&&currentSession.user; if(!user) return;
+    var p=currentProfile||{};
+    $("profileFullName").value=p.full_name||"";
+    $("profileEmail").value=user.email||p.email||"";
+    $("profilePhone").value=p.phone||"";
+    $("profileJobTitle").value=p.job_title||"";
+    $("profileDepartment").value=p.department||"";
+    $("profileRole").value=roleLabel(currentRole);
+    $("profileHeadEmail").textContent=user.email||"";
+    $("profileAppVersion").textContent="Version "+APP_VERSION;
+    $("feedbackContext").textContent="App context included automatically: "+currentViewLabel()+" · "+APP_VERSION;
+    refreshProfileCard();
+  }
+  function setProfileTab(name){
+    document.querySelectorAll(".profile-tab").forEach(function(b){ b.classList.toggle("active",b.getAttribute("data-profile-tab")===name); });
+    document.querySelectorAll("[data-profile-panel]").forEach(function(p){ p.hidden=p.getAttribute("data-profile-panel")!==name; });
+  }
+  function openProfileDrawer(tab){
+    var bd=$("profileBackdrop"); if(!bd) return; fillProfileForm(); setProfileTab(tab||"profile"); closeSidebar(); bd.classList.add("open"); bd.setAttribute("aria-hidden","false"); document.body.style.overflow="hidden";
+  }
+  function closeProfileDrawer(){ var bd=$("profileBackdrop"); if(!bd) return; bd.classList.remove("open"); bd.setAttribute("aria-hidden","true"); document.body.style.overflow=""; }
+
+  var _profileOpen=$("profileOpen"); if(_profileOpen) _profileOpen.addEventListener("click",function(){ openProfileDrawer("profile"); });
+  var _profileClose=$("profileClose"); if(_profileClose) _profileClose.addEventListener("click",closeProfileDrawer);
+  var _profileBackdrop=$("profileBackdrop"); if(_profileBackdrop) _profileBackdrop.addEventListener("click",function(e){ if(e.target===_profileBackdrop) closeProfileDrawer(); });
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape" && _profileBackdrop && _profileBackdrop.classList.contains("open")) closeProfileDrawer(); });
+  document.querySelectorAll(".profile-tab").forEach(function(b){ b.addEventListener("click",function(){ setProfileTab(b.getAttribute("data-profile-tab")); }); });
+
+  var _profileForm=$("profileForm"); if(_profileForm) _profileForm.addEventListener("submit",async function(e){
+    e.preventDefault(); if(!currentSession||!currentSession.user) return;
+    var btn=$("profileSave"); btn.disabled=true; btn.textContent="Saving…";
+    var patch={
+      full_name:$("profileFullName").value.trim()||null,
+      phone:$("profilePhone").value.trim()||null,
+      job_title:$("profileJobTitle").value.trim()||null,
+      department:$("profileDepartment").value.trim()||null
+    };
+    try{
+      var res=await sb.rpc("rbh_update_my_profile",{p_full_name:patch.full_name,p_phone:patch.phone,p_job_title:patch.job_title,p_department:patch.department});
+      if(res.error) throw res.error;
+      await loadProfiles(); applyRoleUi(); fillProfileForm(); toast("Profile updated","ok");
+    }catch(ex){ console.error("profile update",ex); toast("Could not save profile. Make sure the Profile V1 database migration has been applied.","err"); }
+    finally{ btn.disabled=false; btn.textContent="Save Profile"; }
+  });
+
+  var _passwordForm=$("passwordForm"); if(_passwordForm) _passwordForm.addEventListener("submit",async function(e){
+    e.preventDefault(); var a=$("profileNewPassword").value, b=$("profileConfirmPassword").value;
+    if(a.length<8){ toast("Use at least 8 characters for the new password.","err"); return; }
+    if(a!==b){ toast("The new passwords do not match.","err"); return; }
+    var btn=$("passwordSave"); btn.disabled=true; btn.textContent="Updating…";
+    try{ var res=await sb.auth.updateUser({password:a}); if(res.error) throw res.error; $("profileNewPassword").value=""; $("profileConfirmPassword").value=""; toast("Password changed","ok"); }
+    catch(ex){ console.error("password update",ex); toast(ex&&ex.message?ex.message:"Could not change password.","err"); }
+    finally{ btn.disabled=false; btn.textContent="Change Password"; }
+  });
+
+  var _passwordReset=$("passwordReset"); if(_passwordReset) _passwordReset.addEventListener("click",async function(){
+    var email=currentSession&&currentSession.user&&currentSession.user.email; if(!email) return;
+    _passwordReset.disabled=true; _passwordReset.textContent="Sending…";
+    try{ var redirect=window.location.origin+window.location.pathname; var res=await sb.auth.resetPasswordForEmail(email,{redirectTo:redirect}); if(res.error) throw res.error; toast("Password reset email sent","ok"); }
+    catch(ex){ console.error("password reset",ex); toast(ex&&ex.message?ex.message:"Could not send reset email.","err"); }
+    finally{ _passwordReset.disabled=false; _passwordReset.textContent="Send Reset Email"; }
+  });
+
+  var _signoutAll=$("signoutAll"); if(_signoutAll) _signoutAll.addEventListener("click",async function(){
+    _signoutAll.disabled=true; _signoutAll.textContent="Signing out…";
+    try{ var res=await sb.auth.signOut({scope:"global"}); if(res&&res.error) throw res.error; }
+    catch(ex){ console.error("global signout",ex); toast("Could not sign out all sessions.","err"); _signoutAll.disabled=false; _signoutAll.textContent="Sign Out Everywhere"; }
+  });
+
+  var _feedbackForm=$("feedbackForm"); if(_feedbackForm) _feedbackForm.addEventListener("submit",async function(e){
+    e.preventDefault(); if(!currentSession||!currentSession.user) return;
+    var btn=$("feedbackSubmit"), subject=$("feedbackSubject").value.trim(), message=$("feedbackMessage").value.trim();
+    if(!subject||!message){ toast("Add a subject and message before sending feedback.","err"); return; }
+    btn.disabled=true; btn.textContent="Sending…";
+    try{
+      var row={user_id:currentSession.user.id,user_email:currentSession.user.email||null,feedback_type:$("feedbackType").value,subject:subject,message:message,page_context:currentViewLabel(),app_version:APP_VERSION};
+      var res=await sb.from("app_feedback").insert(row); if(res.error) throw res.error;
+      _feedbackForm.reset(); $("feedbackType").value="suggestion"; fillProfileForm(); toast("Feedback sent — thank you","ok");
+    }catch(ex){ console.error("feedback submit",ex); toast("Could not send feedback. Make sure the Profile V1 database migration has been applied.","err"); }
+    finally{ btn.disabled=false; btn.textContent="Send Feedback"; }
+  });
+
+  function feedbackStatusLabel(v){ return ({new:"New",reviewed:"Reviewed",planned:"Planned",resolved:"Resolved"})[v]||"New"; }
+  async function loadFeedbackAdmin(){
+    var el=$("feedbackAdminList"), sum=$("feedbackSummary"); if(!el||currentRole!=="admin") return;
+    el.innerHTML='<div class="state">Loading feedback…</div>';
+    try{
+      var res=await sb.from("app_feedback").select("*").order("created_at",{ascending:false}).limit(100); if(res.error) throw res.error;
+      var rows=res.data||[], counts={new:0,reviewed:0,planned:0,resolved:0}; rows.forEach(function(x){ counts[x.status||"new"]=(counts[x.status||"new"]||0)+1; });
+      if(sum) sum.innerHTML=['new','reviewed','planned','resolved'].map(function(k){return '<span class="fb-sum"><b>'+counts[k]+'</b>'+feedbackStatusLabel(k)+'</span>';}).join('');
+      if(!rows.length){ el.innerHTML='<div class="state">No app feedback has been submitted yet.</div>'; return; }
+      el.innerHTML="";
+      rows.forEach(function(f){
+        var card=document.createElement("div"); card.className="feedback-admin-card";
+        card.innerHTML='<div class="feedback-admin-top"><div><div class="feedback-admin-title"><span class="feedback-type-pill"></span><span class="feedback-subject"></span></div><div class="feedback-admin-meta"></div></div><select aria-label="Feedback status"><option value="new">New</option><option value="reviewed">Reviewed</option><option value="planned">Planned</option><option value="resolved">Resolved</option></select></div><div class="feedback-admin-body"></div>';
+        card.querySelector('.feedback-type-pill').textContent=(f.feedback_type||'other').replace('_',' ');
+        card.querySelector('.feedback-subject').textContent=f.subject||'Feedback';
+        var fp=profileById[String(f.user_id||'')], feedbackWho=(fp&&fp.email)||f.user_email||'Unknown user';
+        card.querySelector('.feedback-admin-meta').textContent=feedbackWho+' · '+fmtDate(f.created_at)+(f.page_context?(' · '+f.page_context):'');
+        card.querySelector('.feedback-admin-body').textContent=f.message||'';
+        var sel=card.querySelector('select'); sel.value=f.status||'new';
+        sel.addEventListener('change',async function(){
+          sel.disabled=true; try{ var up=await sb.from('app_feedback').update({status:sel.value,updated_at:new Date().toISOString()}).eq('id',f.id); if(up.error) throw up.error; toast('Feedback status updated','ok'); loadFeedbackAdmin(); }
+          catch(ex){ console.error(ex); toast('Could not update feedback status.','err'); sel.value=f.status||'new'; sel.disabled=false; }
+        });
+        el.appendChild(card);
+      });
+    }catch(ex){ console.error('load feedback',ex); if(sum) sum.innerHTML=''; el.innerHTML='<div class="state">Feedback inbox is unavailable. Apply the Profile V1 database migration if it has not been run yet.</div>'; }
+  }
+  var _feedbackRefresh=$("feedbackRefresh"); if(_feedbackRefresh) _feedbackRefresh.addEventListener("click",loadFeedbackAdmin);
+
   /* ================= Phase 2 workspaces ================= */
   var lastOperationalView="records";
   var ROLE_LABELS={admin:"Admin",safety_manager:"Safety Manager",supervisor:"Supervisor",read_only:"Read Only"};
@@ -2022,6 +2261,7 @@
     if(hot) hot.textContent=canOwnWork?"Open My Work":"Open Safety Inbox";
     if(hod) hod.textContent=canOwnWork?"See the reports and corrective actions assigned to you.":"Review reports and safety activity.";
     var note=$("adminPermissionNote");
+    refreshProfileCard();
     if(note){
       note.innerHTML=canManageUsers()
         ?'<strong>You are an Admin.</strong> You can change roles and activate/deactivate dashboard access.'
@@ -2211,7 +2451,7 @@
     if(name==="metrics") renderMetrics();
     if(name==="mywork") renderMyWork();
     if(name==="actions") renderActions();
-    if(name==="users") loadUsers();
+    if(name==="users"){ loadUsers(); loadFeedbackAdmin(); }
     if(name==="home") renderHomeSnapshot();
     closeSidebar();
     window.scrollTo({top:0});
