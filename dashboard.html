@@ -667,6 +667,7 @@
         <button class="nav-item" data-view="records" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>Safety Inbox<span class="nav-count" id="navOpenCount"></span></button>
         <button class="nav-item" data-view="actions" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Corrective Actions<span class="nav-count" id="navActionCount"></span></button>
         <button class="nav-item" data-view="metrics" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Analytics</button>
+        <button class="nav-item" data-view="platform" id="platformNav" type="button" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5 12 3l9 4.5-9 4.5-9-4.5Z"/><path d="M3 12.5 12 17l9-4.5"/><path d="M3 17l9 4 9-4"/></svg>Platform</button>
         <button class="nav-item" data-view="users" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 8.5a3 3 0 0 1 0 5.8M17.5 20a5.5 5.5 0 0 0-1.6-3.9"/></svg>Admin</button>
       </nav>
       <div class="nav-spacer"></div>
@@ -780,7 +781,7 @@
           <div id="usersList"></div>
           <div class="users-help"><b>Adding a new user</b><br>Create the approved dashboard login using the existing authentication process. Their profile appears here after their first sign-in, where an Admin can assign the correct role.</div>
 
-          <div class="admin-subsection">
+          <div class="admin-subsection" id="adminFeedbackSection" hidden>
             <div class="admin-subhead">
               <div><h3>App Feedback</h3><p>Ideas, questions, and problems submitted from My Profile.</p></div>
               <button class="refresh" id="feedbackRefresh" type="button">Refresh</button>
@@ -788,6 +789,43 @@
             <div class="feedback-summary" id="feedbackSummary"></div>
             <div class="feedback-admin-list" id="feedbackAdminList"><div class="state">Open Admin to load feedback.</div></div>
           </div>
+
+        <section class="view" id="view-platform" hidden>
+          <div class="section-head"><div><h2>Platform</h2><p>Manage companies, monitor platform-wide activity, and review product feedback across organizations.</p></div><span class="muted small" id="platformContextLabel">Platform overview</span></div>
+          <div class="home-stats" id="platformStats"><div class="state">Open Platform to load summary information.</div></div>
+
+          <div class="admin-subsection" style="margin-top:24px">
+            <div class="admin-subhead">
+              <div><h3>Create company</h3><p>Create the organization shell first; company admin invitations can be layered on next.</p></div>
+            </div>
+            <form id="platformCompanyForm" class="profile-card-section">
+              <div class="profile-grid">
+                <div class="field profile-span-2"><label for="platformCompanyName">Company name</label><input type="text" id="platformCompanyName" maxlength="140" placeholder="e.g. ABC Construction" required></div>
+                <div class="field"><label for="platformCompanySlug">Company slug</label><input type="text" id="platformCompanySlug" maxlength="80" placeholder="abc-construction" required></div>
+                <div class="field"><label for="platformCompanyPlan">Plan</label><select id="platformCompanyPlan"><option value="standard">Standard</option><option value="pilot">Pilot</option><option value="enterprise">Enterprise</option></select></div>
+              </div>
+              <div class="feedback-status" id="platformCompanyStatus" role="status" aria-live="polite"></div>
+              <button class="profile-primary" id="platformCompanySubmit" type="submit">Create company</button>
+            </form>
+          </div>
+
+          <div class="admin-subsection">
+            <div class="admin-subhead">
+              <div><h3>Companies</h3><p>High-level tenant status across the platform.</p></div>
+              <button class="refresh" id="platformRefresh" type="button">Refresh</button>
+            </div>
+            <div class="feedback-admin-list" id="platformCompanies"><div class="state">Open Platform to load companies.</div></div>
+          </div>
+
+          <div class="admin-subsection">
+            <div class="admin-subhead">
+              <div><h3>Platform Feedback</h3><p>Product suggestions, support questions, and issue reports submitted from My Profile.</p></div>
+              <button class="refresh" id="platformFeedbackRefresh" type="button">Refresh</button>
+            </div>
+            <div class="feedback-summary" id="platformFeedbackSummary"></div>
+            <div class="feedback-admin-list" id="platformFeedbackList"><div class="state">Open Platform to load feedback.</div></div>
+          </div>
+        </section>
         </section>
 
       </div>
@@ -851,7 +889,7 @@
       </section>
 
       <section class="profile-panel" data-profile-panel="support" hidden>
-        <div class="profile-section-title"><h3>Feedback &amp; support</h3><p>Send feedback directly from the app. Admins can review it in the Admin section.</p></div>
+        <div class="profile-section-title"><h3>Feedback &amp; support</h3><p>Send feedback directly from the app. Platform owners can review it in the Platform section.</p></div>
         <form id="feedbackForm" class="profile-card-section">
           <div class="field"><label for="feedbackType">Feedback type</label><select id="feedbackType"><option value="suggestion">Suggestion</option><option value="problem">Something isn't working</option><option value="question">Question</option><option value="other">Other</option></select></div>
           <div class="field"><label for="feedbackSubject">Subject</label><input type="text" id="feedbackSubject" maxlength="160" required placeholder="A short summary"></div>
@@ -868,7 +906,7 @@
             <div><b>Something looks wrong?</b><span>Use the feedback form above and include what screen you were on and what you expected to happen.</span></div>
           </div>
         </div>
-        <div class="profile-version"><span>RBH Safety</span><b id="profileAppVersion">Version 2026.09.20 · Profile V1.1</b></div>
+        <div class="profile-version"><span>RBH Safety</span><b id="profileAppVersion">Version 2026.09.20 · Multi-Tenant Foundation V1.1</b></div>
       </section>
     </div>
   </aside>
@@ -969,11 +1007,12 @@
   var loginView=$("loginView"), appView=$("appView"), listEl=$("list"), backdrop=$("backdrop");
   var allReports=[], filtered=[], attByReport={};
   var allProfiles=[], profileById={}, currentSession=null, currentProfile=null, currentRole="read_only";
+  var allOrgs=[], currentOrgId=null, currentOrgName="", isPlatformAdmin=false;
   var modalReport=null, modalCard=null, modalNotesEl=null;
   var dispositionReport=null, dispositionWrap=null, dispositionNotesEl=null;
   var restartReport=null, restartReturnView="records";
   var NAV_VIEW_KEY="rbh_safety_active_view_v1", NAV_INCIDENT_KEY="rbh_safety_active_incident_v1";
-  var APP_VERSION="2026.09.20 · Profile V1.1";
+  var APP_VERSION="2026.09.20 · Multi-Tenant Foundation V1.1";
 
   function storedView(){
     try{ var v=localStorage.getItem(NAV_VIEW_KEY); return v||(currentRole==="supervisor"?"mywork":"home"); }catch(_e){ return currentRole==="supervisor"?"mywork":"home"; }
@@ -989,9 +1028,10 @@
   }
   function restoreSavedView(){
     var name=storedView();
-    var allowed=["home","mywork","records","actions","metrics","users","incident"];
+    var allowed=["home","mywork","records","actions","metrics","platform","users","incident"];
     if(allowed.indexOf(name)<0) name="home";
     if(name==="users" && currentRole!=="admin") name="home";
+    if(name==="platform" && !isPlatformAdmin) name="home";
     if(name==="incident") {
       try{
         var saved=JSON.parse(localStorage.getItem(NAV_INCIDENT_KEY)||"null");
@@ -1006,7 +1046,7 @@
   $("mStatus").innerHTML=statusOptions("new");
 
   /* ---------- auth ---------- */
-  function showLogin(){ appView.style.display="none"; loginView.style.display="flex"; currentSession=null; currentProfile=null; currentRole="read_only"; if(typeof closeProfileDrawer==="function") closeProfileDrawer(); }
+  function showLogin(){ appView.style.display="none"; loginView.style.display="flex"; currentSession=null; currentProfile=null; currentRole="read_only"; isPlatformAdmin=false; currentOrgId=null; currentOrgName=""; allOrgs=[]; if(typeof closeProfileDrawer==="function") closeProfileDrawer(); }
   async function showApp(session){
     currentSession=session; loginView.style.display="none"; appView.style.display="block";
     $("who").textContent=(session&&session.user&&session.user.email)||"";
@@ -1020,6 +1060,7 @@
       }
     }catch(_e){}
     await loadProfiles();
+    await loadPlatformContext();
     applyRoleUi();
     await loadReports();
     restoreSavedView();
@@ -1049,10 +1090,14 @@
   async function loadReports(){
     listEl.innerHTML='<div class="state">Loading reports…</div>';
     try{
-      var rep=await sb.from("reports").select("*").order("created_at",{ascending:false});
+      var repQ=sb.from("reports").select("*").order("created_at",{ascending:false});
+      if(currentOrgId) repQ=repQ.eq("organization_id", currentOrgId);
+      var rep=await repQ;
       if(rep.error) throw rep.error;
       allReports=rep.data||[];
-      var at=await sb.from("report_attachments").select("*");
+      var atQ=sb.from("report_attachments").select("*");
+      if(currentOrgId) atQ=atQ.eq("organization_id", currentOrgId);
+      var at=await atQ;
       if(at.error) throw at.error;
       // Build attachment state locally, then replace it in one step. This prevents
       // overlapping report refreshes/auth events from pushing the same row twice
@@ -1567,7 +1612,7 @@
       var label=DISPOSITION_LABELS[reason]||"No corrective action required";
       var sess=(await sb.auth.getSession()).data.session; var email=(sess&&sess.user)?sess.user.email:null;
       var body=note||"Reviewed and closed without corrective action.";
-      var ins=await sb.from("report_notes").insert({report_id:dispositionReport.id,title:"Closed without corrective action — "+label,body:body,author_email:email});
+      var ins=await sb.from("report_notes").insert({report_id:dispositionReport.id,organization_id:dispositionReport.organization_id||currentOrgId,title:"Closed without corrective action — "+label,body:body,author_email:email});
       if(ins.error) throw ins.error;
       var rid=dispositionReport.id, notesEl=dispositionNotesEl, wrap=dispositionWrap;
       await updateStatus(rid,status,wrap);
@@ -1690,7 +1735,7 @@
     var btn=$("mSave"); btn.disabled=true; btn.textContent="Saving…";
     try{
       var sess=(await sb.auth.getSession()).data.session; var email=(sess&&sess.user)?sess.user.email:null;
-      var ins=await sb.from("report_notes").insert({ report_id:modalReport.id, title:title, body:body||null, author_email:email });
+      var ins=await sb.from("report_notes").insert({ report_id:modalReport.id, organization_id:modalReport.organization_id||currentOrgId, title:title, body:body||null, author_email:email });
       if(ins.error) throw ins.error;
       var newStatus=$("mStatus").value;
       if(!resolvedNote && newStatus && newStatus!==modalReport.status){ await updateStatus(modalReport.id, newStatus, modalCard); }
@@ -2109,7 +2154,7 @@
     var initials=profileInitials(currentProfile&&currentProfile.full_name,email);
     var dn=$("profileDisplayName"), av=$("profileAvatar"), hav=$("profileHeadAvatar"), he=$("profileHeadEmail");
     if(dn) dn.textContent=name; if(av) av.textContent=initials; if(hav) hav.textContent=initials; if(he) he.textContent=email;
-    var who=$("who"); if(who) who.textContent=email;
+    var who=$("who"); if(who) who.textContent=email+(currentOrgName?(" · "+currentOrgName):"");
   }
   function currentViewLabel(){ var pt=$("pageTitle"); return pt&&pt.textContent?pt.textContent:"RBH Safety"; }
   function fillProfileForm(){
@@ -2123,7 +2168,9 @@
     $("profileRole").value=roleLabel(currentRole);
     $("profileHeadEmail").textContent=user.email||"";
     $("profileAppVersion").textContent="Version "+APP_VERSION;
-    $("feedbackContext").textContent="App context included automatically: "+currentViewLabel()+" · "+APP_VERSION;
+    $("feedbackContext").textContent="App context included automatically: "+(currentOrgName?(currentOrgName+" · "):"")+currentViewLabel()+" · "+APP_VERSION;
+    var afs=$("adminFeedbackSection"); if(afs) afs.hidden=true;
+    var hc=$("platformContextLabel"); if(hc) hc.textContent=currentOrgName?("Current company: "+currentOrgName):"Platform overview";
     refreshProfileCard();
   }
   function setProfileTab(name){
@@ -2190,16 +2237,21 @@
     if(!subject||!message){ feedbackStatus("Add a subject and message before sending feedback.","err"); toast("Add a subject and message before sending feedback.","err"); return; }
     btn.disabled=true; btn.textContent="Sending…";
     try{
-      var res=await sb.rpc("rbh_submit_feedback",{
-        p_feedback_type:$("feedbackType").value,
-        p_subject:subject,
-        p_message:message,
-        p_page_context:currentViewLabel(),
-        p_app_version:APP_VERSION
-      });
+      if(!currentOrgId) throw new Error("Your account is not attached to a company.");
+      var res=await sb.from("app_feedback").insert({
+        organization_id:currentOrgId,
+        user_id:currentSession.user.id,
+        user_email:currentSession.user.email||null,
+        feedback_type:$("feedbackType").value,
+        subject:subject,
+        message:message,
+        page_context:currentViewLabel(),
+        app_version:APP_VERSION,
+        status:"new"
+      }).select("id").single();
       if(res.error) throw res.error;
       _feedbackForm.reset(); $("feedbackType").value="suggestion"; fillProfileForm();
-      feedbackStatus("Feedback sent successfully. Thank you — your submission is now in the Admin feedback inbox.","ok");
+      feedbackStatus("Feedback sent successfully. Thank you — your submission is now in the Platform feedback inbox.","ok");
       toast("Feedback sent — thank you","ok");
     }catch(ex){
       console.error("feedback submit",ex);
@@ -2238,6 +2290,145 @@
     }catch(ex){ console.error('load feedback',ex); if(sum) sum.innerHTML=''; el.innerHTML='<div class="state">Feedback inbox is unavailable. Apply the Profile V1 database migration if it has not been run yet.</div>'; }
   }
   var _feedbackRefresh=$("feedbackRefresh"); if(_feedbackRefresh) _feedbackRefresh.addEventListener("click",loadFeedbackAdmin);
+
+  function companyStatus(msg,kind){ var el=$("platformCompanyStatus"); if(!el) return; el.textContent=msg||""; el.className="feedback-status"+(msg?(" show "+(kind||"")):""); }
+  function makeSlug(v){ return String(v||"").toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").replace(/-{2,}/g,"-"); }
+  function platformAdminExists(rows){ return !!(rows&&rows.length); }
+  async function loadPlatformContext(){
+    isPlatformAdmin=false; currentOrgName=""; allOrgs=[];
+    var user=currentSession&&currentSession.user;
+    if(user){
+      try{
+        var pa=await sb.from("platform_admins").select("user_id,role").eq("user_id",user.id).limit(1);
+        if(!pa.error) isPlatformAdmin=platformAdminExists(pa.data);
+      }catch(_e){}
+    }
+    currentOrgId=(currentProfile&&(currentProfile.current_organization_id||currentProfile.organization_id))||null;
+    if(currentOrgId){
+      try{
+        var orgRes=await sb.from("organizations").select("id,name,slug,status,plan").eq("id",currentOrgId).maybeSingle();
+        if(!orgRes.error && orgRes.data){ currentOrgName=orgRes.data.name||""; allOrgs=[orgRes.data]; }
+      }catch(_e){}
+    }
+    var hh=$("homeGreeting"); if(hh && currentOrgName) hh.textContent=currentOrgName+" Safety";
+    refreshProfileCard();
+  }
+  function renderPlatformStatCards(row){
+    var el=$("platformStats"); if(!el) return;
+    row=row||{};
+    var cards=[
+      {label:"Companies",value:row.company_count||0,sub:"Organizations on the platform"},
+      {label:"Active users",value:row.active_user_count||0,sub:"Active organization memberships"},
+      {label:"Open reports",value:row.open_report_count||0,sub:"Non-closed reports across companies"},
+      {label:"Open feedback",value:row.open_feedback_count||0,sub:"New or reviewed platform feedback items"}
+    ];
+    el.innerHTML=cards.map(function(c){ return '<article class="stat-card"><div class="stat-eyebrow">'+esc(c.label)+'</div><div class="stat-num">'+esc(c.value)+'</div><div class="stat-sub">'+esc(c.sub)+'</div></article>'; }).join("");
+  }
+  async function loadPlatformSummary(){
+    if(!isPlatformAdmin) return;
+    var el=$("platformStats"); if(el) el.innerHTML='<div class="state">Loading platform summary…</div>';
+    try{
+      var orgs=await sb.from("organizations").select("id"); if(orgs.error) throw orgs.error;
+      var memberships=await sb.from("organization_memberships").select("id,status"); if(memberships.error) throw memberships.error;
+      var reports=await sb.from("reports").select("id,status"); if(reports.error) throw reports.error;
+      var feedback=await sb.from("app_feedback").select("id,status"); if(feedback.error) throw feedback.error;
+      var openReports=(reports.data||[]).filter(function(r){ return ["closed","duplicate","no_action"].indexOf(r.status||"new")<0; }).length;
+      var openFeedback=(feedback.data||[]).filter(function(f){ return ["new","reviewed"].indexOf(f.status||"new")>=0; }).length;
+      renderPlatformStatCards({
+        company_count:(orgs.data||[]).length,
+        active_user_count:(memberships.data||[]).filter(function(m){return m.status==="active";}).length,
+        open_report_count:openReports,
+        open_feedback_count:openFeedback
+      });
+    }catch(ex){ console.error("platform summary",ex); if(el) el.innerHTML='<div class="state">Could not load platform summary. Apply the function-free tenant security SQL if needed.</div>'; }
+  }
+  async function loadPlatformCompanies(){
+    var el=$("platformCompanies"); if(!el||!isPlatformAdmin) return;
+    el.innerHTML='<div class="state">Loading companies…</div>';
+    try{
+      var orgRes=await sb.from("organizations").select("id,name,slug,status,plan,created_at").order("created_at",{ascending:false}); if(orgRes.error) throw orgRes.error;
+      var memRes=await sb.from("organization_memberships").select("organization_id,role,status,created_at"); if(memRes.error) throw memRes.error;
+      var repRes=await sb.from("reports").select("organization_id,status,created_at"); if(repRes.error) throw repRes.error;
+      var fbRes=await sb.from("app_feedback").select("organization_id,created_at"); if(fbRes.error) throw fbRes.error;
+      var rows=(orgRes.data||[]).map(function(o){
+        var mem=(memRes.data||[]).filter(function(x){return String(x.organization_id)===String(o.id);});
+        var rep=(repRes.data||[]).filter(function(x){return String(x.organization_id)===String(o.id);});
+        var fb=(fbRes.data||[]).filter(function(x){return String(x.organization_id)===String(o.id);});
+        var dates=rep.map(function(x){return x.created_at;}).concat(fb.map(function(x){return x.created_at;})).filter(Boolean).map(function(x){return new Date(x).getTime();});
+        return {
+          id:o.id,name:o.name,slug:o.slug,status:o.status,plan:o.plan,
+          user_count:mem.filter(function(x){return x.status==="active";}).length,
+          admin_count:mem.filter(function(x){return x.status==="active"&&x.role==="admin";}).length,
+          report_count:rep.length,
+          open_report_count:rep.filter(function(x){return ["closed","duplicate","no_action"].indexOf(x.status||"new")<0;}).length,
+          feedback_count:fb.length,
+          last_activity:dates.length?new Date(Math.max.apply(Math,dates)).toISOString():null
+        };
+      });
+      if(!rows.length){ el.innerHTML='<div class="state">No companies have been created yet.</div>'; return; }
+      el.innerHTML='';
+      rows.forEach(function(o){
+        var card=document.createElement('div'); card.className='feedback-admin-card';
+        var last=o.last_activity?fmtDate(o.last_activity):'No activity yet';
+        card.innerHTML='<div class="feedback-admin-top"><div><div class="feedback-admin-title">'+esc(o.name||'Company')+'</div><div class="feedback-admin-meta">'+esc(o.slug||'')+' · '+esc((o.status||'active').replace('_',' '))+' · '+esc((o.plan||'standard').replace('_',' '))+'</div></div></div>'+
+          '<div class="feedback-admin-body"><div><b>Users:</b> '+esc(o.user_count||0)+' &nbsp; <b>Admins:</b> '+esc(o.admin_count||0)+'</div><div><b>Reports:</b> '+esc(o.report_count||0)+' total · '+esc(o.open_report_count||0)+' open</div><div><b>Feedback:</b> '+esc(o.feedback_count||0)+'</div><div><b>Last activity:</b> '+esc(last)+'</div></div>';
+        el.appendChild(card);
+      });
+    }catch(ex){ console.error("platform companies",ex); el.innerHTML='<div class="state">Could not load companies. Apply the function-free tenant security SQL if needed.</div>'; }
+  }
+  async function loadPlatformFeedback(){
+    var el=$("platformFeedbackList"), sum=$("platformFeedbackSummary"); if(!el||!isPlatformAdmin) return;
+    el.innerHTML='<div class="state">Loading platform feedback…</div>';
+    try{
+      var res=await sb.from("app_feedback").select("*").order("created_at",{ascending:false}).limit(200); if(res.error) throw res.error;
+      var orgRes=await sb.from("organizations").select("id,name"); if(orgRes.error) throw orgRes.error;
+      var orgMap={}; (orgRes.data||[]).forEach(function(o){orgMap[String(o.id)]=o.name;});
+      var rows=res.data||[], counts={new:0,reviewed:0,planned:0,resolved:0}; rows.forEach(function(x){ counts[x.status||"new"]=(counts[x.status||"new"]||0)+1; });
+      if(sum) sum.innerHTML=['new','reviewed','planned','resolved'].map(function(k){return '<span class="fb-sum"><b>'+counts[k]+'</b>'+feedbackStatusLabel(k)+'</span>';}).join('');
+      if(!rows.length){ el.innerHTML='<div class="state">No platform feedback has been submitted yet.</div>'; return; }
+      el.innerHTML='';
+      rows.forEach(function(f){
+        var card=document.createElement('div'); card.className='feedback-admin-card';
+        card.innerHTML='<div class="feedback-admin-top"><div><div class="feedback-admin-title"><span class="feedback-type-pill"></span><span class="feedback-subject"></span></div><div class="feedback-admin-meta"></div></div><select aria-label="Feedback status"><option value="new">New</option><option value="reviewed">Reviewed</option><option value="planned">Planned</option><option value="resolved">Resolved</option></select></div><div class="feedback-admin-body"></div>';
+        card.querySelector('.feedback-type-pill').textContent=(f.feedback_type||'other').replace('_',' ');
+        card.querySelector('.feedback-subject').textContent=f.subject||'Feedback';
+        card.querySelector('.feedback-admin-meta').textContent=(orgMap[String(f.organization_id)]||'Unknown company')+' · '+(f.user_email||'Unknown user')+' · '+fmtDate(f.created_at)+(f.page_context?(' · '+f.page_context):'');
+        card.querySelector('.feedback-admin-body').textContent=f.message||'';
+        var sel=card.querySelector('select'); sel.value=f.status||'new';
+        sel.addEventListener('change',async function(){
+          sel.disabled=true;
+          try{ var up=await sb.from('app_feedback').update({status:sel.value,updated_at:new Date().toISOString()}).eq('id',f.id); if(up.error) throw up.error; toast('Feedback status updated','ok'); loadPlatformFeedback(); }
+          catch(ex){ console.error(ex); toast('Could not update feedback status.','err'); sel.value=f.status||'new'; sel.disabled=false; }
+        });
+        el.appendChild(card);
+      });
+    }catch(ex){ console.error('platform feedback',ex); if(sum) sum.innerHTML=''; el.innerHTML='<div class="state">Platform feedback is unavailable. Apply the function-free tenant security SQL if it has not been run yet.</div>'; }
+  }
+  async function loadPlatformDashboard(){
+    if(!isPlatformAdmin){ showView('home'); return; }
+    await loadPlatformSummary();
+    await loadPlatformCompanies();
+    await loadPlatformFeedback();
+  }
+  var _platformRefresh=$("platformRefresh"); if(_platformRefresh) _platformRefresh.addEventListener('click',loadPlatformDashboard);
+  var _platformFeedbackRefresh=$("platformFeedbackRefresh"); if(_platformFeedbackRefresh) _platformFeedbackRefresh.addEventListener('click',loadPlatformFeedback);
+  var _platformCompanyName=$("platformCompanyName"), _platformCompanySlug=$("platformCompanySlug");
+  if(_platformCompanyName&&_platformCompanySlug){ _platformCompanyName.addEventListener('input',function(){ if(!_platformCompanySlug.value.trim()) _platformCompanySlug.value=makeSlug(_platformCompanyName.value); }); }
+  var _platformCompanyForm=$("platformCompanyForm");
+  if(_platformCompanyForm) _platformCompanyForm.addEventListener('submit',async function(e){
+    e.preventDefault(); if(!isPlatformAdmin||!currentSession||!currentSession.user) return;
+    var btn=$("platformCompanySubmit"), name=($("platformCompanyName").value||'').trim(), slug=makeSlug($("platformCompanySlug").value||name), plan=$("platformCompanyPlan").value||'standard';
+    companyStatus('','');
+    if(!name||!slug){ companyStatus('Enter a company name and slug before creating the company.','err'); return; }
+    btn.disabled=true; btn.textContent='Creating…';
+    try{
+      var res=await sb.from('organizations').insert({name:name,slug:slug,status:'active',plan:plan,created_by:currentSession.user.id}).select('id').single();
+      if(res.error) throw res.error;
+      _platformCompanyForm.reset(); companyStatus('Company created successfully. The organization shell is ready for admin/user onboarding.','ok');
+      await loadPlatformDashboard();
+    }catch(ex){ console.error('create company',ex); companyStatus('Could not create company: '+((ex&&ex.message)||'Unknown error'),'err'); }
+    finally{ btn.disabled=false; btn.textContent='Create company'; }
+  });
 
   /* ================= Phase 2 workspaces ================= */
   var lastOperationalView="records";
@@ -2278,6 +2469,8 @@
     if(hot) hot.textContent=canOwnWork?"Open My Work":"Open Safety Inbox";
     if(hod) hod.textContent=canOwnWork?"See the reports and corrective actions assigned to you.":"Review reports and safety activity.";
     var note=$("adminPermissionNote");
+    var afs=$("adminFeedbackSection"); if(afs) afs.hidden=true;
+    var hc=$("platformContextLabel"); if(hc) hc.textContent=currentOrgName?("Current company: "+currentOrgName):"Platform overview";
     refreshProfileCard();
     if(note){
       note.innerHTML=canManageUsers()
@@ -2453,22 +2646,24 @@
   }
 
   /* ================= App shell: navigation, home, users ================= */
-  var PAGE_TITLES={home:"Home",mywork:"My Work",records:"Safety Inbox",actions:"Corrective Actions",metrics:"Analytics",users:"Admin",incident:"Incident"};
+  var PAGE_TITLES={home:"Home",mywork:"My Work",records:"Safety Inbox",actions:"Corrective Actions",metrics:"Analytics",platform:"Platform",users:"Admin",incident:"Incident"};
   var sidebarEl=document.getElementById("sidebar"), sbBackdrop=document.getElementById("sbBackdrop");
   function openSidebar(){ if(sidebarEl) sidebarEl.classList.add("open"); if(sbBackdrop) sbBackdrop.classList.add("show"); }
   function closeSidebar(){ if(sidebarEl) sidebarEl.classList.remove("open"); if(sbBackdrop) sbBackdrop.classList.remove("show"); }
 
   function showView(name){
     if(name==="users" && currentRole!=="admin") name="home";
+    if(name==="platform" && !isPlatformAdmin) name="home";
     if(name==="mywork" && currentRole==="read_only") name="records";
     storeView(name);
-    ["home","mywork","records","actions","metrics","users","incident"].forEach(function(v){ var el=document.getElementById("view-"+v); if(el) el.hidden=(v!==name); });
+    ["home","mywork","records","actions","metrics","platform","users","incident"].forEach(function(v){ var el=document.getElementById("view-"+v); if(el) el.hidden=(v!==name); });
     document.querySelectorAll(".nav-item").forEach(function(n){ n.classList.toggle("active", n.getAttribute("data-view")===name); });
     var pt=$("pageTitle"); if(pt) pt.textContent=PAGE_TITLES[name]||"";
     if(name==="metrics") renderMetrics();
     if(name==="mywork") renderMyWork();
     if(name==="actions") renderActions();
-    if(name==="users"){ loadUsers(); loadFeedbackAdmin(); }
+    if(name==="platform") loadPlatformDashboard();
+    if(name==="users"){ loadUsers(); }
     if(name==="home") renderHomeSnapshot();
     closeSidebar();
     window.scrollTo({top:0});
@@ -2487,12 +2682,21 @@
   async function loadProfiles(){
     allProfiles=[]; profileById={}; currentProfile=null; currentRole="read_only";
     try{
-      var res=await sb.from("profiles").select("*").order("last_active",{ascending:false});
+      if(currentSession&&currentSession.user){
+        var meRes=await sb.from("profiles").select("*").eq("id",currentSession.user.id).maybeSingle();
+        if(meRes.error) throw meRes.error;
+        currentProfile=meRes.data||null;
+        currentOrgId=(currentProfile&&(currentProfile.current_organization_id||currentProfile.organization_id))||null;
+        currentRole=(currentProfile&&currentProfile.app_role)||"read_only";
+      }
+      var query=sb.from("profiles").select("*").order("last_active",{ascending:false});
+      if(currentOrgId) query=query.eq("organization_id", currentOrgId);
+      var res=await query;
       if(res.error) throw res.error;
       allProfiles=res.data||[];
       allProfiles.forEach(function(p){ profileById[String(p.id)]=p; });
-      if(currentSession&&currentSession.user) currentProfile=profileById[String(currentSession.user.id)]||null;
-      currentRole=(currentProfile&&currentProfile.app_role)||"read_only";
+      if(currentSession&&currentSession.user) currentProfile=profileById[String(currentSession.user.id)]||currentProfile||null;
+      currentRole=(currentProfile&&currentProfile.app_role)||currentRole||"read_only";
     }catch(ex){
       console.error("load profiles", ex);
       try{
