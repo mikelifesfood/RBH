@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>RBH Insulation — Safety Reports (Reviewer)</title>
+<title>RBH Insulation — Safety Operations</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Public+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
@@ -667,7 +667,6 @@
         <button class="nav-item" data-view="records" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>Safety Inbox<span class="nav-count" id="navOpenCount"></span></button>
         <button class="nav-item" data-view="actions" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Corrective Actions<span class="nav-count" id="navActionCount"></span></button>
         <button class="nav-item" data-view="metrics" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Analytics</button>
-        <button class="nav-item" data-view="platform" id="platformNav" type="button" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5 12 3l9 4.5-9 4.5-9-4.5Z"/><path d="M3 12.5 12 17l9-4.5"/><path d="M3 17l9 4 9-4"/></svg>Platform</button>
         <button class="nav-item" data-view="users" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 8.5a3 3 0 0 1 0 5.8M17.5 20a5.5 5.5 0 0 0-1.6-3.9"/></svg>Admin</button>
       </nav>
       <div class="nav-spacer"></div>
@@ -790,42 +789,7 @@
             <div class="feedback-admin-list" id="feedbackAdminList"><div class="state">Open Admin to load feedback.</div></div>
           </div>
 
-        <section class="view" id="view-platform" hidden>
-          <div class="section-head"><div><h2>Platform</h2><p>Manage companies, monitor platform-wide activity, and review product feedback across organizations.</p></div><span class="muted small" id="platformContextLabel">Platform overview</span></div>
-          <div class="home-stats" id="platformStats"><div class="state">Open Platform to load summary information.</div></div>
-
-          <div class="admin-subsection" style="margin-top:24px">
-            <div class="admin-subhead">
-              <div><h3>Create company</h3><p>Create the organization shell first; company admin invitations can be layered on next.</p></div>
-            </div>
-            <form id="platformCompanyForm" class="profile-card-section">
-              <div class="profile-grid">
-                <div class="field profile-span-2"><label for="platformCompanyName">Company name</label><input type="text" id="platformCompanyName" maxlength="140" placeholder="e.g. ABC Construction" required></div>
-                <div class="field"><label for="platformCompanySlug">Company slug</label><input type="text" id="platformCompanySlug" maxlength="80" placeholder="abc-construction" required></div>
-                <div class="field"><label for="platformCompanyPlan">Plan</label><select id="platformCompanyPlan"><option value="standard">Standard</option><option value="pilot">Pilot</option><option value="enterprise">Enterprise</option></select></div>
-              </div>
-              <div class="feedback-status" id="platformCompanyStatus" role="status" aria-live="polite"></div>
-              <button class="profile-primary" id="platformCompanySubmit" type="submit">Create company</button>
-            </form>
-          </div>
-
-          <div class="admin-subsection">
-            <div class="admin-subhead">
-              <div><h3>Companies</h3><p>High-level tenant status across the platform.</p></div>
-              <button class="refresh" id="platformRefresh" type="button">Refresh</button>
-            </div>
-            <div class="feedback-admin-list" id="platformCompanies"><div class="state">Open Platform to load companies.</div></div>
-          </div>
-
-          <div class="admin-subsection">
-            <div class="admin-subhead">
-              <div><h3>Platform Feedback</h3><p>Product suggestions, support questions, and issue reports submitted from My Profile.</p></div>
-              <button class="refresh" id="platformFeedbackRefresh" type="button">Refresh</button>
-            </div>
-            <div class="feedback-summary" id="platformFeedbackSummary"></div>
-            <div class="feedback-admin-list" id="platformFeedbackList"><div class="state">Open Platform to load feedback.</div></div>
-          </div>
-        </section>
+        
         </section>
 
       </div>
@@ -1012,7 +976,7 @@
   var dispositionReport=null, dispositionWrap=null, dispositionNotesEl=null;
   var restartReport=null, restartReturnView="records";
   var NAV_VIEW_KEY="rbh_safety_active_view_v1", NAV_INCIDENT_KEY="rbh_safety_active_incident_v1";
-  var APP_VERSION="2026.09.20 · Multi-Tenant Foundation V1.1.1";
+  var APP_VERSION="2026.09.20 · Company Blueprint V1";
 
   function storedView(){
     try{ var v=localStorage.getItem(NAV_VIEW_KEY); return v||(currentRole==="supervisor"?"mywork":"home"); }catch(_e){ return currentRole==="supervisor"?"mywork":"home"; }
@@ -2463,7 +2427,7 @@
     var adminNav=document.querySelector('.nav-item[data-view="users"]');
     if(adminNav) adminNav.style.display=(currentRole==="admin"?"":"none");
     var platformNav=$("platformNav");
-    if(platformNav) platformNav.style.display=(isPlatformAdmin?"":"none");
+    if(platformNav) platformNav.style.display="none";
     var myWorkNav=document.querySelector('.nav-item[data-view="mywork"]');
     var canOwnWork=currentRole!=="read_only";
     if(myWorkNav) myWorkNav.style.display=(canOwnWork?"":"none");
@@ -2648,7 +2612,7 @@
   }
 
   /* ================= App shell: navigation, home, users ================= */
-  var PAGE_TITLES={home:"Home",mywork:"My Work",records:"Safety Inbox",actions:"Corrective Actions",metrics:"Analytics",platform:"Platform",users:"Admin",incident:"Incident"};
+  var PAGE_TITLES={home:"Home",mywork:"My Work",records:"Safety Inbox",actions:"Corrective Actions",metrics:"Analytics",users:"Admin",incident:"Incident"};
   var sidebarEl=document.getElementById("sidebar"), sbBackdrop=document.getElementById("sbBackdrop");
   function openSidebar(){ if(sidebarEl) sidebarEl.classList.add("open"); if(sbBackdrop) sbBackdrop.classList.add("show"); }
   function closeSidebar(){ if(sidebarEl) sidebarEl.classList.remove("open"); if(sbBackdrop) sbBackdrop.classList.remove("show"); }
