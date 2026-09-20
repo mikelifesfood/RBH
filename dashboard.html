@@ -1012,7 +1012,7 @@
   var dispositionReport=null, dispositionWrap=null, dispositionNotesEl=null;
   var restartReport=null, restartReturnView="records";
   var NAV_VIEW_KEY="rbh_safety_active_view_v1", NAV_INCIDENT_KEY="rbh_safety_active_incident_v1";
-  var APP_VERSION="2026.09.20 · Multi-Tenant Foundation V1.1";
+  var APP_VERSION="2026.09.20 · Multi-Tenant Foundation V1.1.1";
 
   function storedView(){
     try{ var v=localStorage.getItem(NAV_VIEW_KEY); return v||(currentRole==="supervisor"?"mywork":"home"); }catch(_e){ return currentRole==="supervisor"?"mywork":"home"; }
@@ -2462,6 +2462,8 @@
     if(pill){ pill.textContent=roleLabel(currentRole); pill.className="role-pill r-"+currentRole; }
     var adminNav=document.querySelector('.nav-item[data-view="users"]');
     if(adminNav) adminNav.style.display=(currentRole==="admin"?"":"none");
+    var platformNav=$("platformNav");
+    if(platformNav) platformNav.style.display=(isPlatformAdmin?"":"none");
     var myWorkNav=document.querySelector('.nav-item[data-view="mywork"]');
     var canOwnWork=currentRole!=="read_only";
     if(myWorkNav) myWorkNav.style.display=(canOwnWork?"":"none");
