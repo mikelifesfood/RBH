@@ -305,7 +305,7 @@
   .home-hero p{color:var(--muted);margin:0 0 20px}
   .home-actions{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px}
   @media(max-width:640px){.home-actions{grid-template-columns:1fr}}
-  .action-card{text-align:left;border:1.5px solid var(--line-strong);border-radius:14px;padding:20px;cursor:pointer;background:var(--paper);transition:.12s;display:flex;flex-direction:column}
+  .action-card{text-align:left;border:1.5px solid var(--line-strong);border-radius:14px;padding:20px;cursor:pointer;background:var(--paper);color:var(--ink);transition:.12s;display:flex;flex-direction:column}
   .action-card:hover{border-color:var(--red);box-shadow:var(--shadow);transform:translateY(-1px)}
   .action-card .ac-ic{width:40px;height:40px;border-radius:10px;background:color-mix(in srgb,var(--red) 12%,var(--paper));color:var(--red);display:flex;align-items:center;justify-content:center;margin-bottom:10px}
   .action-card .ac-t{font-family:var(--display);font-weight:700;font-size:17px}
@@ -314,7 +314,7 @@
   .action-card.alt .ac-d{color:rgba(255,255,255,.85)}
   .action-card.alt .ac-ic{background:rgba(255,255,255,.16);color:#fff}
   .home-stats{display:flex;gap:12px;flex-wrap:wrap}
-  .hs{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 18px;min-width:96px}
+  .hs{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 18px;min-width:96px;color:var(--ink)}
   .hs-n{font-family:var(--display);font-weight:800;font-size:26px;line-height:1}
   .hs-k{color:var(--muted);font-size:12px;margin-top:4px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
   .hs.alert .hs-n{color:var(--red)}
@@ -332,6 +332,11 @@
     .sidebar{position:fixed;left:0;top:0;width:240px;transform:translateX(-100%);transition:transform .2s}
     .sidebar.open{transform:translateX(0)}
     .hamburger{display:inline-block}
+    /* Mobile browsers can apply their native blue button/link color. Keep RBH home controls on-brand. */
+    .action-card,.action-card .ac-t,.hs,.hs-n,.hs-k,.hp-link{color:var(--ink);-webkit-text-fill-color:currentColor}
+    .action-card.alt,.action-card.alt .ac-t,.action-card.alt .ac-ic{color:#fff;-webkit-text-fill-color:#fff}
+    .action-card.alt .ac-d{color:rgba(255,255,255,.85);-webkit-text-fill-color:rgba(255,255,255,.85)}
+    .hp-link{text-decoration:none}
   }
   /* ---------- Modal ---------- */
   .modal-backdrop{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(20,18,16,.45);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
