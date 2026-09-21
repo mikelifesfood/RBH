@@ -1006,7 +1006,7 @@
     if(translationCache[key]&&translationCache[key].fingerprint===fp) return translationCache[key].data;
     if(!currentSession||!currentSession.access_token) return null;
     try{
-      var resp=await fetch("/api/translate-report",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+currentSession.access_token},body:JSON.stringify({targetLanguage:targetLanguage,fields:fields})});
+      var resp=await fetch(SUPA_URL+"/functions/v1/translate-report",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+currentSession.access_token,"apikey":SUPA_KEY},body:JSON.stringify({targetLanguage:targetLanguage,fields:fields})});
       if(!resp.ok) throw new Error("Translation service returned "+resp.status);
       var json=await resp.json(), data=json&&json.translations;
       if(!data||typeof data!=="object") throw new Error("Translation response was incomplete");
