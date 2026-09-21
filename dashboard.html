@@ -3222,7 +3222,7 @@
     var err=$("addUserErr"), btn=$("addUserSave");
     err.textContent=""; err.classList.remove("show");
     if(!name){err.textContent="Enter the user's full name.";err.classList.add("show");return;}
-    if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)){err.textContent="Enter a valid email address.";err.classList.add("show");return;}
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){err.textContent="Enter a valid email address.";err.classList.add("show");return;}
     btn.disabled=true; btn.textContent="Creating access…";
     try{
       if(!currentSession||!currentSession.access_token) throw new Error("Your session expired. Sign in again.");
