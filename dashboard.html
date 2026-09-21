@@ -327,6 +327,13 @@
   .u-active{color:var(--muted);font-size:12.5px;white-space:nowrap}
   .users-help{margin-top:16px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:14px 16px;font-size:13px;color:var(--muted);line-height:1.65}
   .users-help b{color:var(--ink);font-family:var(--display)}
+  .admin-user-actions{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin:0 0 12px}
+  .add-user-btn{background:var(--gradient-red);color:#fff;border:none;border-radius:9px;padding:10px 15px;font-family:var(--display);font-weight:700;font-size:13px;cursor:pointer;box-shadow:var(--button-shadow)}
+  .add-user-btn:hover{background:var(--gradient-red-hover)}
+  .setup-check{display:flex;align-items:flex-start;gap:9px;padding:10px 11px;border:1px solid var(--line);border-radius:9px;background:var(--surface)}
+  .setup-check input{margin-top:3px}.setup-check span{font-size:12.5px;line-height:1.45;color:var(--muted)}.setup-check b{color:var(--ink)}
+  .password-setup-card{width:100%;max-width:420px;background:var(--paper);border:1px solid var(--line);border-top:4px solid var(--red);border-radius:16px;box-shadow:0 24px 70px -24px rgba(0,0,0,.55);padding:24px}
+  .password-setup-card h3{font-family:var(--display);font-size:20px;margin:0 0 4px}.password-setup-card p{color:var(--muted);font-size:13px;margin:0 0 17px}
   @media(max-width:820px){
     .app-shell{grid-template-columns:1fr}
     .sidebar{position:fixed;left:0;top:0;width:240px;transform:translateX(-100%);transition:transform .2s}
@@ -807,9 +814,10 @@
             <div class="role-card"><b>Read Only</b><span>Can review reports, activity, and analytics without making changes.</span></div>
           </div>
           <div id="adminPermissionNote" class="permission-note"></div>
+          <div class="admin-user-actions"><button class="add-user-btn" id="addUserBtn" type="button">+ Add dashboard user</button></div>
           <div class="users-head"><p class="muted" style="margin:0">Dashboard users, most recently active first.</p></div>
           <div id="usersList"></div>
-          <div class="users-help"><b>Adding a new user</b><br>Create the approved dashboard login using the existing authentication process. Their profile appears here after their first sign-in, where an Admin can assign the correct role.</div>
+          <div class="users-help"><b>Adding a new user</b><br>Use <b>Add dashboard user</b>. RBH will create or repair the Auth account, activate the profile, attach the person to this company, apply the selected role, and optionally email a secure password-setup link.</div>
 
           <div class="admin-subsection" id="adminFeedbackSection" hidden>
             <div class="admin-subhead">
@@ -902,13 +910,42 @@
             <div><b>Something looks wrong?</b><span>Use the feedback form above and include what screen you were on and what you expected to happen.</span></div>
           </div>
         </div>
-        <div class="profile-version"><span>RBH Safety</span><b id="profileAppVersion">Version 2026.09.21 · Record Reopen V1</b></div>
+        <div class="profile-version"><span>RBH Safety</span><b id="profileAppVersion">Version 2026.09.21 · Admin User Provisioning V12</b></div>
       </section>
     </div>
   </aside>
 </div>
 
 <div id="toasts" class="toasts"></div>
+
+<!-- ============ ADMIN ADD USER MODAL ============ -->
+<div class="modal-backdrop" id="addUserBackdrop">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="addUserHeading">
+    <h3 id="addUserHeading">Add dashboard user</h3>
+    <p class="msub">Create complete RBH access in one step. Existing Auth users can also be repaired/reactivated here.</p>
+    <div class="login-err" id="addUserErr"></div>
+    <div class="field"><label for="addUserName">Full name</label><input type="text" id="addUserName" maxlength="120" autocomplete="off" placeholder="Employee name"></div>
+    <div class="field"><label for="addUserEmail">Email</label><input type="email" id="addUserEmail" maxlength="254" autocomplete="off" placeholder="name@company.com"></div>
+    <div class="field"><label for="addUserRole">RBH role</label><select id="addUserRole"><option value="supervisor">Supervisor</option><option value="safety_manager">Safety Manager</option><option value="read_only">Read Only</option><option value="admin">Admin</option></select></div>
+    <label class="setup-check"><input type="checkbox" id="addUserSendEmail" checked><span><b>Send setup email</b><br>Recommended. The user receives a secure Brevo link to choose their own password and open RBH.</span></label>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="addUserCancel" type="button">Cancel</button>
+      <button class="btn-primary" id="addUserSave" type="button">Create access</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PASSWORD SETUP ============ -->
+<div class="modal-backdrop" id="passwordSetupBackdrop">
+  <div class="password-setup-card" role="dialog" aria-modal="true" aria-labelledby="passwordSetupHeading">
+    <h3 id="passwordSetupHeading">Set your RBH password</h3>
+    <p>Choose a password to finish setting up your dashboard access.</p>
+    <div class="login-err" id="passwordSetupErr"></div>
+    <div class="field"><label for="passwordSetup1">New password</label><input type="password" id="passwordSetup1" autocomplete="new-password" placeholder="At least 8 characters"></div>
+    <div class="field"><label for="passwordSetup2">Confirm password</label><input type="password" id="passwordSetup2" autocomplete="new-password" placeholder="Re-enter password"></div>
+    <button class="btn-primary" id="passwordSetupSave" type="button" style="width:100%">Save password &amp; continue</button>
+  </div>
+</div>
 
 <!-- ============ ADD NOTE MODAL ============ -->
 <div class="modal-backdrop" id="backdrop">
@@ -1206,7 +1243,9 @@
   /* ---------- auth ---------- */
   function showLogin(){ appView.style.display="none"; loginView.style.display="flex"; currentSession=null; currentProfile=null; currentRole="read_only"; isPlatformAdmin=false; currentOrgId=null; currentOrgName=""; allOrgs=[]; if(typeof closeProfileDrawer==="function") closeProfileDrawer(); }
   async function showApp(session){
-    currentSession=session; loginView.style.display="none"; appView.style.display="block";
+    currentSession=session;
+    if(setupPasswordModeRequested()){ showPasswordSetup(); return; }
+    loginView.style.display="none"; appView.style.display="block";
     $("who").textContent=(session&&session.user&&session.user.email)||"";
     await upsertProfile(session);
     try{
@@ -2901,6 +2940,7 @@
     if(pill){ pill.textContent=roleLabel(currentRole); pill.className="role-pill r-"+currentRole; }
     var adminNav=document.querySelector('.nav-item[data-view="users"]');
     if(adminNav) adminNav.style.display=(currentRole==="admin"?"":"none");
+    var addUserBtn=$("addUserBtn"); if(addUserBtn) addUserBtn.style.display=(currentRole==="admin"?"":"none");
     var platformNav=$("platformNav");
     if(platformNav) platformNav.style.display="none";
     var myWorkNav=document.querySelector('.nav-item[data-view="mywork"]');
@@ -3170,6 +3210,59 @@
     }catch(ex){ console.error(ex); toast("Could not update user access.","err"); }
   }
 
+  function openAddUserModal(){
+    if(!canManageUsers()){ toast("Admin access is required.","err"); return; }
+    $("addUserName").value=""; $("addUserEmail").value=""; $("addUserRole").value="supervisor"; $("addUserSendEmail").checked=true;
+    var e=$("addUserErr"); if(e){e.textContent="";e.classList.remove("show");}
+    $("addUserBackdrop").classList.add("open"); setTimeout(function(){$("addUserName").focus();},50);
+  }
+  function closeAddUserModal(){ $("addUserBackdrop").classList.remove("open"); }
+  async function provisionDashboardUser(){
+    var name=$("addUserName").value.trim(), email=$("addUserEmail").value.trim().toLowerCase(), role=$("addUserRole").value, sendEmail=$("addUserSendEmail").checked;
+    var err=$("addUserErr"), btn=$("addUserSave");
+    err.textContent=""; err.classList.remove("show");
+    if(!name){err.textContent="Enter the user's full name.";err.classList.add("show");return;}
+    if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)){err.textContent="Enter a valid email address.";err.classList.add("show");return;}
+    btn.disabled=true; btn.textContent="Creating access…";
+    try{
+      if(!currentSession||!currentSession.access_token) throw new Error("Your session expired. Sign in again.");
+      var resp=await fetch(SUPA_URL+"/functions/v1/admin-provision-user",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","Authorization":"Bearer "+currentSession.access_token,"apikey":SUPA_KEY},
+        body:JSON.stringify({fullName:name,email:email,role:role,sendSetupEmail:sendEmail})
+      });
+      var data=await resp.json().catch(function(){return {};});
+      if(!resp.ok) throw new Error(data.detail||data.error||("HTTP "+resp.status));
+      closeAddUserModal();
+      await loadProfiles(); await loadUsers();
+      if(data.emailWarning){ toast("User access created, but the setup email needs attention.","err"); console.warn("user setup email",data.emailWarning); }
+      else if(data.setupEmailSent){ toast((data.createdAuthUser?"User created":"Existing user repaired")+" — setup email sent","ok"); }
+      else { toast((data.createdAuthUser?"User created":"Existing user repaired")+" and activated","ok"); }
+    }catch(ex){ console.error("provision user",ex); err.textContent="Could not create access: "+((ex&&ex.message)||"Unknown error"); err.classList.add("show"); }
+    finally{btn.disabled=false;btn.textContent="Create access";}
+  }
+  function setupPasswordModeRequested(){ try{return new URLSearchParams(window.location.search).get("setup")==="1";}catch(_e){return false;} }
+  function showPasswordSetup(){
+    loginView.style.display="none"; appView.style.display="none";
+    var e=$("passwordSetupErr"); if(e){e.textContent="";e.classList.remove("show");}
+    $("passwordSetup1").value=""; $("passwordSetup2").value=""; $("passwordSetupBackdrop").classList.add("open");
+  }
+  async function finishPasswordSetup(){
+    var p1=$("passwordSetup1").value, p2=$("passwordSetup2").value, e=$("passwordSetupErr"), b=$("passwordSetupSave");
+    e.textContent="";e.classList.remove("show");
+    if(p1.length<8){e.textContent="Use at least 8 characters.";e.classList.add("show");return;}
+    if(p1!==p2){e.textContent="The passwords do not match.";e.classList.add("show");return;}
+    b.disabled=true;b.textContent="Saving…";
+    try{
+      var res=await sb.auth.updateUser({password:p1}); if(res.error) throw res.error;
+      $("passwordSetupBackdrop").classList.remove("open");
+      var u=new URL(window.location.href);u.searchParams.delete("setup");history.replaceState({},"",u.pathname+(u.search||"")+(u.hash||""));
+      toast("Password saved — welcome to RBH Safety","ok");
+      var ses=(await sb.auth.getSession()).data.session;if(ses) await showApp(ses);else showLogin();
+    }catch(ex){console.error("password setup",ex);e.textContent="Could not save the password. Request a new setup link from an Admin.";e.classList.add("show");}
+    finally{b.disabled=false;b.textContent="Save password & continue";}
+  }
+
   async function loadUsers(){
     var el=$("usersList"); el.innerHTML='<div class="state">Loading team…</div>';
     try{
@@ -3211,6 +3304,12 @@
       applyRoleUi();
     }catch(ex){ console.error(ex); el.innerHTML='<div class="state">Could not load users.</div>'; }
   }
+
+  var _aub=$("addUserBtn"); if(_aub) _aub.addEventListener("click",openAddUserModal);
+  var _auc=$("addUserCancel"); if(_auc) _auc.addEventListener("click",closeAddUserModal);
+  var _aus=$("addUserSave"); if(_aus) _aus.addEventListener("click",provisionDashboardUser);
+  var _aubd=$("addUserBackdrop"); if(_aubd) _aubd.addEventListener("click",function(e){if(e.target===_aubd)closeAddUserModal();});
+  var _pss=$("passwordSetupSave"); if(_pss) _pss.addEventListener("click",finishPasswordSetup);
 
   document.querySelectorAll(".nav-item").forEach(function(n){ n.addEventListener("click", function(){ showView(n.getAttribute("data-view")); }); });
   var _ho=$("homeOpen"); if(_ho) _ho.addEventListener("click", function(){ if(currentRole!=="read_only") showView("mywork"); else { var sf=$("statusFilter"); if(sf) sf.value="open"; showView("records"); applyFilters(); } });
