@@ -135,10 +135,15 @@
   .evidence-upload-btn{background:var(--gradient-ink);border:1.5px solid color-mix(in srgb,var(--ink-bar) 80%,#fff);color:#fff;box-shadow:var(--button-shadow)}.evidence-upload-btn:hover{filter:brightness(1.08);transform:translateY(-1px)}.evidence-upload-btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
   .evidence-selected{color:var(--muted);font-size:12px;min-width:140px;flex:1}
   .evidence-help{width:100%;color:var(--muted);font-size:11.5px;line-height:1.4}
+  .evidence-item{display:flex;flex-direction:column;align-items:flex-start;gap:5px;max-width:240px}
   .evidence-thumb{display:block;width:88px;height:88px;border-radius:9px;overflow:hidden;border:1px solid var(--line);background:var(--paper);position:relative}
   .evidence-thumb img{width:100%;height:100%;object-fit:cover;display:block}
   .evidence-file{display:inline-flex;align-items:center;gap:7px;background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-size:12.5px;font-weight:600;color:var(--ink);text-decoration:none;max-width:240px}
   .evidence-file span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.evidence-file:hover,.evidence-thumb:hover{border-color:var(--red)}
+  .evidence-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .evidence-replace,.evidence-remove{border:0;background:transparent;font:700 11.5px var(--display);padding:2px 1px;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+  .evidence-replace{color:var(--ink)}.evidence-remove{color:var(--red)}
+  .evidence-replace:hover,.evidence-remove:hover{filter:brightness(.82)}.evidence-replace:disabled,.evidence-remove:disabled{opacity:.5;cursor:not-allowed}
 
   /* activity timeline */
   .audit{margin-top:10px}
@@ -603,6 +608,7 @@
     .evidence-count{align-self:flex-start}
     .evidence-files{gap:7px}
     .evidence-thumb{width:76px;height:76px}
+    .evidence-item{max-width:100%;width:100%}
     .evidence-file{max-width:100%;width:100%}
     .evidence-upload{display:grid;grid-template-columns:1fr;gap:7px;align-items:stretch}
     .evidence-pick,.evidence-upload-btn,.evidence-selected{width:100%;text-align:center;min-height:44px}
@@ -3085,32 +3091,48 @@
     });
     return attByReport[reportId];
   }
-  function evidenceLocked(r){ return r.status==="closed" || r.status==="no_action" || r.status==="duplicate" || r.action_status==="verified"; }
+  function canManageActionEvidence(r){
+    if(!r || !String(r.corrective_action||"").trim() || !r.assigned_user_id) return false;
+    return hasOperationalAccess(r);
+  }
+  async function removeActionEvidence(r,a){
+    if(!r||!a||!a.id) return {ok:false,error:"ATTACHMENT_REQUIRED"};
+    if(!currentSession||!currentSession.access_token) return {ok:false,error:"AUTH_REQUIRED"};
+    try{
+      var resp=await fetch(SUPA_URL+"/functions/v1/manage-action-evidence",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","Authorization":"Bearer "+currentSession.access_token,"apikey":SUPA_KEY},
+        body:JSON.stringify({action:"remove",reportId:String(r.id),attachmentId:String(a.id)})
+      });
+      var data=await resp.json().catch(function(){return {};});
+      if(!resp.ok) return {ok:false,error:data.error||("HTTP_"+resp.status),detail:data.detail||""};
+      return data||{ok:true,removed:true};
+    }catch(ex){
+      console.error("remove evidence",ex);
+      return {ok:false,error:"NETWORK_ERROR",detail:(ex&&ex.message)||""};
+    }
+  }
   async function uploadActionEvidenceFiles(r, files){
     files=Array.prototype.slice.call(files||[]);
     if(!files.length) return {ok:0,failed:0};
     if(files.length>5) throw new Error("Choose no more than 5 evidence files at a time.");
     for(var i=0;i<files.length;i++) if(files[i].size>10*1024*1024) throw new Error("Each evidence file must be 10 MB or smaller.");
+    if(!currentSession||!currentSession.access_token) throw new Error("Please sign in again before adding evidence.");
     var key=String(r.id);
     var task=(async function(){
-      var ok=0, failed=0;
-      for(var j=0;j<files.length;j++){
-        var f=files[j], path="";
-        try{
-          var safe=(f.name||"evidence").replace(/[^a-zA-Z0-9._-]/g,"_"); if(safe.length>120) safe=safe.slice(-120);
-          path="corrective-evidence/"+r.id+"/"+Date.now()+"_"+j+"_"+safe;
-          var up=await sb.storage.from("report-attachments").upload(path,f,{contentType:f.type||undefined,upsert:false});
-          if(up.error) throw up.error;
-          var meta=await sb.rpc("rbh_add_action_evidence",{p_report_id:String(r.id),p_storage_path:path,p_file_name:f.name,p_mime_type:f.type||null,p_size_bytes:f.size||null});
-          if(meta.error){
-            try{ await sb.storage.from("report-attachments").remove([path]); }catch(_cleanupErr){}
-            throw meta.error;
-          }
-          ok++;
-        }catch(ex){ console.error(ex); failed++; }
-      }
+      var form=new FormData();
+      form.append("action","upload");
+      form.append("reportId",String(r.id));
+      files.forEach(function(f){form.append("files",f,f.name||"evidence");});
+      var resp=await fetch(SUPA_URL+"/functions/v1/manage-action-evidence",{
+        method:"POST",
+        headers:{"Authorization":"Bearer "+currentSession.access_token,"apikey":SUPA_KEY},
+        body:form
+      });
+      var data=await resp.json().catch(function(){return {};});
+      if(!resp.ok && !(data&&data.addedCount)) throw new Error(data&&data.error?data.error:("Evidence upload failed ("+resp.status+")"));
       await refreshReportAttachments(r.id);
-      return {ok:ok,failed:failed};
+      return {ok:Number(data&&data.addedCount||0),failed:Number(data&&data.failedCount||0)};
     })();
     actionEvidenceUploads[key]=task;
     try{ return await task; }
@@ -3120,15 +3142,21 @@
     var task=actionEvidenceUploads[String(reportId)];
     return task ? await task : {ok:0,failed:0};
   }
+  async function refreshAllActionEvidencePanels(r,auditEl){
+    var root=$("incidentBody");
+    var panels=root?Array.prototype.slice.call(root.querySelectorAll("[data-action-evidence]")):[];
+    if(!panels.length) return;
+    for(var i=0;i<panels.length;i++) await renderActionEvidence(r,panels[i],auditEl);
+  }
   async function renderActionEvidence(r, el, auditEl){
     if(!el) return;
     var allEvidence=(attByReport[r.id]||[]).filter(isActionEvidence);
     var restartAt=r.last_workflow_restart_at?new Date(r.last_workflow_restart_at).getTime():null;
     var arr=allEvidence.filter(function(a){ if(!restartAt) return true; var t=new Date(a.created_at||0).getTime(); return !isNaN(t)&&t>=restartAt; });
     var priorEvidence=allEvidence.filter(function(a){ if(!restartAt) return false; var t=new Date(a.created_at||0).getTime(); return !isNaN(t)&&t<restartAt; });
-    var canUpload=canEditReport(r) && !evidenceLocked(r);
+    var canManage=canManageActionEvidence(r);
     var countLabel=arr.length+(arr.length===1?" file":" files");
-    el.innerHTML='<div class="evidence-head"><div><b>Corrective-action evidence</b><span>Photos or files that show what was fixed in the current workflow. Evidence is optional, but useful when the correction can be visually confirmed.</span></div><span class="evidence-count">'+countLabel+'</span></div><div class="evidence-files" data-evidence-files>'+(arr.length?'<span class="evidence-empty">Loading evidence…</span>':'<span class="evidence-empty">No corrective-action evidence uploaded in the current workflow.</span>')+'</div>'+(priorEvidence.length?'<details class="evidence-history"><summary>Earlier workflow evidence ('+priorEvidence.length+')</summary><div class="evidence-files" data-prior-evidence-files><span class="evidence-empty">Loading preserved evidence…</span></div></details>':'')+(canUpload?'<div class="evidence-upload"><input class="evidence-file-input" type="file" multiple accept="image/*,.pdf,.doc,.docx"><button class="evidence-pick" type="button">Add evidence</button><span class="evidence-selected">Files save automatically after selection.</span><div class="evidence-help">Up to 5 files at a time, 10 MB each. Photos, PDF, Word documents, and common image formats are supported.</div></div>':'');
+    el.innerHTML='<div class="evidence-head"><div><b>Corrective-action evidence</b><span>Photos or files that show what was fixed. Evidence can be added or removed from the Complete step forward. To replace a file, remove the incorrect one and add the corrected version.</span></div><span class="evidence-count">'+countLabel+'</span></div><div class="evidence-files" data-evidence-files>'+(arr.length?'<span class="evidence-empty">Loading evidence…</span>':'<span class="evidence-empty">No corrective-action evidence uploaded in the current workflow.</span>')+'</div>'+(priorEvidence.length?'<details class="evidence-history"><summary>Earlier workflow evidence ('+priorEvidence.length+')</summary><div class="evidence-files" data-prior-evidence-files><span class="evidence-empty">Loading preserved evidence…</span></div></details>':'')+(canManage?'<div class="evidence-upload"><input class="evidence-file-input" type="file" multiple accept="image/*,.pdf,.doc,.docx"><button class="evidence-pick" type="button">Add evidence</button><span class="evidence-selected">Files save automatically after selection.</span><div class="evidence-help">Up to 5 files at a time, 10 MB each. Remove is available for mistakes; every removal is recorded in Activity.</div></div>':'');
     async function renderEvidenceFiles(items,target){
       if(!target||!items.length) return;
       try{
@@ -3138,11 +3166,64 @@
         target.innerHTML="";
         (signed.data||[]).forEach(function(d,i){
           var a=items[i]; if(!d||d.error||!d.signedUrl) return;
+          var item=document.createElement("div"); item.className="evidence-item";
           var isImg=String(a.mime_type||"").indexOf("image/")===0;
           var link=document.createElement("a"); link.href=d.signedUrl; link.target="_blank"; link.rel="noopener"; link.title=a.file_name||"Evidence";
           if(isImg){ link.className="evidence-thumb"; var img=document.createElement("img"); img.src=d.signedUrl; img.loading="lazy"; img.alt=a.file_name||"Corrective-action evidence"; link.appendChild(img); }
           else { link.className="evidence-file"; link.innerHTML='<b>FILE</b><span></span>'; link.querySelector("span").textContent=a.file_name||"Evidence file"; }
-          target.appendChild(link);
+          item.appendChild(link);
+          if(canManage){
+            var actions=document.createElement("div"); actions.className="evidence-actions";
+            var replace=document.createElement("button"); replace.type="button"; replace.className="evidence-replace"; replace.textContent="Replace";
+            replace.setAttribute("aria-label","Replace "+(a.file_name||"evidence file"));
+            replace.addEventListener("click",function(){
+              var chooser=document.createElement("input"); chooser.type="file"; chooser.accept="image/*,.pdf,.doc,.docx"; chooser.style.display="none"; document.body.appendChild(chooser);
+              chooser.addEventListener("change",async function(){
+                var f=chooser.files&&chooser.files[0]; if(!f){chooser.remove();return;}
+                replace.disabled=true; remove.disabled=true; replace.textContent="Replacing…";
+                try{
+                  var uploadResult=await uploadActionEvidenceFiles(r,[f]);
+                  if(!uploadResult.ok) throw new Error("The replacement file could not be saved, so the original evidence was kept.");
+                  var removeResult=await removeActionEvidence(r,a);
+                  if(!removeResult||removeResult.ok===false) throw new Error("The replacement was saved, but the original file could not be removed. You can remove it separately.");
+                  await refreshReportAttachments(r.id);
+                  loadAudit(r.id,auditEl);
+                  await refreshAllActionEvidencePanels(r,auditEl);
+                  toast("Evidence replaced","ok");
+                }catch(ex){
+                  console.error(ex); toast(ex&&ex.message?ex.message:"Could not replace the evidence file.","err");
+                  if(replace.isConnected){replace.disabled=false;replace.textContent="Replace";}
+                  if(remove.isConnected) remove.disabled=false;
+                }finally{chooser.remove();}
+              },{once:true});
+              chooser.click();
+            });
+            var remove=document.createElement("button"); remove.type="button"; remove.className="evidence-remove"; remove.textContent="Remove";
+            remove.setAttribute("aria-label","Remove "+(a.file_name||"evidence file"));
+            remove.addEventListener("click",async function(){
+              var fileName=a.file_name||"this evidence file";
+              if(!window.confirm('Remove "'+fileName+'"?\n\nThis permanently removes the file from the record. The Activity timeline will keep a record that it was removed.')) return;
+              replace.disabled=true; remove.disabled=true; remove.textContent="Removing…";
+              try{
+                await waitForActionEvidenceUpload(r.id);
+                var result=await removeActionEvidence(r,a);
+                if(!result||result.ok===false){
+                  var msg=result&&result.error==="NOT_AUTHORIZED"?"You do not have permission to remove this evidence.":"Could not remove the evidence file.";
+                  throw new Error(msg);
+                }
+                await refreshReportAttachments(r.id);
+                loadAudit(r.id,auditEl);
+                await refreshAllActionEvidencePanels(r,auditEl);
+                toast("Evidence removed","ok");
+              }catch(ex){
+                console.error(ex); toast(ex&&ex.message?ex.message:"Could not remove the evidence file.","err");
+                if(remove.isConnected){remove.disabled=false;remove.textContent="Remove";}
+                if(replace.isConnected) replace.disabled=false;
+              }
+            });
+            actions.appendChild(replace); actions.appendChild(remove); item.appendChild(actions);
+          }
+          target.appendChild(item);
         });
         if(!target.children.length) target.innerHTML='<span class="evidence-empty">Evidence is saved, but the preview could not be loaded.</span>';
       }catch(ex){ console.error(ex); target.innerHTML='<span class="evidence-empty">Evidence is saved, but the preview could not be loaded.</span>'; }
@@ -3151,7 +3232,7 @@
     if(arr.length) await renderEvidenceFiles(arr,filesEl);
     var priorEl=el.querySelector("[data-prior-evidence-files]");
     if(priorEvidence.length) await renderEvidenceFiles(priorEvidence,priorEl);
-    if(!canUpload) return;
+    if(!canManage) return;
     var input=el.querySelector(".evidence-file-input"), pick=el.querySelector(".evidence-pick"), selected=el.querySelector(".evidence-selected");
     if(!input||!pick||!selected) return;
     pick.addEventListener("click",function(){ if(!pick.disabled) input.click(); });
@@ -3168,7 +3249,7 @@
         if(result.ok) toast(result.ok+" evidence file"+(result.ok===1?"":"s")+" saved","ok");
         if(result.failed) toast(result.failed+" evidence file"+(result.failed===1?"":"s")+" could not be saved. Please add it again.","err");
         loadAudit(r.id,auditEl);
-        await renderActionEvidence(r,el,auditEl);
+        await refreshAllActionEvidencePanels(r,auditEl);
       }catch(ex){
         console.error(ex);
         toast(ex&&ex.message?ex.message:"Could not save corrective-action evidence.","err");
