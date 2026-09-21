@@ -947,13 +947,13 @@
 <div class="modal-backdrop" id="reopenBackdrop">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="reopenHeading">
     <h3 id="reopenHeading">Reopen record</h3>
-    <p class="msub">Return a resolved safety record to active review while preserving its complete history.</p>
-    <div class="restart-warning"><b>The prior closure stays in the permanent history.</b> Reopening clears the closure timestamp. A previously verified corrective action is returned for another review cycle before the record can be closed again.</div>
+    <p class="msub">Return a resolved safety record to Step 1 — Review Report while preserving its complete history.</p>
+    <div class="restart-warning"><b>The prior closure and completed workflow stay in the permanent history.</b> Reopening starts a fresh active workflow at Step 1 so new information is reviewed before a new investigation or corrective action is chosen.</div>
     <ul class="restart-preserve">
-      <li>Original report, notes, attachments, investigation, and prior evidence are preserved.</li>
-      <li>The previous resolved status and reopen reason are recorded in the activity history.</li>
-      <li>Closed corrective-action records return to corrective action with verification cleared.</li>
-      <li>No-action and duplicate records return to active review.</li>
+      <li>Original report, notes, original attachments, Cal/OSHA screening, and prior corrective-action evidence are preserved.</li>
+      <li>The previous resolved status, reopen reason, and prior workflow values remain documented in Activity.</li>
+      <li>The active root cause, action plan, assignment, due date, completion, and verification fields are reset.</li>
+      <li>Closed, no-action, and duplicate records all reopen at Step 1 — Review Report.</li>
     </ul>
     <div class="login-err" id="reopenErr"></div>
     <div class="field"><label for="reopenReason">Reason for reopening</label><select id="reopenReason">
@@ -1588,7 +1588,7 @@
     if(banner){
       if(r.last_reopened_at){
         var prior=STATUS[r.last_reopen_from_status]?STATUS[r.last_reopen_from_status].l:(r.last_reopen_from_status||"resolved");
-        banner.innerHTML='<div class="resolved-review-banner"><b>Reopened record</b><span>Previously '+esc(prior)+' · reopened '+esc(fmtDate(r.last_reopened_at))+'. The prior closure remains in the activity history and this record must complete the active workflow before it can be closed again.</span></div>';
+        banner.innerHTML='<div class="resolved-review-banner"><b>Reopened record · workflow restarted at Step 1</b><span>Previously '+esc(prior)+' · reopened '+esc(fmtDate(r.last_reopened_at))+'. The prior closure and prior workflow remain in the activity history. This active workflow must be completed again before the record can close.</span></div>';
       } else banner.innerHTML="";
     }
     var n=parseInt(detail.dataset.wizardStep||"0",10)||initialWizardStep(r);
@@ -1821,7 +1821,7 @@
       await loadReports();
       var fresh=allReports.find(function(x){return String(x.id)===String(rid);});
       if(fresh){ openIncident(fresh,backView); } else { showView(backView||"records"); }
-      toast("Record reopened — prior closure preserved","ok");
+      toast("Record reopened at Step 1 — prior history preserved","ok");
     }catch(ex){
       console.error(ex);
       err.textContent=(ex&&ex.message)?ex.message:"Could not reopen the record. Please try again."; err.classList.add("show");
@@ -2254,9 +2254,9 @@
 
       var originalAtts=atts.filter(function(a){return !isActionEvidence(a);});
       var evidenceAll=atts.filter(isActionEvidence);
-      var pdfRestartAt=r.last_workflow_restart_at?new Date(r.last_workflow_restart_at).getTime():null;
-      var evidenceAtts=evidenceAll.filter(function(a){ if(!pdfRestartAt) return true; var t=new Date(a.created_at||0).getTime(); return !isNaN(t)&&t>=pdfRestartAt; });
-      var priorEvidenceAtts=evidenceAll.filter(function(a){ if(!pdfRestartAt) return false; var t=new Date(a.created_at||0).getTime(); return !isNaN(t)&&t<pdfRestartAt; });
+      var pdfResetAt=workflowResetBoundaryMs(r);
+      var evidenceAtts=evidenceAll.filter(function(a){ if(!pdfResetAt) return true; var t=new Date(a.created_at||0).getTime(); return !isNaN(t)&&t>=pdfResetAt; });
+      var priorEvidenceAtts=evidenceAll.filter(function(a){ if(!pdfResetAt) return false; var t=new Date(a.created_at||0).getTime(); return !isNaN(t)&&t<pdfResetAt; });
       var reviewAudit=audit.find(function(a){return a.field==="status" && a.new_value==="under_review";});
       var closureAudits=audit.filter(function(a){return a.field==="status" && (a.new_value==="closed"||a.new_value==="no_action"||a.new_value==="duplicate");});
       var closureAudit=closureAudits.length?closureAudits[closureAudits.length-1]:null;
@@ -2390,7 +2390,7 @@
         function attachmentSource(a){
           if(!isActionEvidence(a)) return L.sourceOriginal;
           var t=new Date(a.created_at||0).getTime();
-          if(pdfRestartAt && !isNaN(t) && t<pdfRestartAt) return L.sourcePriorEvidence;
+          if(pdfResetAt && !isNaN(t) && t<pdfResetAt) return L.sourcePriorEvidence;
           return L.sourceCurrentEvidence;
         }
         function pdfWrap(text,font,size,maxW){
@@ -3269,6 +3269,11 @@
     });
   }
 
+  function workflowResetBoundaryMs(r){
+    if(!r) return null;
+    var vals=[r.last_workflow_restart_at,r.last_reopened_at].map(function(v){var t=v?new Date(v).getTime():NaN;return isNaN(t)?null:t;}).filter(function(v){return v!==null;});
+    return vals.length?Math.max.apply(Math,vals):null;
+  }
   function isActionEvidence(a){ return !!(a && String(a.storage_path||"").indexOf("corrective-evidence/")===0); }
   async function refreshReportAttachments(reportId){
     var res=await sb.from("report_attachments").select("*").eq("report_id",reportId);
@@ -3342,9 +3347,9 @@
   async function renderActionEvidence(r, el, auditEl){
     if(!el) return;
     var allEvidence=(attByReport[r.id]||[]).filter(isActionEvidence);
-    var restartAt=r.last_workflow_restart_at?new Date(r.last_workflow_restart_at).getTime():null;
-    var arr=allEvidence.filter(function(a){ if(!restartAt) return true; var t=new Date(a.created_at||0).getTime(); return !isNaN(t)&&t>=restartAt; });
-    var priorEvidence=allEvidence.filter(function(a){ if(!restartAt) return false; var t=new Date(a.created_at||0).getTime(); return !isNaN(t)&&t<restartAt; });
+    var resetAt=workflowResetBoundaryMs(r);
+    var arr=allEvidence.filter(function(a){ if(!resetAt) return true; var t=new Date(a.created_at||0).getTime(); return !isNaN(t)&&t>=resetAt; });
+    var priorEvidence=allEvidence.filter(function(a){ if(!resetAt) return false; var t=new Date(a.created_at||0).getTime(); return !isNaN(t)&&t<resetAt; });
     var canManage=canManageActionEvidence(r);
     var countLabel=arr.length+(arr.length===1?" file":" files");
     el.innerHTML='<div class="evidence-head"><div><b>Corrective-action evidence</b><span>Photos or files that show what was fixed. Evidence can be added or removed from the Complete step forward. To replace a file, remove the incorrect one and add the corrected version.</span></div><span class="evidence-count">'+countLabel+'</span></div><div class="evidence-files" data-evidence-files>'+(arr.length?'<span class="evidence-empty">Loading evidence…</span>':'<span class="evidence-empty">No corrective-action evidence uploaded in the current workflow.</span>')+'</div>'+(priorEvidence.length?'<details class="evidence-history"><summary>Earlier workflow evidence ('+priorEvidence.length+')</summary><div class="evidence-files" data-prior-evidence-files><span class="evidence-empty">Loading preserved evidence…</span></div></details>':'')+(canManage?'<div class="evidence-upload"><input class="evidence-file-input" type="file" multiple accept="image/*,.pdf,.doc,.docx"><button class="evidence-pick" type="button">Add evidence</button><span class="evidence-selected">Files save automatically after selection.</span><div class="evidence-help">Up to 5 files at a time, 10 MB each. Remove is available for mistakes; every removal is recorded in Activity.</div></div>':'');
