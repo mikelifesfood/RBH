@@ -257,9 +257,11 @@
   .exp:hover{border-color:var(--red)}
   .exp:disabled{opacity:.7;cursor:default}
   .detail-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-  .restart-workflow-btn{background:var(--paper);color:var(--red);border:1.5px solid color-mix(in srgb,var(--red) 58%,var(--line));border-radius:9px;font-family:var(--display);font-weight:700;font-size:13px;padding:9px 14px;cursor:pointer}
-  .restart-workflow-btn:hover{background:color-mix(in srgb,var(--red) 7%,var(--paper));border-color:var(--red)}
-  .restart-workflow-btn[hidden]{display:none!important}
+  .restart-workflow-btn,.reopen-record-btn{background:var(--paper);color:var(--red);border:1.5px solid color-mix(in srgb,var(--red) 58%,var(--line));border-radius:9px;font-family:var(--display);font-weight:700;font-size:13px;padding:9px 14px;cursor:pointer}
+  .restart-workflow-btn:hover,.reopen-record-btn:hover{background:color-mix(in srgb,var(--red) 7%,var(--paper));border-color:var(--red)}
+  .restart-workflow-btn[hidden],.reopen-record-btn[hidden]{display:none!important}
+  .reopen-record-btn{background:var(--red);color:#fff;border-color:var(--red)}
+  .reopen-record-btn:hover{background:color-mix(in srgb,var(--red) 88%,#000);color:#fff}
   .restart-warning{margin:0 0 14px;padding:12px 13px;border:1px solid #e4c574;border-radius:10px;background:#fff8df;font-size:12.5px;color:#665317;line-height:1.5}
   .restart-warning b{color:#4f3e08}
   .restart-preserve{margin:10px 0 0;padding-left:18px;color:var(--muted);font-size:12px;line-height:1.55}
@@ -514,6 +516,8 @@
   .resolved-review-banner{display:flex;align-items:flex-start;gap:10px;border:1px solid var(--line);background:var(--paper-2);border-radius:12px;padding:12px 14px;margin:-4px 0 14px;color:var(--ink)}
   .resolved-review-banner b{font-family:var(--display);font-size:13px;white-space:nowrap}
   .resolved-review-banner span{font-size:12px;color:var(--muted);line-height:1.45}
+  .resolved-review-banner .banner-action{margin-left:auto;flex:0 0 auto;background:var(--red);color:#fff;border:1px solid var(--red);border-radius:9px;padding:8px 12px;font-family:var(--display);font-size:12px;font-weight:700;cursor:pointer}
+  .resolved-review-banner .banner-action:hover{background:color-mix(in srgb,var(--red) 88%,#000)}
   #incidentBody.resolved-review [data-wizard-step]{display:block!important;background:var(--paper-2);border-color:var(--line);box-shadow:none;margin-bottom:12px}
   #incidentBody.resolved-review [data-wizard-step][hidden]{display:none!important}
   #incidentBody.resolved-review .wizard-step-head{display:flex!important}
@@ -523,7 +527,7 @@
   #incidentBody.resolved-review .process-step.ps-done{cursor:pointer}
   [data-theme="dark"] #incidentBody.resolved-review input:disabled,[data-theme="dark"] #incidentBody.resolved-review textarea:disabled,[data-theme="dark"] #incidentBody.resolved-review select:disabled{background:#292725}
   @media(max-width:620px){
-    .resolved-review-banner{display:block;padding:11px 12px}.resolved-review-banner b{display:block;margin-bottom:4px;white-space:normal}
+    .resolved-review-banner{display:block;padding:11px 12px}.resolved-review-banner b{display:block;margin-bottom:4px;white-space:normal}.resolved-review-banner .banner-action{width:100%;margin:10px 0 0;min-height:42px}
     #incidentBody.resolved-review [data-wizard-step]{padding:12px}
     #incidentBody.resolved-review .wizard-step-head{gap:9px;margin-bottom:10px;padding-bottom:10px}
     #incidentBody.resolved-review .wizard-step-copy h3{font-size:16px}
@@ -616,7 +620,7 @@
     .record-support-body{padding:0 12px 12px}
     .support-grid{margin-top:12px}
     .detail-actions{margin-top:10px!important;margin-bottom:0!important}
-    .detail-actions .pdf-btn,.detail-actions .restart-workflow-btn{width:100%;min-height:44px}
+    .detail-actions .pdf-btn,.detail-actions .restart-workflow-btn,.detail-actions .reopen-record-btn{width:100%;min-height:44px}
 
     /* Timeline cards remain narrow-screen safe. */
     .tl-item{grid-template-columns:28px minmax(0,1fr);gap:8px}
@@ -886,7 +890,7 @@
             <div><b>Something looks wrong?</b><span>Use the feedback form above and include what screen you were on and what you expected to happen.</span></div>
           </div>
         </div>
-        <div class="profile-version"><span>RBH Safety</span><b id="profileAppVersion">Version 2026.09.20 · Multi-Tenant Foundation V1.1</b></div>
+        <div class="profile-version"><span>RBH Safety</span><b id="profileAppVersion">Version 2026.09.21 · Record Reopen V1</b></div>
       </section>
     </div>
   </aside>
@@ -928,6 +932,35 @@
     <div class="modal-actions">
       <button class="btn-secondary" id="dCancel" type="button">Cancel</button>
       <button class="btn-primary" id="dSave" type="button">Close report</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ REOPEN RECORD MODAL ============ -->
+<div class="modal-backdrop" id="reopenBackdrop">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="reopenHeading">
+    <h3 id="reopenHeading">Reopen record</h3>
+    <p class="msub">Return a resolved safety record to active review while preserving its complete history.</p>
+    <div class="restart-warning"><b>The prior closure stays in the permanent history.</b> Reopening clears the closure timestamp. A previously verified corrective action is returned for another review cycle before the record can be closed again.</div>
+    <ul class="restart-preserve">
+      <li>Original report, notes, attachments, investigation, and prior evidence are preserved.</li>
+      <li>The previous resolved status and reopen reason are recorded in the activity history.</li>
+      <li>Closed corrective-action records return to corrective action with verification cleared.</li>
+      <li>No-action and duplicate records return to active review.</li>
+    </ul>
+    <div class="login-err" id="reopenErr"></div>
+    <div class="field"><label for="reopenReason">Reason for reopening</label><select id="reopenReason">
+      <option value="">— Choose a reason —</option>
+      <option value="new_information">Additional information received</option>
+      <option value="closed_in_error">Record closed in error / wrong record closed</option>
+      <option value="additional_corrective_work">Corrective action needs additional work</option>
+      <option value="continue_investigation">Investigation needs to continue</option>
+      <option value="other">Other</option>
+    </select></div>
+    <div class="field"><label for="reopenNote">Explanation <span style="font-weight:400;color:var(--muted)">(required)</span></label><textarea id="reopenNote" maxlength="1200" placeholder="Briefly explain why this record is being reopened."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="reopenCancel" type="button">Cancel</button>
+      <button class="btn-primary" id="reopenSave" type="button">Reopen record</button>
     </div>
   </div>
 </div>
@@ -1056,7 +1089,7 @@
   var activeIncident=null, activeIncidentLanguage="en", translationCache={};
   var modalReport=null, modalCard=null, modalNotesEl=null;
   var dispositionReport=null, dispositionWrap=null, dispositionNotesEl=null;
-  var restartReport=null, restartReturnView="records";
+  var reopenReport=null, reopenReturnView="records", restartReport=null, restartReturnView="records";
   var NAV_VIEW_KEY="rbh_safety_active_view_v1", NAV_INCIDENT_KEY="rbh_safety_active_incident_v1";
   var APP_VERSION="2026.09.21 · Language V1";
 
@@ -1329,7 +1362,7 @@
         '<div class="d-section"><div class="d-sec-title-row"><span class="d-sec-title">Notes</span><button class="add-note" type="button">+ Add Note</button></div><div class="notes" data-notes></div></div>'+
         '<div class="d-section"><div class="d-sec-title">Activity timeline</div><p class="step-section-note">A readable history of submissions, updates, evidence, verification, and closure.</p><div class="audit" data-audit></div></div>'+
       '</div></div></details>'+
-      '<div class="detail-actions"><button class="restart-workflow-btn" type="button" hidden>Restart workflow</button><span class="pdf-language-wrap">PDF language <select class="pdf-language-select"><option value="viewer">My reading language</option><option value="original">Original record</option><option value="en">English</option><option value="es">Español</option></select></span><button class="pdf-btn" type="button">Download PDF</button></div>'+
+      '<div class="detail-actions"><button class="reopen-record-btn" type="button" hidden>Reopen record</button><button class="restart-workflow-btn" type="button" hidden>Restart workflow</button><span class="pdf-language-wrap">PDF language <select class="pdf-language-select"><option value="viewer">My reading language</option><option value="original">Original record</option><option value="en">English</option><option value="es">Español</option></select></span><button class="pdf-btn" type="button">Download PDF</button></div>'+
     '</div>';
   }
 
@@ -1467,6 +1500,8 @@
   function applyResolvedReviewMode(r,detail){
     if(!detail || !isResolvedReport(r)) return false;
     detail.classList.add("resolved-review");
+    var reopenBtn=detail.querySelector(".reopen-record-btn"); if(reopenBtn) reopenBtn.hidden=!canReopenReport(r);
+    var restartBtn=detail.querySelector(".restart-workflow-btn"); if(restartBtn) restartBtn.hidden=true;
     var progress=workflowProgress(r);
     detail.querySelectorAll("[data-wizard-step]").forEach(function(panel){
       var n=parseInt(panel.getAttribute("data-wizard-step"),10), st=progress.steps[n-1];
@@ -1476,7 +1511,11 @@
     var banner=detail.querySelector("[data-resolved-banner]");
     if(banner){
       var disposition=(r.status==="no_action"||r.status==="duplicate")?"This report was closed without corrective action.":"This incident is closed and the workflow is locked.";
-      banner.innerHTML='<div class="resolved-review-banner"><b>Closed record · read only</b><span>'+esc(disposition)+' Review the preserved information below. Authorized users can still add a note in Notes &amp; activity history.</span></div>';
+      var canReopen=canReopenReport(r);
+      var reopenHelp=canReopen?" Admins and Safety Managers can reopen this record if new information arises or it was closed in error.":"";
+      var reopenAction=canReopen?'<button class="banner-action" type="button" data-reopen-inline>Reopen record</button>':'';
+      banner.innerHTML='<div class="resolved-review-banner"><b>Closed record · read only</b><span>'+esc(disposition)+' Review the preserved information below. Authorized users can still add a note in Notes &amp; activity history.'+esc(reopenHelp)+'</span>'+reopenAction+'</div>';
+      var inlineReopen=banner.querySelector("[data-reopen-inline]"); if(inlineReopen) inlineReopen.addEventListener("click",function(){ openReopenModal(r,lastOperationalView); });
     }
     renderRecordProgress(r,detail.querySelector("[data-record-progress]"));
     return true;
@@ -1486,7 +1525,15 @@
     renderCloseStep(r,detail.querySelector("[data-close-step]"),detail,detail.querySelector("[data-audit]"));
     if(isResolvedReport(r)){ applyResolvedReviewMode(r,detail); return; }
     detail.classList.remove("resolved-review");
-    var banner=detail.querySelector("[data-resolved-banner]"); if(banner) banner.innerHTML="";
+    var reopenBtn=detail.querySelector(".reopen-record-btn"); if(reopenBtn) reopenBtn.hidden=true;
+    var restartBtn=detail.querySelector(".restart-workflow-btn"); if(restartBtn) restartBtn.hidden=!canRestartWorkflow(r);
+    var banner=detail.querySelector("[data-resolved-banner]");
+    if(banner){
+      if(r.last_reopened_at){
+        var prior=STATUS[r.last_reopen_from_status]?STATUS[r.last_reopen_from_status].l:(r.last_reopen_from_status||"resolved");
+        banner.innerHTML='<div class="resolved-review-banner"><b>Reopened record</b><span>Previously '+esc(prior)+' · reopened '+esc(fmtDate(r.last_reopened_at))+'. The prior closure remains in the activity history and this record must complete the active workflow before it can be closed again.</span></div>';
+      } else banner.innerHTML="";
+    }
     var n=parseInt(detail.dataset.wizardStep||"0",10)||initialWizardStep(r);
     if(!wizardStepAccessible(r,n)) n=recommendedWizardStep(r);
     setWizardStep(detail,r,n,true);
@@ -1602,6 +1649,8 @@
 
     loadAtts(r.id,detail.querySelector("[data-atts]")); var notesEl=detail.querySelector("[data-notes]"); loadNotes(r.id,notesEl); loadAudit(r.id,auditEl);
     var noteBtn=detail.querySelector(".add-note"); if(!canAddNotes(r))noteBtn.disabled=true; noteBtn.addEventListener("click",function(){if(canAddNotes(r))openNoteModal(r,wrap,notesEl);});
+    var reopenBtn=detail.querySelector(".reopen-record-btn");
+    if(reopenBtn){ reopenBtn.hidden=!canReopenReport(r); reopenBtn.addEventListener("click",function(){ if(canReopenReport(r)) openReopenModal(r,lastOperationalView); }); }
     var restartBtn=detail.querySelector(".restart-workflow-btn");
     if(restartBtn){ restartBtn.hidden=!canRestartWorkflow(r); restartBtn.addEventListener("click",function(){ if(canRestartWorkflow(r)) openRestartModal(r,lastOperationalView); }); }
     detail.querySelector(".pdf-btn").addEventListener("click",function(){ var ps=detail.querySelector(".pdf-language-select"); generatePdf(r,this,ps?ps.value:"viewer"); });
@@ -1668,6 +1717,43 @@
       toast("Report closed — no corrective action required","ok");
     }catch(ex){ console.error(ex); err.textContent="Could not close the report. Please try again."; err.classList.add("show"); }
     finally{ btn.disabled=false; btn.textContent="Close report"; }
+  });
+
+  function openReopenModal(r, returnView){
+    if(!r || !canReopenReport(r)){ toast("Only an Admin or Safety Manager can reopen a resolved record.","err"); return; }
+    reopenReport=r; reopenReturnView=returnView||lastOperationalView||"records";
+    $("reopenHeading").textContent="Reopen record — Report #"+r.ref_no;
+    $("reopenReason").value=""; $("reopenNote").value=""; $("reopenErr").classList.remove("show");
+    $("reopenBackdrop").classList.add("open");
+    setTimeout(function(){ $("reopenReason").focus(); },40);
+  }
+  function closeReopenModal(){
+    $("reopenBackdrop").classList.remove("open"); reopenReport=null; reopenReturnView="records";
+  }
+  $("reopenBackdrop").addEventListener("click",function(e){ if(e.target===$("reopenBackdrop")) closeReopenModal(); });
+  $("reopenCancel").addEventListener("click",closeReopenModal);
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape" && $("reopenBackdrop").classList.contains("open")) closeReopenModal(); });
+  $("reopenSave").addEventListener("click",async function(){
+    if(!reopenReport) return;
+    if(!canReopenReport(reopenReport)){ toast("This record can no longer be reopened.","err"); closeReopenModal(); return; }
+    var code=$("reopenReason").value, note=$("reopenNote").value.trim(), err=$("reopenErr");
+    if(!code){ err.textContent="Choose a reason for reopening the record."; err.classList.add("show"); return; }
+    if(!note){ err.textContent="Add a short explanation so the reopen action is documented."; err.classList.add("show"); return; }
+    err.classList.remove("show");
+    var btn=$("reopenSave"); btn.disabled=true; var old=btn.textContent; btn.textContent="Reopening…";
+    var rid=reopenReport.id, backView=reopenReturnView;
+    try{
+      var res=await sb.rpc("rbh_reopen_report",{p_report_id:String(rid),p_reason_code:code,p_reason:note});
+      if(res.error) throw res.error;
+      closeReopenModal();
+      await loadReports();
+      var fresh=allReports.find(function(x){return String(x.id)===String(rid);});
+      if(fresh){ openIncident(fresh,backView); } else { showView(backView||"records"); }
+      toast("Record reopened — prior closure preserved","ok");
+    }catch(ex){
+      console.error(ex);
+      err.textContent=(ex&&ex.message)?ex.message:"Could not reopen the record. Please try again."; err.classList.add("show");
+    }finally{ btn.disabled=false; btn.textContent=old; }
   });
 
   function openRestartModal(r, returnView){
@@ -2532,6 +2618,7 @@
   }
   function canEditReport(r){ return !isResolvedReport(r) && hasOperationalAccess(r); }
   function canAddNotes(r){ return hasOperationalAccess(r); }
+  function canReopenReport(r){ return !!(r && isResolvedReport(r) && canVerify()); }
   function canManageUsers(){ return currentRole==="admin"; }
   function workflowHasProgress(r){
     if(!r || isResolvedReport(r)) return false;
@@ -3045,6 +3132,10 @@
     if(a.field==="closed_at") return a.new_value?"Closure timestamp recorded":"Closure timestamp cleared";
     if(a.field==="workflow_restart_count") return "Workflow restart count: "+(a.old_value||"0")+" → "+(a.new_value||"0");
     if(a.field==="last_workflow_restart_at") return a.new_value?"Workflow restart timestamp recorded":"Workflow restart timestamp cleared";
+    if(a.field==="reopen_count") return "Reopen count: "+(a.old_value||"0")+" → "+(a.new_value||"0");
+    if(a.field==="last_reopened_at") return a.new_value?"Reopen timestamp recorded":"Reopen timestamp cleared";
+    if(a.field==="last_reopen_from_status") return "Previous resolved status preserved: "+(STATUS[a.new_value]?STATUS[a.new_value].l:(a.new_value||"—"));
+    if(a.field==="last_reopen_reason_code"||a.field==="last_reopen_reason") return "Reopen reason documented";
     return (a.field||"Record field")+" updated";
   }
   function auditGroupTitle(rows){
@@ -3061,6 +3152,7 @@
       if(statusRow.new_value==="closed") return "Report closed";
       if(statusRow.new_value==="no_action") return "Report closed — no action required";
       if(statusRow.new_value==="duplicate") return "Report closed — duplicate";
+      if((statusRow.old_value==="closed"||statusRow.old_value==="no_action"||statusRow.old_value==="duplicate") && (statusRow.new_value==="under_review"||statusRow.new_value==="corrective_action")) return "Record reopened";
       return "Report status updated";
     }
     if(fields.some(function(f){return ["corrective_action","assigned_user_id","responsible_person","due_date","priority"].indexOf(f)>=0;})) return "Corrective-action plan updated";
@@ -3072,7 +3164,7 @@
   }
   function timelineKind(title, rows){
     var t=String(title||"").toLowerCase();
-    if(t.indexOf("workflow restarted")>=0) return "restart";
+    if(t.indexOf("workflow restarted")>=0 || t.indexOf("record reopened")>=0) return "restart";
     if(t.indexOf("evidence")>=0) return "evidence";
     if(t.indexOf("closed")>=0 || t.indexOf("verified")>=0) return "close";
     if(t.indexOf("corrective")>=0 || (rows&&rows.some(function(a){return String(a.field||"").indexOf("action_")===0;}))) return "action";
@@ -3108,7 +3200,7 @@
         var title=String(n.title||"Note added"), system=title.indexOf("[System]")===0;
         if(system) title=title.replace(/^\[System\]\s*/,"");
         var lowTitle=title.toLowerCase();
-        var kind=lowTitle.indexOf("workflow restarted")>=0?"restart":(lowTitle.indexOf("evidence")>=0?"evidence":(lowTitle.indexOf("closed without corrective action")>=0?"close":"note"));
+        var kind=(lowTitle.indexOf("workflow restarted")>=0||lowTitle.indexOf("record reopened")>=0)?"restart":(lowTitle.indexOf("evidence")>=0?"evidence":(lowTitle.indexOf("closed without corrective action")>=0?"close":"note"));
         events.push({kind:kind,title:system?title:("Note added — "+title),created_at:n.created_at,actor:auditActor(n.author_email),detail:n.body||""});
       });
       var report=allReports.find(function(r){return String(r.id)===String(reportId);});
