@@ -1363,10 +1363,10 @@
 
       '<section class="wizard-panel" data-wizard-step="3" hidden>'+
         '<div class="wizard-step-head"><span class="wizard-step-badge">3</span><div class="wizard-step-copy"><h3>Corrective action plan</h3><p>Define what needs to be fixed, who owns the work, and when it must be completed.</p></div></div>'+
-        '<div class="wizard-task"><b>Your job on this step</b><span>Give the assigned person a clear action. An action, owner, due date, and priority are all required before the work can be assigned.</span></div>'+
+        '<div class="wizard-task"><b>Your job on this step</b><span>Give the assigned person a clear action. An action, assigned dashboard user, due date, and priority are all required before the work can be assigned.</span></div>'+
         '<div class="inv-grid">'+
           '<label class="inv-l">Corrective action required<textarea class="inv-corr" placeholder="What needs to be corrected or changed?"></textarea></label><div class="translation-preview" data-translation-field="corrective_action" hidden></div>'+
-          '<div class="assignment-grid"><label class="inv-l">Assigned dashboard user<select class="inv-assignee">'+assignmentOptions(r.assigned_user_id)+'</select></label><label class="inv-l">Responsible person / crew<input type="text" class="inv-resp" placeholder="Optional if different from assignee"></label></div>'+
+          '<label class="inv-l">Assigned dashboard user<select class="inv-assignee">'+assignmentOptions(r.assigned_user_id)+'</select></label>'+
           '<div class="inv-row"><label class="inv-l">Due date<input type="date" class="inv-due"></label><label class="inv-l">Priority<select class="inv-pri"><option value="">— Choose priority —</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label></div>'+
         '</div>'+
         '<div class="wizard-required" data-required="3"></div>'+
@@ -1413,7 +1413,7 @@
         {n:6,title:"Close record",state:"done",detail:"Record closed without corrective action."}
       ]};
     }
-    var owner=hasWorkflowValue(r.assigned_user_id)||hasWorkflowValue(r.responsible_person);
+    var owner=hasWorkflowValue(r.assigned_user_id);
     var step1=!!(r.status && r.status!=="new");
     var step2=hasWorkflowValue(r.root_cause);
     var missing3=[];
@@ -1431,7 +1431,7 @@
     var details=[
       step1?"Report acknowledged and moved out of New.":"Review the report and change status to Under review.",
       step2?"Root cause documented.":"Enter the root cause of the issue.",
-      step3?"Action, owner, due date, and priority are set.":("Still needed: "+missing3.join(", ")+"."),
+      step3?"Action, assigned user, due date, and priority are set.":("Still needed: "+missing3.join(", ")+"."),
       step4?"Completed work was submitted for review.":changeMsg,
       step5?"Corrective action was verified.":"Admin or Safety Manager must verify the completed work.",
       step6?"Record is closed.":"After verification, set Report Status to Closed."
@@ -1466,7 +1466,7 @@
   function wizardShortTitle(n){ return ({1:"Review",2:"Investigation",3:"Action Plan",4:"Complete Action",5:"Verify",6:"Close"})[n]||"Step"; }
   function wizardLongTitle(n){ return ({1:"Review Report",2:"Investigation",3:"Corrective Action Plan",4:"Complete Corrective Action",5:"Verify Corrective Action",6:"Close Record"})[n]||"Record"; }
   function wizardHelp(n,r){
-    var map={1:"Review the submission and decide what happens next.",2:"Document the underlying cause.",3:"Define the fix, owner, due date, and priority.",4:"Document the completed work and submit it for review.",5:"Approve the correction or request changes.",6:"Confirm every required step is complete and close the record."};
+    var map={1:"Review the submission and decide what happens next.",2:"Document the underlying cause.",3:"Define the fix, assigned user, due date, and priority.",4:"Document the completed work and submit it for review.",5:"Approve the correction or request changes.",6:"Confirm every required step is complete and close the record."};
     if(n===4 && r.action_status==="changes_requested") return "Changes were requested. Update the work and resubmit it for verification.";
     if(n===5 && !canVerify()) return "This step is waiting for an Admin or Safety Manager to verify the work.";
     return map[n]||"Follow the guided steps.";
@@ -1512,7 +1512,7 @@
       [!!(r.status&&r.status!=="new"),"Report reviewed"],
       [hasWorkflowValue(r.root_cause),"Root cause documented"],
       [hasWorkflowValue(r.corrective_action),"Corrective action documented"],
-      [hasWorkflowValue(r.assigned_user_id)||hasWorkflowValue(r.responsible_person),"Corrective action owner assigned"],
+      [hasWorkflowValue(r.assigned_user_id),"Corrective action owner assigned"],
       [hasWorkflowValue(r.due_date),"Due date documented"],
       [hasWorkflowValue(r.priority),"Priority documented"],
       [r.action_status==="verified","Corrective action verified"]
@@ -1622,10 +1622,10 @@
       openDispositionModal(r,wrap,detail.querySelector("[data-notes]"));
     });
 
-    var invRoot=detail.querySelector(".inv-root"), invCorr=detail.querySelector(".inv-corr"), invResp=detail.querySelector(".inv-resp"), invAssign=detail.querySelector(".inv-assignee"), invDue=detail.querySelector(".inv-due"), invPri=detail.querySelector(".inv-pri");
+    var invRoot=detail.querySelector(".inv-root"), invCorr=detail.querySelector(".inv-corr"), invAssign=detail.querySelector(".inv-assignee"), invDue=detail.querySelector(".inv-due"), invPri=detail.querySelector(".inv-pri");
     var rootSave=detail.querySelector(".root-save"), rootSaved=detail.querySelector(".root-saved"), actionPlanSave=detail.querySelector(".action-plan-save"), actionPlanSaved=detail.querySelector(".action-plan-saved");
-    invRoot.value=r.root_cause||""; invCorr.value=r.corrective_action||""; invResp.value=r.responsible_person||""; invAssign.value=r.assigned_user_id||""; invDue.value=r.due_date||""; invPri.value=r.priority||"";
-    if(!canEdit){ [invRoot,invCorr,invResp,invAssign,invDue,invPri,rootSave,actionPlanSave].forEach(function(x){if(x)x.disabled=true;}); }
+    invRoot.value=r.root_cause||""; invCorr.value=r.corrective_action||""; invAssign.value=r.assigned_user_id||""; invDue.value=r.due_date||""; invPri.value=r.priority||"";
+    if(!canEdit){ [invRoot,invCorr,invAssign,invDue,invPri,rootSave,actionPlanSave].forEach(function(x){if(x)x.disabled=true;}); }
 
     async function persistRootCause(showToast){
       if(!canEditReport(r)) throw new Error("NOT_AUTHORIZED");
@@ -1635,9 +1635,8 @@
     }
     async function persistActionPlan(showToast,assign){
       if(!canEditReport(r)) throw new Error("NOT_AUTHORIZED");
-      var selectedProfile=invAssign.value?profileById[String(invAssign.value)]:null;
       var nextActionStatus=r.action_status||"not_started"; if(invCorr.value.trim()&&nextActionStatus==="not_started") nextActionStatus="in_progress";
-      var patch={corrective_action:invCorr.value.trim()||null,assigned_user_id:invAssign.value||null,responsible_person:invResp.value.trim()||(selectedProfile?profileName(selectedProfile):null),due_date:invDue.value||null,priority:invPri.value||null,action_status:nextActionStatus};
+      var patch={corrective_action:invCorr.value.trim()||null,assigned_user_id:invAssign.value||null,due_date:invDue.value||null,priority:invPri.value||null,action_status:nextActionStatus};
       if(assign && r.status!=="closed" && r.status!=="no_action" && r.status!=="duplicate") patch.status="assigned";
       var changed={}; Object.keys(patch).forEach(function(k){if(String(r[k]??"")!==String(patch[k]??""))changed[k]=patch[k];});
       if(Object.keys(changed).length){var res=await sb.from("reports").update(changed).eq("id",r.id);if(res.error)throw res.error;Object.keys(changed).forEach(function(k){r[k]=changed[k];});}
@@ -1671,7 +1670,7 @@
       try{await persistRootCause(false);setWizardStep(detail,r,3,true);toast("Investigation complete — build the corrective action plan","ok");}catch(ex){console.error(ex);toast("Could not complete Investigation.","err");}finally{if(complete2.isConnected)complete2.disabled=!canEditReport(r);} });
 
     var complete3=detail.querySelector('[data-step-complete="3"]'); if(complete3) complete3.addEventListener("click",async function(){
-      var miss=[]; if(!invCorr.value.trim())miss.push("corrective action"); if(!invAssign.value&&!invResp.value.trim())miss.push("owner"); if(!invDue.value)miss.push("due date"); if(!invPri.value)miss.push("priority"); var req=detail.querySelector('[data-required="3"]');
+      var miss=[]; if(!invCorr.value.trim())miss.push("corrective action"); if(!invAssign.value)miss.push("assigned dashboard user"); if(!invDue.value)miss.push("due date"); if(!invPri.value)miss.push("priority"); var req=detail.querySelector('[data-required="3"]');
       if(miss.length){if(req){req.textContent="Still required: "+miss.join(", ")+".";req.classList.add("show");}toast("Complete the required action-plan fields first.","err");return;} if(req)req.classList.remove("show"); complete3.disabled=true;
       try{
         await persistActionPlan(false,true);
@@ -2284,7 +2283,6 @@
       wideField(L.correctiveRequired,PV("corrective_action",r.corrective_action),{skipEmpty:false,emptyText:L.notYetRecorded});
       pairRow([
         {label:L.assignedUser,value:assigneeName(r)||L.notAssigned},
-        {label:L.responsible,value:r.responsible_person},
         {label:L.dueDate,value:r.due_date?pdfDateOnly(r.due_date):L.notRecorded},
         {label:L.priority,value:r.priority?PV("priority_value",String(r.priority).charAt(0).toUpperCase()+String(r.priority).slice(1)):L.notRecorded}
       ]);
@@ -2658,7 +2656,7 @@
   function roleLabel(v){ return ROLE_LABELS[v]||"Read Only"; }
   function actionLabel(v){ return ACTION_LABELS[v]||"Not started"; }
   function profileName(p){ return p?(p.full_name||p.email||"User"):""; }
-  function assigneeName(r){ var p=r&&r.assigned_user_id?profileById[String(r.assigned_user_id)]:null; return p?profileName(p):(r&&r.responsible_person?r.responsible_person:""); }
+  function assigneeName(r){ var p=r&&r.assigned_user_id?profileById[String(r.assigned_user_id)]:null; return p?profileName(p):""; }
   function isManager(){ return currentRole==="admin"||currentRole==="safety_manager"; }
   function canVerify(){ return isManager(); }
   function hasOperationalAccess(r){
@@ -3012,7 +3010,7 @@
     else if(ex){ ex.remove(); }
   }
   function canClose(r){
-    var owner=!!(r && (hasWorkflowValue(r.assigned_user_id)||hasWorkflowValue(r.responsible_person)));
+    var owner=!!(r && hasWorkflowValue(r.assigned_user_id));
     return !!(r && hasWorkflowValue(r.root_cause) && hasWorkflowValue(r.corrective_action) && owner && hasWorkflowValue(r.due_date) && hasWorkflowValue(r.priority) && r.action_status==="verified");
   }
 
