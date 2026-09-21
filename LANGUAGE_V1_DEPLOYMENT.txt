@@ -1,0 +1,92 @@
+RBH SAFETY - LANGUAGE V1 DEPLOYMENT
+===================================
+
+WHAT THIS BUILD ADDS
+--------------------
+1. A per-user Preferred report language setting in My Profile:
+   - Automatic - use my device
+   - English
+   - Espanol
+
+2. Viewer-based report translation:
+   - The report keeps the original submitted wording in Supabase.
+   - When an authenticated reviewer opens a report, narrative fields are translated for that viewer.
+   - Reviewers can switch English / Espanol for the open report without changing the underlying record.
+
+3. PDF language control:
+   - My reading language
+   - Original record
+   - English
+   - Espanol
+   The selected PDF language is independent of the report's original language and the viewer's saved default.
+
+4. Regulatory-language separation:
+   - preferred_language is a viewer preference only.
+   - A future Cal/OSHA, OSHA, workers' compensation, carrier, or other authority integration must set its own
+     submission_language from the receiving authority's current requirements/configuration.
+   - Never use preferred_language or the PDF language to determine an official filing language.
+
+FILES ADDED / UPDATED
+---------------------
+UPDATED: dashboard.html
+ADDED:   api/translate-report.js
+ADDED:   supabase/LANGUAGE_PREFERENCES_V1.sql
+ADDED:   LANGUAGE_V1_DEPLOYMENT.txt
+
+NO-TERMINAL DEPLOYMENT ORDER
+----------------------------
+A. Supabase
+   1. Open the RBH Supabase project.
+   2. Open SQL Editor.
+   3. Create a new query.
+   4. Paste the contents of supabase/LANGUAGE_PREFERENCES_V1.sql.
+   5. Run it.
+   6. Confirm it completes successfully.
+
+B. OpenAI API secret in Vercel
+   1. Open the RBH Vercel project.
+   2. Open Settings -> Environment Variables.
+   3. Add OPENAI_API_KEY with the approved server-side OpenAI API key.
+   4. Apply it to Production and Preview if both environments are used for testing.
+   5. Optional: add OPENAI_TRANSLATION_MODEL if you want to override the default gpt-5.6-luna model.
+   6. Do NOT put OPENAI_API_KEY in dashboard.html, index.html, GitHub source, or Supabase browser code.
+
+C. GitHub / Vercel
+   1. Upload the updated repository files to GitHub.
+   2. Allow the existing Vercel GitHub deployment to deploy the commit.
+   3. If Vercel asks for a redeploy after adding the environment variable, redeploy the latest commit from the Vercel UI.
+
+VALIDATION
+----------
+1. Sign in as an existing dashboard user.
+2. My Profile -> Preferred report language -> Espanol -> Save Profile.
+3. Reopen My Profile and confirm Espanol remains selected.
+4. Open an English report.
+5. Confirm the report-reading section displays the translated narrative in Spanish.
+6. Switch Read report in to English and confirm the English view appears.
+7. Confirm the original report row in Supabase has NOT changed.
+8. Download PDF using Espanol and confirm report narrative + PDF labels are Spanish.
+9. Download PDF using English and confirm report narrative + PDF labels are English.
+10. Download PDF using Original record and confirm stored wording is preserved without machine translation.
+11. Test a Spanish-submitted report while signed in as an English-preferring user.
+12. Temporarily remove OPENAI_API_KEY in Preview and confirm the report falls back to original text and clearly says translation is unavailable; translated PDF generation should stop rather than silently create a PDF in the wrong language.
+
+DATA / SECURITY NOTES
+---------------------
+- Translation requests are authenticated with the user's current Supabase session before the Vercel function calls the translation provider.
+- OPENAI_API_KEY is server-side only.
+- Translation results are held only in the browser session's in-memory cache in this version; they are not written back over the original report.
+- Reporter name/contact, addresses, user assignments, dates, and file names are not intentionally sent for translation. Narrative text can still contain names or other sensitive details typed by a reporter, so translation-service use should remain covered by the company's approved data/privacy process.
+
+REGULATORY DESIGN RULE
+----------------------
+When an official reporting flow is built, create an authority-specific configuration such as:
+
+  authority: calosha
+  submission_language: <authority-required language>
+  required_fields: <current authority field set>
+  submission_method: <current approved method>
+  source_record_language: <report.language>
+  viewer_language: <profile.preferred_language>
+
+The submission package should translate only when the authority's rules require it. It should retain the original source wording alongside the filing copy for internal audit/history. A user's dashboard or PDF language must never automatically determine the language transmitted to an authority.

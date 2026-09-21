@@ -389,8 +389,16 @@
   .incident-title h2{font-family:var(--display);font-size:25px;margin:4px 0 3px}.incident-title p{margin:0;color:var(--muted);font-size:13px}
   .back-link{background:var(--paper);border:1.5px solid var(--line-strong);border-radius:9px;padding:9px 12px;color:var(--ink);font-weight:700;cursor:pointer;white-space:nowrap}
   .back-link:hover{border-color:var(--red)}
-  .incident-summary{background:var(--paper);border:1px solid var(--line);border-left:5px solid var(--red);border-radius:14px;padding:15px 16px;margin-bottom:14px;box-shadow:var(--shadow)}
+  .incident-summary{background:var(--paper);border:1px solid var(--line);border-left:5px solid var(--red);border-radius:14px;padding:15px 16px;margin-bottom:10px;box-shadow:var(--shadow)}
   .incident-summary .is-desc{font-size:15px;line-height:1.55;margin-top:8px}.is-badges{display:flex;gap:7px;flex-wrap:wrap}
+  .incident-language-tools{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:var(--paper);border:1px solid var(--line);border-radius:11px;padding:9px 11px;margin-bottom:14px}
+  .incident-language-tools label{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;color:var(--ink)}
+  .incident-language-tools select,.pdf-language-select{border:1px solid var(--line-strong);border-radius:8px;background:var(--paper);color:var(--ink);padding:7px 9px;font:inherit;font-size:12px}
+  .incident-language-state{font-size:11.5px;color:var(--muted)}
+  .incident-language-state.loading{font-weight:700;color:var(--red)}
+  .pdf-language-wrap{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
+  .translation-preview{margin-top:7px;border-left:3px solid var(--red);background:var(--paper-2);border-radius:0 8px 8px 0;padding:8px 10px;font-size:12px;line-height:1.45;color:var(--ink)}
+  .translation-preview b{display:block;font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}.translation-preview p{margin:0;white-space:pre-wrap}
   .incident-body{background:var(--paper);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:4px 18px 18px}
   .incident-body .detail-actions{justify-content:flex-end;margin-top:14px}
   .incident-body .d-rows{display:grid;grid-template-columns:1fr 1fr;gap:0 24px}
@@ -532,8 +540,9 @@
     .incident-title h2{font-size:22px;line-height:1.15;margin-top:2px}
     .incident-title p{font-size:12px}
     .back-link{padding:8px 10px;font-size:12px}
-    .incident-summary{padding:12px 13px;margin-bottom:11px;border-radius:12px}
+    .incident-summary{padding:12px 13px;margin-bottom:8px;border-radius:12px}
     .incident-summary .is-desc{font-size:13.5px;line-height:1.45;margin-top:7px}
+    .incident-language-tools{align-items:stretch;flex-direction:column}.incident-language-tools label{justify-content:space-between}.incident-language-tools select{max-width:58%}
     .is-badges{gap:5px}
     .badge{font-size:10.5px;padding:3px 8px}
 
@@ -758,6 +767,12 @@
             <button class="back-link" id="incidentBack" type="button">← Back to Safety Inbox</button>
           </div>
           <div class="incident-summary" id="incidentSummary"></div>
+          <div class="incident-language-tools" id="incidentLanguageTools">
+            <label for="incidentLanguage">Read report in
+              <select id="incidentLanguage"><option value="en">English</option><option value="es">Español</option></select>
+            </label>
+            <span class="incident-language-state" id="incidentLanguageState"></span>
+          </div>
           <div class="incident-body" id="incidentBody"></div>
         </section>
 
@@ -830,6 +845,7 @@
             <div class="field"><label for="profileJobTitle">Job title</label><input type="text" id="profileJobTitle" maxlength="100" placeholder="Optional"></div>
             <div class="field"><label for="profileDepartment">Department</label><input type="text" id="profileDepartment" maxlength="100" placeholder="Optional"></div>
             <div class="field"><label for="profileRole">App role</label><input type="text" id="profileRole" readonly aria-readonly="true"><div class="field-help">Only another Admin can change your access.</div></div>
+            <div class="field profile-span-2"><label for="profileLanguage">Preferred report language</label><select id="profileLanguage"><option value="auto">Automatic — use my device</option><option value="en">English</option><option value="es">Español</option></select><div class="field-help">This controls the default language used when you read a report. The original submitted wording is always preserved.</div></div>
           </div>
           <button class="profile-primary" id="profileSave" type="submit">Save Profile</button>
         </form>
@@ -967,16 +983,82 @@
   function fmtDate(v){ if(!v)return""; try{return new Date(v).toLocaleString();}catch(e){return v;} }
   function statusOptions(sel){ return STATUS_KEYS.map(function(k){ return '<option value="'+k+'"'+(k===sel?" selected":"")+'>'+STATUS[k].l+'</option>'; }).join(""); }
 
+  /* ---------- Viewer language + translation ---------- */
+  var SUPPORTED_READING_LANGUAGES={en:"English",es:"Español"};
+  var REPORT_REVIEW_LABELS={
+    en:{description:"Description",hazard_category:"Hazard",potential_severity:"Potential severity",involves_injury:"Involves injury",people_involved:"Involved / witnesses",immediate_action:"Immediate action",suggested_fix:"Suggested fix",job_site:"Incident address",site_location:"Specific location",observed_at:"Observed at",reporter_name:"Reported by",reporter_role:"Role",reporter_contact:"Contact",language:"Form language",created_at:"Submitted"},
+    es:{description:"Descripción",hazard_category:"Peligro",potential_severity:"Gravedad potencial",involves_injury:"Incluye lesión",people_involved:"Personas involucradas / testigos",immediate_action:"Acción inmediata",suggested_fix:"Solución sugerida",job_site:"Dirección del incidente",site_location:"Ubicación específica",observed_at:"Observado el",reporter_name:"Reportado por",reporter_role:"Función",reporter_contact:"Contacto",language:"Idioma del formulario",created_at:"Enviado"}
+  };
+  function normalizeLanguageCode(v){ return String(v||"").trim().toLowerCase().split("-")[0]||"en"; }
+  function browserReadingLanguage(){ var v=normalizeLanguageCode((navigator.language||navigator.userLanguage||"en")); return SUPPORTED_READING_LANGUAGES[v]?v:"en"; }
+  function preferredReadingLanguage(){ var p=String((currentProfile&&currentProfile.preferred_language)||"auto"); if(p==="auto"||!p) return browserReadingLanguage(); p=normalizeLanguageCode(p); return SUPPORTED_READING_LANGUAGES[p]?p:"en"; }
+  function languageName(code,uiLang){ code=normalizeLanguageCode(code); uiLang=normalizeLanguageCode(uiLang||"en"); if(uiLang==="es") return code==="es"?"Español":code==="en"?"Inglés":code.toUpperCase(); return code==="es"?"Spanish":code==="en"?"English":code.toUpperCase(); }
+  function reportLabel(field,lang){ var d=REPORT_REVIEW_LABELS[normalizeLanguageCode(lang)]||REPORT_REVIEW_LABELS.en; return d[field]||field; }
+  function reportTranslationFields(r){
+    var keys=["report_type","description","hazard_category","potential_severity","people_involved","immediate_action","suggested_fix","reporter_role","site_location","root_cause","corrective_action","action_completion_note","action_verification_note"];
+    var out={}; keys.forEach(function(k){ if(r&&r[k]!=null&&String(r[k]).trim()!=="") out[k]=String(r[k]); }); return out;
+  }
+  function translationFingerprint(fields){ return Object.keys(fields||{}).sort().map(function(k){return k+":"+String(fields[k]);}).join("\u241e"); }
+  async function translateTextMap(fields,targetLanguage,cacheKey){
+    targetLanguage=normalizeLanguageCode(targetLanguage); fields=fields||{};
+    if(!Object.keys(fields).length) return {};
+    var fp=translationFingerprint(fields), key=String(cacheKey||"generic")+"|"+targetLanguage;
+    if(translationCache[key]&&translationCache[key].fingerprint===fp) return translationCache[key].data;
+    if(!currentSession||!currentSession.access_token) return null;
+    try{
+      var resp=await fetch("/api/translate-report",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+currentSession.access_token},body:JSON.stringify({targetLanguage:targetLanguage,fields:fields})});
+      if(!resp.ok) throw new Error("Translation service returned "+resp.status);
+      var json=await resp.json(), data=json&&json.translations;
+      if(!data||typeof data!=="object") throw new Error("Translation response was incomplete");
+      translationCache[key]={fingerprint:fp,data:data}; return data;
+    }catch(ex){ console.error("translation",ex); return null; }
+  }
+  async function translateReportForLanguage(r,targetLanguage){ targetLanguage=normalizeLanguageCode(targetLanguage); var fields=reportTranslationFields(r); if(targetLanguage==="en"&&normalizeLanguageCode(r&&r.language||"en")==="en") return fields; return translateTextMap(fields,targetLanguage,"report:"+String(r&&r.id||"")); }
+  function reviewValue(r,field,lang,tx){
+    lang=normalizeLanguageCode(lang); tx=tx||{};
+    if(field==="involves_injury") return r.involves_injury?(lang==="es"?"Sí":"Yes"):(lang==="es"?"No":"No");
+    if(field==="reporter_name") return r.reporter_name||(lang==="es"?"Anónimo":"Anonymous");
+    if(field==="language") return languageName(r.language||"en",lang);
+    if(field==="created_at") return fmtDate(r.created_at);
+    if(field==="observed_at") return r.observed_at?fmtDate(r.observed_at):"";
+    if(Object.prototype.hasOwnProperty.call(tx,field)) return tx[field];
+    return r[field];
+  }
+  function setIncidentLanguageState(r,lang,state){
+    var el=$("incidentLanguageState"); if(!el) return; lang=normalizeLanguageCode(lang);
+    el.className="incident-language-state"+(state==="loading"?" loading":"");
+    if(state==="loading") el.textContent=(lang==="es"?"Traduciendo…":"Translating…");
+    else if(state==="error") el.textContent=(lang==="es"?"No se pudo traducir; se muestra el texto original.":"Translation unavailable; showing original text.");
+    else el.textContent=(lang==="es"?"Original: ":"Original: ")+languageName(r&&r.language||"en",lang)+(lang==="es"?" · Vista: ":" · Viewing: ")+languageName(lang,lang);
+  }
+  function applyReportLanguageToOpenIncident(r,lang,tx){
+    if(!r||!$("incidentBody")) return; lang=normalizeLanguageCode(lang); tx=tx||{};
+    var summary=$("incidentSummary"); if(summary){ var d=summary.querySelector(".is-desc"); if(d) d.textContent=reviewValue(r,"description",lang,tx)|| (lang==="es"?"No se proporcionó una descripción.":"No description provided."); }
+    var title=$("incidentTitle"); if(title) title.textContent="#"+(r.ref_no||r.id)+" · "+(Object.prototype.hasOwnProperty.call(tx,"report_type")?tx.report_type:(r.report_type||"Safety report"));
+    $("incidentBody").querySelectorAll("[data-report-field]").forEach(function(row){ var f=row.getAttribute("data-report-field"), lab=row.querySelector(".d-label"), val=row.querySelector(".d-val"); if(lab) lab.textContent=reportLabel(f,lang); if(val) val.textContent=reviewValue(r,f,lang,tx)||""; });
+    $("incidentBody").querySelectorAll("[data-translation-field]").forEach(function(el){ var f=el.getAttribute("data-translation-field"), translated=Object.prototype.hasOwnProperty.call(tx,f)?String(tx[f]||""):"", original=String(r[f]||""); if(!translated||translated===original){ el.hidden=true; el.innerHTML=""; return; } el.hidden=false; el.innerHTML='<b>'+(lang==="es"?"Vista traducida":"Translated view")+'</b><p>'+esc(translated)+'</p>'; });
+    setIncidentLanguageState(r,lang,"ready");
+  }
+  async function changeIncidentLanguage(r,lang){
+    if(!r) return; activeIncidentLanguage=normalizeLanguageCode(lang); var sel=$("incidentLanguage"); if(sel) sel.value=activeIncidentLanguage;
+    setIncidentLanguageState(r,activeIncidentLanguage,"loading");
+    var tx=await translateReportForLanguage(r,activeIncidentLanguage);
+    if(activeIncident!==r) return;
+    if(!tx){ applyReportLanguageToOpenIncident(r,activeIncidentLanguage,{}); setIncidentLanguageState(r,activeIncidentLanguage,"error"); return; }
+    applyReportLanguageToOpenIncident(r,activeIncidentLanguage,tx);
+  }
+
   var $=function(id){return document.getElementById(id);};
   var loginView=$("loginView"), appView=$("appView"), listEl=$("list"), backdrop=$("backdrop");
   var allReports=[], filtered=[], attByReport={};
   var allProfiles=[], profileById={}, currentSession=null, currentProfile=null, currentRole="read_only";
   var allOrgs=[], currentOrgId=null, currentOrgName="", isPlatformAdmin=false;
+  var activeIncident=null, activeIncidentLanguage="en", translationCache={};
   var modalReport=null, modalCard=null, modalNotesEl=null;
   var dispositionReport=null, dispositionWrap=null, dispositionNotesEl=null;
   var restartReport=null, restartReturnView="records";
   var NAV_VIEW_KEY="rbh_safety_active_view_v1", NAV_INCIDENT_KEY="rbh_safety_active_incident_v1";
-  var APP_VERSION="2026.09.20 · Company Blueprint V1";
+  var APP_VERSION="2026.09.21 · Language V1";
 
   function storedView(){
     try{ var v=localStorage.getItem(NAV_VIEW_KEY); return v||(currentRole==="supervisor"?"mywork":"home"); }catch(_e){ return currentRole==="supervisor"?"mywork":"home"; }
@@ -1182,13 +1264,13 @@
   }
 
   function detailHtml(r){
-    var rows=[];
-    function add(label,val){ if(val!=null && String(val).trim()!=="") rows.push('<div class="d-row"><div class="d-label">'+label+'</div><div class="d-val">'+esc(val)+'</div></div>'); }
-    add("Description", r.description); add("Hazard", r.hazard_category); add("Potential severity", r.potential_severity); add("Involves injury", r.involves_injury?"Yes":"");
-    add("Involved / witnesses", r.people_involved); add("Immediate action", r.immediate_action); add("Suggested fix", r.suggested_fix);
-    add("Incident address", r.job_site); add("Specific location", r.site_location); add("Observed at", r.observed_at?fmtDate(r.observed_at):"");
-    add("Reported by", r.reporter_name||"Anonymous"); add("Role", r.reporter_role); add("Contact", r.reporter_contact);
-    add("Form language", r.language==="es"?"Spanish":r.language==="en"?"English":r.language); add("Submitted", fmtDate(r.created_at));
+    var rows=[], lang=activeIncidentLanguage||preferredReadingLanguage();
+    function add(field,val){ if(val!=null && String(val).trim()!=="") rows.push('<div class="d-row" data-report-field="'+esc(field)+'"><div class="d-label">'+esc(reportLabel(field,lang))+'</div><div class="d-val">'+esc(reviewValue(r,field,lang,{}))+'</div></div>'); }
+    add("description", r.description); add("hazard_category", r.hazard_category); add("potential_severity", r.potential_severity); add("involves_injury", r.involves_injury?"Yes":"No");
+    add("people_involved", r.people_involved); add("immediate_action", r.immediate_action); add("suggested_fix", r.suggested_fix);
+    add("job_site", r.job_site); add("site_location", r.site_location); add("observed_at", r.observed_at?fmtDate(r.observed_at):"");
+    add("reporter_name", r.reporter_name||"Anonymous"); add("reporter_role", r.reporter_role); add("reporter_contact", r.reporter_contact);
+    add("language", r.language||"en"); add("created_at", fmtDate(r.created_at));
     return '<div class="wizard-shell">'+
       '<div class="record-progress" data-record-progress></div>'+
       '<div data-resolved-banner></div>'+
@@ -1208,7 +1290,7 @@
       '<section class="wizard-panel" data-wizard-step="2" hidden>'+
         '<div class="wizard-step-head"><span class="wizard-step-badge">2</span><div class="wizard-step-copy"><h3>Investigation</h3><p>Document why the issue happened or what underlying condition allowed it to happen.</p></div></div>'+
         '<div class="wizard-task"><b>Your job on this step</b><span>Enter a clear root cause. Keep it simple and factual — describe the underlying reason, not just what happened.</span></div>'+
-        '<label class="inv-l">Root cause<textarea class="inv-root" placeholder="What caused or allowed this issue to happen?"></textarea></label>'+
+        '<label class="inv-l">Root cause<textarea class="inv-root" placeholder="What caused or allowed this issue to happen?"></textarea></label><div class="translation-preview" data-translation-field="root_cause" hidden></div>'+
         '<div class="wizard-required" data-required="2">Root cause is required before this step can be completed.</div>'+
         '<div class="wizard-footer"><div class="wizard-footer-copy">Save and close saves your investigation without advancing the workflow, then returns you Home.</div><div class="wizard-footer-actions"><button class="wizard-save root-save" data-step-save="2" type="button">Save and close</button><span class="root-saved section-saved" hidden>Saved ✓</span><button class="wizard-primary" data-step-complete="2" type="button">Complete investigation →</button></div></div>'+
       '</section>'+
@@ -1217,7 +1299,7 @@
         '<div class="wizard-step-head"><span class="wizard-step-badge">3</span><div class="wizard-step-copy"><h3>Corrective action plan</h3><p>Define what needs to be fixed, who owns the work, and when it must be completed.</p></div></div>'+
         '<div class="wizard-task"><b>Your job on this step</b><span>Give the assigned person a clear action. An action, owner, due date, and priority are all required before the work can be assigned.</span></div>'+
         '<div class="inv-grid">'+
-          '<label class="inv-l">Corrective action required<textarea class="inv-corr" placeholder="What needs to be corrected or changed?"></textarea></label>'+
+          '<label class="inv-l">Corrective action required<textarea class="inv-corr" placeholder="What needs to be corrected or changed?"></textarea></label><div class="translation-preview" data-translation-field="corrective_action" hidden></div>'+
           '<div class="assignment-grid"><label class="inv-l">Assigned dashboard user<select class="inv-assignee">'+assignmentOptions(r.assigned_user_id)+'</select></label><label class="inv-l">Responsible person / crew<input type="text" class="inv-resp" placeholder="Optional if different from assignee"></label></div>'+
           '<div class="inv-row"><label class="inv-l">Due date<input type="date" class="inv-due"></label><label class="inv-l">Priority<select class="inv-pri"><option value="">— Choose priority —</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label></div>'+
         '</div>'+
@@ -1247,7 +1329,7 @@
         '<div class="d-section"><div class="d-sec-title-row"><span class="d-sec-title">Notes</span><button class="add-note" type="button">+ Add Note</button></div><div class="notes" data-notes></div></div>'+
         '<div class="d-section"><div class="d-sec-title">Activity timeline</div><p class="step-section-note">A readable history of submissions, updates, evidence, verification, and closure.</p><div class="audit" data-audit></div></div>'+
       '</div></div></details>'+
-      '<div class="detail-actions"><button class="restart-workflow-btn" type="button" hidden>Restart workflow</button><button class="pdf-btn" type="button">Download PDF</button></div>'+
+      '<div class="detail-actions"><button class="restart-workflow-btn" type="button" hidden>Restart workflow</button><span class="pdf-language-wrap">PDF language <select class="pdf-language-select"><option value="viewer">My reading language</option><option value="original">Original record</option><option value="en">English</option><option value="es">Español</option></select></span><button class="pdf-btn" type="button">Download PDF</button></div>'+
     '</div>';
   }
 
@@ -1522,7 +1604,7 @@
     var noteBtn=detail.querySelector(".add-note"); if(!canAddNotes(r))noteBtn.disabled=true; noteBtn.addEventListener("click",function(){if(canAddNotes(r))openNoteModal(r,wrap,notesEl);});
     var restartBtn=detail.querySelector(".restart-workflow-btn");
     if(restartBtn){ restartBtn.hidden=!canRestartWorkflow(r); restartBtn.addEventListener("click",function(){ if(canRestartWorkflow(r)) openRestartModal(r,lastOperationalView); }); }
-    detail.querySelector(".pdf-btn").addEventListener("click",function(){generatePdf(r,this);});
+    detail.querySelector(".pdf-btn").addEventListener("click",function(){ var ps=detail.querySelector(".pdf-language-select"); generatePdf(r,this,ps?ps.value:"viewer"); });
   }
 
   async function updateStatus(reportId, status, wrap){
@@ -1800,7 +1882,7 @@
   $("expAll").addEventListener("click", function(){ exportCsv("all"); });
 
   /* ---------- After-action PDF | Phase 2.9.6 ---------- */
-  async function generatePdf(r, btn){
+  async function generatePdf(r, btn, languageMode){
     if(!window.jspdf || !window.jspdf.jsPDF){ toast("PDF is still loading - try again in a moment.","err"); return; }
     var lbl=btn.textContent; btn.disabled=true; btn.textContent="Generating...";
     try{
@@ -1809,6 +1891,29 @@
       var atts=attByReport[r.id]||[];
       var audit=[];
       try{ var ar=await sb.from("report_audit").select("*").eq("report_id",r.id).order("created_at",{ascending:true}); audit=ar.data||[]; }catch(e){}
+
+      var pdfMode=languageMode||"viewer", pdfLang=(pdfMode==="original"?normalizeLanguageCode(r.language||"en"):(pdfMode==="viewer"?(activeIncident===r?activeIncidentLanguage:preferredReadingLanguage()):normalizeLanguageCode(pdfMode)));
+      var pdfLabels={
+        en:{notRecorded:"Not recorded",dashboardUser:"Dashboard user",reportWord:"Report",step:"STEP",workflow:["Review","Investigation","Action Plan","Complete","Verify","Close"],headerSubtitle:"Incident record - after-action summary",submitted:"Submitted",generated:"Generated",section1:"Report and review",section1Sub:"What was submitted and how the report entered the safety workflow.",reportType:"Report type",actualInjury:"Actual injury or illness",address:"Address of incident",specificSpot:"Specific spot on the site",whenNoticed:"When noticed",potentialSeverity:"Potential severity",hazardType:"Type of hazard",formLanguage:"Form language",describe:"Describe what you saw",noDescription:"No description recorded",involved:"Who or what was involved / any witnesses",immediate:"What was done right away",suggested:"What would fix it or prevent it",reporter:"Reporter",reportedBy:"Reported by",reporterRole:"Reporter role",reporterContact:"Reporter contact",reviewCompleted:"Review completed",reviewedBy:"Reviewed by",workflowRestarts:"Workflow restarts",lastRestart:"Last restart",none:"None",originalFiles:"Original report photos and files",noOriginalFiles:"No original files attached",calosha:"Cal/OSHA serious-event screening",screeningResult:"Screening result",awareness:"RBH awareness time",screeningNote:"Screening note",screeningDisclaimer:"Management screening only. This application does not submit a report to Cal/OSHA and the screening does not replace required regulatory reporting.",section2:"Investigation",section2Sub:"Document the underlying reason the issue happened or was allowed to happen.",rootCause:"Root cause",notYetRecorded:"Not yet recorded",section3:"Corrective action plan",section3Sub:"Define the fix, ownership, due date, and priority.",correctiveRequired:"Corrective action required",assignedUser:"Assigned dashboard user",notAssigned:"Not assigned",responsible:"Responsible person / crew",dueDate:"Due date",priority:"Priority",section4:"Complete corrective action",section4Sub:"Record what was actually completed and the supporting evidence.",completedWork:"Completed work submitted",notYetSubmitted:"Not yet submitted",completedOn:"Completed on",completedBy:"Completed by",currentEvidence:"Current-workflow corrective-action evidence",noCurrentEvidence:"No corrective-action evidence attached in the current workflow",priorEvidence:"Preserved evidence from earlier workflow",section5:"Verify corrective action",section5Sub:"Show the review decision and any verification or change-request note.",verificationOutcome:"Verification outcome",verifiedOn:"Verified on",verifiedBy:"Verified by",requestedChanges:"Requested changes",reviewerNote:"Reviewer verification note",noVerificationNote:"No verification note recorded",section6:"Close record",section6Sub:"Final disposition and closure information for the incident.",recordStatus:"Record status",closedOn:"Closed on",notYetClosed:"Not yet closed",closedBy:"Closed by",closurePath:"Closure path",closureReason:"Closure reason",closureNote:"Closure note",additionalNotes:"Additional notes",activityHistory:"Activity history",reportSubmitted:"Report submitted",anonymousReporter:"Anonymous reporter",note:"Note",system:"System",footer:"RBH Insulation, Inc. | Confidential safety document | License #558799",page:"Page",yes:"Yes",no:"No",originalRecord:"Original record"},
+        es:{notRecorded:"No registrado",dashboardUser:"Usuario del panel",reportWord:"Reporte",step:"PASO",workflow:["Revisión","Investigación","Plan de acción","Completar","Verificar","Cerrar"],headerSubtitle:"Registro del incidente - resumen posterior a la acción",submitted:"Enviado",generated:"Generado",section1:"Reporte y revisión",section1Sub:"Lo que se envió y cómo el reporte ingresó al flujo de seguridad.",reportType:"Tipo de reporte",actualInjury:"Lesión o enfermedad real",address:"Dirección del incidente",specificSpot:"Lugar específico en la obra",whenNoticed:"Cuándo se observó",potentialSeverity:"Gravedad potencial",hazardType:"Tipo de peligro",formLanguage:"Idioma del formulario",describe:"Describa lo que vio",noDescription:"No se registró descripción",involved:"Quién o qué estuvo involucrado / testigos",immediate:"Qué se hizo de inmediato",suggested:"Qué lo corregiría o evitaría",reporter:"Reportante",reportedBy:"Reportado por",reporterRole:"Función del reportante",reporterContact:"Contacto del reportante",reviewCompleted:"Revisión completada",reviewedBy:"Revisado por",workflowRestarts:"Reinicios del flujo",lastRestart:"Último reinicio",none:"Ninguno",originalFiles:"Fotos y archivos del reporte original",noOriginalFiles:"No hay archivos originales adjuntos",calosha:"Evaluación de evento grave de Cal/OSHA",screeningResult:"Resultado de la evaluación",awareness:"Hora en que RBH tuvo conocimiento",screeningNote:"Nota de evaluación",screeningDisclaimer:"Solo evaluación de la gerencia. Esta aplicación no presenta un reporte a Cal/OSHA y la evaluación no reemplaza los reportes regulatorios requeridos.",section2:"Investigación",section2Sub:"Documente la razón subyacente por la que ocurrió o se permitió el problema.",rootCause:"Causa raíz",notYetRecorded:"Aún no registrado",section3:"Plan de acción correctiva",section3Sub:"Defina la corrección, el responsable, la fecha límite y la prioridad.",correctiveRequired:"Acción correctiva requerida",assignedUser:"Usuario asignado del panel",notAssigned:"No asignado",responsible:"Persona / equipo responsable",dueDate:"Fecha límite",priority:"Prioridad",section4:"Completar acción correctiva",section4Sub:"Registre lo que realmente se completó y la evidencia de respaldo.",completedWork:"Trabajo completado enviado",notYetSubmitted:"Aún no enviado",completedOn:"Completado el",completedBy:"Completado por",currentEvidence:"Evidencia de acción correctiva del flujo actual",noCurrentEvidence:"No hay evidencia de acción correctiva adjunta en el flujo actual",priorEvidence:"Evidencia preservada de un flujo anterior",section5:"Verificar acción correctiva",section5Sub:"Muestre la decisión de revisión y cualquier nota de verificación o solicitud de cambios.",verificationOutcome:"Resultado de la verificación",verifiedOn:"Verificado el",verifiedBy:"Verificado por",requestedChanges:"Cambios solicitados",reviewerNote:"Nota de verificación del revisor",noVerificationNote:"No se registró una nota de verificación",section6:"Cerrar registro",section6Sub:"Disposición final e información de cierre del incidente.",recordStatus:"Estado del registro",closedOn:"Cerrado el",notYetClosed:"Aún no cerrado",closedBy:"Cerrado por",closurePath:"Ruta de cierre",closureReason:"Motivo de cierre",closureNote:"Nota de cierre",additionalNotes:"Notas adicionales",activityHistory:"Historial de actividad",reportSubmitted:"Reporte enviado",anonymousReporter:"Reportante anónimo",note:"Nota",system:"Sistema",footer:"RBH Insulation, Inc. | Documento confidencial de seguridad | Licencia #558799",page:"Página",yes:"Sí",no:"No",originalRecord:"Registro original"}
+      };
+      var L=pdfLabels[pdfLang]||pdfLabels.en;
+      if(!pdfLabels[pdfLang] && pdfMode!=="original"){
+        var autoLabels=await translateTextMap(pdfLabels.en,pdfLang,"pdf-labels"); if(autoLabels) L=Object.assign({},pdfLabels.en,autoLabels);
+      }
+      var pdfFields=reportTranslationFields(r), pdfHistory=[];
+      groupAuditRows(audit).forEach(function(g,i){ var title=auditGroupTitle(g.rows); pdfHistory.push({title:title,created_at:g.created_at,actor:auditActor(g.rows[0].actor_email),key:"history_"+i}); pdfFields["history_"+i]=title; });
+      notes.filter(function(n){return /^\[System\]\s*Workflow restarted/i.test(String(n.title||""));}).forEach(function(n){ var title=String(n.title||"").replace(/^\[System\]\s*/,""); var key="history_restart_"+pdfHistory.length; pdfHistory.push({title:title,created_at:n.created_at,actor:auditActor(n.author_email),key:key}); pdfFields[key]=title; });
+      notes.forEach(function(n,i){ if(n.title) pdfFields["note_title_"+i]=String(n.title); if(n.body) pdfFields["note_body_"+i]=String(n.body); });
+      pdfFields.status_value=(STATUS[r.status]||{l:r.status||"Unknown"}).l;
+      if(r.action_status) pdfFields.verification_outcome=actionLabel(r.action_status||"not_started");
+      if(r.calosha_screening_status) pdfFields.screening_result=caloshaScreenLabel(r.calosha_screening_status);
+      pdfFields.closure_path=(r.status==="no_action"||r.status==="duplicate")?"Closed without corrective action":(r.status==="closed"?"Corrective action verified and record closed":"Record remains open");
+      if(r.priority) pdfFields.priority_value=String(r.priority).charAt(0).toUpperCase()+String(r.priority).slice(1);
+      var pdfTx=(pdfMode==="original")?{}:await translateTextMap(pdfFields,pdfLang,"pdf:"+String(r.id));
+      if(pdfMode!=="original" && !pdfTx) throw new Error("TRANSLATION_UNAVAILABLE");
+      pdfTx=pdfTx||{};
+      function PV(key,fallback){ return Object.prototype.hasOwnProperty.call(pdfTx,key)?pdfTx[key]:fallback; }
 
       var doc=new window.jspdf.jsPDF({unit:"pt",format:"letter"});
       var W=doc.internal.pageSize.getWidth(), H=doc.internal.pageSize.getHeight();
@@ -1835,21 +1940,21 @@
       function setFill(c){ doc.setFillColor(c[0],c[1],c[2]); }
       function setDraw(c){ doc.setDrawColor(c[0],c[1],c[2]); }
       function pdfDate(v){
-        if(!v) return "Not recorded";
+        if(!v) return L.notRecorded;
         try{ return new Date(v).toLocaleString(undefined,{year:"numeric",month:"numeric",day:"numeric",hour:"numeric",minute:"2-digit"}); }
         catch(e){ return safe(v); }
       }
       function pdfDateOnly(v){
-        if(!v) return "Not recorded";
+        if(!v) return L.notRecorded;
         try{
           var d=/^\d{4}-\d{2}-\d{2}$/.test(String(v))?new Date(String(v)+"T12:00:00"):new Date(v);
           return d.toLocaleDateString();
         }catch(e){ return safe(v); }
       }
       function userById(id){
-        if(!id) return "Not recorded";
+        if(!id) return L.notRecorded;
         var p=profileById[String(id)];
-        return p?profileName(p):"Dashboard user";
+        return p?profileName(p):L.dashboardUser;
       }
       function statusLabel(){ return safe((STATUS[r.status]||{l:r.status||"Unknown"}).l); }
       function pageChrome(continuation){
@@ -1859,7 +1964,7 @@
           doc.setFont("helvetica","bold"); doc.setFontSize(9); setText(C.ink);
           doc.text("RBH SAFETY",M,31);
           doc.setFont("helvetica","normal"); doc.setFontSize(8.5); setText(C.muted);
-          var rt="Report #"+safe(r.ref_no);
+          var rt=L.reportWord+" #"+safe(r.ref_no);
           doc.text(rt,W-M-doc.getTextWidth(rt),31);
           setDraw(C.line); doc.setLineWidth(.7); doc.line(M,39,W-M,39);
           y=53;
@@ -1881,7 +1986,7 @@
         return w;
       }
       function workflowBar(){
-        var prog=workflowProgress(r), names=["Review","Investigation","Action Plan","Complete","Verify","Close"];
+        var prog=workflowProgress(r), names=L.workflow;
         ensure(42);
         var gapW=5, boxW=(contentW-gapW*5)/6, yy=y;
         prog.steps.forEach(function(st,i){
@@ -1891,7 +1996,7 @@
           else if(st.state==="na"){ fill=C.surface2; txt=C.muted; }
           setFill(fill); doc.roundedRect(M+i*(boxW+gapW),yy,boxW,29,5,5,"F");
           doc.setFont("helvetica","bold"); doc.setFontSize(5.7); setText(txt);
-          doc.text("STEP "+(i+1),M+i*(boxW+gapW)+7,yy+10);
+          doc.text(L.step+" "+(i+1),M+i*(boxW+gapW)+7,yy+10);
           doc.setFontSize(7.2); doc.text(names[i],M+i*(boxW+gapW)+7,yy+21);
         });
         y+=39;
@@ -1938,7 +2043,7 @@
         y+=h+8;
       }
       function fileBox(label,list,emptyText){
-        list=(list||[]).filter(Boolean); var display=list.length?list:[emptyText||"None"];
+        list=(list||[]).filter(Boolean); var display=list.length?list:[emptyText||L.none];
         var lineCount=0, wrapped=[];
         display.forEach(function(v){ var ls=linesFor(v,contentW-42,8.8); wrapped.push(ls); lineCount+=ls.length; });
         var h=29+lineCount*11+Math.max(0,display.length-1)*4; ensure(h+8);
@@ -1953,7 +2058,7 @@
         y+=h+8;
       }
       function noteCard(n){
-        var title=safe(n.title||"Note"), body=safe(n.body||""), meta=pdfDate(n.created_at)+(n.author_email?(" | "+safe(auditActor(n.author_email))):"");
+        var title=safe(n.title||L.note), body=safe(n.body||""), meta=pdfDate(n.created_at)+(n.author_email?(" | "+safe(auditActor(n.author_email))):"");
         var titleLines=linesFor(title,contentW-22,9.5), bodyLines=body?linesFor(body,contentW-22,9):[];
         var h=33+titleLines.length*11+(bodyLines.length?8+bodyLines.length*10.5:0); ensure(h+8);
         setFill(C.surface); setDraw(C.line); doc.roundedRect(M,y,contentW,h,6,6,"FD");
@@ -1963,7 +2068,7 @@
         y+=h+8;
       }
       function timelineEvent(title,created,actor){
-        var meta=pdfDate(created)+" | "+safe(actor||"System"), titleLines=linesFor(title,contentW-45,9.2), h=Math.max(37,22+titleLines.length*10.5);
+        var meta=pdfDate(created)+" | "+safe(actor||L.system), titleLines=linesFor(title,contentW-45,9.2), h=Math.max(37,22+titleLines.length*10.5);
         ensure(h+4); setDraw(C.line); doc.setLineWidth(.7); doc.line(M+8,y+3,M+8,y+h-3); setFill(C.red); doc.circle(M+8,y+12,3.1,"F");
         doc.setFont("helvetica","bold"); doc.setFontSize(9.2); setText(C.ink); var yy=y+13; titleLines.forEach(function(line){doc.text(line,M+21,yy);yy+=10.5;});
         doc.setFont("helvetica","normal"); doc.setFontSize(7.4); setText(C.muted); doc.text(safe(meta),M+21,yy+2); y+=h;
@@ -1975,16 +2080,16 @@
         if(logoSrc.indexOf("data:image")===0) doc.addImage(logoSrc,"PNG",M,y+4,58,36);
       }catch(e){}
       doc.setFont("helvetica","bold"); doc.setFontSize(18); setText(C.ink); doc.text("RBH SAFETY",M+70,y+18);
-      doc.setFont("helvetica","normal"); doc.setFontSize(9.5); setText(C.muted); doc.text("Incident record - after-action summary",M+70,y+34);
-      doc.setFont("helvetica","bold"); doc.setFontSize(16); setText(C.ink); rightText("REPORT #"+safe(r.ref_no),W-M,y+18);
-      var status=statusLabel(), statusFill=(r.status==="closed"?C.greenBg:(r.status==="new"?[253,236,236]:C.grayBg)), statusText=(r.status==="closed"?C.green:(r.status==="new"?C.red:C.gray));
+      doc.setFont("helvetica","normal"); doc.setFontSize(9.5); setText(C.muted); doc.text(L.headerSubtitle,M+70,y+34);
+      doc.setFont("helvetica","bold"); doc.setFontSize(16); setText(C.ink); rightText(L.reportWord.toUpperCase()+" #"+safe(r.ref_no),W-M,y+18);
+      var status=PV("status_value",statusLabel()), statusFill=(r.status==="closed"?C.greenBg:(r.status==="new"?[253,236,236]:C.grayBg)), statusText=(r.status==="closed"?C.green:(r.status==="new"?C.red:C.gray));
       var pw=(function(){ doc.setFont("helvetica","bold"); doc.setFontSize(7.5); return doc.getTextWidth(status.toUpperCase())+16; })();
       pill(status,statusFill,statusText,W-M-pw,y+25);
       y+=53;
       setDraw(C.line); doc.setLineWidth(.8); doc.line(M,y,W-M,y); y+=13;
       pairRow([
-        {label:"Submitted",value:pdfDate(r.created_at),strong:false},
-        {label:"Generated",value:pdfDate(new Date()),strong:false}
+        {label:L.submitted,value:pdfDate(r.created_at),strong:false},
+        {label:L.generated,value:pdfDate(new Date()),strong:false}
       ]);
       workflowBar();
 
@@ -1999,109 +2104,106 @@
       var noActionNote=notes.find(function(n){return /^Closed without corrective action/i.test(String(n.title||""));});
       var closureReason="";
       if(noActionNote){ var m=String(noActionNote.title||"").match(/Closed without corrective action\s*[\-\u2013\u2014]\s*(.+)$/i); if(m) closureReason=m[1]; }
+      if(closureReason && !Object.prototype.hasOwnProperty.call(pdfTx,"closure_reason") && pdfMode!=="original"){ var cr=await translateTextMap({closure_reason:closureReason},pdfLang,"pdf-closure:"+String(r.id)); if(cr&&cr.closure_reason) pdfTx.closure_reason=cr.closure_reason; }
+      if(noActionNote&&noActionNote.body && !Object.prototype.hasOwnProperty.call(pdfTx,"closure_note") && pdfMode!=="original"){ var cn=await translateTextMap({closure_note:noActionNote.body},pdfLang,"pdf-closure-note:"+String(r.id)); if(cn&&cn.closure_note) pdfTx.closure_note=cn.closure_note; }
 
-      section(1,"Report and review","What was submitted and how the report entered the safety workflow.");
+      section(1,L.section1,L.section1Sub);
       pairRow([
-        {label:"Report type",value:r.report_type},
-        {label:"Actual injury or illness",value:r.involves_injury?"Yes":"No"},
-        {label:"Address of incident",value:r.job_site},
-        {label:"Specific spot on the site",value:r.site_location},
-        {label:"When noticed",value:r.observed_at?pdfDate(r.observed_at):""},
-        {label:"Potential severity",value:r.potential_severity},
-        {label:"Type of hazard",value:r.hazard_category},
-        {label:"Form language",value:r.language==="es"?"Spanish":r.language==="en"?"English":r.language}
+        {label:L.reportType,value:PV("report_type",r.report_type)},
+        {label:L.actualInjury,value:r.involves_injury?L.yes:L.no},
+        {label:L.address,value:r.job_site},
+        {label:L.specificSpot,value:PV("site_location",r.site_location)},
+        {label:L.whenNoticed,value:r.observed_at?pdfDate(r.observed_at):""},
+        {label:L.potentialSeverity,value:PV("potential_severity",r.potential_severity)},
+        {label:L.hazardType,value:PV("hazard_category",r.hazard_category)},
+        {label:L.formLanguage,value:languageName(r.language||"en",pdfLang)}
       ]);
-      wideField("Describe what you saw",r.description,{skipEmpty:false,emptyText:"No description recorded"});
-      wideField("Who or what was involved / any witnesses",r.people_involved);
-      wideField("What was done right away",r.immediate_action);
-      wideField("What would fix it or prevent it",r.suggested_fix);
-      subhead("Reporter");
+      wideField(L.describe,PV("description",r.description),{skipEmpty:false,emptyText:L.noDescription});
+      wideField(L.involved,PV("people_involved",r.people_involved));
+      wideField(L.immediate,PV("immediate_action",r.immediate_action));
+      wideField(L.suggested,PV("suggested_fix",r.suggested_fix));
+      subhead(L.reporter);
       pairRow([
-        {label:"Reported by",value:r.reporter_name||"Anonymous"},
-        {label:"Reporter role",value:r.reporter_role},
-        {label:"Reporter contact",value:r.reporter_contact},
-        {label:"Review completed",value:reviewAudit?pdfDate(reviewAudit.created_at):""},
-        {label:"Reviewed by",value:reviewAudit?auditActor(reviewAudit.actor_email):""},
-        {label:"Workflow restarts",value:(r.workflow_restart_count?String(r.workflow_restart_count):"None")},
-        {label:"Last restart",value:r.last_workflow_restart_at?pdfDate(r.last_workflow_restart_at):""}
+        {label:L.reportedBy,value:r.reporter_name||(pdfLang==="es"?"Anónimo":"Anonymous")},
+        {label:L.reporterRole,value:PV("reporter_role",r.reporter_role)},
+        {label:L.reporterContact,value:r.reporter_contact},
+        {label:L.reviewCompleted,value:reviewAudit?pdfDate(reviewAudit.created_at):""},
+        {label:L.reviewedBy,value:reviewAudit?auditActor(reviewAudit.actor_email):""},
+        {label:L.workflowRestarts,value:(r.workflow_restart_count?String(r.workflow_restart_count):L.none)},
+        {label:L.lastRestart,value:r.last_workflow_restart_at?pdfDate(r.last_workflow_restart_at):""}
       ]);
-      fileBox("Original report photos and files",originalAtts.map(function(a){return a.file_name||a.storage_path;}),"No original files attached");
+      fileBox(L.originalFiles,originalAtts.map(function(a){return a.file_name||a.storage_path;}),L.noOriginalFiles);
       if(r.involves_injury){
-        subhead("Cal/OSHA serious-event screening");
+        subhead(L.calosha);
         pairRow([
-          {label:"Screening result",value:caloshaScreenLabel(r.calosha_screening_status)},
-          {label:"RBH awareness time",value:r.calosha_awareness_at?pdfDate(r.calosha_awareness_at):"Not recorded"}
+          {label:L.screeningResult,value:PV("screening_result",caloshaScreenLabel(r.calosha_screening_status))},
+          {label:L.awareness,value:r.calosha_awareness_at?pdfDate(r.calosha_awareness_at):L.notRecorded}
         ]);
-        wideField("Screening note","Management screening only. This application does not submit a report to Cal/OSHA and the screening does not replace required regulatory reporting.",{skipEmpty:false});
+        wideField(L.screeningNote,L.screeningDisclaimer,{skipEmpty:false});
       }
 
-      section(2,"Investigation","Document the underlying reason the issue happened or was allowed to happen.");
-      wideField("Root cause",r.root_cause,{skipEmpty:false,emptyText:"Not yet recorded"});
+      section(2,L.section2,L.section2Sub);
+      wideField(L.rootCause,PV("root_cause",r.root_cause),{skipEmpty:false,emptyText:L.notYetRecorded});
 
-      section(3,"Corrective action plan","Define the fix, ownership, due date, and priority.");
-      wideField("Corrective action required",r.corrective_action,{skipEmpty:false,emptyText:"Not yet recorded"});
+      section(3,L.section3,L.section3Sub);
+      wideField(L.correctiveRequired,PV("corrective_action",r.corrective_action),{skipEmpty:false,emptyText:L.notYetRecorded});
       pairRow([
-        {label:"Assigned dashboard user",value:assigneeName(r)||"Not assigned"},
-        {label:"Responsible person / crew",value:r.responsible_person},
-        {label:"Due date",value:r.due_date?pdfDateOnly(r.due_date):"Not recorded"},
-        {label:"Priority",value:r.priority?String(r.priority).charAt(0).toUpperCase()+String(r.priority).slice(1):"Not recorded"}
+        {label:L.assignedUser,value:assigneeName(r)||L.notAssigned},
+        {label:L.responsible,value:r.responsible_person},
+        {label:L.dueDate,value:r.due_date?pdfDateOnly(r.due_date):L.notRecorded},
+        {label:L.priority,value:r.priority?PV("priority_value",String(r.priority).charAt(0).toUpperCase()+String(r.priority).slice(1)):L.notRecorded}
       ]);
 
-      section(4,"Complete corrective action","Record what was actually completed and the supporting evidence.");
-      wideField("Completed work submitted",r.action_completion_note,{skipEmpty:false,emptyText:"Not yet submitted"});
+      section(4,L.section4,L.section4Sub);
+      wideField(L.completedWork,PV("action_completion_note",r.action_completion_note),{skipEmpty:false,emptyText:L.notYetSubmitted});
       pairRow([
-        {label:"Completed on",value:r.action_completed_at?pdfDate(r.action_completed_at):""},
-        {label:"Completed by",value:r.action_completed_by?userById(r.action_completed_by):""}
+        {label:L.completedOn,value:r.action_completed_at?pdfDate(r.action_completed_at):""},
+        {label:L.completedBy,value:r.action_completed_by?userById(r.action_completed_by):""}
       ]);
-      fileBox("Current-workflow corrective-action evidence",evidenceAtts.map(function(a){return a.file_name||a.storage_path;}),"No corrective-action evidence attached in the current workflow");
-      if(priorEvidenceAtts.length) fileBox("Preserved evidence from earlier workflow",priorEvidenceAtts.map(function(a){return a.file_name||a.storage_path;}),"");
+      fileBox(L.currentEvidence,evidenceAtts.map(function(a){return a.file_name||a.storage_path;}),L.noCurrentEvidence);
+      if(priorEvidenceAtts.length) fileBox(L.priorEvidence,priorEvidenceAtts.map(function(a){return a.file_name||a.storage_path;}),"");
 
-      section(5,"Verify corrective action","Show the review decision and any verification or change-request note.");
-      var verifyOutcome=actionLabel(r.action_status||"not_started");
+      section(5,L.section5,L.section5Sub);
+      var verifyOutcome=PV("verification_outcome",actionLabel(r.action_status||"not_started"));
       pairRow([
-        {label:"Verification outcome",value:verifyOutcome},
-        {label:"Verified on",value:r.action_verified_at?pdfDate(r.action_verified_at):""},
-        {label:"Verified by",value:r.action_verified_by?userById(r.action_verified_by):""}
+        {label:L.verificationOutcome,value:verifyOutcome},
+        {label:L.verifiedOn,value:r.action_verified_at?pdfDate(r.action_verified_at):""},
+        {label:L.verifiedBy,value:r.action_verified_by?userById(r.action_verified_by):""}
       ]);
-      var verifyLabel=(r.action_status==="changes_requested")?"Requested changes":"Reviewer verification note";
-      wideField(verifyLabel,r.action_verification_note,{skipEmpty:false,emptyText:"No verification note recorded"});
+      var verifyLabel=(r.action_status==="changes_requested")?L.requestedChanges:L.reviewerNote;
+      wideField(verifyLabel,PV("action_verification_note",r.action_verification_note),{skipEmpty:false,emptyText:L.noVerificationNote});
 
-      section(6,"Close record","Final disposition and closure information for the incident.");
+      section(6,L.section6,L.section6Sub);
       pairRow([
-        {label:"Record status",value:statusLabel()},
-        {label:"Closed on",value:r.closed_at?pdfDate(r.closed_at):"Not yet closed"},
-        {label:"Closed by",value:closureAudit?auditActor(closureAudit.actor_email):""},
-        {label:"Closure path",value:(r.status==="no_action"||r.status==="duplicate")?"Closed without corrective action":(r.status==="closed"?"Corrective action verified and record closed":"Record remains open")}
+        {label:L.recordStatus,value:PV("status_value",statusLabel())},
+        {label:L.closedOn,value:r.closed_at?pdfDate(r.closed_at):L.notYetClosed},
+        {label:L.closedBy,value:closureAudit?auditActor(closureAudit.actor_email):""},
+        {label:L.closurePath,value:PV("closure_path",(r.status==="no_action"||r.status==="duplicate")?"Closed without corrective action":(r.status==="closed"?"Corrective action verified and record closed":"Record remains open"))}
       ]);
-      if(closureReason) pairRow([{label:"Closure reason",value:closureReason}]);
-      if(noActionNote && has(noActionNote.body)) wideField("Closure note",noActionNote.body);
+      if(closureReason) pairRow([{label:L.closureReason,value:PV("closure_reason",closureReason)}]);
+      if(noActionNote && has(noActionNote.body)) wideField(L.closureNote,PV("closure_note",noActionNote.body));
 
       var visibleNotes=notes.filter(function(n){ return String(n.title||"").indexOf("[System]")!==0 && n!==noActionNote; });
       if(visibleNotes.length){
-        subhead("Additional notes");
-        visibleNotes.forEach(noteCard);
+        subhead(L.additionalNotes);
+        visibleNotes.forEach(function(n){ var idx=notes.indexOf(n), copy=Object.assign({},n); copy.title=PV("note_title_"+idx,n.title); copy.body=PV("note_body_"+idx,n.body); noteCard(copy); });
       }
 
-      subhead("Activity history");
-      timelineEvent("Report submitted",r.created_at,r.reporter_name||"Anonymous reporter");
-      var pdfHistory=[];
-      groupAuditRows(audit).forEach(function(g){ pdfHistory.push({title:auditGroupTitle(g.rows),created_at:g.created_at,actor:auditActor(g.rows[0].actor_email)}); });
-      notes.filter(function(n){return /^\[System\]\s*Workflow restarted/i.test(String(n.title||""));}).forEach(function(n){
-        pdfHistory.push({title:String(n.title||"").replace(/^\[System\]\s*/,""),created_at:n.created_at,actor:auditActor(n.author_email)});
-      });
-      pdfHistory.sort(function(a,b){return new Date(a.created_at)-new Date(b.created_at);}).forEach(function(ev){ timelineEvent(ev.title,ev.created_at,ev.actor); });
+      subhead(L.activityHistory);
+      timelineEvent(L.reportSubmitted,r.created_at,r.reporter_name||L.anonymousReporter);
+      pdfHistory.sort(function(a,b){return new Date(a.created_at)-new Date(b.created_at);}).forEach(function(ev){ timelineEvent(PV(ev.key,ev.title),ev.created_at,ev.actor); });
 
       // Footers are added last so page counts are always correct.
       var pages=doc.internal.getNumberOfPages();
       for(var p=1;p<=pages;p++){
         doc.setPage(p); setDraw(C.line); doc.setLineWidth(.6); doc.line(M,H-43,W-M,H-43);
         doc.setFont("helvetica","normal"); doc.setFontSize(7.4); setText(C.muted);
-        doc.text("RBH Insulation, Inc. | Confidential safety document | License #558799",M,H-27);
-        rightText("Report #"+safe(r.ref_no)+" | Page "+p+" of "+pages,W-M,H-27);
+        doc.text(L.footer,M,H-27);
+        rightText(L.reportWord+" #"+safe(r.ref_no)+" | "+L.page+" "+p+" / "+pages,W-M,H-27);
       }
 
       doc.save("RBH-Safety-Report-"+(r.ref_no!=null?("No"+r.ref_no):String(r.id).slice(0,8))+".pdf");
-    }catch(e){ console.error(e); toast("Could not generate the PDF - please try again.","err"); }
+    }catch(e){ console.error(e); toast(e&&e.message==="TRANSLATION_UNAVAILABLE"?"The requested PDF language could not be generated. Check the translation service and try again.":"Could not generate the PDF - please try again.","err"); }
     finally{ btn.disabled=false; btn.textContent=lbl; }
   }
 
@@ -2130,6 +2232,7 @@
     $("profileJobTitle").value=p.job_title||"";
     $("profileDepartment").value=p.department||"";
     $("profileRole").value=roleLabel(currentRole);
+    $("profileLanguage").value=(p.preferred_language&&["auto","en","es"].indexOf(String(p.preferred_language))>=0)?String(p.preferred_language):"auto";
     $("profileHeadEmail").textContent=user.email||"";
     $("profileAppVersion").textContent="Version "+APP_VERSION;
     $("feedbackContext").textContent="App context included automatically: "+(currentOrgName?(currentOrgName+" · "):"")+currentViewLabel()+" · "+APP_VERSION;
@@ -2159,11 +2262,13 @@
       full_name:$("profileFullName").value.trim()||null,
       phone:$("profilePhone").value.trim()||null,
       job_title:$("profileJobTitle").value.trim()||null,
-      department:$("profileDepartment").value.trim()||null
+      department:$("profileDepartment").value.trim()||null,
+      preferred_language:$("profileLanguage").value||"auto"
     };
     try{
       var res=await sb.rpc("rbh_update_my_profile",{p_full_name:patch.full_name,p_phone:patch.phone,p_job_title:patch.job_title,p_department:patch.department});
       if(res.error) throw res.error;
+      var lr=await sb.rpc("rbh_update_my_language",{p_preferred_language:patch.preferred_language}); if(lr.error) throw lr.error;
       await loadProfiles(); applyRoleUi(); fillProfileForm(); toast("Profile updated","ok");
     }catch(ex){ console.error("profile update",ex); toast("Could not save profile. Make sure the Profile V1 database migration has been applied.","err"); }
     finally{ btn.disabled=false; btn.textContent="Save Profile"; }
@@ -2501,14 +2606,19 @@
     out+='<span class="badge '+st.c+'">'+esc(st.l)+'</span>'; return out;
   }
   function openIncident(r, from){
-    if(!r) return; lastOperationalView=from||((document.getElementById('view-mywork')&&!document.getElementById('view-mywork').hidden)?'mywork':((document.getElementById('view-actions')&&!document.getElementById('view-actions').hidden)?'actions':'records'));
+    if(!r) return; activeIncident=r; activeIncidentLanguage=preferredReadingLanguage(); lastOperationalView=from||((document.getElementById('view-mywork')&&!document.getElementById('view-mywork').hidden)?'mywork':((document.getElementById('view-actions')&&!document.getElementById('view-actions').hidden)?'actions':'records'));
     storeIncident(r,lastOperationalView);
     var back=$("incidentBack"); if(back) back.textContent=lastOperationalView==="mywork"?"← Back to My Work":(lastOperationalView==="actions"?"← Back to Corrective Actions":"← Back to Safety Inbox");
     $("incidentTitle").textContent="#"+(r.ref_no||r.id)+" · "+(r.report_type||"Safety report");
     var meta=[]; if(r.job_site) meta.push(r.job_site); if(assigneeName(r)) meta.push("Assigned: "+assigneeName(r)); meta.push(fmtDate(r.created_at)); $("incidentMeta").textContent=meta.join(" · ");
     $("incidentSummary").innerHTML='<div class="is-badges">'+incidentBadgeHtml(r)+'</div><div class="is-desc">'+esc(r.description||"No description provided.")+'</div>';
+    var langSel=$("incidentLanguage"); if(langSel){ langSel.value=activeIncidentLanguage; }
+    setIncidentLanguageState(r,activeIncidentLanguage,"loading");
     var body=$("incidentBody"); body.innerHTML=''; body.setAttribute("data-report-id",String(r.id)); buildDetail(r,body,null); showView('incident');
+    changeIncidentLanguage(r,activeIncidentLanguage);
   }
+  var _incidentLanguage=$("incidentLanguage"); if(_incidentLanguage) _incidentLanguage.addEventListener("change",function(){ if(activeIncident) changeIncidentLanguage(activeIncident,this.value); });
+
   function renderHomeAttention(){
     var el=$("homeAttention"); if(!el) return; var items=allReports.filter(function(r){ return r.status!=="closed"&&r.status!=="no_action"&&r.status!=="duplicate"; });
     items.sort(function(a,b){ return reportAttentionRank(b)-reportAttentionRank(a) || new Date(b.created_at)-new Date(a.created_at); }); items=items.slice(0,5);
@@ -2769,8 +2879,8 @@
       if(canEditReport(r)&&status!=="verified"){
         var label=status==="changes_requested"?'Update completed work':(status==="awaiting_verification"?'Completed work submitted':'What did you complete?');
         var help=status==="changes_requested"?'Update the note to explain the corrected work, then resubmit it.':(status==="awaiting_verification"?'The submitted completion note is shown below. You can correct the wording while it is waiting for verification.':'Describe exactly what was done. This note is required before submission.');
-        h+='<label class="inv-l">'+label+'<textarea class="action-note" placeholder="Describe what was completed or changed.">'+esc(r.action_completion_note||'')+'</textarea></label><p class="action-help">'+help+'</p>';
-      } else if(r.action_completion_note){ h+='<div class="action-context"><b>Completed work submitted</b><p>'+esc(r.action_completion_note)+'</p></div>'; }
+        h+='<label class="inv-l">'+label+'<textarea class="action-note" placeholder="Describe what was completed or changed.">'+esc(r.action_completion_note||'')+'</textarea></label><div class="translation-preview" data-translation-field="action_completion_note" hidden></div><p class="action-help">'+help+'</p>';
+      } else if(r.action_completion_note){ h+='<div class="action-context"><b>Completed work submitted</b><p>'+esc(r.action_completion_note)+'</p></div><div class="translation-preview" data-translation-field="action_completion_note" hidden></div>'; }
       if(completed){var cb=r.action_completed_by&&profileById[String(r.action_completed_by)]?profileName(profileById[String(r.action_completed_by)]):'';h+='<div class="action-meta">'+esc(completed)+(cb?' by '+esc(cb):'')+'</div>';}
       h+='<div class="evidence-panel" data-action-evidence></div>';
       if(canEditReport(r)&&status!=="verified"){
@@ -2778,14 +2888,14 @@
         h+='<div class="wizard-footer"><div class="wizard-footer-copy">Save and close saves the completion note without submitting it, then returns you Home. Submitting is the deliberate handoff to the reviewer.</div><div class="wizard-footer-actions"><button class="wizard-save btn-save-completion" data-step-save="4" type="button">Save and close</button><span class="completion-saved section-saved" hidden>Saved ✓</span>'+(primary?'<button class="wizard-primary btn-complete" data-step-complete="4" type="button">'+primary+'</button>':'')+'</div></div>';
       }
     } else {
-      if(r.action_completion_note) h+='<div class="action-context"><b>Completed work submitted</b><p>'+esc(r.action_completion_note)+'</p></div>';
+      if(r.action_completion_note) h+='<div class="action-context"><b>Completed work submitted</b><p>'+esc(r.action_completion_note)+'</p></div><div class="translation-preview" data-translation-field="action_completion_note" hidden></div>';
       if(completed){var cb2=r.action_completed_by&&profileById[String(r.action_completed_by)]?profileName(profileById[String(r.action_completed_by)]):'';h+='<div class="action-meta">'+esc(completed)+(cb2?' by '+esc(cb2):'')+'</div>';}
       h+='<div class="evidence-panel" data-action-evidence></div>';
       if(status==="awaiting_verification"&&canVerify()){
         h+='<label class="inv-l">Reviewer verification note <span style="font-weight:400;color:var(--muted)">(optional when approving)</span><textarea class="verify-note" placeholder="What did you verify? If requesting changes, explain exactly what still needs to be done.">'+esc(r.action_verification_note||'')+'</textarea></label><div class="wizard-required" data-verify-required>Add a verification note explaining the requested changes.</div>'+
-          '<div class="wizard-footer"><div class="wizard-footer-copy">Save and close saves your verification note without making a decision, then returns you Home. Verify advances the record. Request Changes sends it back to Step 4.</div><div class="wizard-footer-actions"><button class="wizard-save btn-save-verification" data-step-save="5" type="button">Save and close</button><span class="verification-saved section-saved" hidden>Saved ✓</span><button class="btn-changes" type="button">Request changes</button><button class="wizard-primary btn-verify" data-step-complete="5" type="button">Verify &amp; continue →</button></div></div>';
+          '<div class="translation-preview" data-translation-field="action_verification_note" hidden></div><div class="wizard-footer"><div class="wizard-footer-copy">Save and close saves your verification note without making a decision, then returns you Home. Verify advances the record. Request Changes sends it back to Step 4.</div><div class="wizard-footer-actions"><button class="wizard-save btn-save-verification" data-step-save="5" type="button">Save and close</button><span class="verification-saved section-saved" hidden>Saved ✓</span><button class="btn-changes" type="button">Request changes</button><button class="wizard-primary btn-verify" data-step-complete="5" type="button">Verify &amp; continue →</button></div></div>';
       } else if(status==="verified"){
-        if(r.action_verification_note) h+='<div class="action-context"><b>Verification note</b><p>'+esc(r.action_verification_note)+'</p></div>';
+        if(r.action_verification_note) h+='<div class="action-context"><b>Verification note</b><p>'+esc(r.action_verification_note)+'</p></div><div class="translation-preview" data-translation-field="action_verification_note" hidden></div>';
         if(verified){var vb=r.action_verified_by&&profileById[String(r.action_verified_by)]?profileName(profileById[String(r.action_verified_by)]):'';h+='<div class="action-meta">'+esc(verified)+(vb?' by '+esc(vb):'')+'</div>';}
         h+='<div class="ops-alert"><b>Verification complete</b>The corrective action was approved. Continue to Close Record.</div>';
       } else if(status==="changes_requested") h+='<div class="readonly-step-note">Changes were requested. Step 4 is active again so the assigned owner can update and resubmit the work.</div>';
@@ -2793,6 +2903,7 @@
     }
     el.innerHTML=h;
     renderActionEvidence(r,el.querySelector("[data-action-evidence]"),auditEl);
+    if(activeIncident===r) translateReportForLanguage(r,activeIncidentLanguage).then(function(tx){ if(tx&&activeIncident===r) applyReportLanguageToOpenIncident(r,activeIncidentLanguage,tx); });
 
     var saveCompletionBtn=el.querySelector(".btn-save-completion"); if(saveCompletionBtn) saveCompletionBtn.addEventListener("click",async function(){
       var note=(el.querySelector(".action-note")&&el.querySelector(".action-note").value.trim())||""; saveCompletionBtn.disabled=true;
