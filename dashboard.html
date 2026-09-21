@@ -1070,6 +1070,23 @@
       return {ok:false,sent:false,error:"NETWORK_ERROR",detail:(ex&&ex.message)||""};
     }
   }
+  async function sendActionChangesRequestedEmail(r){
+    if(!r||!r.assigned_user_id) return {ok:true,sent:false,skipped:true,reason:"NO_DASHBOARD_ASSIGNEE"};
+    if(!currentSession||!currentSession.access_token) return {ok:false,sent:false,error:"AUTH_REQUIRED"};
+    try{
+      var resp=await fetch(SUPA_URL+"/functions/v1/send-action-assignment-email",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","Authorization":"Bearer "+currentSession.access_token,"apikey":SUPA_KEY},
+        body:JSON.stringify({reportId:String(r.id),notificationType:"changes_requested"})
+      });
+      var data=await resp.json().catch(function(){return {};});
+      if(!resp.ok) return {ok:false,sent:false,error:data.error||("HTTP_"+resp.status),detail:data.detail||""};
+      return data||{ok:true,sent:false};
+    }catch(ex){
+      console.error("changes-requested email",ex);
+      return {ok:false,sent:false,error:"NETWORK_ERROR",detail:(ex&&ex.message)||""};
+    }
+  }
   function reviewValue(r,field,lang,tx){
     lang=normalizeLanguageCode(lang); tx=tx||{};
     if(field==="involves_injury") return r.involves_injury?(lang==="es"?"Sí":"Yes"):(lang==="es"?"No":"No");
@@ -3075,7 +3092,33 @@
     });
     var saveVerificationBtn=el.querySelector(".btn-save-verification"); if(saveVerificationBtn) saveVerificationBtn.addEventListener("click",async function(){await waitForActionEvidenceUpload(r.id);var note=(el.querySelector(".verify-note")&&el.querySelector(".verify-note").value.trim())||null;saveVerificationBtn.disabled=true;try{var res=await sb.from("reports").update({action_verification_note:note}).eq("id",r.id);if(res.error)throw res.error;r.action_verification_note=note;var flag=el.querySelector(".verification-saved");if(flag){flag.hidden=false;setTimeout(function(){flag.hidden=true;},2200);}toast("Verification note saved","ok");loadAudit(r.id,auditEl);showView("home");}catch(ex){console.error(ex);toast("Could not save verification note.","err");}finally{saveVerificationBtn.disabled=false;}});
     var verifyBtn=el.querySelector(".btn-verify"); if(verifyBtn) verifyBtn.addEventListener("click",async function(){verifyBtn.disabled=true;try{await waitForActionEvidenceUpload(r.id);var note=(el.querySelector(".verify-note")&&el.querySelector(".verify-note").value.trim())||null;var patch={action_status:"verified",action_verified_at:new Date().toISOString(),action_verified_by:currentSession.user.id,action_verification_note:note};var res=await sb.from("reports").update(patch).eq("id",r.id);if(res.error)throw res.error;Object.keys(patch).forEach(function(k){r[k]=patch[k];});renderActionWorkflow(r,detail.querySelector("[data-action-completion]"),auditEl,detail,"complete");renderActionWorkflow(r,detail.querySelector("[data-action-verification]"),auditEl,detail,"verify");loadAudit(r.id,auditEl);renderHomeSnapshot();renderMyWork();refreshRecordWorkflow(r,detail);setWizardStep(detail,r,6,true);toast("Corrective action verified — ready for closure","ok");}catch(ex){console.error(ex);toast("Could not verify corrective action.","err");}finally{if(verifyBtn.isConnected)verifyBtn.disabled=false;}});
-    var changesBtn=el.querySelector(".btn-changes"); if(changesBtn) changesBtn.addEventListener("click",async function(){await waitForActionEvidenceUpload(r.id);var note=(el.querySelector(".verify-note")&&el.querySelector(".verify-note").value.trim())||"";var req=el.querySelector("[data-verify-required]");if(!note){if(req)req.classList.add("show");toast("Explain what needs to change before sending the action back.","err");return;}if(req)req.classList.remove("show");changesBtn.disabled=true;try{var patch={action_status:"changes_requested",action_verification_note:note,action_verified_at:null,action_verified_by:null};var res=await sb.from("reports").update(patch).eq("id",r.id);if(res.error)throw res.error;Object.keys(patch).forEach(function(k){r[k]=patch[k];});renderActionWorkflow(r,detail.querySelector("[data-action-completion]"),auditEl,detail,"complete");loadAudit(r.id,auditEl);renderHomeSnapshot();renderMyWork();refreshRecordWorkflow(r,detail);setWizardStep(detail,r,4,true);toast("Changes requested — returned to the assigned owner","ok");}catch(ex){console.error(ex);toast("Could not request changes.","err");}finally{if(changesBtn.isConnected)changesBtn.disabled=false;}});
+    var changesBtn=el.querySelector(".btn-changes"); if(changesBtn) changesBtn.addEventListener("click",async function(){
+      await waitForActionEvidenceUpload(r.id);
+      var note=(el.querySelector(".verify-note")&&el.querySelector(".verify-note").value.trim())||"";
+      var req=el.querySelector("[data-verify-required]");
+      if(!note){if(req)req.classList.add("show");toast("Explain what evidence or changes are still needed before sending the action back.","err");return;}
+      if(req)req.classList.remove("show");
+      changesBtn.disabled=true;
+      try{
+        var patch={action_status:"changes_requested",action_verification_note:note,action_verified_at:null,action_verified_by:null};
+        var res=await sb.from("reports").update(patch).eq("id",r.id); if(res.error)throw res.error;
+        Object.keys(patch).forEach(function(k){r[k]=patch[k];});
+        renderActionWorkflow(r,detail.querySelector("[data-action-completion]"),auditEl,detail,"complete");
+        loadAudit(r.id,auditEl); renderHomeSnapshot(); renderMyWork(); refreshRecordWorkflow(r,detail); setWizardStep(detail,r,4,true);
+        var notify=await sendActionChangesRequestedEmail(r);
+        if(notify&&notify.sent){
+          toast(notify.duplicate?"Changes requested — assignee was already notified":"Changes requested — assignee notified by email","ok");
+        } else if(notify&&notify.skipped&&(notify.reason==="NO_DASHBOARD_ASSIGNEE"||notify.reason==="NO_ASSIGNEE_EMAIL")){
+          toast("Changes requested — no assignee email was available","ok");
+        } else if(notify&&notify.skipped){
+          toast("Changes requested — notification already in progress","ok");
+        } else {
+          console.error("changes-requested notification failed",notify);
+          toast("Changes requested and saved, but the email notification could not be sent.","err");
+        }
+      }catch(ex){console.error(ex);toast("Could not request changes.","err");}
+      finally{if(changesBtn.isConnected)changesBtn.disabled=false;}
+    });
   }
 
   function isActionEvidence(a){ return !!(a && String(a.storage_path||"").indexOf("corrective-evidence/")===0); }
