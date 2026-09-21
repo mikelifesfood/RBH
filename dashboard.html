@@ -2266,11 +2266,27 @@
       preferred_language:$("profileLanguage").value||"auto"
     };
     try{
+      // Language preference is a standalone capability and must not depend on
+      // the optional Profile V1 migration (phone/job title/department).
+      var lr=await sb.rpc("rbh_update_my_language",{p_preferred_language:patch.preferred_language});
+      if(lr.error) throw lr.error;
+
+      var profileV1Saved=false, profileV1Unavailable=false;
       var res=await sb.rpc("rbh_update_my_profile",{p_full_name:patch.full_name,p_phone:patch.phone,p_job_title:patch.job_title,p_department:patch.department});
-      if(res.error) throw res.error;
-      var lr=await sb.rpc("rbh_update_my_language",{p_preferred_language:patch.preferred_language}); if(lr.error) throw lr.error;
-      await loadProfiles(); applyRoleUi(); fillProfileForm(); toast("Profile updated","ok");
-    }catch(ex){ console.error("profile update",ex); toast("Could not save profile. Make sure the Profile V1 database migration has been applied.","err"); }
+      if(res.error){
+        var code=String(res.error.code||"");
+        var msg=String(res.error.message||"");
+        // PGRST202 / schema-cache missing-function errors mean Profile V1 is
+        // simply not installed. Do not fail the language preference save.
+        if(code==="PGRST202" || /rbh_update_my_profile|function.*not found|schema cache/i.test(msg)) profileV1Unavailable=true;
+        else throw res.error;
+      }else profileV1Saved=true;
+
+      await loadProfiles(); applyRoleUi(); fillProfileForm();
+      if(profileV1Unavailable) toast("Language preference saved. Optional Profile V1 fields are not installed in this database.","ok");
+      else if(profileV1Saved) toast("Profile updated","ok");
+      else toast("Language preference saved","ok");
+    }catch(ex){ console.error("profile update",ex); toast(ex&&ex.message?ex.message:"Could not save language preference.","err"); }
     finally{ btn.disabled=false; btn.textContent="Save Profile"; }
   });
 
