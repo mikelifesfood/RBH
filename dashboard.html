@@ -1100,7 +1100,7 @@
 
   var $=function(id){return document.getElementById(id);};
   var loginView=$("loginView"), appView=$("appView"), listEl=$("list"), backdrop=$("backdrop");
-  var allReports=[], filtered=[], attByReport={};
+  var allReports=[], filtered=[], attByReport={}, actionEvidenceUploads={};
   var allProfiles=[], profileById={}, currentSession=null, currentProfile=null, currentRole="read_only";
   var allOrgs=[], currentOrgId=null, currentOrgName="", isPlatformAdmin=false;
   var activeIncident=null, activeIncidentLanguage="en", translationCache={};
@@ -3056,18 +3056,20 @@
     if(activeIncident===r) translateReportForLanguage(r,activeIncidentLanguage).then(function(tx){ if(tx&&activeIncident===r) applyReportLanguageToOpenIncident(r,activeIncidentLanguage,tx); });
 
     var saveCompletionBtn=el.querySelector(".btn-save-completion"); if(saveCompletionBtn) saveCompletionBtn.addEventListener("click",async function(){
+      await waitForActionEvidenceUpload(r.id);
       var note=(el.querySelector(".action-note")&&el.querySelector(".action-note").value.trim())||""; saveCompletionBtn.disabled=true;
       try{var patch={action_completion_note:note||null};if((r.action_status||"not_started")==="not_started"&&note)patch.action_status="in_progress";var res=await sb.from("reports").update(patch).eq("id",r.id);if(res.error)throw res.error;Object.keys(patch).forEach(function(k){r[k]=patch[k];});var flag=el.querySelector(".completion-saved");if(flag){flag.hidden=false;setTimeout(function(){flag.hidden=true;},2200);}toast("Completion note saved","ok");loadAudit(r.id,auditEl);refreshRecordWorkflow(r,detail);renderHomeSnapshot();renderMyWork();showView("home");}
       catch(ex){console.error(ex);toast("Could not save completion note.","err");}finally{if(saveCompletionBtn.isConnected)saveCompletionBtn.disabled=false;}
     });
     var completeBtn=el.querySelector(".btn-complete"); if(completeBtn) completeBtn.addEventListener("click",async function(){
+      await waitForActionEvidenceUpload(r.id);
       var note=(el.querySelector(".action-note")&&el.querySelector(".action-note").value.trim())||""; if(!note){toast("Describe what was completed before submitting for verification.","err");return;} completeBtn.disabled=true;
       try{var uid=currentSession&&currentSession.user?currentSession.user.id:null;var patch={action_status:"awaiting_verification",action_completed_at:new Date().toISOString(),action_completed_by:uid,action_completion_note:note,action_verified_at:null,action_verified_by:null,status:"corrective_action"};var res=await sb.from("reports").update(patch).eq("id",r.id);if(res.error)throw res.error;Object.keys(patch).forEach(function(k){r[k]=patch[k];});$("incidentSummary").innerHTML='<div class="is-badges">'+incidentBadgeHtml(r)+'</div><div class="is-desc">'+esc(r.description||"No description provided.")+'</div>';renderActionWorkflow(r,detail.querySelector("[data-action-completion]"),auditEl,detail,"complete");renderActionWorkflow(r,detail.querySelector("[data-action-verification]"),auditEl,detail,"verify");loadAudit(r.id,auditEl);renderHomeSnapshot();renderMyWork();refreshRecordWorkflow(r,detail);setWizardStep(detail,r,5,true);toast("Corrective action submitted for verification","ok");}
       catch(ex){console.error(ex);toast("Could not submit the corrective action.","err");}finally{if(completeBtn.isConnected)completeBtn.disabled=false;}
     });
-    var saveVerificationBtn=el.querySelector(".btn-save-verification"); if(saveVerificationBtn) saveVerificationBtn.addEventListener("click",async function(){var note=(el.querySelector(".verify-note")&&el.querySelector(".verify-note").value.trim())||null;saveVerificationBtn.disabled=true;try{var res=await sb.from("reports").update({action_verification_note:note}).eq("id",r.id);if(res.error)throw res.error;r.action_verification_note=note;var flag=el.querySelector(".verification-saved");if(flag){flag.hidden=false;setTimeout(function(){flag.hidden=true;},2200);}toast("Verification note saved","ok");loadAudit(r.id,auditEl);showView("home");}catch(ex){console.error(ex);toast("Could not save verification note.","err");}finally{saveVerificationBtn.disabled=false;}});
-    var verifyBtn=el.querySelector(".btn-verify"); if(verifyBtn) verifyBtn.addEventListener("click",async function(){verifyBtn.disabled=true;try{var note=(el.querySelector(".verify-note")&&el.querySelector(".verify-note").value.trim())||null;var patch={action_status:"verified",action_verified_at:new Date().toISOString(),action_verified_by:currentSession.user.id,action_verification_note:note};var res=await sb.from("reports").update(patch).eq("id",r.id);if(res.error)throw res.error;Object.keys(patch).forEach(function(k){r[k]=patch[k];});renderActionWorkflow(r,detail.querySelector("[data-action-completion]"),auditEl,detail,"complete");renderActionWorkflow(r,detail.querySelector("[data-action-verification]"),auditEl,detail,"verify");loadAudit(r.id,auditEl);renderHomeSnapshot();renderMyWork();refreshRecordWorkflow(r,detail);setWizardStep(detail,r,6,true);toast("Corrective action verified — ready for closure","ok");}catch(ex){console.error(ex);toast("Could not verify corrective action.","err");}finally{if(verifyBtn.isConnected)verifyBtn.disabled=false;}});
-    var changesBtn=el.querySelector(".btn-changes"); if(changesBtn) changesBtn.addEventListener("click",async function(){var note=(el.querySelector(".verify-note")&&el.querySelector(".verify-note").value.trim())||"";var req=el.querySelector("[data-verify-required]");if(!note){if(req)req.classList.add("show");toast("Explain what needs to change before sending the action back.","err");return;}if(req)req.classList.remove("show");changesBtn.disabled=true;try{var patch={action_status:"changes_requested",action_verification_note:note,action_verified_at:null,action_verified_by:null};var res=await sb.from("reports").update(patch).eq("id",r.id);if(res.error)throw res.error;Object.keys(patch).forEach(function(k){r[k]=patch[k];});renderActionWorkflow(r,detail.querySelector("[data-action-completion]"),auditEl,detail,"complete");loadAudit(r.id,auditEl);renderHomeSnapshot();renderMyWork();refreshRecordWorkflow(r,detail);setWizardStep(detail,r,4,true);toast("Changes requested — returned to the assigned owner","ok");}catch(ex){console.error(ex);toast("Could not request changes.","err");}finally{if(changesBtn.isConnected)changesBtn.disabled=false;}});
+    var saveVerificationBtn=el.querySelector(".btn-save-verification"); if(saveVerificationBtn) saveVerificationBtn.addEventListener("click",async function(){await waitForActionEvidenceUpload(r.id);var note=(el.querySelector(".verify-note")&&el.querySelector(".verify-note").value.trim())||null;saveVerificationBtn.disabled=true;try{var res=await sb.from("reports").update({action_verification_note:note}).eq("id",r.id);if(res.error)throw res.error;r.action_verification_note=note;var flag=el.querySelector(".verification-saved");if(flag){flag.hidden=false;setTimeout(function(){flag.hidden=true;},2200);}toast("Verification note saved","ok");loadAudit(r.id,auditEl);showView("home");}catch(ex){console.error(ex);toast("Could not save verification note.","err");}finally{saveVerificationBtn.disabled=false;}});
+    var verifyBtn=el.querySelector(".btn-verify"); if(verifyBtn) verifyBtn.addEventListener("click",async function(){verifyBtn.disabled=true;try{await waitForActionEvidenceUpload(r.id);var note=(el.querySelector(".verify-note")&&el.querySelector(".verify-note").value.trim())||null;var patch={action_status:"verified",action_verified_at:new Date().toISOString(),action_verified_by:currentSession.user.id,action_verification_note:note};var res=await sb.from("reports").update(patch).eq("id",r.id);if(res.error)throw res.error;Object.keys(patch).forEach(function(k){r[k]=patch[k];});renderActionWorkflow(r,detail.querySelector("[data-action-completion]"),auditEl,detail,"complete");renderActionWorkflow(r,detail.querySelector("[data-action-verification]"),auditEl,detail,"verify");loadAudit(r.id,auditEl);renderHomeSnapshot();renderMyWork();refreshRecordWorkflow(r,detail);setWizardStep(detail,r,6,true);toast("Corrective action verified — ready for closure","ok");}catch(ex){console.error(ex);toast("Could not verify corrective action.","err");}finally{if(verifyBtn.isConnected)verifyBtn.disabled=false;}});
+    var changesBtn=el.querySelector(".btn-changes"); if(changesBtn) changesBtn.addEventListener("click",async function(){await waitForActionEvidenceUpload(r.id);var note=(el.querySelector(".verify-note")&&el.querySelector(".verify-note").value.trim())||"";var req=el.querySelector("[data-verify-required]");if(!note){if(req)req.classList.add("show");toast("Explain what needs to change before sending the action back.","err");return;}if(req)req.classList.remove("show");changesBtn.disabled=true;try{var patch={action_status:"changes_requested",action_verification_note:note,action_verified_at:null,action_verified_by:null};var res=await sb.from("reports").update(patch).eq("id",r.id);if(res.error)throw res.error;Object.keys(patch).forEach(function(k){r[k]=patch[k];});renderActionWorkflow(r,detail.querySelector("[data-action-completion]"),auditEl,detail,"complete");loadAudit(r.id,auditEl);renderHomeSnapshot();renderMyWork();refreshRecordWorkflow(r,detail);setWizardStep(detail,r,4,true);toast("Changes requested — returned to the assigned owner","ok");}catch(ex){console.error(ex);toast("Could not request changes.","err");}finally{if(changesBtn.isConnected)changesBtn.disabled=false;}});
   }
 
   function isActionEvidence(a){ return !!(a && String(a.storage_path||"").indexOf("corrective-evidence/")===0); }
@@ -3084,6 +3086,40 @@
     return attByReport[reportId];
   }
   function evidenceLocked(r){ return r.status==="closed" || r.status==="no_action" || r.status==="duplicate" || r.action_status==="verified"; }
+  async function uploadActionEvidenceFiles(r, files){
+    files=Array.prototype.slice.call(files||[]);
+    if(!files.length) return {ok:0,failed:0};
+    if(files.length>5) throw new Error("Choose no more than 5 evidence files at a time.");
+    for(var i=0;i<files.length;i++) if(files[i].size>10*1024*1024) throw new Error("Each evidence file must be 10 MB or smaller.");
+    var key=String(r.id);
+    var task=(async function(){
+      var ok=0, failed=0;
+      for(var j=0;j<files.length;j++){
+        var f=files[j], path="";
+        try{
+          var safe=(f.name||"evidence").replace(/[^a-zA-Z0-9._-]/g,"_"); if(safe.length>120) safe=safe.slice(-120);
+          path="corrective-evidence/"+r.id+"/"+Date.now()+"_"+j+"_"+safe;
+          var up=await sb.storage.from("report-attachments").upload(path,f,{contentType:f.type||undefined,upsert:false});
+          if(up.error) throw up.error;
+          var meta=await sb.rpc("rbh_add_action_evidence",{p_report_id:String(r.id),p_storage_path:path,p_file_name:f.name,p_mime_type:f.type||null,p_size_bytes:f.size||null});
+          if(meta.error){
+            try{ await sb.storage.from("report-attachments").remove([path]); }catch(_cleanupErr){}
+            throw meta.error;
+          }
+          ok++;
+        }catch(ex){ console.error(ex); failed++; }
+      }
+      await refreshReportAttachments(r.id);
+      return {ok:ok,failed:failed};
+    })();
+    actionEvidenceUploads[key]=task;
+    try{ return await task; }
+    finally{ if(actionEvidenceUploads[key]===task) delete actionEvidenceUploads[key]; }
+  }
+  async function waitForActionEvidenceUpload(reportId){
+    var task=actionEvidenceUploads[String(reportId)];
+    return task ? await task : {ok:0,failed:0};
+  }
   async function renderActionEvidence(r, el, auditEl){
     if(!el) return;
     var allEvidence=(attByReport[r.id]||[]).filter(isActionEvidence);
@@ -3092,7 +3128,7 @@
     var priorEvidence=allEvidence.filter(function(a){ if(!restartAt) return false; var t=new Date(a.created_at||0).getTime(); return !isNaN(t)&&t<restartAt; });
     var canUpload=canEditReport(r) && !evidenceLocked(r);
     var countLabel=arr.length+(arr.length===1?" file":" files");
-    el.innerHTML='<div class="evidence-head"><div><b>Corrective-action evidence</b><span>Photos or files that show what was fixed in the current workflow. Evidence is optional, but useful when the correction can be visually confirmed.</span></div><span class="evidence-count">'+countLabel+'</span></div><div class="evidence-files" data-evidence-files>'+(arr.length?'<span class="evidence-empty">Loading evidence…</span>':'<span class="evidence-empty">No corrective-action evidence uploaded in the current workflow.</span>')+'</div>'+(priorEvidence.length?'<details class="evidence-history"><summary>Earlier workflow evidence ('+priorEvidence.length+')</summary><div class="evidence-files" data-prior-evidence-files><span class="evidence-empty">Loading preserved evidence…</span></div></details>':'')+(canUpload?'<div class="evidence-upload"><input class="evidence-file-input" type="file" multiple accept="image/*,.pdf,.doc,.docx"><button class="evidence-pick" type="button">Choose evidence</button><span class="evidence-selected">No files selected</span><button class="evidence-upload-btn" type="button" disabled>Upload evidence</button><div class="evidence-help">Up to 5 files at a time, 10 MB each. Photos, PDF, Word documents, and common image formats are supported.</div></div>':'');
+    el.innerHTML='<div class="evidence-head"><div><b>Corrective-action evidence</b><span>Photos or files that show what was fixed in the current workflow. Evidence is optional, but useful when the correction can be visually confirmed.</span></div><span class="evidence-count">'+countLabel+'</span></div><div class="evidence-files" data-evidence-files>'+(arr.length?'<span class="evidence-empty">Loading evidence…</span>':'<span class="evidence-empty">No corrective-action evidence uploaded in the current workflow.</span>')+'</div>'+(priorEvidence.length?'<details class="evidence-history"><summary>Earlier workflow evidence ('+priorEvidence.length+')</summary><div class="evidence-files" data-prior-evidence-files><span class="evidence-empty">Loading preserved evidence…</span></div></details>':'')+(canUpload?'<div class="evidence-upload"><input class="evidence-file-input" type="file" multiple accept="image/*,.pdf,.doc,.docx"><button class="evidence-pick" type="button">Add evidence</button><span class="evidence-selected">Files save automatically after selection.</span><div class="evidence-help">Up to 5 files at a time, 10 MB each. Photos, PDF, Word documents, and common image formats are supported.</div></div>':'');
     async function renderEvidenceFiles(items,target){
       if(!target||!items.length) return;
       try{
@@ -3116,38 +3152,31 @@
     var priorEl=el.querySelector("[data-prior-evidence-files]");
     if(priorEvidence.length) await renderEvidenceFiles(priorEvidence,priorEl);
     if(!canUpload) return;
-    var input=el.querySelector(".evidence-file-input"), pick=el.querySelector(".evidence-pick"), selected=el.querySelector(".evidence-selected"), upload=el.querySelector(".evidence-upload-btn");
-    if(!input||!pick||!selected||!upload) return;
-    pick.addEventListener("click",function(){ input.click(); });
-    input.addEventListener("change",function(){
-      var files=Array.prototype.slice.call(input.files||[]);
-      selected.textContent=files.length?(files.length+" file"+(files.length===1?"":"s")+" selected"):"No files selected";
-      upload.disabled=!files.length;
-    });
-    upload.addEventListener("click",async function(){
+    var input=el.querySelector(".evidence-file-input"), pick=el.querySelector(".evidence-pick"), selected=el.querySelector(".evidence-selected");
+    if(!input||!pick||!selected) return;
+    pick.addEventListener("click",function(){ if(!pick.disabled) input.click(); });
+    input.addEventListener("change",async function(){
       var files=Array.prototype.slice.call(input.files||[]);
       if(!files.length) return;
-      if(files.length>5){ toast("Choose no more than 5 evidence files at a time.","err"); return; }
-      for(var i=0;i<files.length;i++){ if(files[i].size>10*1024*1024){ toast("Each evidence file must be 10 MB or smaller.","err"); return; } }
-      upload.disabled=true; pick.disabled=true; upload.textContent="Uploading…";
-      var ok=0, failed=0;
-      for(var j=0;j<files.length;j++){
-        var f=files[j];
-        try{
-          var safe=(f.name||"evidence").replace(/[^a-zA-Z0-9._-]/g,"_"); if(safe.length>120) safe=safe.slice(-120);
-          var path="corrective-evidence/"+r.id+"/"+Date.now()+"_"+j+"_"+safe;
-          var up=await sb.storage.from("report-attachments").upload(path,f,{contentType:f.type||undefined,upsert:false});
-          if(up.error) throw up.error;
-          var meta=await sb.rpc("rbh_add_action_evidence",{p_report_id:String(r.id),p_storage_path:path,p_file_name:f.name,p_mime_type:f.type||null,p_size_bytes:f.size||null});
-          if(meta.error) throw meta.error;
-          ok++;
-        }catch(ex){ console.error(ex); failed++; }
+      if(files.length>5){ toast("Choose no more than 5 evidence files at a time.","err"); input.value=""; return; }
+      for(var i=0;i<files.length;i++) if(files[i].size>10*1024*1024){ toast("Each evidence file must be 10 MB or smaller.","err"); input.value=""; return; }
+      pick.disabled=true;
+      pick.textContent="Uploading…";
+      selected.textContent="Saving "+files.length+" evidence file"+(files.length===1?"":"s")+"…";
+      try{
+        var result=await uploadActionEvidenceFiles(r,files);
+        if(result.ok) toast(result.ok+" evidence file"+(result.ok===1?"":"s")+" saved","ok");
+        if(result.failed) toast(result.failed+" evidence file"+(result.failed===1?"":"s")+" could not be saved. Please add it again.","err");
+        loadAudit(r.id,auditEl);
+        await renderActionEvidence(r,el,auditEl);
+      }catch(ex){
+        console.error(ex);
+        toast(ex&&ex.message?ex.message:"Could not save corrective-action evidence.","err");
+        pick.disabled=false;
+        pick.textContent="Add evidence";
+        selected.textContent="Evidence was not saved. Choose the file again.";
+        input.value="";
       }
-      try{ await refreshReportAttachments(r.id); }catch(ex){ console.error(ex); }
-      if(ok) toast(ok+" evidence file"+(ok===1?"":"s")+" uploaded","ok");
-      if(failed) toast(failed+" evidence file"+(failed===1?"":"s")+" could not be uploaded","err");
-      loadAudit(r.id,auditEl);
-      renderActionEvidence(r,el,auditEl);
     });
   }
 
