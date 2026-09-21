@@ -1047,6 +1047,23 @@
     }catch(ex){ console.error("translation",ex); return null; }
   }
   async function translateReportForLanguage(r,targetLanguage){ targetLanguage=normalizeLanguageCode(targetLanguage); var fields=reportTranslationFields(r); if(targetLanguage==="en"&&normalizeLanguageCode(r&&r.language||"en")==="en") return fields; return translateTextMap(fields,targetLanguage,"report:"+String(r&&r.id||"")); }
+  async function sendActionAssignmentEmail(r){
+    if(!r||!r.assigned_user_id) return {ok:true,sent:false,skipped:true,reason:"NO_DASHBOARD_ASSIGNEE"};
+    if(!currentSession||!currentSession.access_token) return {ok:false,sent:false,error:"AUTH_REQUIRED"};
+    try{
+      var resp=await fetch(SUPA_URL+"/functions/v1/send-action-assignment-email",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","Authorization":"Bearer "+currentSession.access_token,"apikey":SUPA_KEY},
+        body:JSON.stringify({reportId:String(r.id)})
+      });
+      var data=await resp.json().catch(function(){return {};});
+      if(!resp.ok) return {ok:false,sent:false,error:data.error||("HTTP_"+resp.status),detail:data.detail||""};
+      return data||{ok:true,sent:false};
+    }catch(ex){
+      console.error("assignment email",ex);
+      return {ok:false,sent:false,error:"NETWORK_ERROR",detail:(ex&&ex.message)||""};
+    }
+  }
   function reviewValue(r,field,lang,tx){
     lang=normalizeLanguageCode(lang); tx=tx||{};
     if(field==="involves_injury") return r.involves_injury?(lang==="es"?"Sí":"Yes"):(lang==="es"?"No":"No");
@@ -1091,7 +1108,7 @@
   var dispositionReport=null, dispositionWrap=null, dispositionNotesEl=null;
   var reopenReport=null, reopenReturnView="records", restartReport=null, restartReturnView="records";
   var NAV_VIEW_KEY="rbh_safety_active_view_v1", NAV_INCIDENT_KEY="rbh_safety_active_incident_v1";
-  var APP_VERSION="2026.09.21 · Language V1";
+  var APP_VERSION="2026.09.21 · Action Assignment Email V1";
 
   function storedView(){
     try{ var v=localStorage.getItem(NAV_VIEW_KEY); return v||(currentRole==="supervisor"?"mywork":"home"); }catch(_e){ return currentRole==="supervisor"?"mywork":"home"; }
@@ -1105,7 +1122,23 @@
   function storeIncident(r,from){
     try{ localStorage.setItem(NAV_INCIDENT_KEY,JSON.stringify({id:r&&r.id,from:from||"records"})); }catch(_e){}
   }
+  function requestedReportIdFromUrl(){
+    try{ return new URLSearchParams(window.location.search||"").get("report")||""; }catch(_e){ return ""; }
+  }
+  function clearRequestedReportFromUrl(){
+    try{
+      var u=new URL(window.location.href); u.searchParams.delete("report");
+      window.history.replaceState({},document.title,u.pathname+(u.search?u.search:"")+(u.hash||""));
+    }catch(_e){}
+  }
   function restoreSavedView(){
+    var directReportId=requestedReportIdFromUrl();
+    if(directReportId){
+      var directReport=allReports.find(function(x){ return String(x.id)===String(directReportId); });
+      clearRequestedReportFromUrl();
+      if(directReport){ openIncident(directReport,"mywork"); return; }
+      toast("That assigned record is unavailable or you no longer have access to it.","err");
+    }
     var name=storedView();
     var allowed=["home","mywork","records","actions","metrics","platform","users","incident"];
     if(allowed.indexOf(name)<0) name="home";
@@ -1640,7 +1673,23 @@
     var complete3=detail.querySelector('[data-step-complete="3"]'); if(complete3) complete3.addEventListener("click",async function(){
       var miss=[]; if(!invCorr.value.trim())miss.push("corrective action"); if(!invAssign.value&&!invResp.value.trim())miss.push("owner"); if(!invDue.value)miss.push("due date"); if(!invPri.value)miss.push("priority"); var req=detail.querySelector('[data-required="3"]');
       if(miss.length){if(req){req.textContent="Still required: "+miss.join(", ")+".";req.classList.add("show");}toast("Complete the required action-plan fields first.","err");return;} if(req)req.classList.remove("show"); complete3.disabled=true;
-      try{await persistActionPlan(false,true);renderActionWorkflow(r,detail.querySelector("[data-action-completion]"),auditEl,detail,"complete");renderActionWorkflow(r,detail.querySelector("[data-action-verification]"),auditEl,detail,"verify");setWizardStep(detail,r,4,true);toast("Action assigned — corrective work can begin","ok");}catch(ex){console.error(ex);toast("Could not assign the corrective action.","err");}finally{if(complete3.isConnected)complete3.disabled=!canEditReport(r);} });
+      try{
+        await persistActionPlan(false,true);
+        renderActionWorkflow(r,detail.querySelector("[data-action-completion]"),auditEl,detail,"complete");
+        renderActionWorkflow(r,detail.querySelector("[data-action-verification]"),auditEl,detail,"verify");
+        setWizardStep(detail,r,4,true);
+        var notify=await sendActionAssignmentEmail(r);
+        if(notify&&notify.sent){
+          toast(notify.duplicate?"Action assigned — assignee was already notified":"Action assigned — email notification sent","ok");
+        } else if(notify&&notify.skipped&&(notify.reason==="NO_DASHBOARD_ASSIGNEE"||notify.reason==="NO_ASSIGNEE_EMAIL")){
+          toast("Action assigned — no dashboard email notification was available","ok");
+        } else if(notify&&notify.skipped){
+          toast("Action assigned — notification already in progress","ok");
+        } else {
+          console.error("assignment notification failed",notify);
+          toast("Action assigned, but the email notification could not be sent.","err");
+        }
+      }catch(ex){console.error(ex);toast("Could not assign the corrective action.","err");}finally{if(complete3.isConnected)complete3.disabled=!canEditReport(r);} });
 
     renderActionWorkflow(r,detail.querySelector("[data-action-completion]"),auditEl,detail,"complete");
     renderActionWorkflow(r,detail.querySelector("[data-action-verification]"),auditEl,detail,"verify");
