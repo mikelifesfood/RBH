@@ -187,9 +187,7 @@
   .progress-fill{height:100%;width:25%;background:var(--red);border-radius:999px;transition:width .22s ease}
 
   form{margin-top:4px}
-  fieldset[data-step]{display:none}
-  fieldset[data-step].step-active{display:block;animation:stepin .18s ease-out}
-  @keyframes stepin{from{opacity:.55;transform:translateY(4px)}to{opacity:1;transform:none}}
+  fieldset[data-step]{display:block}
   fieldset{border-radius:14px;padding:20px 18px 22px}
   legend{font-size:16px}
   .step-note{font-size:13px;color:var(--muted);margin:2px 0 0}
@@ -204,8 +202,7 @@
   .step-next{flex:1;background:var(--red);color:#fff;border:none}
   .step-next:hover{background:var(--red-dark)}
   .step-actions.first .step-back{display:none}
-  .actions{display:none;margin-top:0}
-  .actions.step-submit-active{display:block}
+  .actions{display:block;margin-top:18px}
   .review-card{display:none;background:var(--paper);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:18px;margin-top:16px}
   .review-card.show{display:block}
   .review-card h3{font-family:var(--display);font-size:16px;margin:0 0 4px}
@@ -260,23 +257,47 @@
     </div>
   </section>
 
-  <div class="progress-shell" id="progressShell">
-    <div class="progress-card">
-      <div class="progress-top"><span class="progress-step" id="progressStep">Step 1 of 4</span><span class="progress-label" id="progressLabel">What happened?</span></div>
-      <div class="progress-track" aria-hidden="true"><div class="progress-fill" id="progressFill"></div></div>
-    </div>
-  </div>
+  <form id="reportForm" novalidate>
 
-  <div class="emergency" role="note">
+    <div class="emergency" role="note">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
     <div>
       <strong data-i18n="emg_strong">Emergency or injury right now?</strong>
       <small data-i18n="emg_small">Call 911 and your site supervisor immediately. This form is for reporting hazards and near misses — not active emergencies.</small>
     </div>
-  </div>
+    </div>
 
-  <form id="reportForm" novalidate>
+    <fieldset data-step="4">
+      <legend><span data-i18n="s6_legend">Your info</span> <span class="legend-note" data-i18n="dash_opt">— optional</span></legend>
+      <div class="anon-note" style="margin-bottom:4px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span data-i18n="anon">You can report anonymously — leave this blank. If you add your name or contact, the team can follow up or thank you. Reports are not used to get anyone in trouble.</span>
+      </div>
 
+      <div class="grid2">
+        <div class="field">
+          <label class="lab" for="name"><span data-i18n="l_name">Your name</span></label>
+          <input type="text" id="name" name="name" data-i18n-ph="ph_name" placeholder="Optional">
+        </div>
+        <div class="field">
+          <label class="lab" for="role"><span data-i18n="l_role">You are a…</span></label>
+          <select id="role" name="role">
+            <option value="" selected disabled data-i18n="ph_role_sel">Select…</option>
+            <option value="RBH employee / crew" data-i18n="role_emp">RBH employee / crew</option>
+            <option value="RBH office / management" data-i18n="role_off">RBH office / management</option>
+            <option value="Subcontractor" data-i18n="role_sub">Subcontractor</option>
+            <option value="General contractor" data-i18n="role_gc">General contractor</option>
+            <option value="Site visitor / other" data-i18n="role_vis">Site visitor / other</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label class="lab" for="contact"><span data-i18n="l_contact">Phone or email to reach you</span>
+          <button type="button" class="info" data-i18n-tip="tip_contact" data-tip="Only if you'd like a reply. Used just to follow up on this report." aria-label="More info">i</button>
+        </label>
+        <input type="text" id="contact" name="contact" data-i18n-ph="ph_contact" placeholder="Optional — phone or email">
+      </div>
+    </fieldset>
     <fieldset data-step="1">
       <legend data-i18n="s1_legend">What are you reporting?</legend>
       <div class="types" id="typeGroup" role="radiogroup" aria-label="Report type">
@@ -425,49 +446,7 @@
       <ul class="files" id="fileList"></ul>
     </fieldset>
 
-    <fieldset data-step="4">
-      <legend><span data-i18n="s6_legend">Your info</span> <span class="legend-note" data-i18n="dash_opt">— optional</span></legend>
-      <div class="anon-note" style="margin-bottom:4px">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        <span data-i18n="anon">You can report anonymously — leave this blank. If you add your name or contact, the team can follow up or thank you. Reports are not used to get anyone in trouble.</span>
-      </div>
 
-      <div class="grid2">
-        <div class="field">
-          <label class="lab" for="name"><span data-i18n="l_name">Your name</span></label>
-          <input type="text" id="name" name="name" data-i18n-ph="ph_name" placeholder="Optional">
-        </div>
-        <div class="field">
-          <label class="lab" for="role"><span data-i18n="l_role">You are a…</span></label>
-          <select id="role" name="role">
-            <option value="" selected disabled data-i18n="ph_role_sel">Select…</option>
-            <option value="RBH employee / crew" data-i18n="role_emp">RBH employee / crew</option>
-            <option value="RBH office / management" data-i18n="role_off">RBH office / management</option>
-            <option value="Subcontractor" data-i18n="role_sub">Subcontractor</option>
-            <option value="General contractor" data-i18n="role_gc">General contractor</option>
-            <option value="Site visitor / other" data-i18n="role_vis">Site visitor / other</option>
-          </select>
-        </div>
-      </div>
-      <div class="field">
-        <label class="lab" for="contact"><span data-i18n="l_contact">Phone or email to reach you</span>
-          <button type="button" class="info" data-i18n-tip="tip_contact" data-tip="Only if you'd like a reply. Used just to follow up on this report." aria-label="More info">i</button>
-        </label>
-        <input type="text" id="contact" name="contact" data-i18n-ph="ph_contact" placeholder="Optional — phone or email">
-      </div>
-    </fieldset>
-
-
-    <section class="review-card" id="reviewCard" aria-live="polite">
-      <h3 data-i18n="review_h">Quick review</h3>
-      <p data-i18n="review_p">Make sure the main details look right. You can go back to change anything.</p>
-      <div class="review-grid" id="reviewGrid"></div>
-    </section>
-
-    <div class="step-actions first" id="stepActions">
-      <button class="step-back" id="stepBack" type="button" data-i18n="btn_back">Back</button>
-      <button class="step-next" id="stepNext" type="button" data-i18n="btn_next">Continue</button>
-    </div>
 
     <div class="actions" id="submitActions">
       <button type="submit" class="submit" data-i18n="btn_submit">Send report to the safety team</button>
@@ -704,7 +683,6 @@
     document.querySelectorAll('[data-i18n-tip]').forEach(function(el){
       var k=el.getAttribute('data-i18n-tip'); if(I18N[lang][k]!=null) el.setAttribute('data-tip',I18N[lang][k]);
     });
-    if(typeof updateStep==='function' && document.getElementById('progressStep')) updateStep();
     document.querySelectorAll('.lang button').forEach(function(b){
       var on=b.getAttribute('data-lang')===lang;
       b.classList.toggle('active',on); b.setAttribute('aria-pressed',on?'true':'false');
@@ -752,43 +730,6 @@
     });
   });
 
-
-  /* ---------------- Guided reporting flow ---------------- */
-  var currentStep=1, totalSteps=4;
-  var stepLabels={1:"What happened?",2:"Where & details",3:"Response & photos",4:"Your info & review"};
-  var stepLabelsEs={1:"¿Qué pasó?",2:"Lugar y detalles",3:"Respuesta y fotos",4:"Su información y revisión"};
-  function updateStep(scrollIt){
-    document.querySelectorAll('fieldset[data-step]').forEach(function(fs){ fs.classList.toggle('step-active', Number(fs.getAttribute('data-step'))===currentStep); });
-    var ps=document.getElementById('progressStep'), pl=document.getElementById('progressLabel'), pf=document.getElementById('progressFill');
-    if(ps) ps.textContent=(CUR==='es'?'Paso ':'Step ')+currentStep+(CUR==='es'?' de ':' of ')+totalSteps;
-    if(pl) pl.textContent=(CUR==='es'?stepLabelsEs:stepLabels)[currentStep];
-    if(pf) pf.style.width=(currentStep/totalSteps*100)+'%';
-    var back=document.getElementById('stepBack'), next=document.getElementById('stepNext'), sa=document.getElementById('stepActions'), sub=document.getElementById('submitActions'), review=document.getElementById('reviewCard');
-    if(sa) sa.classList.toggle('first',currentStep===1);
-    if(back) back.style.display=currentStep===1?'none':'';
-    if(next) next.style.display=currentStep===totalSteps?'none':'';
-    if(sub) sub.classList.toggle('step-submit-active',currentStep===totalSteps);
-    if(review) review.classList.toggle('show',currentStep===totalSteps);
-    if(currentStep===totalSteps) renderReview();
-    if(scrollIt) window.scrollTo({top:document.getElementById('progressShell').offsetTop,behavior:'smooth'});
-  }
-  function validateStep(step){
-    clearErr(); var firstBad=null;
-    if(step===1){ var type=form.querySelector('input[name="reportType"]:checked'); if(!type){ document.getElementById('err-type').classList.add('show'); firstBad=document.getElementById('typeGroup'); } }
-    if(step===2){ var desc=document.getElementById('description'); if(!desc.value.trim()){ desc.classList.add('err'); document.getElementById('err-desc').classList.add('show'); firstBad=desc; } }
-    if(firstBad){ firstBad.scrollIntoView({behavior:'smooth',block:'center'}); return false; }
-    return true;
-  }
-  function reviewRow(label,value){ if(!value) return ''; return '<div class="review-row"><b>'+label+'</b><span>'+String(value).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];})+'</span></div>'; }
-  function renderReview(){
-    var type=form.querySelector('input[name="reportType"]:checked'); var inj=form.querySelector('input[name="injury"]:checked'); var grid=document.getElementById('reviewGrid'); if(!grid) return;
-    var siteVal=currentSite(); var rows='';
-    rows+=reviewRow(CUR==='es'?'Tipo':'Type',type?type.value:''); rows+=reviewRow(CUR==='es'?'Lesión':'Injury',inj&&inj.value==='yes'?(CUR==='es'?'Sí':'Yes'):(CUR==='es'?'No':'No'));
-    rows+=reviewRow(CUR==='es'?'Dirección':'Address',siteVal); rows+=reviewRow(CUR==='es'?'Descripción':'Description',val('description')); rows+=reviewRow(CUR==='es'?'Peligro':'Hazard',val('hazard')); rows+=reviewRow(CUR==='es'?'Acción inmediata':'Immediate action',val('immediate')); rows+=reviewRow(CUR==='es'?'Archivos':'Files',files.length?String(files.length):''); rows+=reviewRow(CUR==='es'?'Reportado por':'Reported by',val('name')||(CUR==='es'?'Anónimo':'Anonymous'));
-    grid.innerHTML=rows;
-  }
-  document.getElementById('stepNext').addEventListener('click',function(){ if(!validateStep(currentStep)) return; if(currentStep<totalSteps){ currentStep++; updateStep(true); } });
-  document.getElementById('stepBack').addEventListener('click',function(){ if(currentStep>1){ currentStep--; updateStep(true); } });
 
   /* ---------------- File attachments ---------------- */
   var drop=document.getElementById('drop'), input=document.getElementById('fileInput'),
@@ -938,7 +879,7 @@
       var b=form.querySelector('button.submit'); b.disabled=false; b.textContent=t('btn_submit');
       form.reset(); files=[]; render(); clearErr(); hideSendErr();
       if(injuryWarn) injuryWarn.classList.remove('show');
-      s.classList.remove('show'); form.style.display=''; currentStep=1; updateStep();
+      s.classList.remove('show'); form.style.display='';
       window.scrollTo({top:0,behavior:'smooth'});
     };
   }
@@ -953,7 +894,7 @@
 
   /* ---------------- Init: auto-detect Spanish ---------------- */
   var pref=(navigator.language||navigator.userLanguage||'en').toLowerCase();
-  setLang(pref.indexOf('es')===0 ? 'es' : 'en'); prefillAddressFromUrl(); updateStep();
+  setLang(pref.indexOf('es')===0 ? 'es' : 'en'); prefillAddressFromUrl();
 })();
 </script>
 </body>
