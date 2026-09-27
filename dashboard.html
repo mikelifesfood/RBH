@@ -58,7 +58,7 @@
   .field{margin-bottom:14px}
   .field label{display:block;font-weight:600;font-size:13.5px;margin-bottom:6px}
   input[type=email],input[type=password],input[type=text],select,textarea{width:100%;font:inherit;color:var(--ink);background:var(--surface);border:1.5px solid var(--line-strong);border-radius:10px;padding:11px 12px;appearance:none;transition:border-color .12s,box-shadow .12s}
-  input[type=date]{width:100%;font:inherit;color:var(--ink);background:var(--surface);border:1.5px solid var(--line-strong);border-radius:10px;padding:11px 12px;min-height:46px;transition:border-color .12s,box-shadow .12s}
+  input[type=date],input[type=datetime-local]{width:100%;font:inherit;color:var(--ink);background:var(--surface);border:1.5px solid var(--line-strong);border-radius:10px;padding:11px 12px;min-height:46px;transition:border-color .12s,box-shadow .12s}
   textarea{min-height:104px;resize:vertical;line-height:1.5}
   input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 4px var(--focus)}
   select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236c6862' stroke-width='2.4'><path d='M6 9l6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px}
@@ -601,11 +601,11 @@
     .inv-grid,.inv-row,.assignment-grid,.support-grid{display:grid!important;grid-template-columns:1fr!important;gap:10px!important}
     .inv-l{min-width:0;font-size:12.5px;gap:5px}
     .inv-l input,.inv-l select,.inv-l textarea,
-    input[type="text"],input[type="email"],input[type="password"],input[type="date"],select,textarea{
+    input[type="text"],input[type="email"],input[type="password"],input[type="date"],input[type="datetime-local"],select,textarea{
       min-width:0;max-width:100%;width:100%;font-size:16px!important;
     }
     .inv-l textarea{min-height:112px}
-    input[type="date"]{-webkit-appearance:none;appearance:none}
+    input[type="date"],input[type="datetime-local"]{-webkit-appearance:none;appearance:none}
 
     /* Deliberate actions are large, stacked and easy to tap. */
     .wizard-footer{display:block;margin-top:14px;padding-top:12px}
