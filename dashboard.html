@@ -520,6 +520,8 @@
   .reg-persistent-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:0 0 auto}
   .reg-persistent-actions button,.reg-persistent-actions a{border:0;background:transparent;padding:0;color:inherit;font:inherit;font-weight:800;text-decoration:underline;text-underline-offset:2px;cursor:pointer;white-space:nowrap}
   .reg-persistent-actions button:hover,.reg-persistent-actions a:hover{opacity:.78}
+  .reg-persistent-actions .reg-return-current{background:var(--red);color:#fff;border:1px solid var(--red);border-radius:8px;padding:7px 10px;text-decoration:none;box-shadow:0 2px 7px rgba(0,0,0,.10)}
+  .reg-persistent-actions .reg-return-current:hover{opacity:1;background:var(--red-dark);border-color:var(--red-dark);transform:translateY(-1px)}
   [data-theme="dark"] .reg-persistent{background:#2c2515;border-color:#5e4d22;color:#f1d986}
   [data-theme="dark"] .reg-persistent.urgent{background:#311c1c;border-color:#623232;color:#ffbcbc}
   [data-theme="dark"] .reg-persistent.overdue{background:#3b1719;border-color:#a94349;color:#ffd1d1}
@@ -1434,7 +1436,7 @@
     parts.push(mins+" min");
     return parts.join(" ");
   }
-  function persistentRegulatoryBannerHtml(r){
+  function persistentRegulatoryBannerHtml(r,viewingStep){
     if(!r || !r.involves_injury) return "";
     var status=String(r.calosha_screening_status||"");
     if(status!=="pending" && status!=="yes") return "";
@@ -1455,15 +1457,24 @@
         }
       }
     }
+    viewingStep=parseInt(viewingStep||"0",10)||recommendedWizardStep(r);
+    var currentStep=recommendedWizardStep(r);
+    var navAction='';
+    if(viewingStep===1 && currentStep>1 && !isResolvedReport(r)){
+      navAction='<button type="button" class="reg-return-current" data-reg-return-step="'+currentStep+'">Return to '+esc(wizardShortTitle(currentStep))+'</button>';
+    }else if(viewingStep!==1){
+      navAction='<button type="button" data-reg-review-jump>Review screening</button>';
+    }
     return '<div class="reg-persistent '+esc(cls)+'" data-reg-persistent role="status" aria-live="polite">'+
       '<div class="reg-persistent-copy"><strong>'+esc(title)+'</strong><span>'+esc(timing)+' · '+esc(message)+'</span></div>'+
-      '<div class="reg-persistent-actions"><button type="button" data-reg-review-jump>Review screening</button><a href="https://www.dir.ca.gov/dosh/report-accident-or-injury.html" target="_blank" rel="noopener">Reporting instructions ↗</a></div>'+
+      '<div class="reg-persistent-actions">'+navAction+'<a href="https://www.dir.ca.gov/dosh/report-accident-or-injury.html" target="_blank" rel="noopener">Reporting instructions ↗</a></div>'+
     '</div>';
   }
   function refreshPersistentRegulatoryBanner(detail,r){
     if(!detail) return;
     var host=detail.querySelector("[data-reg-persistent-host]");
-    if(host) host.innerHTML=persistentRegulatoryBannerHtml(r);
+    var viewingStep=parseInt(detail.dataset.wizardStep||"0",10)||recommendedWizardStep(r);
+    if(host) host.innerHTML=persistentRegulatoryBannerHtml(r,viewingStep);
   }
   function refreshUrgentTriage(detail,r){
     if(!detail) return;
@@ -1666,7 +1677,7 @@
     var currentText=resolved?'Closed record review':((activeState&&activeState.state==="done")?'Reviewing a completed step':('Step '+active+' of 6'));
     var helpText=resolved?'Read-only record. All completed sections are shown below; on desktop, click a green step to jump to it. Notes can still be added.':wizardHelp(active,r);
     el.className="wizard-process";
-    el.innerHTML='<div class="wizard-process-head"><div class="wizard-process-copy"><b>'+esc(currentText)+(resolved?'':' · '+esc(wizardLongTitle(active)))+'</b><span>'+esc(helpText)+'</span></div><div class="wizard-top-actions">'+topSave+topPrimary+'</div></div><div class="process-flow">'+arrows+'</div><div class="reg-persistent-host" data-reg-persistent-host>'+persistentRegulatoryBannerHtml(r)+'</div>';
+    el.innerHTML='<div class="wizard-process-head"><div class="wizard-process-copy"><b>'+esc(currentText)+(resolved?'':' · '+esc(wizardLongTitle(active)))+'</b><span>'+esc(helpText)+'</span></div><div class="wizard-top-actions">'+topSave+topPrimary+'</div></div><div class="process-flow">'+arrows+'</div><div class="reg-persistent-host" data-reg-persistent-host>'+persistentRegulatoryBannerHtml(r,active)+'</div>';
   }
 
   function wizardShortTitle(n){ return ({1:"Review",2:"Investigation",3:"Action Plan",4:"Complete Action",5:"Verify",6:"Close"})[n]||"Step"; }
@@ -1922,6 +1933,10 @@
 
     detail.addEventListener("click",async function(e){
       if(e.target.closest("[data-reg-review-jump]")){ setWizardStep(detail,r,1,true); return; }
+      var regReturn=e.target.closest("[data-reg-return-step]"); if(regReturn){
+        var returnStep=parseInt(regReturn.getAttribute("data-reg-return-step")||"0",10)||recommendedWizardStep(r);
+        setWizardStep(detail,r,returnStep,true); return;
+      }
       var nav=e.target.closest("[data-wizard-nav]"); if(nav){
         var navStep=parseInt(nav.getAttribute("data-wizard-nav"),10);
         if(isResolvedReport(r)){ var target=detail.querySelector('[data-wizard-step="'+navStep+'"]'); if(target&&!target.hidden) scrollWizardStepIntoView(detail,navStep); return; }
