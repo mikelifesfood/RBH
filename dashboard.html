@@ -297,11 +297,12 @@
   .main{display:flex;flex-direction:column;min-width:0}
   .topbar{display:flex;align-items:center;gap:12px;padding:13px 20px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,var(--paper) 0%,color-mix(in srgb,var(--paper) 94%,var(--surface-2)) 100%);position:sticky;top:0;z-index:20}
   .topbar-actions{margin-left:auto;display:flex;align-items:center;gap:8px}
-  .notification-bell{position:relative;width:40px;height:40px;border:1px solid var(--line);border-radius:11px;background:var(--paper);color:var(--ink);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:.16s ease;box-shadow:0 1px 2px rgba(20,20,20,.04)}
-  .notification-bell:hover{background:var(--surface-2);border-color:color-mix(in srgb,var(--line) 65%,var(--ink))}
-  .notification-bell:focus-visible{outline:3px solid color-mix(in srgb,var(--blue) 24%,transparent);outline-offset:2px}
-  .notification-bell svg{width:20px;height:20px}
-  .notification-badge{position:absolute;right:-5px;top:-6px;min-width:19px;height:19px;padding:0 5px;border-radius:999px;background:#b42318;color:#fff;border:2px solid var(--paper);display:none;align-items:center;justify-content:center;font:800 10px/1 Archivo,system-ui,sans-serif}
+  /* Step 11A: red gradient notification alert */
+  .notification-bell{position:relative;width:40px;height:40px;border:1px solid #9f1d22;border-radius:11px;background:linear-gradient(145deg,#cf4b52 0%,#b62b33 48%,#971a22 100%);color:#fff;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:.16s ease;box-shadow:0 3px 9px rgba(151,26,34,.22),inset 0 1px 0 rgba(255,255,255,.18)}
+  .notification-bell:hover{background:linear-gradient(145deg,#d8585f 0%,#bd3038 48%,#8d171e 100%);border-color:#86161c;box-shadow:0 4px 12px rgba(151,26,34,.28),inset 0 1px 0 rgba(255,255,255,.2);transform:translateY(-1px)}
+  .notification-bell:focus-visible{outline:3px solid color-mix(in srgb,#b42318 28%,transparent);outline-offset:2px}
+  .notification-bell svg{width:20px;height:20px;color:#fff;filter:drop-shadow(0 1px 1px rgba(90,0,5,.22))}
+  .notification-badge{position:absolute;right:-5px;top:-6px;min-width:19px;height:19px;padding:0 5px;border-radius:999px;background:#7f1017;color:#fff;border:2px solid var(--paper);display:none;align-items:center;justify-content:center;font:800 10px/1 Archivo,system-ui,sans-serif;box-shadow:0 1px 3px rgba(0,0,0,.16)}
   .notification-badge.show{display:flex}
   .notification-panel{position:fixed;right:20px;top:calc(var(--rbh-topbar-height,56px) + 8px);z-index:70;width:min(410px,calc(100vw - 32px));max-height:min(72vh,650px);background:var(--paper);border:1px solid var(--line);border-radius:16px;box-shadow:0 18px 50px rgba(24,28,34,.18);overflow:hidden}
   .notification-panel[hidden]{display:none}
