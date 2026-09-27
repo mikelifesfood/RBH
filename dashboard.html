@@ -1344,7 +1344,7 @@
 
   var $=function(id){return document.getElementById(id);};
   var loginView=$("loginView"), appView=$("appView"), listEl=$("list"), backdrop=$("backdrop");
-  var allReports=[], filtered=[], attByReport={}, actionEvidenceUploads={};
+  var allReports=[], allCorrectiveActions=[], filtered=[], attByReport={}, actionEvidenceUploads={};
   var allProfiles=[], profileById={}, currentSession=null, currentProfile=null, currentRole="read_only";
   var userNotifications=[], notificationActiveCount=0, notificationPollTimer=null, notificationLoading=false;
   var allOrgs=[], currentOrgId=null, currentOrgName="", isPlatformAdmin=false;
@@ -1353,7 +1353,7 @@
   var dispositionReport=null, dispositionWrap=null, dispositionNotesEl=null;
   var reopenReport=null, reopenReturnView="records", restartReport=null, restartReturnView="records";
   var NAV_VIEW_KEY="rbh_safety_active_view_v1", NAV_INCIDENT_KEY="rbh_safety_active_incident_v1";
-  var APP_VERSION="2026.09.27 · Step 14C.1 Verification Flow Polish";
+  var APP_VERSION="2026.09.27 · Step 14C.2 Corrective Actions Workspace";
 
   function storedView(){
     try{ var v=localStorage.getItem(NAV_VIEW_KEY); return v||(currentRole==="supervisor"?"mywork":"home"); }catch(_e){ return currentRole==="supervisor"?"mywork":"home"; }
@@ -1456,6 +1456,15 @@
       var rep=await repQ;
       if(rep.error) throw rep.error;
       allReports=rep.data||[];
+
+      var caQ=sb.from("report_corrective_actions")
+        .select("id,report_id,organization_id,workflow_generation,action_number,description,control_type,owner_user_id,due_date,priority,status,verifier_user_id,activated_at,retired_at,created_at,updated_at")
+        .is("retired_at",null);
+      if(currentOrgId) caQ=caQ.eq("organization_id", currentOrgId);
+      var ca=await caQ;
+      if(ca.error) throw ca.error;
+      allCorrectiveActions=ca.data||[];
+
       var atQ=sb.from("report_attachments").select("*");
       if(currentOrgId) atQ=atQ.eq("organization_id", currentOrgId);
       var at=await atQ;
@@ -1471,7 +1480,7 @@
         if(!exists) arr.push(a);
       });
       attByReport=nextAttByReport;
-      applyFilters(); renderMetrics(); renderHomeSnapshot(); renderMyWork();
+      applyFilters(); renderMetrics(); renderHomeSnapshot(); renderMyWork(); renderActions();
     }catch(ex){ console.error(ex); listEl.innerHTML='<div class="state">Couldn\'t load reports. Please refresh.</div>'; }
   }
   $("refresh").addEventListener("click", async function(){ await loadReports(); await loadNotifications(true); });
@@ -4245,39 +4254,91 @@
       var urgent=Object.keys(attentionIds).length; nav.textContent=urgent?String(urgent):'';
     }
   }
-  function actionEligible(r){ return !!(r.corrective_action || r.responsible_person || r.assigned_user_id || r.due_date || r.status==='corrective_action' || (r.action_status&&r.action_status!=="not_started")); }
+  function currentCorrectiveActionWorkspaceRows(){
+    return (allCorrectiveActions||[]).filter(function(a){
+      var r=findReport(a.report_id);
+      if(!r||isResolvedReport(r)||a.retired_at||!a.activated_at) return false;
+      if(parseInt(a.workflow_generation||0,10)!==parseInt(r.workflow_restart_count||0,10)) return false;
+      return String(a.status||"not_started")!=="verified";
+    });
+  }
+  function correctiveActionNeedsMyAttention(a){
+    if(!a||!currentUserId()) return false;
+    if(String(a.owner_user_id||"")===currentUserId()) return true;
+    if(String(a.status||"")==="awaiting_verification" && isManager()){
+      if(currentRole==="admin") return true;
+      return !a.verifier_user_id || String(a.verifier_user_id)===currentUserId();
+    }
+    return false;
+  }
   function renderActionSummary(arr){
     var el=$("actionSummary"); if(!el) return;
     var overdue=0,soon=0,verify=0,mine=0;
-    arr.forEach(function(r){
-      var d=daysUntilDue(r); if(d!==null&&d<0) overdue++; else if(d!==null&&d<=3) soon++;
-      if(r.action_status==="awaiting_verification") verify++;
-      if(currentSession&&currentSession.user&&String(r.assigned_user_id||"")===String(currentSession.user.id)) mine++;
+    arr.forEach(function(a){
+      var d=daysUntilDue(a);
+      if(d!==null&&d<0) overdue++;
+      else if(d!==null&&d<=3) soon++;
+      if(String(a.status||"")==="awaiting_verification") verify++;
+      if(currentUserId()&&String(a.owner_user_id||"")===currentUserId()) mine++;
     });
     function s(n,l){ return '<div class="action-stat"><b>'+n+'</b><span>'+l+'</span></div>'; }
     el.innerHTML=s(overdue,"Overdue")+s(soon,"Due in 3 days")+s(verify,"Awaiting verification")+s(mine,"Assigned to me");
   }
   function renderActions(){
     var el=$("actionList"), count=$("actionCount"); if(!el) return;
-    var arr=allReports.filter(function(r){ return actionEligible(r) && r.status!=="closed"&&r.status!=="no_action"&&r.status!=="duplicate"; });
+    var arr=currentCorrectiveActionWorkspaceRows();
+
     arr.sort(function(a,b){
-      if(a.action_status==="awaiting_verification"&&b.action_status!=="awaiting_verification") return -1;
-      if(b.action_status==="awaiting_verification"&&a.action_status!=="awaiting_verification") return 1;
+      var as=String(a.status||""), bs=String(b.status||"");
+      if(as==="awaiting_verification"&&bs!=="awaiting_verification") return -1;
+      if(bs==="awaiting_verification"&&as!=="awaiting_verification") return 1;
       if(isOverdue(a)!==isOverdue(b)) return isOverdue(a)?-1:1;
-      var ad=a.due_date?new Date(a.due_date).getTime():8640000000000000,bd=b.due_date?new Date(b.due_date).getTime():8640000000000000; return ad-bd;
+      var ad=a.due_date?new Date(a.due_date+"T23:59:59").getTime():8640000000000000;
+      var bd=b.due_date?new Date(b.due_date+"T23:59:59").getTime():8640000000000000;
+      if(ad!==bd) return ad-bd;
+      var ar=findReport(a.report_id), br=findReport(b.report_id);
+      return Number((br&&br.ref_no)||0)-Number((ar&&ar.ref_no)||0);
     });
+
     renderActionSummary(arr);
     if(count) count.textContent=arr.length+(arr.length===1?' open action':' open actions');
-    var nav=$("navActionCount"); if(nav){ var urgent=arr.filter(function(r){return isOverdue(r)||r.action_status==="awaiting_verification";}).length; nav.textContent=urgent?String(urgent):''; }
-    if(!arr.length){ el.innerHTML='<div class="state">No open corrective actions yet.</div>'; return; }
-    el.innerHTML=''; arr.forEach(function(r){
-      var b=document.createElement('button'); b.type='button'; b.className='task-card';
-      var escInfo=escalationInfo(r), assignee=assigneeName(r)||"Not assigned";
-      b.innerHTML='<div class="task-title">#'+esc(r.ref_no)+' · '+esc(r.report_type||'Report')+'<span class="task-state">'+esc(actionLabel(r.action_status||"not_started"))+'</span></div>'+
-        '<div class="task-action">'+esc(r.corrective_action||'Corrective action needs to be documented.')+'</div>'+
-        '<div class="task-meta">Assigned: <span class="assignment-name">'+esc(assignee)+'</span>'+(r.job_site?' · '+esc(r.job_site):'')+'</div>'+
-        '<div class="task-due"><b class="due-signal '+escInfo.cls+'">'+esc(escInfo.label)+'</b><span>'+(r.due_date?esc(shortDate(r.due_date)):'No due date')+'</span></div>';
-      b.addEventListener('click',function(){ openIncident(r,'actions'); }); el.appendChild(b);
+
+    var nav=$("navActionCount");
+    if(nav){
+      var attention=arr.filter(correctiveActionNeedsMyAttention).length;
+      nav.textContent=attention?String(attention):'';
+    }
+
+    if(!arr.length){
+      el.innerHTML='<div class="state">No open corrective actions.</div>';
+      return;
+    }
+
+    el.innerHTML='';
+    arr.forEach(function(a){
+      var r=findReport(a.report_id);
+      if(!r) return;
+
+      var b=document.createElement('button');
+      b.type='button';
+      b.className='task-card';
+
+      var escInfo=escalationInfo(a);
+      var ownerProfile=a.owner_user_id?profileById[String(a.owner_user_id)]:null;
+      var assignee=ownerProfile?profileName(ownerProfile):"Not assigned";
+      var reportType=r.report_type||'Report';
+
+      b.innerHTML=
+        '<div class="task-title">#'+esc(r.ref_no)+' · Action #'+esc(a.action_number||"")+' · '+esc(reportType)+
+          '<span class="task-state">'+esc(actionLabel(a.status||"not_started"))+'</span></div>'+
+        '<div class="task-action">'+esc(a.description||'Corrective action needs to be documented.')+'</div>'+
+        '<div class="task-meta">Assigned: <span class="assignment-name">'+esc(assignee)+'</span>'+
+          (r.job_site?' · '+esc(r.job_site):'')+'</div>'+
+        '<div class="task-due"><b class="due-signal '+escInfo.cls+'">'+esc(escInfo.label)+'</b><span>'+
+          (a.due_date?esc(shortDate(a.due_date)):'No due date')+'</span></div>';
+
+      b.addEventListener('click',function(){ openIncident(r,'actions'); });
+      el.appendChild(b);
     });
   }
 
