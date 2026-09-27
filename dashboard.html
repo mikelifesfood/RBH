@@ -296,6 +296,32 @@
   .sb-user .who{font-size:12px;color:#c9c4bd;word-break:break-all}
   .main{display:flex;flex-direction:column;min-width:0}
   .topbar{display:flex;align-items:center;gap:12px;padding:13px 20px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,var(--paper) 0%,color-mix(in srgb,var(--paper) 94%,var(--surface-2)) 100%);position:sticky;top:0;z-index:20}
+  .topbar-actions{margin-left:auto;display:flex;align-items:center;gap:8px}
+  .notification-bell{position:relative;width:40px;height:40px;border:1px solid var(--line);border-radius:11px;background:var(--paper);color:var(--ink);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:.16s ease;box-shadow:0 1px 2px rgba(20,20,20,.04)}
+  .notification-bell:hover{background:var(--surface-2);border-color:color-mix(in srgb,var(--line) 65%,var(--ink))}
+  .notification-bell:focus-visible{outline:3px solid color-mix(in srgb,var(--blue) 24%,transparent);outline-offset:2px}
+  .notification-bell svg{width:20px;height:20px}
+  .notification-badge{position:absolute;right:-5px;top:-6px;min-width:19px;height:19px;padding:0 5px;border-radius:999px;background:#b42318;color:#fff;border:2px solid var(--paper);display:none;align-items:center;justify-content:center;font:800 10px/1 Archivo,system-ui,sans-serif}
+  .notification-badge.show{display:flex}
+  .notification-panel{position:fixed;right:20px;top:calc(var(--rbh-topbar-height,56px) + 8px);z-index:70;width:min(410px,calc(100vw - 32px));max-height:min(72vh,650px);background:var(--paper);border:1px solid var(--line);border-radius:16px;box-shadow:0 18px 50px rgba(24,28,34,.18);overflow:hidden}
+  .notification-panel[hidden]{display:none}
+  .notification-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:16px 17px 13px;border-bottom:1px solid var(--line);background:var(--surface-2)}
+  .notification-panel-head h3{margin:0;font:800 17px/1.2 Archivo,system-ui,sans-serif;color:var(--ink)}
+  .notification-panel-head p{margin:4px 0 0;color:var(--muted);font-size:12.5px}
+  .notification-active-count{white-space:nowrap;border-radius:999px;background:color-mix(in srgb,var(--blue) 11%,var(--paper));border:1px solid color-mix(in srgb,var(--blue) 24%,var(--line));color:var(--blue);padding:5px 8px;font:700 11px Archivo,system-ui,sans-serif}
+  .notification-list{overflow:auto;max-height:calc(min(72vh,650px) - 74px)}
+  .notification-empty{padding:26px 20px;text-align:center;color:var(--muted);font-size:13px}
+  .notification-item{width:100%;border:0;border-bottom:1px solid var(--line);background:var(--paper);padding:14px 16px;text-align:left;display:grid;grid-template-columns:10px 1fr auto;gap:10px;align-items:start;cursor:pointer;color:var(--ink)}
+  .notification-item:last-child{border-bottom:0}
+  .notification-item:hover{background:var(--surface-2)}
+  .notification-item:focus-visible{outline:3px solid color-mix(in srgb,var(--blue) 20%,transparent);outline-offset:-3px}
+  .notification-dot{width:8px;height:8px;border-radius:50%;background:var(--blue);margin-top:5px;box-shadow:0 0 0 3px color-mix(in srgb,var(--blue) 12%,transparent)}
+  .notification-item.viewed .notification-dot{background:#a8a29a;box-shadow:none}
+  .notification-item-copy{min-width:0}
+  .notification-item-title{font:700 13.5px/1.35 Archivo,system-ui,sans-serif;margin-bottom:3px}
+  .notification-item-message{font-size:12.5px;line-height:1.45;color:var(--muted)}
+  .notification-item-time{font-size:10.5px;color:var(--muted);white-space:nowrap;padding-top:1px}
+  .notification-item.viewed .notification-item-title{font-weight:600}
   .page-title{font-family:var(--display);font-weight:700;font-size:18px;margin:0}
   .hamburger{display:none;background:none;border:1.5px solid var(--line-strong);border-radius:8px;font-size:17px;line-height:1;padding:6px 11px;cursor:pointer;color:var(--ink)}
   .content{padding:20px;flex:1;max-width:1000px;width:100%}
@@ -424,6 +450,7 @@
   .incident-body .d-rows{display:grid;grid-template-columns:1fr 1fr;gap:0 24px}
   .incident-body .d-row{grid-template-columns:135px 1fr}
   @media(max-width:800px){.incident-body .d-rows{grid-template-columns:1fr}.incident-header{flex-direction:column}.back-link{order:-1}.app-shell{grid-template-columns:1fr}}
+  @media(max-width:800px){.notification-panel{right:10px;top:calc(var(--rbh-topbar-height,56px) + 6px);width:calc(100vw - 20px);max-height:72vh}.notification-list{max-height:calc(72vh - 74px)}}
 
   /* ---------- Phase 2.6 guided record completion ---------- */
   .record-progress{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px;margin:12px 0 18px;box-shadow:var(--shadow)}
@@ -742,6 +769,19 @@
       <div class="topbar">
         <button class="hamburger" id="hamburger" type="button" aria-label="Menu">&#9776;</button>
         <h2 class="page-title" id="pageTitle">Home</h2>
+        <div class="topbar-actions">
+          <button class="notification-bell" id="notificationBell" type="button" aria-label="Notifications" aria-haspopup="true" aria-expanded="false" aria-controls="notificationPanel">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
+            <span class="notification-badge" id="notificationBadge" aria-hidden="true"></span>
+          </button>
+        </div>
+      </div>
+      <div class="notification-panel" id="notificationPanel" hidden>
+        <div class="notification-panel-head">
+          <div><h3>Notifications</h3><p>Assigned work and items that need your attention.</p></div>
+          <span class="notification-active-count" id="notificationActiveCount">0 active</span>
+        </div>
+        <div class="notification-list" id="notificationList"><div class="notification-empty">Loading notifications…</div></div>
       </div>
       <div class="content">
 
@@ -1244,13 +1284,14 @@
   var loginView=$("loginView"), appView=$("appView"), listEl=$("list"), backdrop=$("backdrop");
   var allReports=[], filtered=[], attByReport={}, actionEvidenceUploads={};
   var allProfiles=[], profileById={}, currentSession=null, currentProfile=null, currentRole="read_only";
+  var userNotifications=[], notificationActiveCount=0, notificationPollTimer=null, notificationLoading=false;
   var allOrgs=[], currentOrgId=null, currentOrgName="", isPlatformAdmin=false;
   var activeIncident=null, activeIncidentLanguage="en", translationCache={};
   var modalReport=null, modalCard=null, modalNotesEl=null;
   var dispositionReport=null, dispositionWrap=null, dispositionNotesEl=null;
   var reopenReport=null, reopenReturnView="records", restartReport=null, restartReturnView="records";
   var NAV_VIEW_KEY="rbh_safety_active_view_v1", NAV_INCIDENT_KEY="rbh_safety_active_incident_v1";
-  var APP_VERSION="2026.09.21 · PDF Attachment Appendix V6";
+  var APP_VERSION="2026.09.27 · Step 11 In-App Notification Center";
 
   function storedView(){
     try{ var v=localStorage.getItem(NAV_VIEW_KEY); return v||(currentRole==="supervisor"?"mywork":"home"); }catch(_e){ return currentRole==="supervisor"?"mywork":"home"; }
@@ -1300,7 +1341,7 @@
   $("mStatus").innerHTML=statusOptions("new");
 
   /* ---------- auth ---------- */
-  function showLogin(){ appView.style.display="none"; loginView.style.display="flex"; currentSession=null; currentProfile=null; currentRole="read_only"; isPlatformAdmin=false; currentOrgId=null; currentOrgName=""; allOrgs=[]; if(typeof closeProfileDrawer==="function") closeProfileDrawer(); }
+  function showLogin(){ stopNotificationPolling(); closeNotificationPanel(); userNotifications=[]; notificationActiveCount=0; renderNotificationCenter(); appView.style.display="none"; loginView.style.display="flex"; currentSession=null; currentProfile=null; currentRole="read_only"; isPlatformAdmin=false; currentOrgId=null; currentOrgName=""; allOrgs=[]; if(typeof closeProfileDrawer==="function") closeProfileDrawer(); }
   async function showApp(session){
     currentSession=session;
     if(setupPasswordModeRequested()){ showPasswordSetup(); return; }
@@ -1319,6 +1360,8 @@
     await loadPlatformContext();
     applyRoleUi();
     await loadReports();
+    await loadNotifications(true);
+    startNotificationPolling();
     restoreSavedView();
   }
   sb.auth.getSession().then(function(res){ var s=res.data&&res.data.session; if(s) showApp(s); else showLogin(); });
@@ -1369,9 +1412,108 @@
       applyFilters(); renderMetrics(); renderHomeSnapshot(); renderMyWork();
     }catch(ex){ console.error(ex); listEl.innerHTML='<div class="state">Couldn\'t load reports. Please refresh.</div>'; }
   }
-  $("refresh").addEventListener("click", loadReports);
+  $("refresh").addEventListener("click", async function(){ await loadReports(); await loadNotifications(true); });
   $("search").addEventListener("input", applyFilters);
   $("statusFilter").addEventListener("change", function(){ overdueOnly=false; injuryOnly=false; var v=$("statusFilter").value; setActiveChip(v==="all"||v==="open"||v==="new"?v:""); applyFilters(); });
+
+  /* ---------- Step 11: in-app notification center ---------- */
+  function notificationTime(v){
+    if(!v) return "";
+    try{
+      var ms=Date.now()-new Date(v).getTime();
+      if(!Number.isFinite(ms)) return "";
+      var min=Math.max(0,Math.floor(ms/60000));
+      if(min<1) return "now";
+      if(min<60) return min+"m";
+      var hr=Math.floor(min/60); if(hr<24) return hr+"h";
+      var day=Math.floor(hr/24); if(day<7) return day+"d";
+      return new Date(v).toLocaleDateString();
+    }catch(_e){ return ""; }
+  }
+  function renderNotificationCenter(){
+    var badge=$("notificationBadge"), countEl=$("notificationActiveCount"), list=$("notificationList"), bell=$("notificationBell");
+    var count=Number(notificationActiveCount||0);
+    if(badge){ badge.textContent=count>99?"99+":String(count); badge.classList.toggle("show",count>0); }
+    if(countEl) countEl.textContent=count+" active";
+    if(bell) bell.setAttribute("aria-label",count?(`Notifications, ${count} active`):"Notifications");
+    if(!list) return;
+    if(notificationLoading && !userNotifications.length){ list.innerHTML='<div class="notification-empty">Loading notifications…</div>'; return; }
+    if(!userNotifications.length){ list.innerHTML='<div class="notification-empty">No active notifications.</div>'; return; }
+    list.innerHTML="";
+    userNotifications.forEach(function(n){
+      var b=document.createElement("button"); b.type="button"; b.className="notification-item"+(n.viewed_at?" viewed":"");
+      b.setAttribute("data-notification-id",String(n.id));
+      b.innerHTML='<span class="notification-dot" aria-hidden="true"></span><span class="notification-item-copy"><span class="notification-item-title">'+esc(n.title||"Notification")+'</span><span class="notification-item-message">'+esc(n.message||"")+'</span></span><span class="notification-item-time">'+esc(notificationTime(n.created_at))+'</span>';
+      b.addEventListener("click",function(){ openNotificationItem(n); });
+      list.appendChild(b);
+    });
+  }
+  async function loadNotifications(silent){
+    if(!currentSession||!currentSession.user||notificationLoading) return;
+    notificationLoading=true;
+    if(!silent) renderNotificationCenter();
+    try{
+      var q=sb.from("report_user_notifications")
+        .select("id,organization_id,recipient_user_id,report_id,notification_type,title,message,created_at,viewed_at,acknowledged_at,resolved_at",{count:"exact"})
+        .is("acknowledged_at",null)
+        .is("resolved_at",null)
+        .order("created_at",{ascending:false})
+        .limit(50);
+      var res=await q;
+      if(res.error) throw res.error;
+      userNotifications=res.data||[];
+      notificationActiveCount=typeof res.count==="number"?res.count:userNotifications.length;
+    }catch(ex){
+      console.error("notification load",ex);
+      if(!silent && $("notificationList")) $("notificationList").innerHTML='<div class="notification-empty">Could not load notifications.</div>';
+    }finally{
+      notificationLoading=false; renderNotificationCenter();
+    }
+  }
+  function notificationReturnView(){
+    var names=["home","mywork","records","actions","metrics","platform","users"];
+    for(var i=0;i<names.length;i++){ var el=$("view-"+names[i]); if(el&&!el.hidden) return names[i]; }
+    return currentRole==="read_only"?"records":"mywork";
+  }
+  async function openNotificationItem(n){
+    if(!n) return;
+    if(!n.viewed_at){
+      try{
+        var vr=await sb.rpc("rbh_mark_notification_viewed",{p_notification_id:n.id});
+        if(vr.error) throw vr.error;
+        n.viewed_at=new Date().toISOString(); renderNotificationCenter();
+      }catch(ex){ console.error("notification viewed",ex); }
+    }
+    closeNotificationPanel();
+    var r=allReports.find(function(x){ return String(x.id)===String(n.report_id); });
+    if(!r){
+      await loadReports();
+      r=allReports.find(function(x){ return String(x.id)===String(n.report_id); });
+    }
+    if(r) openIncident(r,notificationReturnView());
+    else toast("That report is unavailable or you no longer have access to it.","err");
+  }
+  function openNotificationPanel(){
+    var p=$("notificationPanel"), b=$("notificationBell"); if(!p||!b) return;
+    p.hidden=false; b.setAttribute("aria-expanded","true");
+    loadNotifications(true);
+  }
+  function closeNotificationPanel(){
+    var p=$("notificationPanel"), b=$("notificationBell"); if(p)p.hidden=true; if(b)b.setAttribute("aria-expanded","false");
+  }
+  function toggleNotificationPanel(){
+    var p=$("notificationPanel"); if(!p)return; if(p.hidden)openNotificationPanel(); else closeNotificationPanel();
+  }
+  function startNotificationPolling(){
+    stopNotificationPolling();
+    notificationPollTimer=setInterval(function(){ if(document.visibilityState!=="hidden") loadNotifications(true); },30000);
+  }
+  function stopNotificationPolling(){ if(notificationPollTimer){clearInterval(notificationPollTimer);notificationPollTimer=null;} }
+  var notificationBell=$("notificationBell"); if(notificationBell) notificationBell.addEventListener("click",function(e){e.stopPropagation();toggleNotificationPanel();});
+  var notificationPanel=$("notificationPanel"); if(notificationPanel) notificationPanel.addEventListener("click",function(e){e.stopPropagation();});
+  document.addEventListener("click",function(){closeNotificationPanel();});
+  document.addEventListener("keydown",function(e){if(e.key==="Escape")closeNotificationPanel();});
+  document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible"&&currentSession)loadNotifications(true);});
 
   function applyFilters(){
     var q=($("search").value||"").toLowerCase().trim(), st=$("statusFilter").value;
