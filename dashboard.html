@@ -834,7 +834,7 @@
           <div class="role-legend">
             <div class="role-card"><b>Admin</b><span>Full operational access plus user roles and account activation.</span></div>
             <div class="role-card"><b>Safety Manager</b><span>Full incident, investigation, corrective-action, and verification access.</span></div>
-            <div class="role-card"><b>Supervisor</b><span>Can work reports and corrective actions assigned to their account.</span></div>
+            <div class="role-card"><b>Supervisor</b><span>Can work investigations and corrective actions assigned to their account. Investigation ownership covers Steps 1–3; corrective-action ownership covers Step 4.</span></div>
             <div class="role-card"><b>Read Only</b><span>Can review reports, activity, and analytics without making changes.</span></div>
           </div>
           <div id="adminPermissionNote" class="permission-note"></div>
@@ -1697,8 +1697,12 @@
   function wizardLongTitle(n){ return ({1:"Review Report",2:"Investigation",3:"Corrective Action Plan",4:"Complete Corrective Action",5:"Verify Corrective Action",6:"Close Record"})[n]||"Record"; }
   function wizardHelp(n,r){
     var map={1:"Review the submission and decide what happens next.",2:"Document the underlying cause.",3:"Define the fix, control type, assigned user, due date, and priority.",4:"Document the completed work and submit it for review.",5:"Approve the correction or request changes.",6:"Confirm every required step is complete and close the record."};
-    if(n===4 && r.action_status==="changes_requested") return "Changes were requested. Update the work and resubmit it for verification.";
+    if(n===4 && r.action_status==="changes_requested" && canEditStep(r,4)) return "Changes were requested. Update the work and resubmit it for verification.";
+    if(currentRole==="supervisor" && n===1 && isInvestigatorAssignedToMe(r) && r.involves_injury && ["yes","no","pending"].indexOf(String(r.calosha_screening_status||""))<0) return "You own this investigation, but an Admin or Safety Manager must complete the regulatory screening before Review can advance.";
+    if(currentRole==="supervisor" && n<=3 && !isInvestigatorAssignedToMe(r)) return "This investigation is owned by "+(investigatorName(r)||"another dashboard user")+". You can review this step, but only the assigned investigator can change it.";
+    if(currentRole==="supervisor" && n===4 && !isActionAssignedToMe(r)) return "This corrective action is owned by "+(assigneeName(r)||"another dashboard user")+". You can review it, but only the assigned action owner can change it.";
     if(n===5 && !canVerify()) return "This step is waiting for an Admin or Safety Manager to verify the work.";
+    if(n===6 && !canVerify()) return "An Admin or Safety Manager closes the record after verification.";
     return map[n]||"Follow the guided steps.";
   }
   function recommendedWizardStep(r){ var p=workflowProgress(r); if(r.status==="closed"||r.status==="no_action"||r.status==="duplicate") return 6; return p.current>=0?p.current+1:6; }
@@ -1710,8 +1714,8 @@
   }
   function wizardActionLabels(r,n){
     var p=workflowProgress(r), st=p.steps[n-1], isCurrent=st&&st.state==="current";
-    var canEdit=canEditReport(r);
-    if(!canEdit && !(n===5&&canVerify())) return {save:null,complete:null};
+    var canEdit=canEditStep(r,n);
+    if(!canEdit) return {save:null,complete:null};
     if(st&&st.state==="done" && n!==6) return {save:(n===2||n===3?"Save and close":null),complete:null};
     if(!isCurrent && n!==6) return {save:null,complete:null};
     if(n===1) return {save:null,complete:"Complete review →"};
@@ -1781,10 +1785,11 @@
     ];
     var list=checks.map(function(x){return '<div class="close-check '+(x[0]?'ok':'missing')+'"><b>'+(x[0]?'✓':'!')+'</b><span>'+esc(x[1])+'</span></div>';}).join("");
     if(closed){ el.innerHTML='<div class="ops-alert"><b>Record complete</b>This incident is closed. The full history remains available below.</div><div class="close-checklist">'+list+'</div>'; return; }
-    var ready=canClose(r), button=ready&&canEditReport(r)?'<button class="wizard-close" type="button" data-step-complete="6">Close record</button>':'';
+    var ready=canClose(r), button=ready&&canEditStep(r,6)?'<button class="wizard-close" type="button" data-step-complete="6">Close record</button>':'';
     el.innerHTML='<div class="close-checklist">'+list+'</div>'+(ready?'<div class="wizard-context"><b>Ready to close</b><p>All required workflow steps are complete. Closing the record will preserve the full history and mark it resolved.</p></div>':'<div class="wizard-required show">Complete the missing checklist items before this record can be closed.</div>')+'<div class="wizard-footer"><div class="wizard-footer-copy">Closing is a deliberate final action. There is no autosave or automatic closure.</div><div class="wizard-footer-actions">'+button+'</div></div>';
     var btn=el.querySelector('[data-step-complete="6"]');
     if(btn) btn.addEventListener("click",async function(){
+      if(!canEditStep(r,6)){ toast("Only an Admin or Safety Manager can close the record.","err"); return; }
       if(!canClose(r)){ toast("Complete and verify the corrective action before closing the record.","err"); return; }
       btn.disabled=true; var old=btn.textContent; btn.textContent="Closing…";
       try{ await updateStatus(r.id,"closed",null); $("incidentSummary").innerHTML='<div class="is-badges">'+incidentBadgeHtml(r)+'</div><div class="is-desc">'+esc(r.description||"No description provided.")+'</div>'; refreshRecordWorkflow(r,detail); loadAudit(r.id,auditEl); renderMyWork(); renderActions(); applyFilters(); toast("Record closed","ok"); }
@@ -1954,10 +1959,11 @@
     var invRoot=detail.querySelector(".inv-root"), invCorr=detail.querySelector(".inv-corr"), invControlType=detail.querySelector(".inv-control-type"), invAssign=detail.querySelector(".inv-assignee"), invDue=detail.querySelector(".inv-due"), invPri=detail.querySelector(".inv-pri");
     var rootSave=detail.querySelector(".root-save"), rootSaved=detail.querySelector(".root-saved"), actionPlanSave=detail.querySelector(".action-plan-save"), actionPlanSaved=detail.querySelector(".action-plan-saved");
     invRoot.value=r.root_cause||""; invCorr.value=r.corrective_action||""; invControlType.value=r.corrective_control_type||""; invAssign.value=r.assigned_user_id||""; invDue.value=r.due_date||""; invPri.value=r.priority||"";
-    if(!canEdit){ [invRoot,invCorr,invControlType,invAssign,invDue,invPri,rootSave,actionPlanSave].forEach(function(x){if(x)x.disabled=true;}); }
+    if(!canEditStep(r,2)){ [invRoot,rootSave].forEach(function(x){if(x)x.disabled=true;}); }
+    if(!canEditStep(r,3)){ [invCorr,invControlType,invAssign,invDue,invPri,actionPlanSave].forEach(function(x){if(x)x.disabled=true;}); }
 
     async function persistRootCause(showToast,advanceReopen){
-      if(!canEditReport(r)) throw new Error("NOT_AUTHORIZED");
+      if(!canEditStep(r,2)) throw new Error("NOT_AUTHORIZED");
       var next=invRoot.value.trim()||null;
       var patch={root_cause:next};
       if(advanceReopen && activeReopenStep(r)) patch.reopen_workflow_step=3;
@@ -1966,7 +1972,7 @@
       refreshRecordWorkflow(r,detail); loadAudit(r.id,auditEl); if(showToast) toast("Investigation saved","ok"); return true;
     }
     async function persistActionPlan(showToast,assign){
-      if(!canEditReport(r)) throw new Error("NOT_AUTHORIZED");
+      if(!canEditStep(r,3)) throw new Error("NOT_AUTHORIZED");
       var nextActionStatus=r.action_status||"not_started"; if(invCorr.value.trim()&&nextActionStatus==="not_started") nextActionStatus="in_progress";
       var patch={corrective_action:invCorr.value.trim()||null,corrective_control_type:invControlType.value||null,assigned_user_id:invAssign.value||null,due_date:invDue.value||null,priority:invPri.value||null,action_status:nextActionStatus};
       if(assign && r.status!=="closed" && r.status!=="no_action" && r.status!=="duplicate") patch.status="assigned";
@@ -1977,8 +1983,8 @@
       loadAudit(r.id,auditEl); refreshOverdue(r,wrap); refreshRecordWorkflow(r,detail); renderMetrics(); renderHomeSnapshot(); renderMyWork(); if(showToast) toast("Action plan saved","ok"); return true;
     }
 
-    if(rootSave) rootSave.addEventListener("click",async function(){ rootSave.disabled=true; try{await persistRootCause(true);rootSaved.hidden=false;setTimeout(function(){rootSaved.hidden=true;},2200);showView("home");}catch(ex){console.error(ex);toast("Could not save the investigation.","err");}finally{rootSave.disabled=!canEditReport(r);} });
-    if(actionPlanSave) actionPlanSave.addEventListener("click",async function(){ actionPlanSave.disabled=true; try{await persistActionPlan(true,false);actionPlanSaved.hidden=false;setTimeout(function(){actionPlanSaved.hidden=true;},2200);showView("home");}catch(ex){console.error(ex);toast("Could not save the action plan.","err");}finally{actionPlanSave.disabled=!canEditReport(r);} });
+    if(rootSave) rootSave.addEventListener("click",async function(){ rootSave.disabled=true; try{await persistRootCause(true);rootSaved.hidden=false;setTimeout(function(){rootSaved.hidden=true;},2200);showView("home");}catch(ex){console.error(ex);toast("Could not save the investigation.","err");}finally{rootSave.disabled=!canEditStep(r,2);} });
+    if(actionPlanSave) actionPlanSave.addEventListener("click",async function(){ actionPlanSave.disabled=true; try{await persistActionPlan(true,false);actionPlanSaved.hidden=false;setTimeout(function(){actionPlanSaved.hidden=true;},2200);showView("home");}catch(ex){console.error(ex);toast("Could not save the action plan.","err");}finally{actionPlanSave.disabled=!canEditStep(r,3);} });
 
     detail.addEventListener("click",async function(e){
       if(e.target.closest("[data-reg-review-jump]")){ setWizardStep(detail,r,1,true); return; }
@@ -1996,21 +2002,29 @@
     });
 
     var complete1=detail.querySelector('[data-step-complete="1"]'); if(complete1) complete1.addEventListener("click",async function(){
-      if(!canEditReport(r)){toast("You do not have permission to complete this step.","err");return;} complete1.disabled=true;
+      if(!canEditStep(r,1)){toast("Only the assigned investigator or an Admin/Safety Manager can complete Review.","err");return;} complete1.disabled=true;
       try{
         if(isManager() && investigatorSelect) await persistInvestigator(investigatorSelect.value||null,false);
-        if(r.involves_injury && !(await persistRegulatoryReview(false))) return;
+        if(r.involves_injury){
+          if(canVerify()){
+            if(!(await persistRegulatoryReview(false))) return;
+          } else if(["yes","no","pending"].indexOf(String(r.calosha_screening_status||""))<0){
+            toast("An Admin or Safety Manager must complete the regulatory screening before this injury review can advance.","err"); return;
+          }
+        }
         if(r.status==="new") await updateStatus(r.id,"under_review",wrap,activeReopenStep(r)?2:null);
         else if(activeReopenStep(r)===1) await updateStatus(r.id,r.status,wrap,2);
         refreshRecordWorkflow(r,detail); setWizardStep(detail,r,2,true); loadAudit(r.id,auditEl); toast("Review complete — continue to Investigation","ok");
       }
-      catch(ex){console.error(ex);toast("Could not complete the review.","err");} finally{if(complete1.isConnected)complete1.disabled=!canEditReport(r);} });
+      catch(ex){console.error(ex);toast("Could not complete the review.","err");} finally{if(complete1.isConnected)complete1.disabled=!canEditStep(r,1);} });
 
     var complete2=detail.querySelector('[data-step-complete="2"]'); if(complete2) complete2.addEventListener("click",async function(){
+      if(!canEditStep(r,2)){toast("Only the assigned investigator or an Admin/Safety Manager can complete Investigation.","err");return;}
       var req=detail.querySelector('[data-required="2"]'); if(!invRoot.value.trim()){if(req)req.classList.add("show");toast("Add the root cause before completing Investigation.","err");return;} if(req)req.classList.remove("show"); complete2.disabled=true;
-      try{await persistRootCause(false,true);setWizardStep(detail,r,3,true);toast("Investigation complete — build the corrective action plan","ok");}catch(ex){console.error(ex);toast("Could not complete Investigation.","err");}finally{if(complete2.isConnected)complete2.disabled=!canEditReport(r);} });
+      try{await persistRootCause(false,true);setWizardStep(detail,r,3,true);toast("Investigation complete — build the corrective action plan","ok");}catch(ex){console.error(ex);toast("Could not complete Investigation.","err");}finally{if(complete2.isConnected)complete2.disabled=!canEditStep(r,2);} });
 
     var complete3=detail.querySelector('[data-step-complete="3"]'); if(complete3) complete3.addEventListener("click",async function(){
+      if(!canEditStep(r,3)){toast("Only the assigned investigator or an Admin/Safety Manager can assign the corrective action.","err");return;}
       var miss=[]; if(!invCorr.value.trim())miss.push("corrective action"); if(!invAssign.value)miss.push("assigned dashboard user"); if(!invDue.value)miss.push("due date"); if(!invPri.value)miss.push("priority"); var req=detail.querySelector('[data-required="3"]');
       if(miss.length){if(req){req.textContent="Still required: "+miss.join(", ")+".";req.classList.add("show");}toast("Complete the required action-plan fields first.","err");return;} if(req)req.classList.remove("show"); complete3.disabled=true;
       try{
@@ -2029,7 +2043,7 @@
           console.error("assignment notification failed",notify);
           toast("Action assigned, but the email notification could not be sent.","err");
         }
-      }catch(ex){console.error(ex);toast("Could not assign the corrective action.","err");}finally{if(complete3.isConnected)complete3.disabled=!canEditReport(r);} });
+      }catch(ex){console.error(ex);toast("Could not assign the corrective action.","err");}finally{if(complete3.isConnected)complete3.disabled=!canEditStep(r,3);} });
 
     renderActionWorkflow(r,detail.querySelector("[data-action-completion]"),auditEl,detail,"complete");
     renderActionWorkflow(r,detail.querySelector("[data-action-verification]"),auditEl,detail,"verify");
@@ -2047,9 +2061,12 @@
 
   async function updateStatus(reportId, status, wrap, nextReopenStep){
     var r=null; allReports.forEach(function(x){ if(x.id===reportId) r=x; });
-    if(!r || !canEditReport(r)) throw new Error("NOT_AUTHORIZED");
+    if(!r) throw new Error("NOT_AUTHORIZED");
+    if(status==="under_review" || (status===r.status && nextReopenStep)){
+      if(!canEditStep(r,1)) throw new Error("NOT_AUTHORIZED");
+    } else if(!canVerify()) throw new Error("MANAGER_REQUIRED");
     if((status==="no_action" || status==="duplicate") && !canVerify()) throw new Error("MANAGER_REQUIRED");
-    if(status==="closed" && !canClose(r)) throw new Error("CORRECTIVE_ACTION_NOT_VERIFIED");
+    if(status==="closed" && (!canVerify() || !canClose(r))) throw new Error("CORRECTIVE_ACTION_NOT_VERIFIED");
     var resolved=(status==="closed" || status==="no_action" || status==="duplicate");
     var patch={ status:status, closed_at: resolved ? new Date().toISOString() : null };
     if(resolved && r.reopen_workflow_step) patch.reopen_workflow_step=null;
@@ -3164,12 +3181,33 @@
   function investigatorName(r){ var p=r&&r.investigator_user_id?profileById[String(r.investigator_user_id)]:null; return p?profileName(p):""; }
   function isManager(){ return currentRole==="admin"||currentRole==="safety_manager"; }
   function canVerify(){ return isManager(); }
+  function currentUserId(){ return currentSession&&currentSession.user?String(currentSession.user.id):""; }
+  function isInvestigatorAssignedToMe(r){ return !!(r&&currentUserId()&&String(r.investigator_user_id||"")===currentUserId()); }
+  function isActionAssignedToMe(r){ return !!(r&&currentUserId()&&String(r.assigned_user_id||"")===currentUserId()); }
+  function canWorkInvestigation(r){
+    if(!r||isResolvedReport(r)) return false;
+    if(isManager()) return true;
+    return currentRole==="supervisor" && isInvestigatorAssignedToMe(r);
+  }
+  function canWorkCorrectiveAction(r){
+    if(!r||isResolvedReport(r)) return false;
+    if(isManager()) return true;
+    return currentRole==="supervisor" && isActionAssignedToMe(r);
+  }
   function hasOperationalAccess(r){
     if(isManager()) return true;
-    return currentRole==="supervisor" && currentSession && currentSession.user && String(r.assigned_user_id||"")===String(currentSession.user.id);
+    return currentRole==="supervisor" && (isInvestigatorAssignedToMe(r)||isActionAssignedToMe(r));
+  }
+  function canEditStep(r,n){
+    if(!r||isResolvedReport(r)) return false;
+    if(isManager()) return true;
+    if(currentRole!=="supervisor") return false;
+    if(n>=1&&n<=3) return isInvestigatorAssignedToMe(r);
+    if(n===4) return isActionAssignedToMe(r);
+    return false;
   }
   function canEditReport(r){ return !isResolvedReport(r) && hasOperationalAccess(r); }
-  function canAddNotes(r){ return hasOperationalAccess(r); }
+  function canAddNotes(r){ return !isResolvedReport(r) && hasOperationalAccess(r); }
   function canReopenReport(r){ return !!(r && isResolvedReport(r) && canVerify()); }
   function canManageUsers(){ return currentRole==="admin"; }
   function workflowHasProgress(r){
@@ -3194,7 +3232,7 @@
     if(myWorkNav) myWorkNav.style.display=(canOwnWork?"":"none");
     var hot=$("homeOpenTitle"), hod=$("homeOpenDesc");
     if(hot) hot.textContent=canOwnWork?"Open My Work":"Open Safety Inbox";
-    if(hod) hod.textContent=canOwnWork?"See the reports and corrective actions assigned to you.":"Review reports and safety activity.";
+    if(hod) hod.textContent=canOwnWork?"See the investigations and corrective actions assigned to you.":"Review reports and safety activity.";
     var note=$("adminPermissionNote");
     var afs=$("adminFeedbackSection"); if(afs) afs.hidden=true;
     var hc=$("platformContextLabel"); if(hc) hc.textContent=currentOrgName?("Current company: "+currentOrgName):"Platform overview";
@@ -3268,7 +3306,7 @@
     storeIncident(r,lastOperationalView);
     var back=$("incidentBack"); if(back) back.textContent=lastOperationalView==="mywork"?"← Back to My Work":(lastOperationalView==="actions"?"← Back to Corrective Actions":"← Back to Safety Inbox");
     $("incidentTitle").textContent="#"+(r.ref_no||r.id)+" · "+(r.report_type||"Safety report");
-    var meta=[]; if(r.job_site) meta.push(r.job_site); if(assigneeName(r)) meta.push("Assigned: "+assigneeName(r)); meta.push(fmtDate(r.created_at)); $("incidentMeta").textContent=meta.join(" · ");
+    var meta=[]; if(r.job_site) meta.push(r.job_site); if(investigatorName(r)) meta.push("Investigator: "+investigatorName(r)); if(assigneeName(r)) meta.push("Action owner: "+assigneeName(r)); meta.push(fmtDate(r.created_at)); $("incidentMeta").textContent=meta.join(" · ");
     $("incidentSummary").innerHTML='<div class="is-badges">'+incidentBadgeHtml(r)+'</div><div class="is-desc">'+esc(r.description||"No description provided.")+'</div>';
     var langSel=$("incidentLanguage"); if(langSel){ langSel.value=activeIncidentLanguage; }
     setIncidentLanguageState(r,activeIncidentLanguage,"loading");
@@ -3289,22 +3327,48 @@
     });
   }
   function isOpenOperational(r){ return !!(r && r.status!=="closed" && r.status!=="no_action" && r.status!=="duplicate"); }
-  function isAssignedToMe(r){ return !!(r && currentSession && currentSession.user && String(r.assigned_user_id||"")===String(currentSession.user.id)); }
+  function isAssignedToMe(r){ return isActionAssignedToMe(r); }
+  function investigatorWorkActive(r){
+    if(!isOpenOperational(r)||!isInvestigatorAssignedToMe(r)) return false;
+    return recommendedWizardStep(r)<=3;
+  }
+  function actionOwnerWorkActive(r){
+    if(!isOpenOperational(r)||!isActionAssignedToMe(r)) return false;
+    var step=recommendedWizardStep(r);
+    return step===4 || r.action_status==="changes_requested";
+  }
+  function myWorkKind(r){
+    if(investigatorWorkActive(r)) return "investigation";
+    if(actionOwnerWorkActive(r)) return "action";
+    return "";
+  }
   function myWorkSort(a,b){
-    if(isOverdue(a)!==isOverdue(b)) return isOverdue(a)?-1:1;
-    if((a.action_status==="changes_requested")!==(b.action_status==="changes_requested")) return a.action_status==="changes_requested"?-1:1;
-    var ad=a.due_date?new Date(a.due_date).getTime():8640000000000000, bd=b.due_date?new Date(b.due_date).getTime():8640000000000000;
-    return ad-bd || (new Date(b.created_at)-new Date(a.created_at));
+    var ak=myWorkKind(a), bk=myWorkKind(b);
+    if(ak==="action"&&bk==="action"){
+      if(isOverdue(a)!==isOverdue(b)) return isOverdue(a)?-1:1;
+      if((a.action_status==="changes_requested")!==(b.action_status==="changes_requested")) return a.action_status==="changes_requested"?-1:1;
+      var ad=a.due_date?new Date(a.due_date).getTime():8640000000000000, bd=b.due_date?new Date(b.due_date).getTime():8640000000000000;
+      if(ad!==bd) return ad-bd;
+    }
+    if(ak!==bk) return ak==="investigation"?-1:1;
+    return new Date(b.created_at)-new Date(a.created_at);
   }
   function myWorkCard(r,from){
     var b=document.createElement('button'); b.type='button'; b.className='task-card';
-    var info=escalationInfo(r), status=r.action_status||"not_started";
-    var actionText=r.corrective_action||((r.status==="new"||r.status==="under_review")?'Review this report and document the next action.':'Corrective action needs to be documented.');
-    var label=(status==="awaiting_verification")?'Submitted for verification':actionLabel(status);
+    var kind=myWorkKind(r), step=recommendedWizardStep(r), info=escalationInfo(r), status=r.action_status||"not_started";
+    var label, actionText, dueHtml;
+    if(kind==="investigation"){
+      label="Investigation · Step "+Math.min(step,3);
+      actionText=step<=1?((r.involves_injury&&["yes","no","pending"].indexOf(String(r.calosha_screening_status||""))<0)?'Management regulatory screening is required before Review can advance.':'Review the report and move it into Investigation.'):(step===2?'Document the root cause and complete the investigation.':'Define the corrective action, owner, due date, and priority.');
+      dueHtml='<div class="task-due"><b class="due-signal">Investigation owner</b><span>Submitted '+esc(shortDate(r.created_at))+'</span></div>';
+    } else {
+      label=status==="changes_requested"?'Changes requested':(status==="awaiting_verification"?'Submitted for verification':actionLabel(status));
+      actionText=r.corrective_action||'Corrective action needs to be documented.';
+      dueHtml='<div class="task-due"><b class="due-signal '+esc(info.cls)+'">'+esc(info.label)+'</b><span>'+(r.due_date?esc(shortDate(r.due_date)):'No due date')+'</span></div>';
+    }
     b.innerHTML='<div class="task-title">#'+esc(r.ref_no)+' · '+esc(r.report_type||'Report')+'<span class="task-state">'+esc(label)+'</span></div>'+ 
       '<div class="task-action">'+esc(actionText)+'</div>'+ 
-      '<div class="task-meta">'+(r.job_site?'Incident address: '+esc(r.job_site):'No incident address')+(r.priority?' · '+esc(r.priority.charAt(0).toUpperCase()+r.priority.slice(1))+' priority':'')+'</div>'+ 
-      '<div class="task-due"><b class="due-signal '+esc(info.cls)+'">'+esc(info.label)+'</b><span>'+(r.due_date?esc(shortDate(r.due_date)):'No due date')+'</span></div>';
+      '<div class="task-meta">'+(r.job_site?'Incident address: '+esc(r.job_site):'No incident address')+(kind==="action"&&r.priority?' · '+esc(r.priority.charAt(0).toUpperCase()+r.priority.slice(1))+' priority':'')+'</div>'+dueHtml;
     b.addEventListener('click',function(){ openIncident(r,from||'mywork'); });
     return b;
   }
@@ -3312,19 +3376,23 @@
     var list=$("myWorkList"), summary=$("myWorkSummary"), count=$("myWorkCount"); if(!list||!summary) return;
     var canOwn=currentRole!=="read_only", user=currentSession&&currentSession.user;
     if(!canOwn||!user){ list.innerHTML='<div class="state">My Work is available to Admins, Safety Managers, and Supervisors.</div>'; summary.innerHTML=''; return; }
-    var mine=allReports.filter(function(r){ return isOpenOperational(r)&&isAssignedToMe(r); }).sort(myWorkSort);
-    var overdue=mine.filter(isOverdue).length;
-    var soon=mine.filter(function(r){ var d=daysUntilDue(r); return d!==null&&d>=0&&d<=3; }).length;
-    var needsAction=mine.filter(function(r){ return (r.action_status||"not_started")!=="awaiting_verification" && (r.action_status||"not_started")!=="verified"; }).length;
-    var submitted=mine.filter(function(r){ return r.action_status==="awaiting_verification"; }).length;
+    var mine=allReports.filter(function(r){ return investigatorWorkActive(r)||actionOwnerWorkActive(r); }).sort(myWorkSort);
+    var investigations=mine.filter(function(r){return myWorkKind(r)==="investigation";}).length;
+    var actionMine=mine.filter(function(r){return myWorkKind(r)==="action";});
+    var overdue=actionMine.filter(isOverdue).length;
+    var soon=actionMine.filter(function(r){ var d=daysUntilDue(r); return d!==null&&d>=0&&d<=3; }).length;
     var verify=isManager()?allReports.filter(function(r){ return isOpenOperational(r)&&r.action_status==="awaiting_verification"; }):[];
     function stat(n,l,cls){ return '<div class="mywork-stat '+(cls||'')+'"><b>'+n+'</b><span>'+l+'</span></div>'; }
-    summary.innerHTML=stat(mine.length,'Assigned to me')+stat(needsAction,'Needs my action')+stat(soon,'Due in 3 days',soon?'warn':'')+stat(overdue,'Overdue',overdue?'alert':'');
+    summary.innerHTML=stat(mine.length,'Assigned to me')+stat(investigations,'Investigations')+stat(soon,'Due in 3 days',soon?'warn':'')+stat(overdue,'Overdue',overdue?'alert':'');
     if(count) count.textContent=mine.length+(mine.length===1?' open assignment':' open assignments');
     var ng=$("myWorkGreeting"), br=$("myWorkBannerText"), role=$("myWorkRole");
     var nm=currentProfile?profileName(currentProfile):((user&&user.email)||'');
     if(ng) ng.textContent=nm?('Work for '+nm):'Your work queue';
-    if(br) br.textContent=submitted?submitted+' of your assignment'+(submitted===1?' is':'s are')+' waiting for verification.':'Start with overdue or due-soon items first.';
+    if(br){
+      if(investigations) br.textContent=investigations+' investigation'+(investigations===1?'':'s')+' currently need'+(investigations===1?'s':'')+' your attention.';
+      else if(actionMine.length) br.textContent='Start with overdue or due-soon corrective actions first.';
+      else br.textContent='Your assigned investigations and corrective actions will appear here.';
+    }
     if(role) role.textContent=roleLabel(currentRole);
     list.innerHTML='';
     if(!mine.length) list.innerHTML='<div class="state">Nothing is assigned to you right now.</div>';
@@ -3338,7 +3406,7 @@
     }
     var nav=$("navMyWorkCount"); if(nav){
       var attentionIds={};
-      mine.forEach(function(r){ if(isOverdue(r)||((r.action_status||"not_started")!=="awaiting_verification"&&(r.action_status||"not_started")!=="verified")) attentionIds[String(r.id)]=true; });
+      mine.forEach(function(r){ attentionIds[String(r.id)]=true; });
       if(isManager()) verify.forEach(function(r){ attentionIds[String(r.id)]=true; });
       var urgent=Object.keys(attentionIds).length; nav.textContent=urgent?String(urgent):'';
     }
@@ -3593,14 +3661,14 @@
       if(status==="changes_requested"&&r.action_verification_note) h+='<div class="ops-alert critical"><b>Changes requested by reviewer</b>'+esc(r.action_verification_note)+'</div>';
       if(status==="awaiting_verification"){ h+='<div class="ops-alert"><b>Waiting for verification</b>Your completed work has been submitted. An Admin or Safety Manager must review it before the record can move forward.</div>'; }
       if(status==="verified"){ h+='<div class="ops-alert"><b>Corrective action verified</b>This step is complete.</div>'; }
-      if(canEditReport(r)&&status!=="verified"){
+      if(canEditStep(r,4)&&status!=="verified"){
         var label=status==="changes_requested"?'Update completed work':(status==="awaiting_verification"?'Completed work submitted':'What did you complete?');
         var help=status==="changes_requested"?'Update the note to explain the corrected work, then resubmit it.':(status==="awaiting_verification"?'The submitted completion note is shown below. You can correct the wording while it is waiting for verification.':'Describe exactly what was done. This note is required before submission.');
         h+='<label class="inv-l">'+label+'<textarea class="action-note" placeholder="Describe what was completed or changed.">'+esc(r.action_completion_note||'')+'</textarea></label><div class="translation-preview" data-translation-field="action_completion_note" hidden></div><p class="action-help">'+help+'</p>';
       } else if(r.action_completion_note){ h+='<div class="action-context"><b>Completed work submitted</b><p>'+esc(r.action_completion_note)+'</p></div><div class="translation-preview" data-translation-field="action_completion_note" hidden></div>'; }
       if(completed){var cb=r.action_completed_by&&profileById[String(r.action_completed_by)]?profileName(profileById[String(r.action_completed_by)]):'';h+='<div class="action-meta">'+esc(completed)+(cb?' by '+esc(cb):'')+'</div>';}
       h+='<div class="evidence-panel" data-action-evidence></div>';
-      if(canEditReport(r)&&status!=="verified"){
+      if(canEditStep(r,4)&&status!=="verified"){
         var primary=(status==="awaiting_verification")?'':(status==="changes_requested"?'Resubmit for verification →':'Submit for verification →');
         h+='<div class="wizard-footer"><div class="wizard-footer-copy">Save and close keeps a draft. Submit for verification hands the completed work to the reviewer.</div><div class="wizard-footer-actions"><button class="wizard-save btn-save-completion" data-step-save="4" type="button">Save and close</button><span class="completion-saved section-saved" hidden>Saved ✓</span>'+(primary?'<button class="wizard-primary btn-complete" data-step-complete="4" type="button">'+primary+'</button>':'')+'</div></div>';
       }
@@ -3623,12 +3691,14 @@
     if(activeIncident===r) translateReportForLanguage(r,activeIncidentLanguage).then(function(tx){ if(tx&&activeIncident===r) applyReportLanguageToOpenIncident(r,activeIncidentLanguage,tx); });
 
     var saveCompletionBtn=el.querySelector(".btn-save-completion"); if(saveCompletionBtn) saveCompletionBtn.addEventListener("click",async function(){
+      if(!canEditStep(r,4)){toast("Only the assigned corrective-action owner or an Admin/Safety Manager can update this work.","err");return;}
       await waitForActionEvidenceUpload(r.id);
       var note=(el.querySelector(".action-note")&&el.querySelector(".action-note").value.trim())||""; saveCompletionBtn.disabled=true;
       try{var patch={action_completion_note:note||null};if((r.action_status||"not_started")==="not_started"&&note)patch.action_status="in_progress";var res=await sb.from("reports").update(patch).eq("id",r.id);if(res.error)throw res.error;Object.keys(patch).forEach(function(k){r[k]=patch[k];});var flag=el.querySelector(".completion-saved");if(flag){flag.hidden=false;setTimeout(function(){flag.hidden=true;},2200);}toast("Completion note saved","ok");loadAudit(r.id,auditEl);refreshRecordWorkflow(r,detail);renderHomeSnapshot();renderMyWork();showView("home");}
       catch(ex){console.error(ex);toast("Could not save completion note.","err");}finally{if(saveCompletionBtn.isConnected)saveCompletionBtn.disabled=false;}
     });
     var completeBtn=el.querySelector(".btn-complete"); if(completeBtn) completeBtn.addEventListener("click",async function(){
+      if(!canEditStep(r,4)){toast("Only the assigned corrective-action owner or an Admin/Safety Manager can submit this work.","err");return;}
       await waitForActionEvidenceUpload(r.id);
       var note=(el.querySelector(".action-note")&&el.querySelector(".action-note").value.trim())||"";
       if(!note){toast("Describe what was completed before submitting for verification.","err");return;}
@@ -3714,7 +3784,7 @@
   }
   function canManageActionEvidence(r){
     if(!r || !String(r.corrective_action||"").trim() || !r.assigned_user_id) return false;
-    return hasOperationalAccess(r);
+    return canEditStep(r,4);
   }
   async function removeActionEvidence(r,a){
     if(!r||!a||!a.id) return {ok:false,error:"ATTACHMENT_REQUIRED"};
