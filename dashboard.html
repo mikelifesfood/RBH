@@ -304,25 +304,42 @@
   .notification-bell svg{width:20px;height:20px;color:#fff;filter:drop-shadow(0 1px 1px rgba(90,0,5,.22))}
   .notification-badge{position:absolute;right:-5px;top:-6px;min-width:19px;height:19px;padding:0 5px;border-radius:999px;background:#7f1017;color:#fff;border:2px solid var(--paper);display:none;align-items:center;justify-content:center;font:800 10px/1 Archivo,system-ui,sans-serif;box-shadow:0 1px 3px rgba(0,0,0,.16)}
   .notification-badge.show{display:flex}
-  .notification-panel{position:fixed;right:20px;top:calc(var(--rbh-topbar-height,56px) + 8px);z-index:70;width:min(410px,calc(100vw - 32px));max-height:min(72vh,650px);background:var(--paper);border:1px solid var(--line);border-radius:16px;box-shadow:0 18px 50px rgba(24,28,34,.18);overflow:hidden}
+  .notification-panel{position:fixed;right:20px;top:calc(var(--rbh-topbar-height,56px) + 8px);z-index:70;width:min(430px,calc(100vw - 32px));max-height:min(74vh,680px);background:var(--paper);border:1px solid var(--line);border-radius:16px;box-shadow:0 18px 50px rgba(24,28,34,.18);overflow:hidden}
   .notification-panel[hidden]{display:none}
   .notification-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:16px 17px 13px;border-bottom:1px solid var(--line);background:var(--surface-2)}
   .notification-panel-head h3{margin:0;font:800 17px/1.2 Archivo,system-ui,sans-serif;color:var(--ink)}
   .notification-panel-head p{margin:4px 0 0;color:var(--muted);font-size:12.5px}
-  .notification-active-count{white-space:nowrap;border-radius:999px;background:color-mix(in srgb,var(--blue) 11%,var(--paper));border:1px solid color-mix(in srgb,var(--blue) 24%,var(--line));color:var(--blue);padding:5px 8px;font:700 11px Archivo,system-ui,sans-serif}
-  .notification-list{overflow:auto;max-height:calc(min(72vh,650px) - 74px)}
+  .notification-active-count{white-space:nowrap;border-radius:999px;background:color-mix(in srgb,var(--red) 9%,var(--paper));border:1px solid color-mix(in srgb,var(--red) 28%,var(--line));color:var(--red);padding:5px 8px;font:700 11px Archivo,system-ui,sans-serif}
+  .notification-list{overflow:auto;max-height:calc(min(74vh,680px) - 74px);background:var(--paper)}
   .notification-empty{padding:26px 20px;text-align:center;color:var(--muted);font-size:13px}
-  .notification-item{width:100%;border:0;border-bottom:1px solid var(--line);background:var(--paper);padding:14px 16px;text-align:left;display:grid;grid-template-columns:10px 1fr auto;gap:10px;align-items:start;cursor:pointer;color:var(--ink)}
-  .notification-item:last-child{border-bottom:0}
-  .notification-item:hover{background:var(--surface-2)}
-  .notification-item:focus-visible{outline:3px solid color-mix(in srgb,var(--blue) 20%,transparent);outline-offset:-3px}
-  .notification-dot{width:8px;height:8px;border-radius:50%;background:var(--blue);margin-top:5px;box-shadow:0 0 0 3px color-mix(in srgb,var(--blue) 12%,transparent)}
+  .notification-section{border-bottom:1px solid var(--line)}
+  .notification-section:last-child{border-bottom:0}
+  .notification-section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px 8px;background:var(--surface-2);color:var(--muted);font:800 10.5px/1.2 Archivo,system-ui,sans-serif;letter-spacing:.055em;text-transform:uppercase}
+  .notification-section-count{font:700 10px/1 Archivo,system-ui,sans-serif;letter-spacing:0;text-transform:none}
+  .notification-item{border-top:1px solid var(--line);background:var(--paper);color:var(--ink)}
+  .notification-section .notification-item:first-of-type{border-top:0}
+  .notification-open{width:100%;border:0;background:transparent;padding:13px 16px 8px;text-align:left;display:grid;grid-template-columns:10px 1fr auto;gap:10px;align-items:start;cursor:pointer;color:var(--ink)}
+  .notification-open:hover{background:var(--surface-2)}
+  .notification-open:focus-visible,.notification-ack:focus-visible{outline:3px solid color-mix(in srgb,var(--red) 20%,transparent);outline-offset:-3px}
+  .notification-dot{width:8px;height:8px;border-radius:50%;background:var(--red);margin-top:5px;box-shadow:0 0 0 3px color-mix(in srgb,var(--red) 12%,transparent)}
   .notification-item.viewed .notification-dot{background:#a8a29a;box-shadow:none}
+  .notification-item.acknowledged .notification-dot{background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 12%,transparent)}
+  .notification-item.resolved .notification-dot{background:var(--line-strong);box-shadow:none}
   .notification-item-copy{min-width:0}
-  .notification-item-title{font:700 13.5px/1.35 Archivo,system-ui,sans-serif;margin-bottom:3px}
-  .notification-item-message{font-size:12.5px;line-height:1.45;color:var(--muted)}
+  .notification-item-title{display:block;font:700 13.5px/1.35 Archivo,system-ui,sans-serif;margin-bottom:3px}
+  .notification-item-message{display:block;font-size:12.5px;line-height:1.45;color:var(--muted)}
   .notification-item-time{font-size:10.5px;color:var(--muted);white-space:nowrap;padding-top:1px}
-  .notification-item.viewed .notification-item-title{font-weight:600}
+  .notification-item.viewed .notification-item-title,.notification-item.acknowledged .notification-item-title,.notification-item.resolved .notification-item-title{font-weight:600}
+  .notification-item-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 16px 12px 36px}
+  .notification-item-meta{min-width:0;color:var(--muted);font-size:10.8px;line-height:1.35}
+  .notification-state-pill{display:inline-flex;align-items:center;border-radius:999px;padding:4px 7px;font:700 10px/1 Archivo,system-ui,sans-serif;white-space:nowrap}
+  .notification-state-pill.new{background:color-mix(in srgb,var(--red) 10%,var(--paper));color:var(--red);border:1px solid color-mix(in srgb,var(--red) 24%,var(--line))}
+  .notification-state-pill.viewed{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+  .notification-state-pill.acknowledged{background:color-mix(in srgb,var(--ok) 10%,var(--paper));color:var(--ok);border:1px solid color-mix(in srgb,var(--ok) 22%,var(--line))}
+  .notification-state-pill.resolved{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+  .notification-ack{border:1px solid color-mix(in srgb,var(--red) 34%,var(--line));border-radius:8px;background:var(--paper);color:var(--red);padding:6px 9px;font:700 11px/1 Archivo,system-ui,sans-serif;cursor:pointer;white-space:nowrap}
+  .notification-ack:hover{background:color-mix(in srgb,var(--red) 6%,var(--paper));border-color:var(--red)}
+  .notification-ack:disabled{opacity:.55;cursor:wait}
   .page-title{font-family:var(--display);font-weight:700;font-size:18px;margin:0}
   .hamburger{display:none;background:none;border:1.5px solid var(--line-strong);border-radius:8px;font-size:17px;line-height:1;padding:6px 11px;cursor:pointer;color:var(--ink)}
   .content{padding:20px;flex:1;max-width:1000px;width:100%}
@@ -779,8 +796,8 @@
       </div>
       <div class="notification-panel" id="notificationPanel" hidden>
         <div class="notification-panel-head">
-          <div><h3>Notifications</h3><p>Assigned work and items that need your attention.</p></div>
-          <span class="notification-active-count" id="notificationActiveCount">0 active</span>
+          <div><h3>Notifications</h3><p>Assigned work, acknowledgments, and recent history.</p></div>
+          <span class="notification-active-count" id="notificationActiveCount">0 to acknowledge</span>
         </div>
         <div class="notification-list" id="notificationList"><div class="notification-empty">Loading notifications…</div></div>
       </div>
@@ -1292,7 +1309,7 @@
   var dispositionReport=null, dispositionWrap=null, dispositionNotesEl=null;
   var reopenReport=null, reopenReturnView="records", restartReport=null, restartReturnView="records";
   var NAV_VIEW_KEY="rbh_safety_active_view_v1", NAV_INCIDENT_KEY="rbh_safety_active_incident_v1";
-  var APP_VERSION="2026.09.27 · Step 11 In-App Notification Center";
+  var APP_VERSION="2026.09.27 · Step 12 Notification Acknowledgment + History";
 
   function storedView(){
     try{ var v=localStorage.getItem(NAV_VIEW_KEY); return v||(currentRole==="supervisor"?"mywork":"home"); }catch(_e){ return currentRole==="supervisor"?"mywork":"home"; }
@@ -1417,7 +1434,7 @@
   $("search").addEventListener("input", applyFilters);
   $("statusFilter").addEventListener("change", function(){ overdueOnly=false; injuryOnly=false; var v=$("statusFilter").value; setActiveChip(v==="all"||v==="open"||v==="new"?v:""); applyFilters(); });
 
-  /* ---------- Step 11: in-app notification center ---------- */
+  /* ---------- Step 12: notification acknowledgment + history ---------- */
   function notificationTime(v){
     if(!v) return "";
     try{
@@ -1431,44 +1448,155 @@
       return new Date(v).toLocaleDateString();
     }catch(_e){ return ""; }
   }
+  function notificationState(n){
+    if(n&&n.resolved_at) return "resolved";
+    if(n&&n.acknowledged_at) return "acknowledged";
+    if(n&&n.viewed_at) return "viewed";
+    return "new";
+  }
+  function notificationResolutionLabel(v){
+    var map={
+      review_started:"Review started",
+      investigator_reassigned:"Investigator reassigned",
+      investigation_handed_off:"Investigation handed off",
+      action_owner_reassigned:"Action owner reassigned",
+      verification_owner_changed:"Verification owner changed",
+      action_submitted:"Action submitted",
+      changes_resubmitted:"Changes resubmitted",
+      verification_completed_or_returned:"Verification completed or returned",
+      report_resolved:"Report resolved"
+    };
+    return map[String(v||"")]||"";
+  }
+  function notificationHistoryMeta(n){
+    var bits=[];
+    if(n&&n.acknowledged_at) bits.push("Acknowledged by you "+notificationTime(n.acknowledged_at));
+    if(n&&n.resolved_at){
+      var why=notificationResolutionLabel(n.resolution_reason);
+      bits.push((why?why+" · ":"Resolved ")+notificationTime(n.resolved_at));
+    }
+    return bits.join(" · ");
+  }
+  function buildNotificationItem(n){
+    var state=notificationState(n);
+    var item=document.createElement("div");
+    item.className="notification-item "+state;
+    item.setAttribute("data-notification-id",String(n.id));
+
+    var open=document.createElement("button");
+    open.type="button";
+    open.className="notification-open";
+    open.setAttribute("aria-label",(n.title||"Notification")+". Open report.");
+    open.innerHTML='<span class="notification-dot" aria-hidden="true"></span><span class="notification-item-copy"><span class="notification-item-title">'+esc(n.title||"Notification")+'</span><span class="notification-item-message">'+esc(n.message||"")+'</span></span><span class="notification-item-time">'+esc(notificationTime(n.created_at))+'</span>';
+    open.addEventListener("click",function(){ openNotificationItem(n); });
+    item.appendChild(open);
+
+    var foot=document.createElement("div");
+    foot.className="notification-item-foot";
+    var left=document.createElement("div");
+    left.className="notification-item-meta";
+
+    var pill=document.createElement("span");
+    pill.className="notification-state-pill "+state;
+    pill.textContent=state==="new"?"New":state==="viewed"?"Viewed":state==="acknowledged"?"Acknowledged":"Resolved";
+    left.appendChild(pill);
+
+    var historyText=notificationHistoryMeta(n);
+    if(historyText){
+      var detail=document.createElement("span");
+      detail.textContent=" · "+historyText;
+      left.appendChild(detail);
+    }
+    foot.appendChild(left);
+
+    if(!n.acknowledged_at&&!n.resolved_at){
+      var ack=document.createElement("button");
+      ack.type="button";
+      ack.className="notification-ack";
+      ack.textContent="Acknowledge";
+      ack.setAttribute("aria-label","Acknowledge "+(n.title||"notification"));
+      ack.addEventListener("click",function(e){ e.stopPropagation(); acknowledgeNotification(n,ack); });
+      foot.appendChild(ack);
+    }
+    item.appendChild(foot);
+    return item;
+  }
+  function appendNotificationSection(list,title,items){
+    if(!items.length) return;
+    var section=document.createElement("section");
+    section.className="notification-section";
+    var head=document.createElement("div");
+    head.className="notification-section-head";
+    head.innerHTML='<span>'+esc(title)+'</span><span class="notification-section-count">'+items.length+'</span>';
+    section.appendChild(head);
+    items.forEach(function(n){ section.appendChild(buildNotificationItem(n)); });
+    list.appendChild(section);
+  }
   function renderNotificationCenter(){
     var badge=$("notificationBadge"), countEl=$("notificationActiveCount"), list=$("notificationList"), bell=$("notificationBell");
     var count=Number(notificationActiveCount||0);
     if(badge){ badge.textContent=count>99?"99+":String(count); badge.classList.toggle("show",count>0); }
-    if(countEl) countEl.textContent=count+" active";
-    if(bell) bell.setAttribute("aria-label",count?(`Notifications, ${count} active`):"Notifications");
+    if(countEl) countEl.textContent=count+" to acknowledge";
+    if(bell) bell.setAttribute("aria-label",count?(`Notifications, ${count} unacknowledged`):"Notifications, none unacknowledged");
     if(!list) return;
-    if(notificationLoading && !userNotifications.length){ list.innerHTML='<div class="notification-empty">Loading notifications…</div>'; return; }
-    if(!userNotifications.length){ list.innerHTML='<div class="notification-empty">No active notifications.</div>'; return; }
+    if(notificationLoading&&!userNotifications.length){ list.innerHTML='<div class="notification-empty">Loading notifications…</div>'; return; }
+    if(!userNotifications.length){ list.innerHTML='<div class="notification-empty">No notifications yet.</div>'; return; }
+
+    var attention=userNotifications.filter(function(n){ return !n.resolved_at&&!n.acknowledged_at; });
+    var acknowledged=userNotifications.filter(function(n){ return !n.resolved_at&&!!n.acknowledged_at; });
+    var resolved=userNotifications.filter(function(n){ return !!n.resolved_at; });
+
     list.innerHTML="";
-    userNotifications.forEach(function(n){
-      var b=document.createElement("button"); b.type="button"; b.className="notification-item"+(n.viewed_at?" viewed":"");
-      b.setAttribute("data-notification-id",String(n.id));
-      b.innerHTML='<span class="notification-dot" aria-hidden="true"></span><span class="notification-item-copy"><span class="notification-item-title">'+esc(n.title||"Notification")+'</span><span class="notification-item-message">'+esc(n.message||"")+'</span></span><span class="notification-item-time">'+esc(notificationTime(n.created_at))+'</span>';
-      b.addEventListener("click",function(){ openNotificationItem(n); });
-      list.appendChild(b);
-    });
+    appendNotificationSection(list,"Needs attention",attention);
+    appendNotificationSection(list,"Acknowledged",acknowledged);
+    appendNotificationSection(list,"Resolved history",resolved);
   }
   async function loadNotifications(silent){
     if(!currentSession||!currentSession.user||notificationLoading) return;
     notificationLoading=true;
     if(!silent) renderNotificationCenter();
     try{
-      var q=sb.from("report_user_notifications")
-        .select("id,organization_id,recipient_user_id,report_id,notification_type,title,message,created_at,viewed_at,acknowledged_at,resolved_at",{count:"exact"})
+      var countQuery=sb.from("report_user_notifications")
+        .select("id",{count:"exact",head:true})
         .is("acknowledged_at",null)
-        .is("resolved_at",null)
+        .is("resolved_at",null);
+      var historyQuery=sb.from("report_user_notifications")
+        .select("id,organization_id,recipient_user_id,report_id,notification_type,title,message,created_at,viewed_at,acknowledged_at,acknowledged_by_user_id,resolved_at,resolution_reason")
         .order("created_at",{ascending:false})
-        .limit(50);
-      var res=await q;
-      if(res.error) throw res.error;
-      userNotifications=res.data||[];
-      notificationActiveCount=typeof res.count==="number"?res.count:userNotifications.length;
+        .limit(100);
+      var results=await Promise.all([countQuery,historyQuery]);
+      if(results[0].error) throw results[0].error;
+      if(results[1].error) throw results[1].error;
+      notificationActiveCount=typeof results[0].count==="number"?results[0].count:0;
+      userNotifications=results[1].data||[];
     }catch(ex){
       console.error("notification load",ex);
-      if(!silent && $("notificationList")) $("notificationList").innerHTML='<div class="notification-empty">Could not load notifications.</div>';
+      if(!silent&&$("notificationList")) $("notificationList").innerHTML='<div class="notification-empty">Could not load notifications.</div>';
     }finally{
       notificationLoading=false; renderNotificationCenter();
+    }
+  }
+  async function acknowledgeNotification(n,button){
+    if(!n||n.acknowledged_at||n.resolved_at) return;
+    if(button){ button.disabled=true; button.textContent="Saving…"; }
+    try{
+      var ar=await sb.rpc("rbh_acknowledge_notification",{p_notification_id:n.id});
+      if(ar.error) throw ar.error;
+      if(ar.data!==true){
+        await loadNotifications(true);
+        toast("This notification is no longer active.","ok");
+        return;
+      }
+      n.acknowledged_at=new Date().toISOString();
+      n.acknowledged_by_user_id=currentSession&&currentSession.user?currentSession.user.id:null;
+      notificationActiveCount=Math.max(0,Number(notificationActiveCount||0)-1);
+      renderNotificationCenter();
+      await loadNotifications(true);
+      toast("Notification acknowledged.","ok");
+    }catch(ex){
+      console.error("notification acknowledge",ex);
+      renderNotificationCenter();
+      toast("Could not acknowledge this notification. Please try again.","err");
     }
   }
   function notificationReturnView(){
