@@ -483,6 +483,11 @@
   .wizard-step-copy h3{font-family:var(--display);font-size:20px;margin:0 0 3px}.wizard-step-copy p{margin:0;color:var(--muted);font-size:12.5px;line-height:1.45}
   .wizard-task{border-left:4px solid #2f65ad;background:#eef4ff;border-radius:8px;padding:11px 12px;margin:0 0 14px}.wizard-task b{display:block;font-family:var(--display);font-size:12.5px;margin-bottom:2px}.wizard-task span{font-size:12px;line-height:1.45;color:#395879}
   .field-guidance{display:block;margin:5px 0 12px;color:var(--muted);font-size:11.5px;line-height:1.45;font-weight:400}.field-guidance.compact{margin-bottom:7px}
+  .guidance-control{display:flex;justify-content:flex-end;align-items:center;margin:0 0 10px}
+  .guidance-toggle{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--paper-2);border-radius:999px;padding:6px 10px;color:var(--muted);font-size:11.5px;font-weight:700;cursor:pointer;user-select:none}
+  .guidance-toggle:hover{border-color:#9fb2ca;color:var(--ink)}
+  .guidance-toggle input{width:15px;height:15px;margin:0;accent-color:#2f65ad;cursor:pointer}
+  .wizard-shell.guidance-hidden .field-guidance,.wizard-shell.guidance-hidden .wizard-step-copy p,.wizard-shell.guidance-hidden .wizard-footer-copy,.wizard-shell.guidance-hidden .action-help{display:none!important}
   [data-theme="dark"] .wizard-task{background:#17263b;border-left-color:#6e9de0}.wizard-required{display:none;border:1px solid #e1a4a4;background:#fff2f2;color:#91262d;border-radius:9px;padding:9px 11px;font-size:12px;font-weight:700;margin:10px 0}.wizard-required.show{display:block}[data-theme="dark"] .wizard-required{background:#321d1d;border-color:#744040;color:#ffbaba}
   .wizard-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line);margin-top:18px;padding-top:14px}
   .wizard-footer-copy{font-size:11.5px;color:var(--muted);max-width:520px;line-height:1.4}.wizard-footer-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-left:auto}
@@ -1425,6 +1430,7 @@
     add("language", r.language||"en"); add("created_at", fmtDate(r.created_at));
     return '<div class="wizard-shell">'+
       '<div class="record-progress" data-record-progress></div>'+
+      '<div class="guidance-control"><label class="guidance-toggle"><input type="checkbox" data-guidance-toggle checked><span>Show guidance</span></label></div>'+
       '<div data-resolved-banner></div>'+
       urgentTriageHtml(r)+
 
@@ -1697,6 +1703,13 @@
 
   function buildDetail(r, detail, wrap){
     detail.innerHTML=detailHtml(r);
+    var guidanceToggle=detail.querySelector("[data-guidance-toggle]");
+    if(guidanceToggle){
+      guidanceToggle.addEventListener("change",function(){
+        var shell=detail.querySelector(".wizard-shell");
+        if(shell) shell.classList.toggle("guidance-hidden",!guidanceToggle.checked);
+      });
+    }
     var mobileSupport=detail.querySelector(".record-support");
     if(mobileSupport && window.matchMedia && window.matchMedia("(max-width: 620px)").matches) mobileSupport.removeAttribute("open");
     detail.dataset.wizardStep=String(initialWizardStep(r));
