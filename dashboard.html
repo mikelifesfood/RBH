@@ -1353,7 +1353,7 @@
   var dispositionReport=null, dispositionWrap=null, dispositionNotesEl=null;
   var reopenReport=null, reopenReturnView="records", restartReport=null, restartReturnView="records";
   var NAV_VIEW_KEY="rbh_safety_active_view_v1", NAV_INCIDENT_KEY="rbh_safety_active_incident_v1";
-  var APP_VERSION="2026.09.27 · Step 14D Action-Specific Evidence";
+  var APP_VERSION="2026.09.27 · Step 14D.1 Evidence UI Hotfix";
 
   function storedView(){
     try{ var v=localStorage.getItem(NAV_VIEW_KEY); return v||(currentRole==="supervisor"?"mywork":"home"); }catch(_e){ return currentRole==="supervisor"?"mywork":"home"; }
@@ -2447,7 +2447,9 @@
         return;
       }
 
-      multiActionVerificationStage.innerHTML=rows.map(function(a){
+      var verifiedCount=rows.filter(function(a){return String(a.status||"")==="verified";}).length;
+      var allVerified=rows.length>0&&verifiedCount===rows.length;
+      var cardsHtml=rows.map(function(a){
         var status=String(a.status||"not_started");
         var owner=a.owner_user_id&&profileById[String(a.owner_user_id)]?profileName(profileById[String(a.owner_user_id)]):"Not assigned";
         var completedBy=a.completed_by&&profileById[String(a.completed_by)]?profileName(profileById[String(a.completed_by)]):"";
@@ -2504,21 +2506,24 @@
           review+
         '</div>';
       }).join("");
-      Array.prototype.slice.call(multiActionVerificationStage.querySelectorAll("[data-action-evidence][data-corrective-action-id]")).forEach(function(panel){
-        var aid=panel.getAttribute("data-corrective-action-id");
-        var action=actionPlanState.actions.find(function(x){return String(x.id||"")===String(aid||"");});
-        if(action) renderActionEvidence(r,panel,auditEl,action).catch(function(ex){console.error("action evidence",ex);});
-      });
 
-      var verifiedCount=rows.filter(function(a){return String(a.status||"")==="verified";}).length;
-      var allVerified=rows.length>0&&verifiedCount===rows.length;
-      multiActionVerificationStage.innerHTML +=
+      var footerHtml=
         '<div class="multi-action-verification-footer">'+
           '<div class="mavf-status"><b>'+verifiedCount+' of '+rows.length+' corrective action'+(rows.length===1?'':'s')+' verified.</b>'+
           (allVerified?' All corrective actions are complete. Continue to the final Close step.':' Verify each remaining action before the report can move to Close.')+
           '</div>'+
           (allVerified?'<button class="wizard-primary" type="button" data-all-actions-verified>All actions verified — Continue to Close</button>':'')+
         '</div>';
+
+      // Build the complete DOM once. Do not mutate innerHTML after evidence
+      // rendering starts, or the browser destroys the evidence nodes/listeners.
+      multiActionVerificationStage.innerHTML=cardsHtml+footerHtml;
+
+      Array.prototype.slice.call(multiActionVerificationStage.querySelectorAll("[data-action-evidence][data-corrective-action-id]")).forEach(function(panel){
+        var aid=panel.getAttribute("data-corrective-action-id");
+        var action=actionPlanState.actions.find(function(x){return String(x.id||"")===String(aid||"");});
+        if(action) renderActionEvidence(r,panel,auditEl,action).catch(function(ex){console.error("action evidence",ex);});
+      });
     }
 
     function renderMultiActionCompletion(){
@@ -4905,7 +4910,14 @@
                   if(!removeResult||removeResult.ok===false) throw new Error("The replacement was saved, but the original file could not be removed. You can remove it separately.");
                   await refreshReportAttachments(r.id);
                   loadAudit(r.id,auditEl);
-                  await refreshAllActionEvidencePanels(r,auditEl);
+                  if(el.isConnected) await renderActionEvidence(r,el,auditEl,correctiveAction||null);
+                  var replaceRoot=$("incidentBody");
+                  var replacePanels=replaceRoot?Array.prototype.slice.call(replaceRoot.querySelectorAll('[data-action-evidence][data-corrective-action-id="'+String(correctiveAction&&correctiveAction.id||"")+'"]')):[];
+                  for(var rpi=0;rpi<replacePanels.length;rpi++){
+                    if(replacePanels[rpi]!==el && replacePanels[rpi].isConnected){
+                      await renderActionEvidence(r,replacePanels[rpi],auditEl,correctiveAction||null);
+                    }
+                  }
                   toast("Evidence replaced","ok");
                 }catch(ex){
                   console.error(ex);
@@ -4933,7 +4945,14 @@
                 }
                 await refreshReportAttachments(r.id);
                 loadAudit(r.id,auditEl);
-                await refreshAllActionEvidencePanels(r,auditEl);
+                if(el.isConnected) await renderActionEvidence(r,el,auditEl,correctiveAction||null);
+                var removeRoot=$("incidentBody");
+                var removePanels=removeRoot?Array.prototype.slice.call(removeRoot.querySelectorAll('[data-action-evidence][data-corrective-action-id="'+String(correctiveAction&&correctiveAction.id||"")+'"]')):[];
+                for(var rmi=0;rmi<removePanels.length;rmi++){
+                  if(removePanels[rmi]!==el && removePanels[rmi].isConnected){
+                    await renderActionEvidence(r,removePanels[rmi],auditEl,correctiveAction||null);
+                  }
+                }
                 toast("Evidence removed","ok");
               }catch(ex){
                 console.error(ex);
@@ -4988,7 +5007,16 @@
         if(result.ok) toast(result.ok+" evidence file"+(result.ok===1?"":"s")+" saved","ok");
         if(result.failed) toast(result.failed+" evidence file"+(result.failed===1?"":"s")+" could not be saved. Please add it again.","err");
         loadAudit(r.id,auditEl);
-        await refreshAllActionEvidencePanels(r,auditEl);
+        // Refresh the panel the user is looking at immediately.
+        if(el.isConnected) await renderActionEvidence(r,el,auditEl,correctiveAction||null);
+        // Then keep the matching Step 4 / Step 5 view in sync.
+        var root=$("incidentBody");
+        var others=root?Array.prototype.slice.call(root.querySelectorAll('[data-action-evidence][data-corrective-action-id="'+String(correctiveAction&&correctiveAction.id||"")+'"]')):[];
+        for(var oi=0;oi<others.length;oi++){
+          if(others[oi]!==el && others[oi].isConnected){
+            await renderActionEvidence(r,others[oi],auditEl,correctiveAction||null);
+          }
+        }
       }catch(ex){
         console.error(ex);
         toast(ex&&ex.message?ex.message:"Could not save corrective-action evidence.","err");
