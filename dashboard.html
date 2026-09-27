@@ -1353,7 +1353,7 @@
   var dispositionReport=null, dispositionWrap=null, dispositionNotesEl=null;
   var reopenReport=null, reopenReturnView="records", restartReport=null, restartReturnView="records";
   var NAV_VIEW_KEY="rbh_safety_active_view_v1", NAV_INCIDENT_KEY="rbh_safety_active_incident_v1";
-  var APP_VERSION="2026.09.27 · Step 14C.2 Corrective Actions Workspace";
+  var APP_VERSION="2026.09.27 · Step 14C.3 Load Reports Hotfix";
 
   function storedView(){
     try{ var v=localStorage.getItem(NAV_VIEW_KEY); return v||(currentRole==="supervisor"?"mywork":"home"); }catch(_e){ return currentRole==="supervisor"?"mywork":"home"; }
@@ -4254,6 +4254,20 @@
       var urgent=Object.keys(attentionIds).length; nav.textContent=urgent?String(urgent):'';
     }
   }
+  // Legacy report-level helper is still used by My Work while the app is
+  // transitioning to the multi-action child-table model. Keep it available so
+  // one workspace cannot break the global report refresh/render sequence.
+  function actionEligible(r){
+    return !!(r && (
+      r.corrective_action ||
+      r.responsible_person ||
+      r.assigned_user_id ||
+      r.due_date ||
+      r.status==='corrective_action' ||
+      (r.action_status && r.action_status!=="not_started")
+    ));
+  }
+
   function currentCorrectiveActionWorkspaceRows(){
     return (allCorrectiveActions||[]).filter(function(a){
       var r=findReport(a.report_id);
