@@ -876,6 +876,7 @@
             <div class="field"><label for="profileDepartment">Department</label><input type="text" id="profileDepartment" maxlength="100" placeholder="Optional"></div>
             <div class="field"><label for="profileRole">App role</label><input type="text" id="profileRole" readonly aria-readonly="true"><div class="field-help">Only another Admin can change your access.</div></div>
             <div class="field profile-span-2"><label for="profileLanguage">Preferred report language</label><select id="profileLanguage"><option value="auto">Automatic — use my device</option><option value="en">English</option><option value="es">Español</option></select><div class="field-help">This controls the default language used when you read a report. The original submitted wording is always preserved.</div></div>
+            <label class="setup-check profile-span-2"><input type="checkbox" id="profileGuidance" checked><span><b>Show workflow guidance</b><br>Keep short helper text visible while reviewing and completing reports. Regulatory warnings and required-field messages always remain visible.</span></label>
           </div>
           <button class="profile-primary" id="profileSave" type="submit">Save Profile</button>
         </form>
@@ -1420,6 +1421,18 @@
     else if(v==="no"){ state.classList.add("show","no"); state.textContent="Screening recorded as criteria not currently identified. Reassess if new facts become available."; }
   }
 
+  function workflowGuidanceEnabled(){
+    return !(currentProfile && currentProfile.show_workflow_guidance === false);
+  }
+
+  async function saveWorkflowGuidancePreference(enabled){
+    if(!currentSession || !currentSession.user) throw new Error("AUTH_REQUIRED");
+    var res=await sb.rpc("rbh_update_my_guidance",{p_show_guidance:!!enabled});
+    if(res.error) throw res.error;
+    if(!currentProfile) currentProfile={};
+    currentProfile.show_workflow_guidance=!!enabled;
+  }
+
   function detailHtml(r){
     var rows=[], lang=activeIncidentLanguage||preferredReadingLanguage();
     function add(field,val){ if(val!=null && String(val).trim()!=="") rows.push('<div class="d-row" data-report-field="'+esc(field)+'"><div class="d-label">'+esc(reportLabel(field,lang))+'</div><div class="d-val">'+esc(reviewValue(r,field,lang,{}))+'</div></div>'); }
@@ -1428,9 +1441,10 @@
     add("job_site", r.job_site); add("site_location", r.site_location); add("observed_at", r.observed_at?fmtDate(r.observed_at):"");
     add("reporter_name", r.reporter_name||"Anonymous"); add("reporter_role", r.reporter_role); add("reporter_contact", r.reporter_contact);
     add("language", r.language||"en"); add("created_at", fmtDate(r.created_at));
-    return '<div class="wizard-shell">'+
+    var guidanceOn=workflowGuidanceEnabled();
+    return '<div class="wizard-shell'+(guidanceOn?'':' guidance-hidden')+'">'+
       '<div class="record-progress" data-record-progress></div>'+
-      '<div class="guidance-control"><label class="guidance-toggle"><input type="checkbox" data-guidance-toggle checked><span>Show guidance</span></label></div>'+
+      '<div class="guidance-control"><label class="guidance-toggle"><input type="checkbox" data-guidance-toggle'+(guidanceOn?' checked':'')+'><span>Show guidance</span></label></div>'+
       '<div data-resolved-banner></div>'+
       urgentTriageHtml(r)+
 
@@ -1705,9 +1719,23 @@
     detail.innerHTML=detailHtml(r);
     var guidanceToggle=detail.querySelector("[data-guidance-toggle]");
     if(guidanceToggle){
-      guidanceToggle.addEventListener("change",function(){
+      guidanceToggle.addEventListener("change",async function(){
         var shell=detail.querySelector(".wizard-shell");
-        if(shell) shell.classList.toggle("guidance-hidden",!guidanceToggle.checked);
+        var enabled=!!guidanceToggle.checked;
+        if(shell) shell.classList.toggle("guidance-hidden",!enabled);
+        guidanceToggle.disabled=true;
+        try{
+          await saveWorkflowGuidancePreference(enabled);
+          var pg=$("profileGuidance"); if(pg) pg.checked=enabled;
+          toast(enabled?"Workflow guidance will be shown by default.":"Workflow guidance will stay hidden by default.","ok");
+        }catch(ex){
+          console.error("guidance preference",ex);
+          guidanceToggle.checked=!enabled;
+          if(shell) shell.classList.toggle("guidance-hidden",enabled);
+          toast("Could not save your guidance preference. Please try again.","err");
+        }finally{
+          guidanceToggle.disabled=false;
+        }
       });
     }
     var mobileSupport=detail.querySelector(".record-support");
@@ -2657,6 +2685,7 @@
     $("profileDepartment").value=p.department||"";
     $("profileRole").value=roleLabel(currentRole);
     $("profileLanguage").value=(p.preferred_language&&["auto","en","es"].indexOf(String(p.preferred_language))>=0)?String(p.preferred_language):"auto";
+    $("profileGuidance").checked=workflowGuidanceEnabled();
     $("profileHeadEmail").textContent=user.email||"";
     $("profileAppVersion").textContent="Version "+APP_VERSION;
     $("feedbackContext").textContent="App context included automatically: "+(currentOrgName?(currentOrgName+" · "):"")+currentViewLabel()+" · "+APP_VERSION;
@@ -2687,13 +2716,19 @@
       phone:$("profilePhone").value.trim()||null,
       job_title:$("profileJobTitle").value.trim()||null,
       department:$("profileDepartment").value.trim()||null,
-      preferred_language:$("profileLanguage").value||"auto"
+      preferred_language:$("profileLanguage").value||"auto",
+      show_workflow_guidance:!!$("profileGuidance").checked
     };
     try{
-      // Language preference is a standalone capability and must not depend on
+      // Language and guidance preferences are standalone capabilities and must not depend on
       // the optional Profile V1 migration (phone/job title/department).
       var lr=await sb.rpc("rbh_update_my_language",{p_preferred_language:patch.preferred_language});
       if(lr.error) throw lr.error;
+
+      var gr=await sb.rpc("rbh_update_my_guidance",{p_show_guidance:patch.show_workflow_guidance});
+      if(gr.error) throw gr.error;
+      if(!currentProfile) currentProfile={};
+      currentProfile.show_workflow_guidance=patch.show_workflow_guidance;
 
       var profileV1Saved=false, profileV1Unavailable=false;
       var res=await sb.rpc("rbh_update_my_profile",{p_full_name:patch.full_name,p_phone:patch.phone,p_job_title:patch.job_title,p_department:patch.department});
@@ -2701,16 +2736,16 @@
         var code=String(res.error.code||"");
         var msg=String(res.error.message||"");
         // PGRST202 / schema-cache missing-function errors mean Profile V1 is
-        // simply not installed. Do not fail the language preference save.
+        // simply not installed. Do not fail the language or guidance preference saves.
         if(code==="PGRST202" || /rbh_update_my_profile|function.*not found|schema cache/i.test(msg)) profileV1Unavailable=true;
         else throw res.error;
       }else profileV1Saved=true;
 
       await loadProfiles(); applyRoleUi(); fillProfileForm();
-      if(profileV1Unavailable) toast("Language preference saved. Optional Profile V1 fields are not installed in this database.","ok");
+      if(profileV1Unavailable) toast("Preferences saved. Optional Profile V1 fields are not installed in this database.","ok");
       else if(profileV1Saved) toast("Profile updated","ok");
-      else toast("Language preference saved","ok");
-    }catch(ex){ console.error("profile update",ex); toast(ex&&ex.message?ex.message:"Could not save language preference.","err"); }
+      else toast("Preferences saved","ok");
+    }catch(ex){ console.error("profile update",ex); toast(ex&&ex.message?ex.message:"Could not save profile preferences.","err"); }
     finally{ btn.disabled=false; btn.textContent="Save Profile"; }
   });
 
