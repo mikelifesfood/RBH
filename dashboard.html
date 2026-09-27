@@ -482,6 +482,7 @@
   .wizard-step-badge{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:0 0 auto;background:var(--gradient-blue);color:#fff;font-family:var(--display);font-size:15px;font-weight:900;box-shadow:0 8px 16px -12px rgba(40,93,168,.9)}
   .wizard-step-copy h3{font-family:var(--display);font-size:20px;margin:0 0 3px}.wizard-step-copy p{margin:0;color:var(--muted);font-size:12.5px;line-height:1.45}
   .wizard-task{border-left:4px solid #2f65ad;background:#eef4ff;border-radius:8px;padding:11px 12px;margin:0 0 14px}.wizard-task b{display:block;font-family:var(--display);font-size:12.5px;margin-bottom:2px}.wizard-task span{font-size:12px;line-height:1.45;color:#395879}
+  .field-guidance{display:block;margin:5px 0 12px;color:var(--muted);font-size:11.5px;line-height:1.45;font-weight:400}.field-guidance.compact{margin-bottom:7px}
   [data-theme="dark"] .wizard-task{background:#17263b;border-left-color:#6e9de0}.wizard-required{display:none;border:1px solid #e1a4a4;background:#fff2f2;color:#91262d;border-radius:9px;padding:9px 11px;font-size:12px;font-weight:700;margin:10px 0}.wizard-required.show{display:block}[data-theme="dark"] .wizard-required{background:#321d1d;border-color:#744040;color:#ffbaba}
   .wizard-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line);margin-top:18px;padding-top:14px}
   .wizard-footer-copy{font-size:11.5px;color:var(--muted);max-width:520px;line-height:1.4}.wizard-footer-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-left:auto}
@@ -1429,50 +1430,45 @@
 
       '<section class="wizard-panel" data-wizard-step="1" hidden>'+
         '<div class="wizard-step-head"><span class="wizard-step-badge">1</span><div class="wizard-step-copy"><h3>Review the report</h3><p>Confirm what was submitted and decide whether the report needs further action.</p></div></div>'+
-        '<div class="wizard-task"><b>Your job on this step</b><span>Read the report, review any photos/files, and either continue the investigation or close it with no corrective action.</span></div>'+
+        '<span class="field-guidance">Review the submission and attachments below. Continue when the report needs investigation, or use the no-action option when no corrective work is required.</span>'+
         '<div class="d-rows">'+rows.join("")+'</div>'+
         '<div class="d-atts" data-atts></div>'+
         regulatoryReviewHtml(r)+
         '<div class="noaction-box" data-noaction-box><div class="noaction-copy"><b>Nothing to correct?</b><span>Close this report with a documented reason instead of creating unnecessary corrective-action work.</span></div><button class="noaction-btn" type="button" data-noaction-btn>Close — no action required</button></div>'+
-        '<div class="wizard-footer"><div class="wizard-footer-copy">Completing this step acknowledges the report and moves it into review.</div><div class="wizard-footer-actions"><button class="wizard-primary" data-step-complete="1" type="button">Complete review →</button></div></div>'+
+        '<div class="wizard-footer"><div class="wizard-footer-copy">Complete review moves the report to Investigation.</div><div class="wizard-footer-actions"><button class="wizard-primary" data-step-complete="1" type="button">Complete review →</button></div></div>'+
         '<div class="gate-msg" data-role-gate>This account can view this incident but does not have permission to update it.</div>'+
       '</section>'+
 
       '<section class="wizard-panel" data-wizard-step="2" hidden>'+
         '<div class="wizard-step-head"><span class="wizard-step-badge">2</span><div class="wizard-step-copy"><h3>Investigation</h3><p>Document why the issue happened or what underlying condition allowed it to happen.</p></div></div>'+
-        '<div class="wizard-task"><b>Your job on this step</b><span>Enter a clear root cause. Keep it simple and factual — describe the underlying reason, not just what happened.</span></div>'+
-        '<label class="inv-l">Root cause<textarea class="inv-root" placeholder="What caused or allowed this issue to happen?"></textarea></label><div class="translation-preview" data-translation-field="root_cause" hidden></div>'+
+        '<label class="inv-l">Root cause<textarea class="inv-root" placeholder="What caused or allowed this issue to happen?"></textarea><span class="field-guidance">Describe the underlying condition or reason, not only what happened. Keep it factual and specific.</span></label><div class="translation-preview" data-translation-field="root_cause" hidden></div>'+
         '<div class="wizard-required" data-required="2">Root cause is required before this step can be completed.</div>'+
-        '<div class="wizard-footer"><div class="wizard-footer-copy">Save and close saves your investigation without advancing the workflow, then returns you Home.</div><div class="wizard-footer-actions"><button class="wizard-save root-save" data-step-save="2" type="button">Save and close</button><span class="root-saved section-saved" hidden>Saved ✓</span><button class="wizard-primary" data-step-complete="2" type="button">Complete investigation →</button></div></div>'+
+        '<div class="wizard-footer"><div class="wizard-footer-copy">Save and close keeps a draft. Complete investigation advances the workflow.</div><div class="wizard-footer-actions"><button class="wizard-save root-save" data-step-save="2" type="button">Save and close</button><span class="root-saved section-saved" hidden>Saved ✓</span><button class="wizard-primary" data-step-complete="2" type="button">Complete investigation →</button></div></div>'+
       '</section>'+
 
       '<section class="wizard-panel" data-wizard-step="3" hidden>'+
         '<div class="wizard-step-head"><span class="wizard-step-badge">3</span><div class="wizard-step-copy"><h3>Corrective action plan</h3><p>Define what needs to be fixed, who owns the work, and when it must be completed.</p></div></div>'+
-        '<div class="wizard-task"><b>Your job on this step</b><span>Give the assigned person a clear action. An action, assigned dashboard user, due date, and priority are all required before the work can be assigned.</span></div>'+
         '<div class="inv-grid">'+
-          '<label class="inv-l">Corrective action required<textarea class="inv-corr" placeholder="What needs to be corrected or changed?"></textarea></label><div class="translation-preview" data-translation-field="corrective_action" hidden></div>'+
-          '<label class="inv-l">Assigned dashboard user<select class="inv-assignee">'+assignmentOptions(r.assigned_user_id)+'</select></label>'+
-          '<div class="inv-row"><label class="inv-l">Due date<input type="date" class="inv-due"></label><label class="inv-l">Priority<select class="inv-pri"><option value="">— Choose priority —</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label></div>'+
+          '<label class="inv-l">Corrective action required<textarea class="inv-corr" placeholder="What needs to be corrected or changed?"></textarea><span class="field-guidance compact">State the specific work or change needed to correct the issue.</span></label><div class="translation-preview" data-translation-field="corrective_action" hidden></div>'+
+          '<label class="inv-l">Assigned dashboard user<select class="inv-assignee">'+assignmentOptions(r.assigned_user_id)+'</select><span class="field-guidance compact">Choose the person responsible for completing this corrective action.</span></label>'+
+          '<div class="inv-row"><label class="inv-l">Due date<input type="date" class="inv-due"><span class="field-guidance compact">Set the completion deadline.</span></label><label class="inv-l">Priority<select class="inv-pri"><option value="">— Choose priority —</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select><span class="field-guidance compact">Use priority to show urgency.</span></label></div>'+
         '</div>'+
         '<div class="wizard-required" data-required="3"></div>'+
-        '<div class="wizard-footer"><div class="wizard-footer-copy">Save and close saves the current plan without assigning it, then returns you Home. Save &amp; Assign validates the required fields and sends the work to the assigned user.</div><div class="wizard-footer-actions"><button class="wizard-save action-plan-save" data-step-save="3" type="button">Save and close</button><span class="action-plan-saved section-saved" hidden>Saved ✓</span><button class="wizard-primary" data-step-complete="3" type="button">Save &amp; assign action →</button></div></div>'+
+        '<div class="wizard-footer"><div class="wizard-footer-copy">Save and close keeps a draft. Save &amp; Assign sends the action to the selected owner.</div><div class="wizard-footer-actions"><button class="wizard-save action-plan-save" data-step-save="3" type="button">Save and close</button><span class="action-plan-saved section-saved" hidden>Saved ✓</span><button class="wizard-primary" data-step-complete="3" type="button">Save &amp; assign action →</button></div></div>'+
       '</section>'+
 
       '<section class="wizard-panel" data-wizard-step="4" hidden>'+
-        '<div class="wizard-step-head"><span class="wizard-step-badge">4</span><div class="wizard-step-copy"><h3>Complete corrective action</h3><p>The assigned owner documents what was actually completed and can attach evidence of the fix.</p></div></div>'+
-        '<div class="wizard-task"><b>Your job on this step</b><span>Complete the assigned work, describe exactly what you did, attach evidence if helpful, then submit it for verification.</span></div>'+
+        '<div class="wizard-step-head"><span class="wizard-step-badge">4</span><div class="wizard-step-copy"><h3>Complete corrective action</h3><p>Document the completed work and attach supporting evidence when helpful.</p></div></div>'+
         '<div class="action-workflow" data-action-completion></div>'+
       '</section>'+
 
       '<section class="wizard-panel" data-wizard-step="5" hidden>'+
-        '<div class="wizard-step-head"><span class="wizard-step-badge">5</span><div class="wizard-step-copy"><h3>Verify corrective action</h3><p>Review what was completed and the supporting evidence before approving the correction.</p></div></div>'+
-        '<div class="wizard-task"><b>Your job on this step</b><span>Confirm the corrective action was actually completed. Verify it if acceptable, or request changes with a clear explanation.</span></div>'+
+        '<div class="wizard-step-head"><span class="wizard-step-badge">5</span><div class="wizard-step-copy"><h3>Verify corrective action</h3><p>Review the completed work and evidence, then approve it or request changes.</p></div></div>'+
         '<div class="action-workflow" data-action-verification></div>'+
       '</section>'+
 
       '<section class="wizard-panel" data-wizard-step="6" hidden>'+
         '<div class="wizard-step-head"><span class="wizard-step-badge">6</span><div class="wizard-step-copy"><h3>Close record</h3><p>Perform one final check and close the incident when every required step is complete.</p></div></div>'+
-        '<div class="wizard-task"><b>Your job on this step</b><span>Review the checklist below. When every required item is complete, close the record.</span></div>'+
         '<div data-close-step></div>'+
       '</section>'+
 
@@ -3377,7 +3373,7 @@
       h+='<div class="evidence-panel" data-action-evidence></div>';
       if(canEditReport(r)&&status!=="verified"){
         var primary=(status==="awaiting_verification")?'':(status==="changes_requested"?'Resubmit for verification →':'Submit for verification →');
-        h+='<div class="wizard-footer"><div class="wizard-footer-copy">Save and close saves the completion note without submitting it, then returns you Home. Submitting is the deliberate handoff to the reviewer.</div><div class="wizard-footer-actions"><button class="wizard-save btn-save-completion" data-step-save="4" type="button">Save and close</button><span class="completion-saved section-saved" hidden>Saved ✓</span>'+(primary?'<button class="wizard-primary btn-complete" data-step-complete="4" type="button">'+primary+'</button>':'')+'</div></div>';
+        h+='<div class="wizard-footer"><div class="wizard-footer-copy">Save and close keeps a draft. Submit for verification hands the completed work to the reviewer.</div><div class="wizard-footer-actions"><button class="wizard-save btn-save-completion" data-step-save="4" type="button">Save and close</button><span class="completion-saved section-saved" hidden>Saved ✓</span>'+(primary?'<button class="wizard-primary btn-complete" data-step-complete="4" type="button">'+primary+'</button>':'')+'</div></div>';
       }
     } else {
       if(r.action_completion_note) h+='<div class="action-context"><b>Completed work submitted</b><p>'+esc(r.action_completion_note)+'</p></div><div class="translation-preview" data-translation-field="action_completion_note" hidden></div>';
@@ -3385,7 +3381,7 @@
       h+='<div class="evidence-panel" data-action-evidence></div>';
       if(status==="awaiting_verification"&&canVerify()){
         h+='<label class="inv-l">Reviewer verification note <span style="font-weight:400;color:var(--muted)">(optional when approving)</span><textarea class="verify-note" placeholder="What did you verify? If requesting changes, explain exactly what still needs to be done.">'+esc(r.action_verification_note||'')+'</textarea></label><div class="wizard-required" data-verify-required>Add a verification note explaining the requested changes.</div>'+
-          '<div class="translation-preview" data-translation-field="action_verification_note" hidden></div><div class="wizard-footer"><div class="wizard-footer-copy">Save and close saves your verification note without making a decision, then returns you Home. Verify advances the record. Request Changes sends it back to Step 4.</div><div class="wizard-footer-actions"><button class="wizard-save btn-save-verification" data-step-save="5" type="button">Save and close</button><span class="verification-saved section-saved" hidden>Saved ✓</span><button class="btn-changes" type="button">Request changes</button><button class="wizard-primary btn-verify" data-step-complete="5" type="button">Verify &amp; continue →</button></div></div>';
+          '<div class="translation-preview" data-translation-field="action_verification_note" hidden></div><div class="wizard-footer"><div class="wizard-footer-copy">Save and close keeps a draft. Verify advances the record; Request changes returns it to Step 4.</div><div class="wizard-footer-actions"><button class="wizard-save btn-save-verification" data-step-save="5" type="button">Save and close</button><span class="verification-saved section-saved" hidden>Saved ✓</span><button class="btn-changes" type="button">Request changes</button><button class="wizard-primary btn-verify" data-step-complete="5" type="button">Verify &amp; continue →</button></div></div>';
       } else if(status==="verified"){
         if(r.action_verification_note) h+='<div class="action-context"><b>Verification note</b><p>'+esc(r.action_verification_note)+'</p></div><div class="translation-preview" data-translation-field="action_verification_note" hidden></div>';
         if(verified){var vb=r.action_verified_by&&profileById[String(r.action_verified_by)]?profileName(profileById[String(r.action_verified_by)]):'';h+='<div class="action-meta">'+esc(verified)+(vb?' by '+esc(vb):'')+'</div>';}
