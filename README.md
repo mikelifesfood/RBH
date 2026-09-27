@@ -1,100 +1,66 @@
-# RBH Insulation — Safety & Near-Miss Report
+# RBH Insulation Safety Application
 
-A public, mobile-friendly web form for reporting hazards, near misses, unsafe
-conditions, unsafe behavior, and vehicle/equipment problems on RBH Insulation
-job sites.
+RBH is the current live blueprint for the TeamWorkt Safety product. The repository contains the public employee reporting form, authenticated management dashboard, platform/admin pages, Supabase database reference scripts, and source-control copies of the deployed Supabase Edge Functions.
 
-The whole form is a single self-contained file (`index.html`) — the logo, fonts,
-styling, and scripts are all bundled in, so it works anywhere with no build step
-and no server.
+## Current build status
 
-**Live site (after you deploy — see below):**
-`https://<your-username>.github.io/rbh-safety-report/`
+Current dashboard baseline: **Step 11A - In-App Notification Center with red gradient alert button** (2026-09-27).
 
----
+The working management flow is:
 
-## Deploy to GitHub Pages
+1. Review
+2. Investigation
+3. Action Plan
+4. Complete Action
+5. Verification
+6. Close
 
-You only need the `index.html` file. Two ways to do it:
+Current ownership model:
 
-### Option A — GitHub website, no command line (easiest)
+- Case Owner / Investigator: Steps 1-3
+- Corrective Action Owner: Step 4
+- Verification Owner: Step 5 when specifically assigned; otherwise shared Admin/Safety Manager queue
+- Closure: Admin / Safety Manager
 
-1. Go to <https://github.com/new>.
-2. Repository name: `rbh-safety-report`. Set it to **Public**. Click **Create repository**.
-3. On the new repo page, click **Add file → Upload files**, then drag in
-   `index.html` (and this `README.md` if you like). Click **Commit changes**.
-4. Go to **Settings → Pages**.
-5. Under **Build and deployment → Source**, choose **Deploy from a branch**.
-   Set **Branch** to `main` and folder to `/ (root)`. Click **Save**.
-6. Wait about a minute, then refresh. GitHub shows the live URL at the top of the
-   Pages settings:
-   `https://<your-username>.github.io/rbh-safety-report/`
+The application also includes regulatory screening/timer behavior, hierarchy-of-controls tagging, corrective-action evidence, audit/activity history, PDF/CSV output, English/Spanish viewer preferences, Brevo transactional email notifications, and database-backed in-app notifications.
 
-That URL is public — send it to anyone.
+## Main application files
 
-### Option B — Command line (git)
+- `index.html` - public employee safety reporting form
+- `dashboard.html` - authenticated RBH management dashboard
+- `platform/index.html` - platform/admin interface retained from the current RBH build
+- `logo.png` - RBH logo asset
 
-```bash
-git clone https://github.com/<your-username>/rbh-safety-report.git
-cd rbh-safety-report
-# copy index.html into this folder, then:
-git add .
-git commit -m "Add safety report form"
-git push origin main
-```
+Historical copies such as `dashboard_old.html`, `dashboard_09182026_v1.html`, and `index_old.html` are retained only as prior references and are not the current source of truth.
 
-Then enable Pages via **Settings → Pages** as in steps 4–6 above.
+## Supabase source control
 
----
+See `supabase/README.md`.
 
-## A note on repo visibility
+Recent database changes and canonical Edge Function source are now captured under `supabase/` so the GitHub repository more accurately represents what is deployed in RBH.
 
-The **published Pages site is public** — that's the point, so people can open the
-form. Keeping the **repository** public is the simplest, cost-free path. The form
-holds no secrets (it's just a static page), so a public repo is fine.
+**Important:** The current SQL collection is not yet the final clean, from-zero customer migration set. A dedicated production-security and clone-readiness phase will consolidate the schema, RLS, Storage policies, functions, triggers, Auth configuration, secrets checklist, backup/retention controls, and customer isolation requirements into a sanitized TeamWorkt Safety master template.
 
----
+## Current deployed Edge Functions represented in this repo
 
-## Current status: draft
+- `supabase/functions/notify-report/index.ts`
+- `supabase/functions/send-action-assignment-email/index.ts`
+- `supabase/functions/translate-report/index.ts`
 
-This is the review draft. When someone taps **"Send report to the safety team,"**
-the form shows them a copyable summary of what they entered. It does **not** yet
-email anyone or save entries to a database.
+Secrets stay in Supabase and must never be committed to GitHub.
 
-### Planned next step — make submissions go somewhere
+## Deployment context
 
-- **Database + login-protected review dashboard:** Supabase (free tier) — Postgres
-  database, reviewer logins, photo storage.
-- **Email on submit:** notify a fixed group of recipients (via a webhook + email
-  service such as Resend).
-- Reviewers get a private, logged-in dashboard to read reports, set a status/
-  disposition, add timestamped notes, assign owners, and close items out.
+The current RBH frontend is hosted through GitHub Pages. There is no current Cloudflare or Vercel deployment attached to this RBH build.
 
-When that's wired up, the form's **Send** button will POST the entry (and any
-attached photos) to the database and trigger the notification email.
+Current dashboard URL:
 
----
+`https://mikelifesfood.github.io/RBH/dashboard.html`
 
-## Editing the form
+## Continuation handoff
 
-Everything lives in `index.html`.
+The latest build handoff is stored at:
 
-- **Job site list:** search for `Select a job site` and edit the `<option>` lines.
-  (Later this can be pulled live from the database instead.)
-- **Hazard types / report types / severity levels:** search for the matching
-  `<option>` or `<label>` blocks and edit the text.
-- **Recipients / branding / phone number:** phone and address are near the top of
-  the file; the logo is embedded as a data URI in the header.
+`docs/TeamWorkt_RBH_Buildout_Handoff_Step11A_2026-09-27.txt`
 
----
-
-## Optional: custom domain
-
-You can later serve this from something like `safety.rbhinsulation.com` by adding a
-`CNAME` file to the repo and pointing a DNS record at GitHub Pages. Ask and I'll
-walk you through it.
-
----
-
-RBH Insulation, Inc. · 13105 Crenshaw Blvd, Hawthorne, CA 90250 · 310-322-8883 ·
-License #558799
+The next planned build step is **Step 12 - Notification Acknowledgment + Acknowledgment History**.
