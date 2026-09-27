@@ -1138,6 +1138,40 @@
       return {ok:false,sent:false,error:"NETWORK_ERROR",detail:(ex&&ex.message)||""};
     }
   }
+  async function sendInvestigatorAssignmentEmail(r){
+    if(!r||!r.investigator_user_id) return {ok:true,sent:false,skipped:true,reason:"NO_INVESTIGATOR"};
+    if(!currentSession||!currentSession.access_token) return {ok:false,sent:false,error:"AUTH_REQUIRED"};
+    try{
+      var resp=await fetch(SUPA_URL+"/functions/v1/send-action-assignment-email",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","Authorization":"Bearer "+currentSession.access_token,"apikey":SUPA_KEY},
+        body:JSON.stringify({reportId:String(r.id),notificationType:"investigator_assignment"})
+      });
+      var data=await resp.json().catch(function(){return {};});
+      if(!resp.ok) return {ok:false,sent:false,error:data.error||("HTTP_"+resp.status),detail:data.detail||""};
+      return data||{ok:true,sent:false};
+    }catch(ex){
+      console.error("investigator assignment email",ex);
+      return {ok:false,sent:false,error:"NETWORK_ERROR",detail:(ex&&ex.message)||""};
+    }
+  }
+  async function sendVerifierAssignmentEmail(r){
+    if(!r||!r.verifier_user_id) return {ok:true,sent:false,skipped:true,reason:"NO_VERIFIER"};
+    if(!currentSession||!currentSession.access_token) return {ok:false,sent:false,error:"AUTH_REQUIRED"};
+    try{
+      var resp=await fetch(SUPA_URL+"/functions/v1/send-action-assignment-email",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","Authorization":"Bearer "+currentSession.access_token,"apikey":SUPA_KEY},
+        body:JSON.stringify({reportId:String(r.id),notificationType:"verifier_assignment"})
+      });
+      var data=await resp.json().catch(function(){return {};});
+      if(!resp.ok) return {ok:false,sent:false,error:data.error||("HTTP_"+resp.status),detail:data.detail||""};
+      return data||{ok:true,sent:false};
+    }catch(ex){
+      console.error("verifier assignment email",ex);
+      return {ok:false,sent:false,error:"NETWORK_ERROR",detail:(ex&&ex.message)||""};
+    }
+  }
   async function sendActionChangesRequestedEmail(r){
     if(!r||!r.assigned_user_id) return {ok:true,sent:false,skipped:true,reason:"NO_DASHBOARD_ASSIGNEE"};
     if(!currentSession||!currentSession.access_token) return {ok:false,sent:false,error:"AUTH_REQUIRED"};
@@ -1904,7 +1938,17 @@
       syncInvestigatorUi();
       if(investigatorSaved){investigatorSaved.hidden=false;setTimeout(function(){if(investigatorSaved.isConnected)investigatorSaved.hidden=true;},2200);}
       loadAudit(r.id,auditEl); renderHomeSnapshot(); applyFilters();
-      if(showToast) toast(nextId?"Investigator assigned":"Investigator assignment cleared","ok");
+      var notify=null;
+      if(nextId) notify=await sendInvestigatorAssignmentEmail(r);
+      if(showToast){
+        if(!nextId) toast("Investigator assignment cleared","ok");
+        else if(notify&&notify.sent) toast(notify.duplicate?"Investigator assigned — email was already sent":"Investigator assigned — email notification sent","ok");
+        else if(notify&&notify.skipped&&(notify.reason==="NO_INVESTIGATOR_EMAIL"||notify.reason==="SEND_ALREADY_IN_PROGRESS")) toast(notify.reason==="NO_INVESTIGATOR_EMAIL"?"Investigator assigned — no email is available for that user":"Investigator assigned — email notification is already in progress","ok");
+        else { console.error("investigator notification failed",notify); toast("Investigator assigned, but the email notification could not be sent.","err"); }
+      } else if(nextId && notify && !notify.sent && !notify.skipped){
+        console.error("investigator notification failed",notify);
+        toast("Investigator was assigned, but the email notification could not be sent.","err");
+      }
       return true;
     }
     syncInvestigatorUi();
@@ -3780,8 +3824,8 @@
           toast("Corrective action submitted — "+total+" reviewer"+(total===1?"":"s")+" notified by email","ok");
         } else if(notify&&notify.ok&&sentCount>0&&failedCount>0){
           toast("Corrective action submitted — some reviewer emails could not be sent.","err");
-        } else if(notify&&notify.skipped&&notify.reason==="NO_VERIFIER_EMAILS"){
-          toast("Corrective action submitted — no Admin or Safety Manager email was available.","ok");
+        } else if(notify&&notify.skipped&&(notify.reason==="NO_VERIFIER_EMAILS"||notify.reason==="NO_VERIFIER_EMAIL")){
+          toast(notify.reason==="NO_VERIFIER_EMAIL"?"Corrective action submitted — the assigned verification owner has no email available.":"Corrective action submitted — no Admin or Safety Manager email was available.","ok");
         } else {
           console.error("verification-request notification failed",notify);
           toast("Corrective action submitted, but the reviewer email notification could not be sent.","err");
@@ -3804,7 +3848,14 @@
       r.verifier_user_id=nextId;
       renderActionWorkflow(r,el,auditEl,detail,"verify");
       refreshRecordWorkflow(r,detail); renderMyWork(); renderHomeSnapshot(); loadAudit(r.id,auditEl);
-      if(showToast) toast(nextId?"Verification owner assigned":"Verification returned to the shared queue","ok");
+      var notify=null;
+      if(nextId) notify=await sendVerifierAssignmentEmail(r);
+      if(showToast){
+        if(!nextId) toast("Verification returned to the shared queue","ok");
+        else if(notify&&notify.sent) toast(notify.duplicate?"Verification owner assigned — email was already sent":"Verification owner assigned — email notification sent","ok");
+        else if(notify&&notify.skipped&&(notify.reason==="NO_VERIFIER_EMAIL"||notify.reason==="SEND_ALREADY_IN_PROGRESS")) toast(notify.reason==="NO_VERIFIER_EMAIL"?"Verification owner assigned — no email is available for that user":"Verification owner assigned — email notification is already in progress","ok");
+        else { console.error("verifier assignment notification failed",notify); toast("Verification owner assigned, but the email notification could not be sent.","err"); }
+      }
       return true;
     }
     if(verifierSave) verifierSave.addEventListener("click",async function(){verifierSave.disabled=true;try{await persistVerifierAssignment(verifierSelect?verifierSelect.value:null,true);}catch(ex){console.error(ex);toast(ex&&ex.message==="INVALID_VERIFIER"?"Choose an active Admin or Safety Manager.":"Could not save the verification owner.","err");}finally{if(verifierSave.isConnected)verifierSave.disabled=false;}});
