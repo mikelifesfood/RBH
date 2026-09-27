@@ -1403,7 +1403,7 @@
   var dispositionReport=null, dispositionWrap=null, dispositionNotesEl=null;
   var reopenReport=null, reopenReturnView="records", restartReport=null, restartReturnView="records";
   var NAV_VIEW_KEY="rbh_safety_active_view_v1", NAV_INCIDENT_KEY="rbh_safety_active_incident_v1";
-  var APP_VERSION="2026.09.27 · Step 14E Action-Specific Emails";
+  var APP_VERSION="2026.09.27 · Step 14F Multi-Action Finalization";
 
   function storedView(){
     try{ var v=localStorage.getItem(NAV_VIEW_KEY); return v||(currentRole==="supervisor"?"mywork":"home"); }catch(_e){ return currentRole==="supervisor"?"mywork":"home"; }
@@ -1508,7 +1508,7 @@
       allReports=rep.data||[];
 
       var caQ=sb.from("report_corrective_actions")
-        .select("id,report_id,organization_id,workflow_generation,action_number,description,control_type,owner_user_id,due_date,priority,status,verifier_user_id,activated_at,retired_at,created_at,updated_at")
+        .select("id,report_id,organization_id,workflow_generation,action_number,description,control_type,owner_user_id,due_date,priority,status,completion_note,completed_at,completed_by,verifier_user_id,verification_note,verified_at,verified_by,activated_at,activation_reopen_count,retired_at,created_at,updated_at")
         .is("retired_at",null);
       if(currentOrgId) caQ=caQ.eq("organization_id", currentOrgId);
       var ca=await caQ;
@@ -2030,6 +2030,18 @@
     var s=r&&r._correctiveActionSummary;
     return s&&Number(s.total||0)>0?s:null;
   }
+  function correctiveActionInCurrentCycle(a,r){
+    if(!a||!r||a.retired_at||!a.activated_at) return false;
+    if(parseInt(a.workflow_generation||0,10)!==parseInt(r.workflow_restart_count||0,10)) return false;
+    return parseInt(a.activation_reopen_count||0,10)===parseInt(r.reopen_count||0,10);
+  }
+  function currentCycleActionsForReport(r,includeVerified){
+    return (allCorrectiveActions||[]).filter(function(a){
+      if(String(a.report_id||"")!==String(r&&r.id||"")) return false;
+      if(!correctiveActionInCurrentCycle(a,r)) return false;
+      return includeVerified!==false || String(a.status||"")!=="verified";
+    });
+  }
   function activeReopenStep(r){
     if(!r || isResolvedReport(r)) return 0;
     var n=parseInt(r.reopen_workflow_step||"0",10);
@@ -2457,7 +2469,9 @@
       return actionPlanState.actions.some(function(a){return !!a.activated_at;});
     }
     function syncCorrectiveActionSummary(){
-      var rows=actionPlanState.actions.filter(function(a){return !!a.id && !a.retired_at && !!a.activated_at;});
+      var rows=actionPlanState.actions.filter(function(a){
+        return !!a.id && correctiveActionInCurrentCycle(a,r);
+      });
       if(!rows.length){ r._correctiveActionSummary=null; return null; }
       var summary={total:rows.length,open:0,awaiting:0,verified:0,changes_requested:0,submitted:0};
       rows.forEach(function(a){
@@ -2491,7 +2505,7 @@
       }
 
       multiActionVerificationStage.hidden=false;
-      var rows=actionPlanState.actions.filter(function(a){return !!a.id&&!a.retired_at&&!!a.activated_at;});
+      var rows=actionPlanState.actions.filter(function(a){return !!a.id&&correctiveActionInCurrentCycle(a,r);});
       if(!rows.length){
         multiActionVerificationStage.innerHTML='<div class="multi-action-stage-note">No active corrective actions are available for verification.</div>';
         return;
@@ -2592,7 +2606,7 @@
       if(multiActionVerificationStage) multiActionVerificationStage.hidden=false;
       if(!multiActionCompletionEl) return;
       multiActionCompletionEl.hidden=false;
-      var rows=actionPlanState.actions.filter(function(a){return !!a.id&&!a.retired_at&&!!a.activated_at;});
+      var rows=actionPlanState.actions.filter(function(a){return !!a.id&&correctiveActionInCurrentCycle(a,r);});
       multiActionCompletionEl.innerHTML=rows.map(function(a){
         var owner=a.owner_user_id&&profileById[String(a.owner_user_id)]?profileName(profileById[String(a.owner_user_id)]):"Not assigned";
         var control=a.control_type?(controlTypeLabel(a.control_type)||a.control_type):"Not selected";
@@ -3155,6 +3169,43 @@
       var notes=(res.data||[]).filter(function(n){ return String(n.title||"").indexOf("[System]")!==0; });
       if(!notes.length){ el.innerHTML='<div class="notes-empty">No notes yet.</div>'; return; }
       el.innerHTML="";
+      actionAudits.forEach(function(a){
+        var oldS=a.old_snapshot||{}, newS=a.new_snapshot||{};
+        var oldStatus=String(oldS.status||""), newStatus=String(newS.status||"");
+        var title="Corrective Action #"+String(a.action_number||"")+" updated";
+        var detail="";
+        if(a.event_type==="created") title="Corrective Action #"+String(a.action_number||"")+" created";
+        else if(a.event_type==="retired") title="Corrective Action #"+String(a.action_number||"")+" retired";
+        else if(a.event_type==="restored") title="Corrective Action #"+String(a.action_number||"")+" restored";
+        else if(oldStatus!==newStatus){
+          if(newStatus==="awaiting_verification") title="Corrective Action #"+String(a.action_number||"")+" submitted for verification";
+          else if(newStatus==="verified") title="Corrective Action #"+String(a.action_number||"")+" verified";
+          else if(newStatus==="changes_requested") title="Changes requested for Corrective Action #"+String(a.action_number||"");
+          else if(newStatus==="not_started"&&oldStatus) title="Corrective Action #"+String(a.action_number||"")+" reset for current workflow";
+          else title="Corrective Action #"+String(a.action_number||"")+" status changed to "+actionLabel(newStatus);
+        } else if(String(oldS.owner_user_id||"")!==String(newS.owner_user_id||"")){
+          title="Corrective Action #"+String(a.action_number||"")+" owner updated";
+        } else if(String(oldS.verifier_user_id||"")!==String(newS.verifier_user_id||"")){
+          title="Corrective Action #"+String(a.action_number||"")+" verification owner updated";
+        } else if(String(oldS.completion_note||"")!==String(newS.completion_note||"")){
+          title="Corrective Action #"+String(a.action_number||"")+" completion updated";
+        } else if(
+          String(oldS.description||"")!==String(newS.description||"") ||
+          String(oldS.control_type||"")!==String(newS.control_type||"") ||
+          String(oldS.due_date||"")!==String(newS.due_date||"") ||
+          String(oldS.priority||"")!==String(newS.priority||"")
+        ){
+          title="Corrective Action #"+String(a.action_number||"")+" plan updated";
+        }
+        if(newS.description) detail=String(newS.description);
+        events.push({
+          kind:"action",
+          title:title,
+          created_at:a.created_at,
+          actor:a.actor_email?auditActor(a.actor_email):(a.actor_id&&profileById[String(a.actor_id)]?profileName(profileById[String(a.actor_id)]):"System"),
+          detail:detail
+        });
+      });
       notes.forEach(function(n){
         var d=document.createElement("div"); d.className="note";
         var meta=fmtDate(n.created_at)+(n.author_email?("  \u00b7  "+n.author_email):"");
@@ -3253,15 +3304,48 @@
   ];
   function csvCell(v){ v=(v==null?"":String(v)); return /[",\n\r]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; }
   function reportsToCsv(reports, notesByReport){
-    var header=CSV_COLS.map(function(c){return c[1];}).concat(["Attachments","Notes"]);
+    var header=CSV_COLS.map(function(c){return c[1];}).concat([
+      "Corrective action count",
+      "Corrective actions",
+      "Corrective action evidence",
+      "Attachments",
+      "Notes"
+    ]);
     var lines=[header.map(csvCell).join(",")];
     reports.forEach(function(r){
       var cells=CSV_COLS.map(function(c){return csvCell(r[c[0]]);});
-      var atts=(attByReport[r.id]||[]).map(function(a){return a.file_name||a.storage_path;}).join(" | ");
+      var childActions=(allCorrectiveActions||[]).filter(function(a){
+        return String(a.report_id||"")===String(r.id)
+          && parseInt(a.workflow_generation||0,10)===parseInt(r.workflow_restart_count||0,10)
+          && !a.retired_at;
+      }).sort(function(a,b){return Number(a.action_number||0)-Number(b.action_number||0);});
+      var childActionIds={};
+      childActions.forEach(function(a){childActionIds[String(a.id)]=true;});
+      var childText=childActions.map(function(a){
+        var owner=a.owner_user_id&&profileById[String(a.owner_user_id)]?profileName(profileById[String(a.owner_user_id)]):"";
+        var verifier=a.verifier_user_id&&profileById[String(a.verifier_user_id)]?profileName(profileById[String(a.verifier_user_id)]):"";
+        return [
+          "Action #"+String(a.action_number||""),
+          "Description: "+String(a.description||""),
+          "Owner: "+owner,
+          "Control: "+String(a.control_type||""),
+          "Due: "+String(a.due_date||""),
+          "Priority: "+String(a.priority||""),
+          "Status: "+String(a.status||""),
+          "Completion: "+String(a.completion_note||""),
+          "Verifier: "+verifier,
+          "Verification: "+String(a.verification_note||"")
+        ].join(" | ");
+      }).join("  ||  ");
+      var evidence=(attByReport[r.id]||[]).filter(function(a){return a.corrective_action_id&&childActionIds[String(a.corrective_action_id)];}).map(function(a){
+        var ca=childActions.find(function(x){return String(x.id)===String(a.corrective_action_id);});
+        return "Action #"+String(ca&&ca.action_number||"")+": "+String(a.file_name||a.storage_path||"");
+      }).join(" | ");
+      var atts=(attByReport[r.id]||[]).filter(function(a){return !a.corrective_action_id;}).map(function(a){return a.file_name||a.storage_path;}).join(" | ");
       var notes=(notesByReport[r.id]||[]).map(function(n){
         return fmtDate(n.created_at)+(n.author_email?(" "+n.author_email):"")+": "+(n.title||"")+(n.body?(" — "+n.body):"");
       }).join("  ||  ");
-      cells.push(csvCell(atts), csvCell(notes));
+      cells.push(csvCell(childActions.length),csvCell(childText),csvCell(evidence),csvCell(atts),csvCell(notes));
       lines.push(cells.join(","));
     });
     return lines.join("\r\n");
@@ -3305,11 +3389,26 @@
       try{ atts=await refreshReportAttachments(r.id); }catch(e){ console.warn("Could not refresh attachments before PDF export",e); }
       var audit=[];
       try{ var ar=await sb.from("report_audit").select("*").eq("report_id",r.id).order("created_at",{ascending:true}); audit=ar.data||[]; }catch(e){}
+      var pdfActions=[];
+      try{
+        var car=await sb.from("report_corrective_actions")
+          .select("id,workflow_generation,action_number,description,control_type,owner_user_id,due_date,priority,status,completion_note,completed_at,completed_by,verifier_user_id,verification_note,verified_at,verified_by,activated_at,activation_reopen_count,retired_at")
+          .eq("report_id",r.id)
+          .eq("workflow_generation",parseInt(r.workflow_restart_count||0,10))
+          .is("retired_at",null)
+          .order("action_number",{ascending:true});
+        if(!car.error) pdfActions=car.data||[];
+      }catch(e){}
+      var pdfActionAudit=[];
+      try{
+        var caar=await sb.from("report_corrective_action_audit").select("*").eq("report_id",r.id).order("created_at",{ascending:true});
+        if(!caar.error) pdfActionAudit=caar.data||[];
+      }catch(e){}
 
       var pdfMode=languageMode||"viewer", pdfLang=(pdfMode==="original"?normalizeLanguageCode(r.language||"en"):(pdfMode==="viewer"?(activeIncident===r?activeIncidentLanguage:preferredReadingLanguage()):normalizeLanguageCode(pdfMode)));
       var pdfLabels={
-        en:{notRecorded:"Not recorded",dashboardUser:"Dashboard user",reportWord:"Report",step:"STEP",workflow:["Review","Investigation","Action Plan","Complete","Verify","Close"],headerSubtitle:"Incident record - after-action summary",submitted:"Submitted",generated:"Generated",section1:"Report and review",section1Sub:"What was submitted and how the report entered the safety workflow.",reportType:"Report type",actualInjury:"Actual injury or illness",address:"Address of incident",specificSpot:"Specific spot on the site",whenNoticed:"When noticed",potentialSeverity:"Potential severity",hazardType:"Type of hazard",formLanguage:"Form language",describe:"Describe what you saw",noDescription:"No description recorded",involved:"Who or what was involved / any witnesses",immediate:"What was done right away",suggested:"What would fix it or prevent it",reporter:"Reporter",reportedBy:"Reported by",reporterRole:"Reporter role",reporterContact:"Reporter contact",reviewCompleted:"Review completed",reviewedBy:"Reviewed by",investigator:"Case owner / investigator",verifier:"Verification owner",workflowRestarts:"Workflow restarts",lastRestart:"Last restart",none:"None",originalFiles:"Original report photos and files",noOriginalFiles:"No original files attached",calosha:"Cal/OSHA serious-event screening",screeningResult:"Screening result",awareness:"RBH awareness time",screeningNote:"Screening note",screeningDisclaimer:"Management screening only. This application does not submit a report to Cal/OSHA and the screening does not replace required regulatory reporting.",section2:"Investigation",section2Sub:"Document the underlying reason the issue happened or was allowed to happen.",rootCause:"Root cause",notYetRecorded:"Not yet recorded",section3:"Corrective action plan",section3Sub:"Define the fix, ownership, due date, and priority.",correctiveRequired:"Corrective action required",controlType:"Control type",assignedUser:"Assigned dashboard user",notAssigned:"Not assigned",responsible:"Responsible person / crew",dueDate:"Due date",priority:"Priority",section4:"Complete corrective action",section4Sub:"Record what was actually completed and the supporting evidence.",completedWork:"Completed work submitted",notYetSubmitted:"Not yet submitted",completedOn:"Completed on",completedBy:"Completed by",currentEvidence:"Current-workflow corrective-action evidence",noCurrentEvidence:"No corrective-action evidence attached in the current workflow",priorEvidence:"Preserved evidence from earlier workflow",section5:"Verify corrective action",section5Sub:"Show the review decision and any verification or change-request note.",verificationOutcome:"Verification outcome",verifiedOn:"Verified on",verifiedBy:"Verified by",requestedChanges:"Requested changes",reviewerNote:"Reviewer verification note",noVerificationNote:"No verification note recorded",section6:"Close record",section6Sub:"Final disposition and closure information for the incident.",recordStatus:"Record status",closedOn:"Closed on",notYetClosed:"Not yet closed",closedBy:"Closed by",closurePath:"Closure path",closureReason:"Closure reason",closureNote:"Closure note",additionalNotes:"Additional notes",activityHistory:"Activity history",reportSubmitted:"Report submitted",anonymousReporter:"Anonymous reporter",note:"Note",system:"System",footer:"RBH Insulation, Inc. | Confidential safety document | License #558799",page:"Page",yes:"Yes",no:"No",originalRecord:"Original record",appendixTitle:"Attachment Appendix",appendixSub:"Files preserved with this record at the time the PDF was generated.",attachment:"Attachment",source:"Source",uploaded:"Uploaded",fileType:"File type",fileSize:"File size",sha256:"SHA-256",sourceOriginal:"Original report attachment",sourceCurrentEvidence:"Corrective-action evidence",sourcePriorEvidence:"Earlier-workflow corrective-action evidence",embeddedOnly:"Source file embedded in PDF",embeddedOnlyBody:"This file type cannot be rendered reliably as visible PDF pages in the browser. The original source file is embedded inside this PDF package so it remains with the exported record.",pdfPages:"Source PDF pages follow",appendixCount:"Attachments included",appendixNote:"Removed attachments are not included; their removal remains documented in the activity history.",summaryPage:"Summary page"},
-        es:{notRecorded:"No registrado",dashboardUser:"Usuario del panel",reportWord:"Reporte",step:"PASO",workflow:["Revisión","Investigación","Plan de acción","Completar","Verificar","Cerrar"],headerSubtitle:"Registro del incidente - resumen posterior a la acción",submitted:"Enviado",generated:"Generado",section1:"Reporte y revisión",section1Sub:"Lo que se envió y cómo el reporte ingresó al flujo de seguridad.",reportType:"Tipo de reporte",actualInjury:"Lesión o enfermedad real",address:"Dirección del incidente",specificSpot:"Lugar específico en la obra",whenNoticed:"Cuándo se observó",potentialSeverity:"Gravedad potencial",hazardType:"Tipo de peligro",formLanguage:"Idioma del formulario",describe:"Describa lo que vio",noDescription:"No se registró descripción",involved:"Quién o qué estuvo involucrado / testigos",immediate:"Qué se hizo de inmediato",suggested:"Qué lo corregiría o evitaría",reporter:"Reportante",reportedBy:"Reportado por",reporterRole:"Función del reportante",reporterContact:"Contacto del reportante",reviewCompleted:"Revisión completada",reviewedBy:"Revisado por",investigator:"Responsable / investigador",verifier:"Responsable de verificación",workflowRestarts:"Reinicios del flujo",lastRestart:"Último reinicio",none:"Ninguno",originalFiles:"Fotos y archivos del reporte original",noOriginalFiles:"No hay archivos originales adjuntos",calosha:"Evaluación de evento grave de Cal/OSHA",screeningResult:"Resultado de la evaluación",awareness:"Hora en que RBH tuvo conocimiento",screeningNote:"Nota de evaluación",screeningDisclaimer:"Solo evaluación de la gerencia. Esta aplicación no presenta un reporte a Cal/OSHA y la evaluación no reemplaza los reportes regulatorios requeridos.",section2:"Investigación",section2Sub:"Documente la razón subyacente por la que ocurrió o se permitió el problema.",rootCause:"Causa raíz",notYetRecorded:"Aún no registrado",section3:"Plan de acción correctiva",section3Sub:"Defina la corrección, el responsable, la fecha límite y la prioridad.",correctiveRequired:"Acción correctiva requerida",controlType:"Tipo de control",assignedUser:"Usuario asignado del panel",notAssigned:"No asignado",responsible:"Persona / equipo responsable",dueDate:"Fecha límite",priority:"Prioridad",section4:"Completar acción correctiva",section4Sub:"Registre lo que realmente se completó y la evidencia de respaldo.",completedWork:"Trabajo completado enviado",notYetSubmitted:"Aún no enviado",completedOn:"Completado el",completedBy:"Completado por",currentEvidence:"Evidencia de acción correctiva del flujo actual",noCurrentEvidence:"No hay evidencia de acción correctiva adjunta en el flujo actual",priorEvidence:"Evidencia preservada de un flujo anterior",section5:"Verificar acción correctiva",section5Sub:"Muestre la decisión de revisión y cualquier nota de verificación o solicitud de cambios.",verificationOutcome:"Resultado de la verificación",verifiedOn:"Verificado el",verifiedBy:"Verificado por",requestedChanges:"Cambios solicitados",reviewerNote:"Nota de verificación del revisor",noVerificationNote:"No se registró una nota de verificación",section6:"Cerrar registro",section6Sub:"Disposición final e información de cierre del incidente.",recordStatus:"Estado del registro",closedOn:"Cerrado el",notYetClosed:"Aún no cerrado",closedBy:"Cerrado por",closurePath:"Ruta de cierre",closureReason:"Motivo de cierre",closureNote:"Nota de cierre",additionalNotes:"Notas adicionales",activityHistory:"Historial de actividad",reportSubmitted:"Reporte enviado",anonymousReporter:"Reportante anónimo",note:"Nota",system:"Sistema",footer:"RBH Insulation, Inc. | Documento confidencial de seguridad | Licencia #558799",page:"Página",yes:"Sí",no:"No",originalRecord:"Registro original",appendixTitle:"Apéndice de archivos adjuntos",appendixSub:"Archivos preservados con este registro al momento de generar el PDF.",attachment:"Adjunto",source:"Origen",uploaded:"Cargado",fileType:"Tipo de archivo",fileSize:"Tamaño",sha256:"SHA-256",sourceOriginal:"Adjunto del reporte original",sourceCurrentEvidence:"Evidencia de acción correctiva",sourcePriorEvidence:"Evidencia de acción correctiva de un flujo anterior",embeddedOnly:"Archivo fuente incorporado en el PDF",embeddedOnlyBody:"Este tipo de archivo no se puede representar de forma confiable como páginas PDF visibles en el navegador. El archivo fuente original está incorporado dentro de este paquete PDF para que permanezca con el registro exportado.",pdfPages:"Las páginas del PDF fuente siguen",appendixCount:"Adjuntos incluidos",appendixNote:"Los adjuntos eliminados no se incluyen; su eliminación permanece documentada en el historial de actividad.",summaryPage:"Página de resumen"}
+        en:{notRecorded:"Not recorded",dashboardUser:"Dashboard user",reportWord:"Report",step:"STEP",workflow:["Review","Investigation","Action Plan","Complete","Verify","Close"],headerSubtitle:"Incident record - after-action summary",submitted:"Submitted",generated:"Generated",section1:"Report and review",section1Sub:"What was submitted and how the report entered the safety workflow.",reportType:"Report type",actualInjury:"Actual injury or illness",address:"Address of incident",specificSpot:"Specific spot on the site",whenNoticed:"When noticed",potentialSeverity:"Potential severity",hazardType:"Type of hazard",formLanguage:"Form language",describe:"Describe what you saw",noDescription:"No description recorded",involved:"Who or what was involved / any witnesses",immediate:"What was done right away",suggested:"What would fix it or prevent it",reporter:"Reporter",reportedBy:"Reported by",reporterRole:"Reporter role",reporterContact:"Reporter contact",reviewCompleted:"Review completed",reviewedBy:"Reviewed by",investigator:"Case owner / investigator",verifier:"Verification owner",workflowRestarts:"Workflow restarts",lastRestart:"Last restart",none:"None",originalFiles:"Original report photos and files",noOriginalFiles:"No original files attached",calosha:"Cal/OSHA serious-event screening",screeningResult:"Screening result",awareness:"RBH awareness time",screeningNote:"Screening note",screeningDisclaimer:"Management screening only. This application does not submit a report to Cal/OSHA and the screening does not replace required regulatory reporting.",section2:"Investigation",section2Sub:"Document the underlying reason the issue happened or was allowed to happen.",rootCause:"Root cause",notYetRecorded:"Not yet recorded",section3:"Corrective action plan",section3Sub:"Define the fix, ownership, due date, and priority.",correctiveRequired:"Corrective action required",actionNumber:"Corrective Action",actionStatus:"Action status",controlType:"Control type",assignedUser:"Assigned dashboard user",notAssigned:"Not assigned",responsible:"Responsible person / crew",dueDate:"Due date",priority:"Priority",section4:"Complete corrective action",section4Sub:"Record what was actually completed and the supporting evidence.",completedWork:"Completed work submitted",notYetSubmitted:"Not yet submitted",completedOn:"Completed on",completedBy:"Completed by",currentEvidence:"Current-workflow corrective-action evidence",noCurrentEvidence:"No corrective-action evidence attached in the current workflow",priorEvidence:"Preserved evidence from earlier workflow",section5:"Verify corrective action",section5Sub:"Show the review decision and any verification or change-request note.",verificationOutcome:"Verification outcome",verifiedOn:"Verified on",verifiedBy:"Verified by",requestedChanges:"Requested changes",reviewerNote:"Reviewer verification note",noVerificationNote:"No verification note recorded",section6:"Close record",section6Sub:"Final disposition and closure information for the incident.",recordStatus:"Record status",closedOn:"Closed on",notYetClosed:"Not yet closed",closedBy:"Closed by",closurePath:"Closure path",closureReason:"Closure reason",closureNote:"Closure note",additionalNotes:"Additional notes",activityHistory:"Activity history",reportSubmitted:"Report submitted",anonymousReporter:"Anonymous reporter",note:"Note",system:"System",footer:"RBH Insulation, Inc. | Confidential safety document | License #558799",page:"Page",yes:"Yes",no:"No",originalRecord:"Original record",appendixTitle:"Attachment Appendix",appendixSub:"Files preserved with this record at the time the PDF was generated.",attachment:"Attachment",source:"Source",uploaded:"Uploaded",fileType:"File type",fileSize:"File size",sha256:"SHA-256",sourceOriginal:"Original report attachment",sourceCurrentEvidence:"Corrective-action evidence",sourcePriorEvidence:"Earlier-workflow corrective-action evidence",embeddedOnly:"Source file embedded in PDF",embeddedOnlyBody:"This file type cannot be rendered reliably as visible PDF pages in the browser. The original source file is embedded inside this PDF package so it remains with the exported record.",pdfPages:"Source PDF pages follow",appendixCount:"Attachments included",appendixNote:"Removed attachments are not included; their removal remains documented in the activity history.",summaryPage:"Summary page"},
+        es:{notRecorded:"No registrado",dashboardUser:"Usuario del panel",reportWord:"Reporte",step:"PASO",workflow:["Revisión","Investigación","Plan de acción","Completar","Verificar","Cerrar"],headerSubtitle:"Registro del incidente - resumen posterior a la acción",submitted:"Enviado",generated:"Generado",section1:"Reporte y revisión",section1Sub:"Lo que se envió y cómo el reporte ingresó al flujo de seguridad.",reportType:"Tipo de reporte",actualInjury:"Lesión o enfermedad real",address:"Dirección del incidente",specificSpot:"Lugar específico en la obra",whenNoticed:"Cuándo se observó",potentialSeverity:"Gravedad potencial",hazardType:"Tipo de peligro",formLanguage:"Idioma del formulario",describe:"Describa lo que vio",noDescription:"No se registró descripción",involved:"Quién o qué estuvo involucrado / testigos",immediate:"Qué se hizo de inmediato",suggested:"Qué lo corregiría o evitaría",reporter:"Reportante",reportedBy:"Reportado por",reporterRole:"Función del reportante",reporterContact:"Contacto del reportante",reviewCompleted:"Revisión completada",reviewedBy:"Revisado por",investigator:"Responsable / investigador",verifier:"Responsable de verificación",workflowRestarts:"Reinicios del flujo",lastRestart:"Último reinicio",none:"Ninguno",originalFiles:"Fotos y archivos del reporte original",noOriginalFiles:"No hay archivos originales adjuntos",calosha:"Evaluación de evento grave de Cal/OSHA",screeningResult:"Resultado de la evaluación",awareness:"Hora en que RBH tuvo conocimiento",screeningNote:"Nota de evaluación",screeningDisclaimer:"Solo evaluación de la gerencia. Esta aplicación no presenta un reporte a Cal/OSHA y la evaluación no reemplaza los reportes regulatorios requeridos.",section2:"Investigación",section2Sub:"Documente la razón subyacente por la que ocurrió o se permitió el problema.",rootCause:"Causa raíz",notYetRecorded:"Aún no registrado",section3:"Plan de acción correctiva",section3Sub:"Defina la corrección, el responsable, la fecha límite y la prioridad.",correctiveRequired:"Acción correctiva requerida",actionNumber:"Acción correctiva",actionStatus:"Estado de la acción",controlType:"Tipo de control",assignedUser:"Usuario asignado del panel",notAssigned:"No asignado",responsible:"Persona / equipo responsable",dueDate:"Fecha límite",priority:"Prioridad",section4:"Completar acción correctiva",section4Sub:"Registre lo que realmente se completó y la evidencia de respaldo.",completedWork:"Trabajo completado enviado",notYetSubmitted:"Aún no enviado",completedOn:"Completado el",completedBy:"Completado por",currentEvidence:"Evidencia de acción correctiva del flujo actual",noCurrentEvidence:"No hay evidencia de acción correctiva adjunta en el flujo actual",priorEvidence:"Evidencia preservada de un flujo anterior",section5:"Verificar acción correctiva",section5Sub:"Muestre la decisión de revisión y cualquier nota de verificación o solicitud de cambios.",verificationOutcome:"Resultado de la verificación",verifiedOn:"Verificado el",verifiedBy:"Verificado por",requestedChanges:"Cambios solicitados",reviewerNote:"Nota de verificación del revisor",noVerificationNote:"No se registró una nota de verificación",section6:"Cerrar registro",section6Sub:"Disposición final e información de cierre del incidente.",recordStatus:"Estado del registro",closedOn:"Cerrado el",notYetClosed:"Aún no cerrado",closedBy:"Cerrado por",closurePath:"Ruta de cierre",closureReason:"Motivo de cierre",closureNote:"Nota de cierre",additionalNotes:"Notas adicionales",activityHistory:"Historial de actividad",reportSubmitted:"Reporte enviado",anonymousReporter:"Reportante anónimo",note:"Nota",system:"Sistema",footer:"RBH Insulation, Inc. | Documento confidencial de seguridad | Licencia #558799",page:"Página",yes:"Sí",no:"No",originalRecord:"Registro original",appendixTitle:"Apéndice de archivos adjuntos",appendixSub:"Archivos preservados con este registro al momento de generar el PDF.",attachment:"Adjunto",source:"Origen",uploaded:"Cargado",fileType:"Tipo de archivo",fileSize:"Tamaño",sha256:"SHA-256",sourceOriginal:"Adjunto del reporte original",sourceCurrentEvidence:"Evidencia de acción correctiva",sourcePriorEvidence:"Evidencia de acción correctiva de un flujo anterior",embeddedOnly:"Archivo fuente incorporado en el PDF",embeddedOnlyBody:"Este tipo de archivo no se puede representar de forma confiable como páginas PDF visibles en el navegador. El archivo fuente original está incorporado dentro de este paquete PDF para que permanezca con el registro exportado.",pdfPages:"Las páginas del PDF fuente siguen",appendixCount:"Adjuntos incluidos",appendixNote:"Los adjuntos eliminados no se incluyen; su eliminación permanece documentada en el historial de actividad.",summaryPage:"Página de resumen"}
       };
       var L=pdfLabels[pdfLang]||pdfLabels.en;
       if(!pdfLabels[pdfLang] && pdfMode!=="original"){
@@ -3318,10 +3417,30 @@
       var pdfFields=reportTranslationFields(r), pdfHistory=[];
       groupAuditRows(audit).forEach(function(g,i){ var title=auditGroupTitle(g.rows); pdfHistory.push({title:title,created_at:g.created_at,actor:auditActor(g.rows[0].actor_email),key:"history_"+i}); pdfFields["history_"+i]=title; });
       notes.filter(function(n){return /^\[System\]\s*Workflow restarted/i.test(String(n.title||""));}).forEach(function(n){ var title=String(n.title||"").replace(/^\[System\]\s*/,""); var key="history_restart_"+pdfHistory.length; pdfHistory.push({title:title,created_at:n.created_at,actor:auditActor(n.author_email),key:key}); pdfFields[key]=title; });
+      pdfActionAudit.forEach(function(a){
+        var oldS=a.old_snapshot||{}, newS=a.new_snapshot||{}, title="Corrective Action #"+String(a.action_number||"")+" updated";
+        if(a.event_type==="created") title="Corrective Action #"+String(a.action_number||"")+" created";
+        else if(a.event_type==="retired") title="Corrective Action #"+String(a.action_number||"")+" retired";
+        else if(String(oldS.status||"")!==String(newS.status||"")){
+          var ns=String(newS.status||"");
+          title=ns==="verified"?"Corrective Action #"+String(a.action_number||"")+" verified":
+            (ns==="awaiting_verification"?"Corrective Action #"+String(a.action_number||"")+" submitted for verification":
+            (ns==="changes_requested"?"Changes requested for Corrective Action #"+String(a.action_number||""):
+            "Corrective Action #"+String(a.action_number||"")+" status updated"));
+        }
+        var key="history_action_"+pdfHistory.length;
+        pdfHistory.push({title:title,created_at:a.created_at,actor:a.actor_email?auditActor(a.actor_email):L.system,key:key});
+        pdfFields[key]=title;
+      });
       notes.forEach(function(n,i){ if(n.title) pdfFields["note_title_"+i]=String(n.title); if(n.body) pdfFields["note_body_"+i]=String(n.body); });
       pdfFields.status_value=(STATUS[r.status]||{l:r.status||"Unknown"}).l;
       if(r.action_status) pdfFields.verification_outcome=actionLabel(r.action_status||"not_started");
       if(r.calosha_screening_status) pdfFields.screening_result=caloshaScreenLabel(r.calosha_screening_status);
+      pdfActions.forEach(function(a,i){
+        if(a.description) pdfFields["ca_desc_"+i]=String(a.description);
+        if(a.completion_note) pdfFields["ca_completion_"+i]=String(a.completion_note);
+        if(a.verification_note) pdfFields["ca_verification_"+i]=String(a.verification_note);
+      });
       pdfFields.closure_path=(r.status==="no_action"||r.status==="duplicate")?"Closed without corrective action":(r.status==="closed"?"Corrective action verified and record closed":"Record remains open");
       if(r.priority) pdfFields.priority_value=String(r.priority).charAt(0).toUpperCase()+String(r.priority).slice(1);
       if(r.corrective_control_type) pdfFields.control_type_value=controlTypeLabel(r.corrective_control_type,pdfLang)||r.corrective_control_type;
@@ -3511,8 +3630,18 @@
       var originalAtts=atts.filter(function(a){return !isActionEvidence(a);});
       var evidenceAll=atts.filter(isActionEvidence);
       var pdfResetAt=workflowResetBoundaryMs(r);
-      var evidenceAtts=evidenceAll.filter(function(a){ if(!pdfResetAt) return true; var t=new Date(a.created_at||0).getTime(); return !isNaN(t)&&t>=pdfResetAt; });
-      var priorEvidenceAtts=evidenceAll.filter(function(a){ if(!pdfResetAt) return false; var t=new Date(a.created_at||0).getTime(); return !isNaN(t)&&t<pdfResetAt; });
+      var pdfActionById={};
+      pdfActions.forEach(function(a){pdfActionById[String(a.id)]=a;});
+      var evidenceAtts=evidenceAll.filter(function(a){
+        if(a.corrective_action_id) return !!pdfActionById[String(a.corrective_action_id)];
+        if(!pdfResetAt) return true;
+        var t=new Date(a.created_at||0).getTime(); return !isNaN(t)&&t>=pdfResetAt;
+      });
+      var priorEvidenceAtts=evidenceAll.filter(function(a){
+        if(a.corrective_action_id) return !pdfActionById[String(a.corrective_action_id)];
+        if(!pdfResetAt) return false;
+        var t=new Date(a.created_at||0).getTime(); return !isNaN(t)&&t<pdfResetAt;
+      });
       var reviewAudit=audit.find(function(a){return a.field==="status" && a.new_value==="under_review";});
       var closureAudits=audit.filter(function(a){return a.field==="status" && (a.new_value==="closed"||a.new_value==="no_action"||a.new_value==="duplicate");});
       var closureAudit=closureAudits.length?closureAudits[closureAudits.length-1]:null;
@@ -3562,33 +3691,76 @@
       wideField(L.rootCause,PV("root_cause",r.root_cause),{skipEmpty:false,emptyText:L.notYetRecorded});
 
       section(3,L.section3,L.section3Sub);
-      wideField(L.correctiveRequired,PV("corrective_action",r.corrective_action),{skipEmpty:false,emptyText:L.notYetRecorded});
-      pairRow([
-        {label:L.controlType,value:r.corrective_control_type?PV("control_type_value",controlTypeLabel(r.corrective_control_type,pdfLang)||r.corrective_control_type):L.notRecorded},
-        {label:L.assignedUser,value:assigneeName(r)||L.notAssigned},
-        {label:L.dueDate,value:r.due_date?pdfDateOnly(r.due_date):L.notRecorded},
-        {label:L.priority,value:r.priority?PV("priority_value",String(r.priority).charAt(0).toUpperCase()+String(r.priority).slice(1)):L.notRecorded}
-      ]);
+      if(pdfActions.length){
+        pdfActions.forEach(function(a,i){
+          subhead(L.actionNumber+" #"+String(a.action_number||""));
+          wideField(L.correctiveRequired,PV("ca_desc_"+i,a.description),{skipEmpty:false,emptyText:L.notYetRecorded});
+          pairRow([
+            {label:L.controlType,value:a.control_type?controlTypeLabel(a.control_type,pdfLang)||a.control_type:L.notRecorded},
+            {label:L.assignedUser,value:a.owner_user_id?userById(a.owner_user_id):L.notAssigned},
+            {label:L.dueDate,value:a.due_date?pdfDateOnly(a.due_date):L.notRecorded},
+            {label:L.priority,value:a.priority?titleCase(a.priority):L.notRecorded},
+            {label:L.actionStatus,value:actionLabel(a.status||"not_started")}
+          ]);
+        });
+      } else {
+        wideField(L.correctiveRequired,PV("corrective_action",r.corrective_action),{skipEmpty:false,emptyText:L.notYetRecorded});
+        pairRow([
+          {label:L.controlType,value:r.corrective_control_type?PV("control_type_value",controlTypeLabel(r.corrective_control_type,pdfLang)||r.corrective_control_type):L.notRecorded},
+          {label:L.assignedUser,value:assigneeName(r)||L.notAssigned},
+          {label:L.dueDate,value:r.due_date?pdfDateOnly(r.due_date):L.notRecorded},
+          {label:L.priority,value:r.priority?PV("priority_value",String(r.priority).charAt(0).toUpperCase()+String(r.priority).slice(1)):L.notRecorded}
+        ]);
+      }
 
       section(4,L.section4,L.section4Sub);
-      wideField(L.completedWork,PV("action_completion_note",r.action_completion_note),{skipEmpty:false,emptyText:L.notYetSubmitted});
-      pairRow([
-        {label:L.completedOn,value:r.action_completed_at?pdfDate(r.action_completed_at):""},
-        {label:L.completedBy,value:r.action_completed_by?userById(r.action_completed_by):""}
-      ]);
-      fileBox(L.currentEvidence,evidenceAtts.map(function(a){return a.file_name||a.storage_path;}),L.noCurrentEvidence);
+      if(pdfActions.length){
+        pdfActions.forEach(function(a,i){
+          subhead(L.actionNumber+" #"+String(a.action_number||""));
+          wideField(L.completedWork,PV("ca_completion_"+i,a.completion_note),{skipEmpty:false,emptyText:L.notYetSubmitted});
+          pairRow([
+            {label:L.completedOn,value:a.completed_at?pdfDate(a.completed_at):""},
+            {label:L.completedBy,value:a.completed_by?userById(a.completed_by):""}
+          ]);
+          var actionEvidence=evidenceAtts.filter(function(ev){return String(ev.corrective_action_id||"")===String(a.id);});
+          fileBox(L.currentEvidence,actionEvidence.map(function(ev){return ev.file_name||ev.storage_path;}),L.noCurrentEvidence);
+        });
+        var unlinkedCurrent=evidenceAtts.filter(function(ev){return !ev.corrective_action_id;});
+        if(unlinkedCurrent.length) fileBox(L.currentEvidence,unlinkedCurrent.map(function(ev){return ev.file_name||ev.storage_path;}),L.noCurrentEvidence);
+      } else {
+        wideField(L.completedWork,PV("action_completion_note",r.action_completion_note),{skipEmpty:false,emptyText:L.notYetSubmitted});
+        pairRow([
+          {label:L.completedOn,value:r.action_completed_at?pdfDate(r.action_completed_at):""},
+          {label:L.completedBy,value:r.action_completed_by?userById(r.action_completed_by):""}
+        ]);
+        fileBox(L.currentEvidence,evidenceAtts.map(function(a){return a.file_name||a.storage_path;}),L.noCurrentEvidence);
+      }
       if(priorEvidenceAtts.length) fileBox(L.priorEvidence,priorEvidenceAtts.map(function(a){return a.file_name||a.storage_path;}),"");
 
       section(5,L.section5,L.section5Sub);
-      var verifyOutcome=PV("verification_outcome",actionLabel(r.action_status||"not_started"));
-      pairRow([
-        {label:L.verificationOutcome,value:verifyOutcome},
-        {label:L.verifier,value:verifierName(r)||L.notAssigned},
-        {label:L.verifiedOn,value:r.action_verified_at?pdfDate(r.action_verified_at):""},
-        {label:L.verifiedBy,value:r.action_verified_by?userById(r.action_verified_by):""}
-      ]);
-      var verifyLabel=(r.action_status==="changes_requested")?L.requestedChanges:L.reviewerNote;
-      wideField(verifyLabel,PV("action_verification_note",r.action_verification_note),{skipEmpty:false,emptyText:L.noVerificationNote});
+      if(pdfActions.length){
+        pdfActions.forEach(function(a,i){
+          subhead(L.actionNumber+" #"+String(a.action_number||""));
+          pairRow([
+            {label:L.verificationOutcome,value:actionLabel(a.status||"not_started")},
+            {label:L.verifier,value:a.verifier_user_id?userById(a.verifier_user_id):L.notAssigned},
+            {label:L.verifiedOn,value:a.verified_at?pdfDate(a.verified_at):""},
+            {label:L.verifiedBy,value:a.verified_by?userById(a.verified_by):""}
+          ]);
+          var verifyLabel=(a.status==="changes_requested")?L.requestedChanges:L.reviewerNote;
+          wideField(verifyLabel,PV("ca_verification_"+i,a.verification_note),{skipEmpty:false,emptyText:L.noVerificationNote});
+        });
+      } else {
+        var verifyOutcome=PV("verification_outcome",actionLabel(r.action_status||"not_started"));
+        pairRow([
+          {label:L.verificationOutcome,value:verifyOutcome},
+          {label:L.verifier,value:verifierName(r)||L.notAssigned},
+          {label:L.verifiedOn,value:r.action_verified_at?pdfDate(r.action_verified_at):""},
+          {label:L.verifiedBy,value:r.action_verified_by?userById(r.action_verified_by):""}
+        ]);
+        var verifyLabel=(r.action_status==="changes_requested")?L.requestedChanges:L.reviewerNote;
+        wideField(verifyLabel,PV("action_verification_note",r.action_verification_note),{skipEmpty:false,emptyText:L.noVerificationNote});
+      }
 
       section(6,L.section6,L.section6Sub);
       pairRow([
@@ -3648,6 +3820,10 @@
         }
         function attachmentSource(a){
           if(!isActionEvidence(a)) return L.sourceOriginal;
+          if(a.corrective_action_id && pdfActionById[String(a.corrective_action_id)]){
+            return L.actionNumber+" #"+String(pdfActionById[String(a.corrective_action_id)].action_number||"")+" — "+L.sourceCurrentEvidence;
+          }
+          if(a.corrective_action_id) return L.sourcePriorEvidence;
           var t=new Date(a.created_at||0).getTime();
           if(pdfResetAt && !isNaN(t) && t<pdfResetAt) return L.sourcePriorEvidence;
           return L.sourceCurrentEvidence;
@@ -4262,98 +4438,117 @@
     if(!isOpenOperational(r)||!isInvestigatorAssignedToMe(r)) return false;
     return recommendedWizardStep(r)<=3;
   }
-  function actionOwnerWorkActive(r){
-    if(!isOpenOperational(r)||!isActionAssignedToMe(r)) return false;
-    var step=recommendedWizardStep(r);
-    return step===4 || r.action_status==="changes_requested";
+  function myActionWorkRows(){
+    var uid=currentUserId();
+    if(!uid) return [];
+    return (allCorrectiveActions||[]).filter(function(a){
+      var r=findReport(a.report_id);
+      if(!r||!isOpenOperational(r)||!correctiveActionInCurrentCycle(a,r)) return false;
+      if(String(a.owner_user_id||"")!==uid) return false;
+      return ["not_started","in_progress","changes_requested"].indexOf(String(a.status||"not_started"))>=0;
+    });
   }
-  function myWorkKind(r){
-    if(investigatorWorkActive(r)) return "investigation";
-    if(actionOwnerWorkActive(r)) return "action";
-    return "";
+  function myVerificationWorkRows(){
+    if(!isManager()) return [];
+    return (allCorrectiveActions||[]).filter(function(a){
+      var r=findReport(a.report_id);
+      if(!r||!isOpenOperational(r)||!correctiveActionInCurrentCycle(a,r)) return false;
+      if(String(a.status||"")!=="awaiting_verification") return false;
+      if(currentRole==="admin") return true;
+      return !a.verifier_user_id || String(a.verifier_user_id)===currentUserId();
+    });
   }
-  function myWorkSort(a,b){
-    var ak=myWorkKind(a), bk=myWorkKind(b);
-    if(ak==="action"&&bk==="action"){
-      if(isOverdue(a)!==isOverdue(b)) return isOverdue(a)?-1:1;
-      if((a.action_status==="changes_requested")!==(b.action_status==="changes_requested")) return a.action_status==="changes_requested"?-1:1;
-      var ad=a.due_date?new Date(a.due_date).getTime():8640000000000000, bd=b.due_date?new Date(b.due_date).getTime():8640000000000000;
-      if(ad!==bd) return ad-bd;
-    }
-    if(ak!==bk) return ak==="investigation"?-1:1;
-    return new Date(b.created_at)-new Date(a.created_at);
+  function childActionSort(a,b){
+    if(isOverdue(a)!==isOverdue(b)) return isOverdue(a)?-1:1;
+    if((a.status==="changes_requested")!==(b.status==="changes_requested")) return a.status==="changes_requested"?-1:1;
+    var ad=a.due_date?new Date(a.due_date+"T23:59:59").getTime():8640000000000000;
+    var bd=b.due_date?new Date(b.due_date+"T23:59:59").getTime():8640000000000000;
+    if(ad!==bd) return ad-bd;
+    var ar=findReport(a.report_id), br=findReport(b.report_id);
+    return new Date((br&&br.created_at)||0)-new Date((ar&&ar.created_at)||0);
   }
-  function myWorkCard(r,from){
-    var b=document.createElement('button'); b.type='button'; b.className='task-card';
-    var kind=myWorkKind(r), step=recommendedWizardStep(r), info=escalationInfo(r), status=r.action_status||"not_started";
-    var label, actionText, dueHtml;
-    if(kind==="investigation"){
-      label="Investigation · Step "+Math.min(step,3);
-      actionText=step<=1?((r.involves_injury&&["yes","no","pending"].indexOf(String(r.calosha_screening_status||""))<0)?'Management regulatory screening is required before Review can advance.':'Review the report and move it into Investigation.'):(step===2?'Document the root cause and complete the investigation.':'Define the corrective action, owner, due date, and priority.');
-      dueHtml='<div class="task-due"><b class="due-signal">Investigation owner</b><span>Submitted '+esc(shortDate(r.created_at))+'</span></div>';
-    } else if(status==="awaiting_verification" && isManager() && !kind){
-      var vOwner=verifierName(r);
-      label=vOwner?(isVerifierAssignedToMe(r)?'Verification · assigned to you':'Verification · '+vOwner):'Verification · unassigned';
-      actionText=r.corrective_action||'Corrective action is ready for verification.';
-      dueHtml='<div class="task-due"><b class="due-signal">'+(vOwner?'Reviewer: '+esc(vOwner):'Any Admin / Safety Manager')+'</b><span>'+(r.action_completed_at?'Submitted '+esc(shortDate(r.action_completed_at)):'Ready for review')+'</span></div>';
-    } else {
-      label=status==="changes_requested"?'Changes requested':(status==="awaiting_verification"?'Submitted for verification':actionLabel(status));
-      actionText=r.corrective_action||'Corrective action needs to be documented.';
-      dueHtml='<div class="task-due"><b class="due-signal '+esc(info.cls)+'">'+esc(info.label)+'</b><span>'+(r.due_date?esc(shortDate(r.due_date)):'No due date')+'</span></div>';
-    }
-    b.innerHTML='<div class="task-title">#'+esc(r.ref_no)+' · '+esc(r.report_type||'Report')+'<span class="task-state">'+esc(label)+'</span></div>'+ 
-      '<div class="task-action">'+esc(actionText)+'</div>'+ 
-      '<div class="task-meta">'+(r.job_site?'Incident address: '+esc(r.job_site):'No incident address')+(kind==="action"&&r.priority?' · '+esc(r.priority.charAt(0).toUpperCase()+r.priority.slice(1))+' priority':'')+'</div>'+dueHtml;
-    b.addEventListener('click',function(){ openIncident(r,from||'mywork'); });
+  function childWorkCard(a,mode){
+    var r=findReport(a.report_id);
+    var b=document.createElement("button"); b.type="button"; b.className="task-card";
+    var owner=a.owner_user_id&&profileById[String(a.owner_user_id)]?profileName(profileById[String(a.owner_user_id)]):"Not assigned";
+    var verifier=a.verifier_user_id&&profileById[String(a.verifier_user_id)]?profileName(profileById[String(a.verifier_user_id)]):"Shared Admin / Safety Manager queue";
+    var info=escalationInfo(a), status=String(a.status||"not_started");
+    var label=mode==="verify"
+      ? (a.verifier_user_id?"Verification · "+verifier:"Verification · shared queue")
+      : (status==="changes_requested"?"Changes requested":actionLabel(status));
+    var meta=mode==="verify"
+      ? "Owner: "+owner+" · Reviewer: "+verifier
+      : "Assigned: "+owner+(r&&r.job_site?" · "+r.job_site:"");
+    var due=mode==="verify"
+      ? (a.completed_at?"Submitted "+shortDate(a.completed_at):"Ready for review")
+      : (a.due_date?shortDate(a.due_date):"No due date");
+    b.innerHTML=
+      '<div class="task-title">#'+esc(r&&r.ref_no)+' · Action #'+esc(a.action_number||"")+' · '+esc((r&&r.report_type)||"Report")+
+        '<span class="task-state">'+esc(label)+'</span></div>'+
+      '<div class="task-action">'+esc(a.description||"Corrective action")+'</div>'+
+      '<div class="task-meta">'+esc(meta)+'</div>'+
+      '<div class="task-due"><b class="due-signal '+(mode==="verify"?"":esc(info.cls))+'">'+
+        esc(mode==="verify"?"Ready for verification":info.label)+'</b><span>'+esc(due)+'</span></div>';
+    b.addEventListener("click",function(){ if(r) openIncident(r,"mywork"); });
     return b;
   }
   function renderMyWork(){
     var list=$("myWorkList"), summary=$("myWorkSummary"), count=$("myWorkCount"); if(!list||!summary) return;
     var canOwn=currentRole!=="read_only", user=currentSession&&currentSession.user;
-    if(!canOwn||!user){ list.innerHTML='<div class="state">My Work is available to Admins, Safety Managers, and Supervisors.</div>'; summary.innerHTML=''; return; }
-    var mine=allReports.filter(function(r){ return investigatorWorkActive(r)||actionOwnerWorkActive(r); }).sort(myWorkSort);
-    var investigations=mine.filter(function(r){return myWorkKind(r)==="investigation";}).length;
-    var actionMine=mine.filter(function(r){return myWorkKind(r)==="action";});
-    var overdue=actionMine.filter(isOverdue).length;
-    var soon=actionMine.filter(function(r){ var d=daysUntilDue(r); return d!==null&&d>=0&&d<=3; }).length;
-    var verify=isManager()?allReports.filter(function(r){
-      if(!isOpenOperational(r)||r.action_status!=="awaiting_verification") return false;
-      if(currentRole==="admin") return true;
-      return !r.verifier_user_id || isVerifierAssignedToMe(r);
-    }):[];
-    var verifyMine=verify.filter(function(r){ return isVerifierAssignedToMe(r); }).length;
-    function stat(n,l,cls){ return '<div class="mywork-stat '+(cls||'')+'"><b>'+n+'</b><span>'+l+'</span></div>'; }
-    summary.innerHTML=stat(mine.length,'Assigned to me')+stat(investigations,'Investigations')+stat(soon,'Due in 3 days',soon?'warn':'')+stat(overdue,'Overdue',overdue?'alert':'');
-    if(count){
-      var personalCount=mine.length+verifyMine;
-      count.textContent=personalCount+(personalCount===1?' open assignment':' open assignments');
+    if(!canOwn||!user){
+      list.innerHTML='<div class="state">My Work is available to Admins, Safety Managers, and Supervisors.</div>';
+      summary.innerHTML='';
+      var navOff=$("navMyWorkCount"); if(navOff) navOff.textContent='';
+      return;
     }
+
+    var investigations=allReports.filter(investigatorWorkActive).sort(function(a,b){return new Date(b.created_at)-new Date(a.created_at);});
+    var actions=myActionWorkRows().sort(childActionSort);
+    var reviews=myVerificationWorkRows().sort(childActionSort);
+    var overdue=actions.filter(isOverdue).length;
+    var soon=actions.filter(function(a){var d=daysUntilDue(a);return d!==null&&d>=0&&d<=3;}).length;
+    var assignedReviews=reviews.filter(function(a){return String(a.verifier_user_id||"")===currentUserId();}).length;
+    var sharedReviews=reviews.length-assignedReviews;
+
+    function stat(n,l,cls){return '<div class="mywork-stat '+(cls||'')+'"><b>'+n+'</b><span>'+l+'</span></div>';}
+    summary.innerHTML=
+      stat(investigations.length+actions.length,'Assigned to me')+
+      stat(investigations.length,'Investigations')+
+      stat(soon,'Due in 3 days',soon?'warn':'')+
+      stat(overdue,'Overdue',overdue?'alert':'');
+
+    var personalCount=investigations.length+actions.length+assignedReviews;
+    if(count) count.textContent=personalCount+(personalCount===1?' open assignment':' open assignments');
+
     var ng=$("myWorkGreeting"), br=$("myWorkBannerText"), role=$("myWorkRole");
     var nm=currentProfile?profileName(currentProfile):((user&&user.email)||'');
     if(ng) ng.textContent=nm?('Work for '+nm):'Your work queue';
     if(br){
-      if(verifyMine) br.textContent=verifyMine+' verification review'+(verifyMine===1?'':'s')+' assigned to you '+(verifyMine===1?'is':'are')+' waiting.';
-      else if(investigations) br.textContent=investigations+' investigation'+(investigations===1?'':'s')+' currently need'+(investigations===1?'s':'')+' your attention.';
-      else if(actionMine.length) br.textContent='Start with overdue or due-soon corrective actions first.';
-      else if(verify.length&&isManager()) br.textContent=verify.length+' unassigned verification review'+(verify.length===1?' is':'s are')+' ready to be picked up.';
+      if(assignedReviews) br.textContent=assignedReviews+' verification review'+(assignedReviews===1?'':'s')+' assigned to you '+(assignedReviews===1?'is':'are')+' waiting.';
+      else if(investigations.length) br.textContent=investigations.length+' investigation'+(investigations.length===1?'':'s')+' currently need'+(investigations.length===1?'s':'')+' your attention.';
+      else if(actions.length) br.textContent='Start with overdue, changes-requested, or due-soon corrective actions first.';
+      else if(sharedReviews&&isManager()) br.textContent=sharedReviews+' shared verification review'+(sharedReviews===1?' is':'s are')+' ready to be picked up.';
       else br.textContent='Your assigned investigations, corrective actions, and verification reviews will appear here.';
     }
     if(role) role.textContent=roleLabel(currentRole);
+
     list.innerHTML='';
-    if(!mine.length) list.innerHTML='<div class="state">Nothing is assigned to you right now.</div>';
-    else mine.forEach(function(r){ list.appendChild(myWorkCard(r,'mywork')); });
+    if(!investigations.length&&!actions.length) list.innerHTML='<div class="state">Nothing is assigned to you right now.</div>';
+    investigations.forEach(function(r){list.appendChild(myWorkCard(r,'mywork'));});
+    actions.forEach(function(a){list.appendChild(childWorkCard(a,'action'));});
+
     var panel=$("myWorkReviewPanel"), reviewList=$("myWorkReviewList");
     if(panel) panel.classList.toggle('show',isManager());
     if(reviewList&&isManager()){
       reviewList.innerHTML='';
-      if(!verify.length) reviewList.innerHTML='<div class="state">Nothing is waiting for verification.</div>';
-      else verify.sort(myWorkSort).forEach(function(r){ reviewList.appendChild(myWorkCard(r,'mywork')); });
+      if(!reviews.length) reviewList.innerHTML='<div class="state">Nothing is waiting for verification.</div>';
+      else reviews.forEach(function(a){reviewList.appendChild(childWorkCard(a,'verify'));});
     }
-    var nav=$("navMyWorkCount"); if(nav){
-      var attentionIds={};
-      mine.forEach(function(r){ attentionIds[String(r.id)]=true; });
-      if(isManager()) verify.forEach(function(r){ attentionIds[String(r.id)]=true; });
-      var urgent=Object.keys(attentionIds).length; nav.textContent=urgent?String(urgent):'';
+
+    var nav=$("navMyWorkCount");
+    if(nav){
+      var attention=investigations.length+actions.length+assignedReviews;
+      nav.textContent=attention?String(attention):'';
     }
   }
   // Legacy report-level helper is still used by My Work while the app is
@@ -4373,8 +4568,7 @@
   function currentCorrectiveActionWorkspaceRows(){
     return (allCorrectiveActions||[]).filter(function(a){
       var r=findReport(a.report_id);
-      if(!r||isResolvedReport(r)||a.retired_at||!a.activated_at) return false;
-      if(parseInt(a.workflow_generation||0,10)!==parseInt(r.workflow_restart_count||0,10)) return false;
+      if(!r||isResolvedReport(r)||!correctiveActionInCurrentCycle(a,r)) return false;
       return String(a.status||"not_started")!=="verified";
     });
   }
@@ -5199,11 +5393,13 @@
     try{
       var results=await Promise.all([
         sb.from("report_audit").select("*").eq("report_id",reportId).order("created_at",{ascending:false}),
-        sb.from("report_notes").select("*").eq("report_id",reportId).order("created_at",{ascending:false})
+        sb.from("report_notes").select("*").eq("report_id",reportId).order("created_at",{ascending:false}),
+        sb.from("report_corrective_action_audit").select("*").eq("report_id",reportId).order("created_at",{ascending:false})
       ]);
       if(results[0].error) throw results[0].error;
       if(results[1].error) throw results[1].error;
-      var audits=results[0].data||[], notes=results[1].data||[], events=[];
+      if(results[2].error) throw results[2].error;
+      var audits=results[0].data||[], notes=results[1].data||[], actionAudits=results[2].data||[], events=[];
       groupAuditRows(audits).forEach(function(g){
         var title=auditGroupTitle(g.rows);
         events.push({kind:timelineKind(title,g.rows),title:title,created_at:g.created_at,actor:auditActor(g.rows[0].actor_email),changes:g.rows.map(fmtChange)});
