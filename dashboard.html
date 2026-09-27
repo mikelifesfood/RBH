@@ -796,7 +796,7 @@
       </div>
       <div class="notification-panel" id="notificationPanel" hidden>
         <div class="notification-panel-head">
-          <div><h3>Notifications</h3><p>Assigned work, acknowledgments, and recent history.</p></div>
+          <div><h3>Notifications</h3><p>Notifications that still need your attention.</p></div>
           <span class="notification-active-count" id="notificationActiveCount">0 to acknowledge</span>
         </div>
         <div class="notification-list" id="notificationList"><div class="notification-empty">Loading notifications…</div></div>
@@ -1309,7 +1309,7 @@
   var dispositionReport=null, dispositionWrap=null, dispositionNotesEl=null;
   var reopenReport=null, reopenReturnView="records", restartReport=null, restartReturnView="records";
   var NAV_VIEW_KEY="rbh_safety_active_view_v1", NAV_INCIDENT_KEY="rbh_safety_active_incident_v1";
-  var APP_VERSION="2026.09.27 · Step 12 Notification Acknowledgment + History";
+  var APP_VERSION="2026.09.27 · Step 12B Attention-Only Notification Panel";
 
   function storedView(){
     try{ var v=localStorage.getItem(NAV_VIEW_KEY); return v||(currentRole==="supervisor"?"mywork":"home"); }catch(_e){ return currentRole==="supervisor"?"mywork":"home"; }
@@ -1434,7 +1434,7 @@
   $("search").addEventListener("input", applyFilters);
   $("statusFilter").addEventListener("change", function(){ overdueOnly=false; injuryOnly=false; var v=$("statusFilter").value; setActiveChip(v==="all"||v==="open"||v==="new"?v:""); applyFilters(); });
 
-  /* ---------- Step 12: notification acknowledgment + history ---------- */
+  /* ---------- Step 12B: attention-only notification panel ---------- */
   function notificationTime(v){
     if(!v) return "";
     try{
@@ -1540,16 +1540,10 @@
     if(bell) bell.setAttribute("aria-label",count?(`Notifications, ${count} unacknowledged`):"Notifications, none unacknowledged");
     if(!list) return;
     if(notificationLoading&&!userNotifications.length){ list.innerHTML='<div class="notification-empty">Loading notifications…</div>'; return; }
-    if(!userNotifications.length){ list.innerHTML='<div class="notification-empty">No notifications yet.</div>'; return; }
-
-    var attention=userNotifications.filter(function(n){ return !n.resolved_at&&!n.acknowledged_at; });
-    var acknowledged=userNotifications.filter(function(n){ return !n.resolved_at&&!!n.acknowledged_at; });
-    var resolved=userNotifications.filter(function(n){ return !!n.resolved_at; });
+    if(!userNotifications.length){ list.innerHTML='<div class="notification-empty">No notifications need attention.</div>'; return; }
 
     list.innerHTML="";
-    appendNotificationSection(list,"Needs attention",attention);
-    appendNotificationSection(list,"Acknowledged",acknowledged);
-    appendNotificationSection(list,"Resolved history",resolved);
+    appendNotificationSection(list,"Needs attention",userNotifications);
   }
   async function loadNotifications(silent){
     if(!currentSession||!currentSession.user||notificationLoading) return;
@@ -1560,11 +1554,13 @@
         .select("id",{count:"exact",head:true})
         .is("acknowledged_at",null)
         .is("resolved_at",null);
-      var historyQuery=sb.from("report_user_notifications")
+      var attentionQuery=sb.from("report_user_notifications")
         .select("id,organization_id,recipient_user_id,report_id,notification_type,title,message,created_at,viewed_at,acknowledged_at,acknowledged_by_user_id,resolved_at,resolution_reason")
+        .is("acknowledged_at",null)
+        .is("resolved_at",null)
         .order("created_at",{ascending:false})
         .limit(100);
-      var results=await Promise.all([countQuery,historyQuery]);
+      var results=await Promise.all([countQuery,attentionQuery]);
       if(results[0].error) throw results[0].error;
       if(results[1].error) throw results[1].error;
       notificationActiveCount=typeof results[0].count==="number"?results[0].count:0;
