@@ -1218,6 +1218,56 @@
     }
   }
 
+  async function sendCorrectiveActionWorkflowEmail(r,action,notificationType){
+    if(!r||!action||!action.id) return {ok:false,sent:false,error:"ACTION_REQUIRED"};
+    if(!currentSession||!currentSession.access_token) return {ok:false,sent:false,error:"AUTH_REQUIRED",correctiveActionId:action.id,actionNumber:action.action_number};
+    try{
+      var resp=await fetch(SUPA_URL+"/functions/v1/send-action-assignment-email",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","Authorization":"Bearer "+currentSession.access_token,"apikey":SUPA_KEY},
+        body:JSON.stringify({
+          reportId:String(r.id),
+          notificationType:String(notificationType||""),
+          correctiveActionId:String(action.id)
+        })
+      });
+      var data=await resp.json().catch(function(){return {};});
+      if(!resp.ok) return {
+        ok:false,
+        sent:false,
+        error:data.error||("HTTP_"+resp.status),
+        detail:data.detail||"",
+        correctiveActionId:action.id,
+        actionNumber:action.action_number
+      };
+      return data||{
+        ok:true,
+        sent:false,
+        correctiveActionId:action.id,
+        actionNumber:action.action_number
+      };
+    }catch(ex){
+      console.error("corrective-action workflow email",notificationType,ex);
+      return {
+        ok:false,
+        sent:false,
+        error:"NETWORK_ERROR",
+        detail:(ex&&ex.message)||"",
+        correctiveActionId:action.id,
+        actionNumber:action.action_number
+      };
+    }
+  }
+  function sendCorrectiveActionVerificationRequestedEmail(r,action){
+    return sendCorrectiveActionWorkflowEmail(r,action,"verification_requested");
+  }
+  function sendCorrectiveActionVerifierAssignmentEmail(r,action){
+    return sendCorrectiveActionWorkflowEmail(r,action,"verifier_assignment");
+  }
+  function sendCorrectiveActionChangesRequestedEmail(r,action){
+    return sendCorrectiveActionWorkflowEmail(r,action,"changes_requested");
+  }
+
   async function sendInvestigatorAssignmentEmail(r){
     if(!r||!r.investigator_user_id) return {ok:true,sent:false,skipped:true,reason:"NO_INVESTIGATOR"};
     if(!currentSession||!currentSession.access_token) return {ok:false,sent:false,error:"AUTH_REQUIRED"};
@@ -1353,7 +1403,7 @@
   var dispositionReport=null, dispositionWrap=null, dispositionNotesEl=null;
   var reopenReport=null, reopenReturnView="records", restartReport=null, restartReturnView="records";
   var NAV_VIEW_KEY="rbh_safety_active_view_v1", NAV_INCIDENT_KEY="rbh_safety_active_incident_v1";
-  var APP_VERSION="2026.09.27 · Step 14D.1 Evidence UI Hotfix";
+  var APP_VERSION="2026.09.27 · Step 14E Action-Specific Emails";
 
   function storedView(){
     try{ var v=localStorage.getItem(NAV_VIEW_KEY); return v||(currentRole==="supervisor"?"mywork":"home"); }catch(_e){ return currentRole==="supervisor"?"mywork":"home"; }
@@ -2705,10 +2755,17 @@
         var res=await sb.rpc("rbh_submit_corrective_action_completion",{p_action_id:a.id,p_completion_note:note});
         if(res.error) throw res.error;
         await loadCorrectiveActionPlan();
+        var submittedAction=actionPlanState.actions.find(function(x){return String(x.id||"")===String(a.id||"");})||a;
+        var verificationEmail=await sendCorrectiveActionVerificationRequestedEmail(r,submittedAction);
         loadAudit(r.id,auditEl); renderHomeSnapshot(); renderMyWork(); renderActions(); refreshRecordWorkflow(r,detail);
         var summary=correctiveActionSummary(r);
         if(summary&&summary.open===0) setWizardStep(detail,r,5,true); else setWizardStep(detail,r,4,true);
-        toast("Corrective Action #"+a.action_number+" submitted for verification","ok");
+        if(!verificationEmail || (!verificationEmail.sent&&!verificationEmail.skipped&&verificationEmail.ok===false)){
+          console.error("action verification-request email failed",verificationEmail);
+          toast("Corrective Action #"+a.action_number+" was submitted, but the verification email could not be sent.","err");
+        } else {
+          toast("Corrective Action #"+a.action_number+" submitted for verification","ok");
+        }
       }catch(ex){console.error(ex);toast("Could not submit this corrective action.","err");}
       finally{if(btn.isConnected)btn.disabled=false;}
     });
@@ -2737,11 +2794,19 @@
         if(!selfAction||!isManager()||!currentSession||!currentSession.user){toast("Only an Admin or Safety Manager can assign a verification owner.","err");return;}
         selfBtn.disabled=true;
         try{
+          var selfWasAlreadyAssigned=String(selfAction.verifier_user_id||"")===String(currentSession.user.id||"");
           var selfRes=await sb.rpc("rbh_set_corrective_action_verifier",{p_action_id:selfAction.id,p_verifier_user_id:currentSession.user.id});
           if(selfRes.error) throw selfRes.error;
           await loadCorrectiveActionPlan();
+          var refreshedSelfAction=actionPlanState.actions.find(function(x){return String(x.id||"")===String(selfAction.id||"");})||selfAction;
+          var selfEmail=selfWasAlreadyAssigned?{ok:true,sent:false,skipped:true,reason:"UNCHANGED_VERIFIER"}:await sendCorrectiveActionVerifierAssignmentEmail(r,refreshedSelfAction);
           await loadNotifications(true);
-          toast("Corrective Action #"+selfAction.action_number+" assigned to you for verification","ok");
+          if(!selfEmail || (!selfEmail.sent&&!selfEmail.skipped&&selfEmail.ok===false)){
+            console.error("action verifier-assignment email failed",selfEmail);
+            toast("Verification was assigned to you, but the email could not be sent.","err");
+          } else {
+            toast("Corrective Action #"+selfAction.action_number+" assigned to you for verification","ok");
+          }
         }catch(ex){console.error(ex);toast("Could not assign this verification to you.","err");}
         finally{if(selfBtn.isConnected)selfBtn.disabled=false;}
         return;
@@ -2754,13 +2819,23 @@
         var saveCard=saveBtn.closest("[data-child-verification-card]");
         var saveSelect=saveCard&&saveCard.querySelector("[data-child-verifier-select]");
         var nextVerifier=(saveSelect&&saveSelect.value)||null;
+        var previousVerifier=saveAction.verifier_user_id||null;
+        var verifierChanged=String(previousVerifier||"")!==String(nextVerifier||"");
         saveBtn.disabled=true;
         try{
           var saveRes=await sb.rpc("rbh_set_corrective_action_verifier",{p_action_id:saveAction.id,p_verifier_user_id:nextVerifier||null});
           if(saveRes.error) throw saveRes.error;
           await loadCorrectiveActionPlan();
+          var refreshedSaveAction=actionPlanState.actions.find(function(x){return String(x.id||"")===String(saveAction.id||"");})||saveAction;
+          var saveEmail={ok:true,sent:false,skipped:true,reason:verifierChanged?"NO_VERIFIER":"UNCHANGED_VERIFIER"};
+          if(verifierChanged&&nextVerifier) saveEmail=await sendCorrectiveActionVerifierAssignmentEmail(r,refreshedSaveAction);
           await loadNotifications(true);
-          toast(nextVerifier?"Verification owner saved":"Verification returned to the shared queue","ok");
+          if(!saveEmail || (!saveEmail.sent&&!saveEmail.skipped&&saveEmail.ok===false)){
+            console.error("action verifier-assignment email failed",saveEmail);
+            toast("Verification owner was saved, but the assignment email could not be sent.","err");
+          } else {
+            toast(nextVerifier?"Verification owner saved":"Verification returned to the shared queue","ok");
+          }
         }catch(ex){console.error(ex);toast("Could not save the verification owner.","err");}
         finally{if(saveBtn.isConnected)saveBtn.disabled=false;}
         return;
@@ -2814,10 +2889,17 @@
           var changesRes=await sb.rpc("rbh_request_corrective_action_changes",{p_action_id:changesAction.id,p_verification_note:changesNote});
           if(changesRes.error) throw changesRes.error;
           await loadCorrectiveActionPlan();
+          var refreshedChangesAction=actionPlanState.actions.find(function(x){return String(x.id||"")===String(changesAction.id||"");})||changesAction;
+          var changesEmail=await sendCorrectiveActionChangesRequestedEmail(r,refreshedChangesAction);
           await loadNotifications(true);
           loadAudit(r.id,auditEl); renderHomeSnapshot(); renderMyWork(); renderActions(); refreshRecordWorkflow(r,detail);
           setWizardStep(detail,r,4,true);
-          toast("Changes requested for Corrective Action #"+changesAction.action_number,"ok");
+          if(!changesEmail || (!changesEmail.sent&&!changesEmail.skipped&&changesEmail.ok===false)){
+            console.error("action changes-requested email failed",changesEmail);
+            toast("Changes were requested for Corrective Action #"+changesAction.action_number+", but the owner email could not be sent.","err");
+          } else {
+            toast("Changes requested for Corrective Action #"+changesAction.action_number,"ok");
+          }
         }catch(ex){console.error(ex);toast("Could not request changes for this corrective action.","err");}
         finally{if(changesBtn.isConnected)changesBtn.disabled=false;}
       }
