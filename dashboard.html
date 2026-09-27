@@ -1596,6 +1596,29 @@
     if(n===6){ if(r.status==="closed"||r.status==="no_action"||r.status==="duplicate") return {save:null,complete:null}; return {save:null,complete:canClose(r)?"Close record":null}; }
     return {save:null,complete:null};
   }
+  function scrollWizardStepIntoView(detail,n){
+    if(!detail) return;
+    var progress=detail.querySelector("[data-record-progress]");
+    var panel=detail.querySelector('[data-wizard-step="'+n+'"]');
+    var target=progress||panel;
+    if(!target) return;
+
+    var topbar=document.querySelector(".topbar");
+    var offset=(topbar?topbar.offsetHeight:0)+10;
+    var top=target.getBoundingClientRect().top+window.pageYOffset-offset;
+    var reduceMotion=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({top:Math.max(0,top),behavior:reduceMotion?"auto":"smooth"});
+
+    /* Move accessibility/keyboard focus to the newly active step without changing scroll position. */
+    window.setTimeout(function(){
+      var heading=panel?panel.querySelector(".wizard-step-copy h3"):null;
+      var mobileHeading=detail.querySelector(".wizard-process-copy b");
+      var focusTarget=(heading&&heading.offsetParent!==null)?heading:mobileHeading;
+      if(!focusTarget) return;
+      focusTarget.setAttribute("tabindex","-1");
+      try{ focusTarget.focus({preventScroll:true}); }catch(_){ focusTarget.focus(); }
+    },reduceMotion?0:260);
+  }
   function setWizardStep(detail,r,n,force){
     if(!detail) return;
     n=parseInt(n,10)||recommendedWizardStep(r);
@@ -1605,7 +1628,7 @@
     var p=workflowProgress(r), panel=detail.querySelector('[data-wizard-step="'+n+'"]'), state=p.steps[n-1]?p.steps[n-1].state:"needed";
     if(panel){ var staticComplete=panel.querySelector('[data-step-complete="'+n+'"]'); if(staticComplete && n<=3) staticComplete.style.display=(state==="done"?"none":"inline-flex"); }
     renderRecordProgress(r,detail.querySelector("[data-record-progress]"));
-    var panel=detail.querySelector('[data-wizard-step="'+n+'"]'); if(panel) panel.scrollIntoView({block:"start",behavior:"smooth"});
+    scrollWizardStepIntoView(detail,n);
   }
   function initialWizardStep(r){ return recommendedWizardStep(r); }
   function renderCloseStep(r,el,detail,auditEl){
@@ -1758,7 +1781,7 @@
     detail.addEventListener("click",async function(e){
       var nav=e.target.closest("[data-wizard-nav]"); if(nav){
         var navStep=parseInt(nav.getAttribute("data-wizard-nav"),10);
-        if(isResolvedReport(r)){ var target=detail.querySelector('[data-wizard-step="'+navStep+'"]'); if(target&&!target.hidden) target.scrollIntoView({block:"start",behavior:"smooth"}); return; }
+        if(isResolvedReport(r)){ var target=detail.querySelector('[data-wizard-step="'+navStep+'"]'); if(target&&!target.hidden) scrollWizardStepIntoView(detail,navStep); return; }
         setWizardStep(detail,r,navStep,false); return;
       }
       if(e.target.closest("[data-wizard-top-save]")){ var n=parseInt(detail.dataset.wizardStep||"1",10); var b=detail.querySelector('[data-wizard-step="'+n+'"] [data-step-save="'+n+'"]'); if(b&&!b.disabled)b.click(); return; }
