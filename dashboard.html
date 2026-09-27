@@ -509,6 +509,21 @@
   .reg-review{margin-top:18px;border:1px solid var(--line);border-left:4px solid var(--red);border-radius:12px;background:var(--surface-2);padding:14px 15px}.reg-review-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.reg-review-head b{font-family:var(--display);font-size:14px}.reg-review-head p{margin:3px 0 0;color:var(--muted);font-size:12px;line-height:1.45}.reg-chip{font-family:var(--display);font-size:10.5px;font-weight:800;border-radius:999px;padding:5px 9px;white-space:nowrap}.reg-chip-unset{background:#eef0ee;color:#5c635c}.reg-chip-pending{background:#fbf3d9;color:#8a6d10}.reg-chip-yes{background:#fdecec;color:#b01e28}.reg-chip-no{background:#e6f4ec;color:#1f7a44}.reg-review-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:13px}.reg-review-help{color:var(--muted);font-size:11.5px;line-height:1.5;margin-top:9px}.reg-review-state{display:none;margin-top:10px;border-radius:9px;padding:9px 11px;font-size:12px;font-weight:650;line-height:1.4}.reg-review-state.show{display:block}.reg-review-state.pending{background:#fff8e7;color:#654c09;border:1px solid #e5c069}.reg-review-state.yes{background:#fff1f1;color:#862323;border:1px solid #e0a0a0}.reg-review-state.no{background:#eef8f2;color:#1f6b3e;border:1px solid #b9dfc8}.reg-elapsed{display:none;margin-top:10px;border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.45;border:1px solid #e5c069;background:#fff8e7;color:#654c09}.reg-elapsed.show{display:block}.reg-elapsed strong{display:block;font-family:var(--display);font-size:12.5px;margin-bottom:2px}.reg-elapsed.urgent{border-color:#e0a0a0;background:#fff1f1;color:#862323}.reg-elapsed.overdue{border-width:2px;border-color:#c42b35;background:#fdeaea;color:#7c151b}.reg-review-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:11px}.reg-save{background:var(--paper);border:1.5px solid var(--line-strong);border-radius:9px;padding:9px 13px;font-family:var(--display);font-weight:700;font-size:12.5px;cursor:pointer;color:var(--ink)}.reg-save:hover{border-color:var(--red)}.reg-save:disabled{opacity:.6;cursor:not-allowed}.reg-saved{color:var(--ok);font-weight:700;font-size:12.5px}.reg-required{display:none;color:var(--red);font-size:12px;font-weight:700;margin-top:8px}.reg-required.show{display:block}
   [data-theme="dark"] .ops-alert{background:#2c2515;border-color:#5e4d22;color:#f1d986}[data-theme="dark"] .ops-alert.critical{background:#311c1c;border-color:#623232;color:#ffbcbc}[data-theme="dark"] .calosha-link{color:#ffbcbc}[data-theme="dark"] .reg-review-state.pending{background:#2c2515;border-color:#5e4d22;color:#f1d986}[data-theme="dark"] .reg-review-state.yes{background:#311c1c;border-color:#623232;color:#ffbcbc}[data-theme="dark"] .reg-review-state.no{background:#173022;border-color:#2e6241;color:#a8e0bc}[data-theme="dark"] .reg-elapsed{background:#2c2515;border-color:#5e4d22;color:#f1d986}[data-theme="dark"] .reg-elapsed.urgent{background:#311c1c;border-color:#623232;color:#ffbcbc}[data-theme="dark"] .reg-elapsed.overdue{background:#3b1719;border-color:#a94349;color:#ffd1d1}
   @media(max-width:620px){.reg-review-grid{grid-template-columns:1fr}.reg-review-head{align-items:flex-start}.reg-chip{margin-top:1px}}
+  /* ---------- Phase 2.9.6 persistent regulatory timer ---------- */
+  .reg-persistent-host:empty{display:none}
+  .reg-persistent{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;padding:9px 11px;border:1px solid #e5c069;border-radius:10px;background:#fff8e7;color:#654c09;font-size:11.5px;line-height:1.35}
+  .reg-persistent.urgent{border-color:#e0a0a0;background:#fff1f1;color:#862323}
+  .reg-persistent.overdue{border-width:2px;border-color:#c42b35;background:#fdeaea;color:#7c151b}
+  .reg-persistent-copy{min-width:0;display:flex;align-items:baseline;gap:7px;flex-wrap:wrap}
+  .reg-persistent-copy strong{font-family:var(--display);font-size:12px}
+  .reg-persistent-copy span{font-weight:650}
+  .reg-persistent-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:0 0 auto}
+  .reg-persistent-actions button,.reg-persistent-actions a{border:0;background:transparent;padding:0;color:inherit;font:inherit;font-weight:800;text-decoration:underline;text-underline-offset:2px;cursor:pointer;white-space:nowrap}
+  .reg-persistent-actions button:hover,.reg-persistent-actions a:hover{opacity:.78}
+  [data-theme="dark"] .reg-persistent{background:#2c2515;border-color:#5e4d22;color:#f1d986}
+  [data-theme="dark"] .reg-persistent.urgent{background:#311c1c;border-color:#623232;color:#ffbcbc}
+  [data-theme="dark"] .reg-persistent.overdue{background:#3b1719;border-color:#a94349;color:#ffd1d1}
+  @media(max-width:620px){.reg-persistent{align-items:flex-start;flex-direction:column;gap:7px}.reg-persistent-actions{width:100%;justify-content:flex-start}}
   .assignment-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.action-workflow{border:1px solid var(--line);border-radius:13px;background:var(--paper-2);padding:14px;margin-top:12px}
   .action-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:10px}.action-head h4{font-family:var(--display);font-size:14px;margin:0}.action-head p{font-size:11.5px;color:var(--muted);margin:3px 0 0}
   .action-state{display:inline-flex;align-items:center;border-radius:999px;padding:5px 8px;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.035em;background:var(--paper);border:1px solid var(--line-strong)}
@@ -1026,7 +1041,7 @@
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="rHeading">
     <h3 id="rHeading">Restart workflow</h3>
     <p class="msub">Return the management workflow to Step 1 without erasing the permanent history.</p>
-    <div class="restart-warning"><b>This clears the current management work.</b> Root cause, corrective-action plan, assignment, due date, priority, completion, and verification values will be reset. This action cannot be undone from the screen.</div>
+    <div class="restart-warning"><b>This clears the current management work.</b> Root cause, corrective-action plan, control type, assignment, due date, priority, completion, and verification values will be reset. This action cannot be undone from the screen.</div>
     <ul class="restart-preserve">
       <li>Original employee report and original attachments stay unchanged.</li>
       <li>Cal/OSHA screening and RBH awareness time are preserved.</li>
@@ -1419,6 +1434,42 @@
     parts.push(mins+" min");
     return parts.join(" ");
   }
+  function persistentRegulatoryBannerHtml(r){
+    if(!r || !r.involves_injury) return "";
+    var status=String(r.calosha_screening_status||"");
+    if(status!=="pending" && status!=="yes") return "";
+    var cls=status==="yes"?"urgent":"";
+    var title=status==="yes"?"Cal/OSHA review active":"Cal/OSHA follow-up active";
+    var timing="RBH awareness time is required.";
+    var message=status==="yes"?"Escalate immediately; do not wait for the 8-hour outer limit.":"Follow-up is still required; escalate promptly if serious-event criteria may be met.";
+    if(r.calosha_awareness_at){
+      var d=new Date(r.calosha_awareness_at);
+      if(!isNaN(d.getTime()) && d.getTime()<=Date.now()+300000){
+        var ms=Math.max(0,Date.now()-d.getTime()), hrs=ms/3600000;
+        timing="Elapsed since RBH awareness: "+elapsedAwarenessText(ms);
+        if(hrs>=8){
+          cls="overdue";
+          message="More than 8 hours have elapsed from the recorded awareness time. Escalate immediately.";
+        }else if(hrs>=4 || status==="yes"){
+          cls="urgent";
+        }
+      }
+    }
+    return '<div class="reg-persistent '+esc(cls)+'" data-reg-persistent role="status" aria-live="polite">'+
+      '<div class="reg-persistent-copy"><strong>'+esc(title)+'</strong><span>'+esc(timing)+' · '+esc(message)+'</span></div>'+
+      '<div class="reg-persistent-actions"><button type="button" data-reg-review-jump>Review screening</button><a href="https://www.dir.ca.gov/dosh/report-accident-or-injury.html" target="_blank" rel="noopener">Reporting instructions ↗</a></div>'+
+    '</div>';
+  }
+  function refreshPersistentRegulatoryBanner(detail,r){
+    if(!detail) return;
+    var host=detail.querySelector("[data-reg-persistent-host]");
+    if(host) host.innerHTML=persistentRegulatoryBannerHtml(r);
+  }
+  function refreshUrgentTriage(detail,r){
+    if(!detail) return;
+    var host=detail.querySelector("[data-urgent-triage]");
+    if(host) host.innerHTML=urgentTriageHtml(r);
+  }
   function refreshRegulatoryElapsed(card){
     if(!card) return;
     var sel=card.querySelector(".reg-status"), awareness=card.querySelector(".reg-awareness"), elapsed=card.querySelector("[data-reg-elapsed]");
@@ -1480,7 +1531,7 @@
       '<div class="record-progress" data-record-progress></div>'+
       '<div class="guidance-control"><label class="guidance-toggle"><input type="checkbox" data-guidance-toggle'+(guidanceOn?' checked':'')+'><span>Show guidance</span></label></div>'+
       '<div data-resolved-banner></div>'+
-      urgentTriageHtml(r)+
+      '<div data-urgent-triage>'+urgentTriageHtml(r)+'</div>'+
 
       '<section class="wizard-panel" data-wizard-step="1" hidden>'+
         '<div class="wizard-step-head"><span class="wizard-step-badge">1</span><div class="wizard-step-copy"><h3>Review the report</h3><p>Confirm what was submitted and decide whether the report needs further action.</p></div></div>'+
@@ -1501,9 +1552,10 @@
       '</section>'+
 
       '<section class="wizard-panel" data-wizard-step="3" hidden>'+
-        '<div class="wizard-step-head"><span class="wizard-step-badge">3</span><div class="wizard-step-copy"><h3>Corrective action plan</h3><p>Define what needs to be fixed, who owns the work, and when it must be completed.</p></div></div>'+
+        '<div class="wizard-step-head"><span class="wizard-step-badge">3</span><div class="wizard-step-copy"><h3>Corrective action plan</h3><p>Define what needs to be fixed, the control approach, who owns the work, and when it must be completed.</p></div></div>'+
         '<div class="inv-grid">'+
           '<label class="inv-l">Corrective action required<textarea class="inv-corr" placeholder="What needs to be corrected or changed?"></textarea><span class="field-guidance compact">State the specific work or change needed to correct the issue.</span></label><div class="translation-preview" data-translation-field="corrective_action" hidden></div>'+
+          '<label class="inv-l">Control type <span style="font-weight:400;color:var(--muted)">(optional)</span><select class="inv-control-type"><option value="">— Select control type —</option><option value="elimination">Elimination — remove the hazard</option><option value="substitution">Substitution — replace the hazard</option><option value="engineering">Engineering control — isolate people from the hazard</option><option value="administrative">Administrative / work practice — change how work is performed</option><option value="ppe">PPE — protect the worker</option><option value="other">Other</option></select><span class="field-guidance compact">When practical, prefer controls that remove or isolate the hazard rather than relying only on procedures or PPE.</span></label>'+
           '<label class="inv-l">Assigned dashboard user<select class="inv-assignee">'+assignmentOptions(r.assigned_user_id)+'</select><span class="field-guidance compact">Choose the person responsible for completing this corrective action.</span></label>'+
           '<div class="inv-row"><label class="inv-l">Due date<input type="date" class="inv-due"><span class="field-guidance compact">Set the completion deadline.</span></label><label class="inv-l">Priority<select class="inv-pri"><option value="">— Choose priority —</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select><span class="field-guidance compact">Use priority to show urgency.</span></label></div>'+
         '</div>'+
@@ -1559,7 +1611,7 @@
       var reopenDetails=[
         "Review the reopened report and confirm the carried-forward information still applies.",
         hasWorkflowValue(r.root_cause)?"Previous root cause carried forward — confirm or update it.":"Enter the root cause of the issue.",
-        (hasWorkflowValue(r.corrective_action)&&hasWorkflowValue(r.assigned_user_id))?"Previous action plan carried forward — confirm or update the action, owner, due date, and priority.":"Complete the corrective-action plan.",
+        (hasWorkflowValue(r.corrective_action)&&hasWorkflowValue(r.assigned_user_id))?"Previous action plan carried forward — confirm or update the action, control type, owner, due date, and priority.":"Complete the corrective-action plan.",
         hasWorkflowValue(r.action_completion_note)?"Previous completion note carried forward — update it as needed and submit the current work for verification.":"Document what was completed and submit it for verification.",
         r.action_status==="awaiting_verification"?"Admin or Safety Manager must verify the current reopened-cycle work.":"Verification is required again for the reopened record.",
         "After the reopened cycle is verified, close the record again."
@@ -1614,13 +1666,13 @@
     var currentText=resolved?'Closed record review':((activeState&&activeState.state==="done")?'Reviewing a completed step':('Step '+active+' of 6'));
     var helpText=resolved?'Read-only record. All completed sections are shown below; on desktop, click a green step to jump to it. Notes can still be added.':wizardHelp(active,r);
     el.className="wizard-process";
-    el.innerHTML='<div class="wizard-process-head"><div class="wizard-process-copy"><b>'+esc(currentText)+(resolved?'':' · '+esc(wizardLongTitle(active)))+'</b><span>'+esc(helpText)+'</span></div><div class="wizard-top-actions">'+topSave+topPrimary+'</div></div><div class="process-flow">'+arrows+'</div>';
+    el.innerHTML='<div class="wizard-process-head"><div class="wizard-process-copy"><b>'+esc(currentText)+(resolved?'':' · '+esc(wizardLongTitle(active)))+'</b><span>'+esc(helpText)+'</span></div><div class="wizard-top-actions">'+topSave+topPrimary+'</div></div><div class="process-flow">'+arrows+'</div><div class="reg-persistent-host" data-reg-persistent-host>'+persistentRegulatoryBannerHtml(r)+'</div>';
   }
 
   function wizardShortTitle(n){ return ({1:"Review",2:"Investigation",3:"Action Plan",4:"Complete Action",5:"Verify",6:"Close"})[n]||"Step"; }
   function wizardLongTitle(n){ return ({1:"Review Report",2:"Investigation",3:"Corrective Action Plan",4:"Complete Corrective Action",5:"Verify Corrective Action",6:"Close Record"})[n]||"Record"; }
   function wizardHelp(n,r){
-    var map={1:"Review the submission and decide what happens next.",2:"Document the underlying cause.",3:"Define the fix, assigned user, due date, and priority.",4:"Document the completed work and submit it for review.",5:"Approve the correction or request changes.",6:"Confirm every required step is complete and close the record."};
+    var map={1:"Review the submission and decide what happens next.",2:"Document the underlying cause.",3:"Define the fix, control type, assigned user, due date, and priority.",4:"Document the completed work and submit it for review.",5:"Approve the correction or request changes.",6:"Confirm every required step is complete and close the record."};
     if(n===4 && r.action_status==="changes_requested") return "Changes were requested. Update the work and resubmit it for verification.";
     if(n===5 && !canVerify()) return "This step is waiting for an Admin or Safety Manager to verify the work.";
     return map[n]||"Follow the guided steps.";
@@ -1799,6 +1851,7 @@
       var regElapsedTimer=setInterval(function(){
         if(!regCard.isConnected){clearInterval(regElapsedTimer);return;}
         refreshRegulatoryElapsed(regCard);
+        refreshPersistentRegulatoryBanner(detail,r);
       },60000);
       if(!canVerify() || isResolvedReport(r)){ [regStatus,regAwareness,regSave].forEach(function(x){if(x)x.disabled=true;}); }
     }
@@ -1821,6 +1874,8 @@
       var changed=String(r.calosha_screening_status||"")!==String(status||"") || String(r.calosha_awareness_at||"")!==String(awareIso||"");
       if(changed){ var res=await sb.from("reports").update(patch).eq("id",r.id); if(res.error) throw res.error; r.calosha_screening_status=status; r.calosha_awareness_at=awareIso; }
       refreshRegulatoryCardUi(regCard);
+      refreshPersistentRegulatoryBanner(detail,r);
+      refreshUrgentTriage(detail,r);
       if(regSaved){regSaved.hidden=false;setTimeout(function(){regSaved.hidden=true;},2200);}
       if(changed) loadAudit(r.id,auditEl);
       if(showToast) toast("Regulatory screening saved","ok");
@@ -1836,10 +1891,10 @@
       openDispositionModal(r,wrap,detail.querySelector("[data-notes]"));
     });
 
-    var invRoot=detail.querySelector(".inv-root"), invCorr=detail.querySelector(".inv-corr"), invAssign=detail.querySelector(".inv-assignee"), invDue=detail.querySelector(".inv-due"), invPri=detail.querySelector(".inv-pri");
+    var invRoot=detail.querySelector(".inv-root"), invCorr=detail.querySelector(".inv-corr"), invControlType=detail.querySelector(".inv-control-type"), invAssign=detail.querySelector(".inv-assignee"), invDue=detail.querySelector(".inv-due"), invPri=detail.querySelector(".inv-pri");
     var rootSave=detail.querySelector(".root-save"), rootSaved=detail.querySelector(".root-saved"), actionPlanSave=detail.querySelector(".action-plan-save"), actionPlanSaved=detail.querySelector(".action-plan-saved");
-    invRoot.value=r.root_cause||""; invCorr.value=r.corrective_action||""; invAssign.value=r.assigned_user_id||""; invDue.value=r.due_date||""; invPri.value=r.priority||"";
-    if(!canEdit){ [invRoot,invCorr,invAssign,invDue,invPri,rootSave,actionPlanSave].forEach(function(x){if(x)x.disabled=true;}); }
+    invRoot.value=r.root_cause||""; invCorr.value=r.corrective_action||""; invControlType.value=r.corrective_control_type||""; invAssign.value=r.assigned_user_id||""; invDue.value=r.due_date||""; invPri.value=r.priority||"";
+    if(!canEdit){ [invRoot,invCorr,invControlType,invAssign,invDue,invPri,rootSave,actionPlanSave].forEach(function(x){if(x)x.disabled=true;}); }
 
     async function persistRootCause(showToast,advanceReopen){
       if(!canEditReport(r)) throw new Error("NOT_AUTHORIZED");
@@ -1853,7 +1908,7 @@
     async function persistActionPlan(showToast,assign){
       if(!canEditReport(r)) throw new Error("NOT_AUTHORIZED");
       var nextActionStatus=r.action_status||"not_started"; if(invCorr.value.trim()&&nextActionStatus==="not_started") nextActionStatus="in_progress";
-      var patch={corrective_action:invCorr.value.trim()||null,assigned_user_id:invAssign.value||null,due_date:invDue.value||null,priority:invPri.value||null,action_status:nextActionStatus};
+      var patch={corrective_action:invCorr.value.trim()||null,corrective_control_type:invControlType.value||null,assigned_user_id:invAssign.value||null,due_date:invDue.value||null,priority:invPri.value||null,action_status:nextActionStatus};
       if(assign && r.status!=="closed" && r.status!=="no_action" && r.status!=="duplicate") patch.status="assigned";
       if(assign && activeReopenStep(r)) patch.reopen_workflow_step=4;
       var changed={}; Object.keys(patch).forEach(function(k){if(String(r[k]??"")!==String(patch[k]??""))changed[k]=patch[k];});
@@ -1866,6 +1921,7 @@
     if(actionPlanSave) actionPlanSave.addEventListener("click",async function(){ actionPlanSave.disabled=true; try{await persistActionPlan(true,false);actionPlanSaved.hidden=false;setTimeout(function(){actionPlanSaved.hidden=true;},2200);showView("home");}catch(ex){console.error(ex);toast("Could not save the action plan.","err");}finally{actionPlanSave.disabled=!canEditReport(r);} });
 
     detail.addEventListener("click",async function(e){
+      if(e.target.closest("[data-reg-review-jump]")){ setWizardStep(detail,r,1,true); return; }
       var nav=e.target.closest("[data-wizard-nav]"); if(nav){
         var navStep=parseInt(nav.getAttribute("data-wizard-nav"),10);
         if(isResolvedReport(r)){ var target=detail.querySelector('[data-wizard-step="'+navStep+'"]'); if(target&&!target.hidden) scrollWizardStepIntoView(detail,navStep); return; }
@@ -2189,7 +2245,7 @@
     ["calosha_screening_status","Cal/OSHA serious-event screening"],["calosha_awareness_at","RBH awareness time"],
     ["priority","Priority"],["likelihood","Likelihood"],["assigned_to","Assigned to"],
     ["assigned_user_id","Assigned dashboard user ID"],["action_status","Corrective action status"],
-    ["root_cause","Root cause"],["corrective_action","Corrective action"],["responsible_person","Responsible person"],
+    ["root_cause","Root cause"],["corrective_action","Corrective action"],["corrective_control_type","Control type"],["responsible_person","Responsible person"],
     ["due_date","Due date"],["action_completed_at","Action completed at"],["action_completion_note","Completion note"],
     ["action_verified_at","Action verified at"],["action_verification_note","Verification note"],
     ["closed_at","Closed at"],["workflow_restart_count","Workflow restart count"],["last_workflow_restart_at","Last workflow restart"],["id","Record ID"]
@@ -2251,8 +2307,8 @@
 
       var pdfMode=languageMode||"viewer", pdfLang=(pdfMode==="original"?normalizeLanguageCode(r.language||"en"):(pdfMode==="viewer"?(activeIncident===r?activeIncidentLanguage:preferredReadingLanguage()):normalizeLanguageCode(pdfMode)));
       var pdfLabels={
-        en:{notRecorded:"Not recorded",dashboardUser:"Dashboard user",reportWord:"Report",step:"STEP",workflow:["Review","Investigation","Action Plan","Complete","Verify","Close"],headerSubtitle:"Incident record - after-action summary",submitted:"Submitted",generated:"Generated",section1:"Report and review",section1Sub:"What was submitted and how the report entered the safety workflow.",reportType:"Report type",actualInjury:"Actual injury or illness",address:"Address of incident",specificSpot:"Specific spot on the site",whenNoticed:"When noticed",potentialSeverity:"Potential severity",hazardType:"Type of hazard",formLanguage:"Form language",describe:"Describe what you saw",noDescription:"No description recorded",involved:"Who or what was involved / any witnesses",immediate:"What was done right away",suggested:"What would fix it or prevent it",reporter:"Reporter",reportedBy:"Reported by",reporterRole:"Reporter role",reporterContact:"Reporter contact",reviewCompleted:"Review completed",reviewedBy:"Reviewed by",workflowRestarts:"Workflow restarts",lastRestart:"Last restart",none:"None",originalFiles:"Original report photos and files",noOriginalFiles:"No original files attached",calosha:"Cal/OSHA serious-event screening",screeningResult:"Screening result",awareness:"RBH awareness time",screeningNote:"Screening note",screeningDisclaimer:"Management screening only. This application does not submit a report to Cal/OSHA and the screening does not replace required regulatory reporting.",section2:"Investigation",section2Sub:"Document the underlying reason the issue happened or was allowed to happen.",rootCause:"Root cause",notYetRecorded:"Not yet recorded",section3:"Corrective action plan",section3Sub:"Define the fix, ownership, due date, and priority.",correctiveRequired:"Corrective action required",assignedUser:"Assigned dashboard user",notAssigned:"Not assigned",responsible:"Responsible person / crew",dueDate:"Due date",priority:"Priority",section4:"Complete corrective action",section4Sub:"Record what was actually completed and the supporting evidence.",completedWork:"Completed work submitted",notYetSubmitted:"Not yet submitted",completedOn:"Completed on",completedBy:"Completed by",currentEvidence:"Current-workflow corrective-action evidence",noCurrentEvidence:"No corrective-action evidence attached in the current workflow",priorEvidence:"Preserved evidence from earlier workflow",section5:"Verify corrective action",section5Sub:"Show the review decision and any verification or change-request note.",verificationOutcome:"Verification outcome",verifiedOn:"Verified on",verifiedBy:"Verified by",requestedChanges:"Requested changes",reviewerNote:"Reviewer verification note",noVerificationNote:"No verification note recorded",section6:"Close record",section6Sub:"Final disposition and closure information for the incident.",recordStatus:"Record status",closedOn:"Closed on",notYetClosed:"Not yet closed",closedBy:"Closed by",closurePath:"Closure path",closureReason:"Closure reason",closureNote:"Closure note",additionalNotes:"Additional notes",activityHistory:"Activity history",reportSubmitted:"Report submitted",anonymousReporter:"Anonymous reporter",note:"Note",system:"System",footer:"RBH Insulation, Inc. | Confidential safety document | License #558799",page:"Page",yes:"Yes",no:"No",originalRecord:"Original record",appendixTitle:"Attachment Appendix",appendixSub:"Files preserved with this record at the time the PDF was generated.",attachment:"Attachment",source:"Source",uploaded:"Uploaded",fileType:"File type",fileSize:"File size",sha256:"SHA-256",sourceOriginal:"Original report attachment",sourceCurrentEvidence:"Corrective-action evidence",sourcePriorEvidence:"Earlier-workflow corrective-action evidence",embeddedOnly:"Source file embedded in PDF",embeddedOnlyBody:"This file type cannot be rendered reliably as visible PDF pages in the browser. The original source file is embedded inside this PDF package so it remains with the exported record.",pdfPages:"Source PDF pages follow",appendixCount:"Attachments included",appendixNote:"Removed attachments are not included; their removal remains documented in the activity history.",summaryPage:"Summary page"},
-        es:{notRecorded:"No registrado",dashboardUser:"Usuario del panel",reportWord:"Reporte",step:"PASO",workflow:["Revisión","Investigación","Plan de acción","Completar","Verificar","Cerrar"],headerSubtitle:"Registro del incidente - resumen posterior a la acción",submitted:"Enviado",generated:"Generado",section1:"Reporte y revisión",section1Sub:"Lo que se envió y cómo el reporte ingresó al flujo de seguridad.",reportType:"Tipo de reporte",actualInjury:"Lesión o enfermedad real",address:"Dirección del incidente",specificSpot:"Lugar específico en la obra",whenNoticed:"Cuándo se observó",potentialSeverity:"Gravedad potencial",hazardType:"Tipo de peligro",formLanguage:"Idioma del formulario",describe:"Describa lo que vio",noDescription:"No se registró descripción",involved:"Quién o qué estuvo involucrado / testigos",immediate:"Qué se hizo de inmediato",suggested:"Qué lo corregiría o evitaría",reporter:"Reportante",reportedBy:"Reportado por",reporterRole:"Función del reportante",reporterContact:"Contacto del reportante",reviewCompleted:"Revisión completada",reviewedBy:"Revisado por",workflowRestarts:"Reinicios del flujo",lastRestart:"Último reinicio",none:"Ninguno",originalFiles:"Fotos y archivos del reporte original",noOriginalFiles:"No hay archivos originales adjuntos",calosha:"Evaluación de evento grave de Cal/OSHA",screeningResult:"Resultado de la evaluación",awareness:"Hora en que RBH tuvo conocimiento",screeningNote:"Nota de evaluación",screeningDisclaimer:"Solo evaluación de la gerencia. Esta aplicación no presenta un reporte a Cal/OSHA y la evaluación no reemplaza los reportes regulatorios requeridos.",section2:"Investigación",section2Sub:"Documente la razón subyacente por la que ocurrió o se permitió el problema.",rootCause:"Causa raíz",notYetRecorded:"Aún no registrado",section3:"Plan de acción correctiva",section3Sub:"Defina la corrección, el responsable, la fecha límite y la prioridad.",correctiveRequired:"Acción correctiva requerida",assignedUser:"Usuario asignado del panel",notAssigned:"No asignado",responsible:"Persona / equipo responsable",dueDate:"Fecha límite",priority:"Prioridad",section4:"Completar acción correctiva",section4Sub:"Registre lo que realmente se completó y la evidencia de respaldo.",completedWork:"Trabajo completado enviado",notYetSubmitted:"Aún no enviado",completedOn:"Completado el",completedBy:"Completado por",currentEvidence:"Evidencia de acción correctiva del flujo actual",noCurrentEvidence:"No hay evidencia de acción correctiva adjunta en el flujo actual",priorEvidence:"Evidencia preservada de un flujo anterior",section5:"Verificar acción correctiva",section5Sub:"Muestre la decisión de revisión y cualquier nota de verificación o solicitud de cambios.",verificationOutcome:"Resultado de la verificación",verifiedOn:"Verificado el",verifiedBy:"Verificado por",requestedChanges:"Cambios solicitados",reviewerNote:"Nota de verificación del revisor",noVerificationNote:"No se registró una nota de verificación",section6:"Cerrar registro",section6Sub:"Disposición final e información de cierre del incidente.",recordStatus:"Estado del registro",closedOn:"Cerrado el",notYetClosed:"Aún no cerrado",closedBy:"Cerrado por",closurePath:"Ruta de cierre",closureReason:"Motivo de cierre",closureNote:"Nota de cierre",additionalNotes:"Notas adicionales",activityHistory:"Historial de actividad",reportSubmitted:"Reporte enviado",anonymousReporter:"Reportante anónimo",note:"Nota",system:"Sistema",footer:"RBH Insulation, Inc. | Documento confidencial de seguridad | Licencia #558799",page:"Página",yes:"Sí",no:"No",originalRecord:"Registro original",appendixTitle:"Apéndice de archivos adjuntos",appendixSub:"Archivos preservados con este registro al momento de generar el PDF.",attachment:"Adjunto",source:"Origen",uploaded:"Cargado",fileType:"Tipo de archivo",fileSize:"Tamaño",sha256:"SHA-256",sourceOriginal:"Adjunto del reporte original",sourceCurrentEvidence:"Evidencia de acción correctiva",sourcePriorEvidence:"Evidencia de acción correctiva de un flujo anterior",embeddedOnly:"Archivo fuente incorporado en el PDF",embeddedOnlyBody:"Este tipo de archivo no se puede representar de forma confiable como páginas PDF visibles en el navegador. El archivo fuente original está incorporado dentro de este paquete PDF para que permanezca con el registro exportado.",pdfPages:"Las páginas del PDF fuente siguen",appendixCount:"Adjuntos incluidos",appendixNote:"Los adjuntos eliminados no se incluyen; su eliminación permanece documentada en el historial de actividad.",summaryPage:"Página de resumen"}
+        en:{notRecorded:"Not recorded",dashboardUser:"Dashboard user",reportWord:"Report",step:"STEP",workflow:["Review","Investigation","Action Plan","Complete","Verify","Close"],headerSubtitle:"Incident record - after-action summary",submitted:"Submitted",generated:"Generated",section1:"Report and review",section1Sub:"What was submitted and how the report entered the safety workflow.",reportType:"Report type",actualInjury:"Actual injury or illness",address:"Address of incident",specificSpot:"Specific spot on the site",whenNoticed:"When noticed",potentialSeverity:"Potential severity",hazardType:"Type of hazard",formLanguage:"Form language",describe:"Describe what you saw",noDescription:"No description recorded",involved:"Who or what was involved / any witnesses",immediate:"What was done right away",suggested:"What would fix it or prevent it",reporter:"Reporter",reportedBy:"Reported by",reporterRole:"Reporter role",reporterContact:"Reporter contact",reviewCompleted:"Review completed",reviewedBy:"Reviewed by",workflowRestarts:"Workflow restarts",lastRestart:"Last restart",none:"None",originalFiles:"Original report photos and files",noOriginalFiles:"No original files attached",calosha:"Cal/OSHA serious-event screening",screeningResult:"Screening result",awareness:"RBH awareness time",screeningNote:"Screening note",screeningDisclaimer:"Management screening only. This application does not submit a report to Cal/OSHA and the screening does not replace required regulatory reporting.",section2:"Investigation",section2Sub:"Document the underlying reason the issue happened or was allowed to happen.",rootCause:"Root cause",notYetRecorded:"Not yet recorded",section3:"Corrective action plan",section3Sub:"Define the fix, ownership, due date, and priority.",correctiveRequired:"Corrective action required",controlType:"Control type",assignedUser:"Assigned dashboard user",notAssigned:"Not assigned",responsible:"Responsible person / crew",dueDate:"Due date",priority:"Priority",section4:"Complete corrective action",section4Sub:"Record what was actually completed and the supporting evidence.",completedWork:"Completed work submitted",notYetSubmitted:"Not yet submitted",completedOn:"Completed on",completedBy:"Completed by",currentEvidence:"Current-workflow corrective-action evidence",noCurrentEvidence:"No corrective-action evidence attached in the current workflow",priorEvidence:"Preserved evidence from earlier workflow",section5:"Verify corrective action",section5Sub:"Show the review decision and any verification or change-request note.",verificationOutcome:"Verification outcome",verifiedOn:"Verified on",verifiedBy:"Verified by",requestedChanges:"Requested changes",reviewerNote:"Reviewer verification note",noVerificationNote:"No verification note recorded",section6:"Close record",section6Sub:"Final disposition and closure information for the incident.",recordStatus:"Record status",closedOn:"Closed on",notYetClosed:"Not yet closed",closedBy:"Closed by",closurePath:"Closure path",closureReason:"Closure reason",closureNote:"Closure note",additionalNotes:"Additional notes",activityHistory:"Activity history",reportSubmitted:"Report submitted",anonymousReporter:"Anonymous reporter",note:"Note",system:"System",footer:"RBH Insulation, Inc. | Confidential safety document | License #558799",page:"Page",yes:"Yes",no:"No",originalRecord:"Original record",appendixTitle:"Attachment Appendix",appendixSub:"Files preserved with this record at the time the PDF was generated.",attachment:"Attachment",source:"Source",uploaded:"Uploaded",fileType:"File type",fileSize:"File size",sha256:"SHA-256",sourceOriginal:"Original report attachment",sourceCurrentEvidence:"Corrective-action evidence",sourcePriorEvidence:"Earlier-workflow corrective-action evidence",embeddedOnly:"Source file embedded in PDF",embeddedOnlyBody:"This file type cannot be rendered reliably as visible PDF pages in the browser. The original source file is embedded inside this PDF package so it remains with the exported record.",pdfPages:"Source PDF pages follow",appendixCount:"Attachments included",appendixNote:"Removed attachments are not included; their removal remains documented in the activity history.",summaryPage:"Summary page"},
+        es:{notRecorded:"No registrado",dashboardUser:"Usuario del panel",reportWord:"Reporte",step:"PASO",workflow:["Revisión","Investigación","Plan de acción","Completar","Verificar","Cerrar"],headerSubtitle:"Registro del incidente - resumen posterior a la acción",submitted:"Enviado",generated:"Generado",section1:"Reporte y revisión",section1Sub:"Lo que se envió y cómo el reporte ingresó al flujo de seguridad.",reportType:"Tipo de reporte",actualInjury:"Lesión o enfermedad real",address:"Dirección del incidente",specificSpot:"Lugar específico en la obra",whenNoticed:"Cuándo se observó",potentialSeverity:"Gravedad potencial",hazardType:"Tipo de peligro",formLanguage:"Idioma del formulario",describe:"Describa lo que vio",noDescription:"No se registró descripción",involved:"Quién o qué estuvo involucrado / testigos",immediate:"Qué se hizo de inmediato",suggested:"Qué lo corregiría o evitaría",reporter:"Reportante",reportedBy:"Reportado por",reporterRole:"Función del reportante",reporterContact:"Contacto del reportante",reviewCompleted:"Revisión completada",reviewedBy:"Revisado por",workflowRestarts:"Reinicios del flujo",lastRestart:"Último reinicio",none:"Ninguno",originalFiles:"Fotos y archivos del reporte original",noOriginalFiles:"No hay archivos originales adjuntos",calosha:"Evaluación de evento grave de Cal/OSHA",screeningResult:"Resultado de la evaluación",awareness:"Hora en que RBH tuvo conocimiento",screeningNote:"Nota de evaluación",screeningDisclaimer:"Solo evaluación de la gerencia. Esta aplicación no presenta un reporte a Cal/OSHA y la evaluación no reemplaza los reportes regulatorios requeridos.",section2:"Investigación",section2Sub:"Documente la razón subyacente por la que ocurrió o se permitió el problema.",rootCause:"Causa raíz",notYetRecorded:"Aún no registrado",section3:"Plan de acción correctiva",section3Sub:"Defina la corrección, el responsable, la fecha límite y la prioridad.",correctiveRequired:"Acción correctiva requerida",controlType:"Tipo de control",assignedUser:"Usuario asignado del panel",notAssigned:"No asignado",responsible:"Persona / equipo responsable",dueDate:"Fecha límite",priority:"Prioridad",section4:"Completar acción correctiva",section4Sub:"Registre lo que realmente se completó y la evidencia de respaldo.",completedWork:"Trabajo completado enviado",notYetSubmitted:"Aún no enviado",completedOn:"Completado el",completedBy:"Completado por",currentEvidence:"Evidencia de acción correctiva del flujo actual",noCurrentEvidence:"No hay evidencia de acción correctiva adjunta en el flujo actual",priorEvidence:"Evidencia preservada de un flujo anterior",section5:"Verificar acción correctiva",section5Sub:"Muestre la decisión de revisión y cualquier nota de verificación o solicitud de cambios.",verificationOutcome:"Resultado de la verificación",verifiedOn:"Verificado el",verifiedBy:"Verificado por",requestedChanges:"Cambios solicitados",reviewerNote:"Nota de verificación del revisor",noVerificationNote:"No se registró una nota de verificación",section6:"Cerrar registro",section6Sub:"Disposición final e información de cierre del incidente.",recordStatus:"Estado del registro",closedOn:"Cerrado el",notYetClosed:"Aún no cerrado",closedBy:"Cerrado por",closurePath:"Ruta de cierre",closureReason:"Motivo de cierre",closureNote:"Nota de cierre",additionalNotes:"Notas adicionales",activityHistory:"Historial de actividad",reportSubmitted:"Reporte enviado",anonymousReporter:"Reportante anónimo",note:"Nota",system:"Sistema",footer:"RBH Insulation, Inc. | Documento confidencial de seguridad | Licencia #558799",page:"Página",yes:"Sí",no:"No",originalRecord:"Registro original",appendixTitle:"Apéndice de archivos adjuntos",appendixSub:"Archivos preservados con este registro al momento de generar el PDF.",attachment:"Adjunto",source:"Origen",uploaded:"Cargado",fileType:"Tipo de archivo",fileSize:"Tamaño",sha256:"SHA-256",sourceOriginal:"Adjunto del reporte original",sourceCurrentEvidence:"Evidencia de acción correctiva",sourcePriorEvidence:"Evidencia de acción correctiva de un flujo anterior",embeddedOnly:"Archivo fuente incorporado en el PDF",embeddedOnlyBody:"Este tipo de archivo no se puede representar de forma confiable como páginas PDF visibles en el navegador. El archivo fuente original está incorporado dentro de este paquete PDF para que permanezca con el registro exportado.",pdfPages:"Las páginas del PDF fuente siguen",appendixCount:"Adjuntos incluidos",appendixNote:"Los adjuntos eliminados no se incluyen; su eliminación permanece documentada en el historial de actividad.",summaryPage:"Página de resumen"}
       };
       var L=pdfLabels[pdfLang]||pdfLabels.en;
       if(!pdfLabels[pdfLang] && pdfMode!=="original"){
@@ -2267,6 +2323,7 @@
       if(r.calosha_screening_status) pdfFields.screening_result=caloshaScreenLabel(r.calosha_screening_status);
       pdfFields.closure_path=(r.status==="no_action"||r.status==="duplicate")?"Closed without corrective action":(r.status==="closed"?"Corrective action verified and record closed":"Record remains open");
       if(r.priority) pdfFields.priority_value=String(r.priority).charAt(0).toUpperCase()+String(r.priority).slice(1);
+      if(r.corrective_control_type) pdfFields.control_type_value=controlTypeLabel(r.corrective_control_type,pdfLang)||r.corrective_control_type;
       var pdfTx=(pdfMode==="original")?{}:await translateTextMap(pdfFields,pdfLang,"pdf:"+String(r.id));
       if(pdfMode!=="original" && !pdfTx) throw new Error("TRANSLATION_UNAVAILABLE");
       pdfTx=pdfTx||{};
@@ -2505,6 +2562,7 @@
       section(3,L.section3,L.section3Sub);
       wideField(L.correctiveRequired,PV("corrective_action",r.corrective_action),{skipEmpty:false,emptyText:L.notYetRecorded});
       pairRow([
+        {label:L.controlType,value:r.corrective_control_type?PV("control_type_value",controlTypeLabel(r.corrective_control_type,pdfLang)||r.corrective_control_type):L.notRecorded},
         {label:L.assignedUser,value:assigneeName(r)||L.notAssigned},
         {label:L.dueDate,value:r.due_date?pdfDateOnly(r.due_date):L.notRecorded},
         {label:L.priority,value:r.priority?PV("priority_value",String(r.priority).charAt(0).toUpperCase()+String(r.priority).slice(1)):L.notRecorded}
@@ -3031,6 +3089,9 @@
 
   function roleLabel(v){ return ROLE_LABELS[v]||"Read Only"; }
   function actionLabel(v){ return ACTION_LABELS[v]||"Not started"; }
+  var CONTROL_TYPE_LABELS={elimination:"Elimination",substitution:"Substitution",engineering:"Engineering control",administrative:"Administrative / work practice",ppe:"PPE",other:"Other"};
+  var CONTROL_TYPE_LABELS_ES={elimination:"Eliminación",substitution:"Sustitución",engineering:"Control de ingeniería",administrative:"Administrativo / práctica de trabajo",ppe:"EPP",other:"Otro"};
+  function controlTypeLabel(v,lang){ var map=normalizeLanguageCode(lang||"en")==="es"?CONTROL_TYPE_LABELS_ES:CONTROL_TYPE_LABELS; return map[v]||""; }
   function profileName(p){ return p?(p.full_name||p.email||"User"):""; }
   function assigneeName(r){ var p=r&&r.assigned_user_id?profileById[String(r.assigned_user_id)]:null; return p?profileName(p):""; }
   function isManager(){ return currentRole==="admin"||currentRole==="safety_manager"; }
@@ -3103,6 +3164,8 @@
   function urgentTriageHtml(r){
     if(!isHighPotential(r)) return "";
     if(r.involves_injury){
+      var screen=String(r.calosha_screening_status||"");
+      if(screen==="pending" || screen==="yes" || screen==="no") return "";
       return '<div class="ops-alert critical calosha-screen"><b>Injury report — regulatory screening required</b>'+
         '<div class="calosha-screen-copy">Review promptly. If the event involved or may involve any of the following, notify RBH management immediately: inpatient hospitalization other than medical observation or diagnostic testing; amputation; loss of an eye; serious permanent disfigurement; or death.</div>'+
         '<div class="calosha-screen-copy"><strong>California timing:</strong> qualifying serious injuries, illnesses, and deaths must be reported to Cal/OSHA immediately — as soon as practically possible and ordinarily no later than 8 hours after the employer knows, or with diligent inquiry would have known, of the event. Section 342 contains a limited exigent-circumstances exception. This screen is a prompt only; it does not make the legal determination or submit the report.</div>'+
@@ -3455,7 +3518,7 @@
     var status=r.action_status||"not_started", assignee=assigneeName(r)||"Not assigned", due=escalationInfo(r);
     var completed=r.action_completed_at?("Completed "+fmtDate(r.action_completed_at)):"", verified=r.action_verified_at?("Verified "+fmtDate(r.action_verified_at)):"";
     var h='<div class="action-head"><div><h4>'+(mode==="verify"?'Verification review':'Assigned corrective action')+'</h4><p>'+esc(assignee)+(r.due_date?' · '+esc(due.label):' · no due date')+'</p></div><span class="action-state as-'+esc(status)+'">'+esc(actionLabel(status))+'</span></div>';
-    if(r.corrective_action&&String(r.corrective_action).trim()) h+='<div class="action-context"><b>Corrective action required</b><p>'+esc(r.corrective_action)+'</p></div>';
+    if(r.corrective_action&&String(r.corrective_action).trim()) h+='<div class="action-context"><b>Corrective action required</b><p>'+esc(r.corrective_action)+'</p>'+(r.corrective_control_type?'<div class="action-meta">Control type: '+esc(controlTypeLabel(r.corrective_control_type)||r.corrective_control_type)+'</div>':'')+'</div>';
     else h+='<div class="wizard-required show">The corrective action plan has not been completed yet.</div>';
 
     if(mode==="complete"){
@@ -3774,6 +3837,7 @@
     if(a.field==="action_verification_note") return "Verification / change-request note updated";
     if(a.field==="root_cause") return "Root cause updated";
     if(a.field==="corrective_action") return "Corrective action updated";
+    if(a.field==="corrective_control_type") return "Control type: "+(controlTypeLabel(a.old_value)||a.old_value||"—")+" → "+(controlTypeLabel(a.new_value)||a.new_value||"—");
     if(a.field==="calosha_screening_status") return "Cal/OSHA screening: "+caloshaScreenLabel(a.old_value)+" → "+caloshaScreenLabel(a.new_value);
     if(a.field==="calosha_awareness_at") return a.new_value?"RBH awareness time recorded":"RBH awareness time cleared";
     if(a.field==="closed_at") return a.new_value?"Closure timestamp recorded":"Closure timestamp cleared";
@@ -3803,7 +3867,7 @@
       if((statusRow.old_value==="closed"||statusRow.old_value==="no_action"||statusRow.old_value==="duplicate") && (statusRow.new_value==="new"||statusRow.new_value==="under_review"||statusRow.new_value==="corrective_action")) return "Record reopened";
       return "Report status updated";
     }
-    if(fields.some(function(f){return ["corrective_action","assigned_user_id","responsible_person","due_date","priority"].indexOf(f)>=0;})) return "Corrective-action plan updated";
+    if(fields.some(function(f){return ["corrective_action","corrective_control_type","assigned_user_id","responsible_person","due_date","priority"].indexOf(f)>=0;})) return "Corrective-action plan updated";
     if(fields.indexOf("calosha_screening_status")>=0 || fields.indexOf("calosha_awareness_at")>=0) return "Regulatory screening updated";
     if(fields.indexOf("root_cause")>=0) return "Root cause updated";
     if(fields.indexOf("action_completion_note")>=0) return "Completion note saved";
