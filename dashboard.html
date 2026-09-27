@@ -461,7 +461,7 @@
 
   /* ---------- Phase 2.9 guided incident wizard ---------- */
   .wizard-shell{display:grid;gap:14px}
-  .wizard-process{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px 15px;box-shadow:var(--shadow);position:sticky;top:74px;z-index:12}
+  .wizard-process{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px 15px;box-shadow:var(--shadow);position:sticky;top:var(--rbh-topbar-height,56px);z-index:19}
   .wizard-process-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:11px}
   .wizard-process-copy b{display:block;font-family:var(--display);font-size:14px;margin-bottom:2px}.wizard-process-copy span{display:block;color:var(--muted);font-size:11.5px;line-height:1.35}
   .wizard-top-actions{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
@@ -1612,6 +1612,14 @@
     if(n===6){ if(r.status==="closed"||r.status==="no_action"||r.status==="duplicate") return {save:null,complete:null}; return {save:null,complete:canClose(r)?"Close record":null}; }
     return {save:null,complete:null};
   }
+  function syncWorkflowStickyOffset(){
+    var topbar=document.querySelector(".topbar");
+    var height=topbar?Math.ceil(topbar.getBoundingClientRect().height):56;
+    document.documentElement.style.setProperty("--rbh-topbar-height",height+"px");
+  }
+  syncWorkflowStickyOffset();
+  window.addEventListener("resize",syncWorkflowStickyOffset,{passive:true});
+
   function scrollWizardStepIntoView(detail,n){
     if(!detail) return;
     var progress=detail.querySelector("[data-record-progress]");
@@ -1619,8 +1627,9 @@
     var target=progress||panel;
     if(!target) return;
 
+    syncWorkflowStickyOffset();
     var topbar=document.querySelector(".topbar");
-    var offset=(topbar?topbar.offsetHeight:0)+10;
+    var offset=(topbar?topbar.offsetHeight:0);
     var top=target.getBoundingClientRect().top+window.pageYOffset-offset;
     var reduceMotion=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     window.scrollTo({top:Math.max(0,top),behavior:reduceMotion?"auto":"smooth"});
