@@ -771,8 +771,8 @@
           <div class="mywork-banner"><div><h3 id="myWorkGreeting">Your work queue</h3><p id="myWorkBannerText">Only work assigned to your dashboard account is shown here.</p></div><span class="mw-role" id="myWorkRole">Supervisor</span></div>
           <div class="mywork-summary" id="myWorkSummary"></div>
           <div class="mywork-grid">
-            <div class="mywork-panel"><h3>My assignments</h3><p class="panel-sub">Open reports and corrective actions assigned directly to you.</p><div id="myWorkList" class="task-list"></div></div>
-            <div class="mywork-panel mywork-review" id="myWorkReviewPanel"><h3>Waiting for verification</h3><p class="panel-sub">Completed corrective actions that need an Admin or Safety Manager to verify them.</p><div id="myWorkReviewList" class="task-list"></div></div>
+            <div class="mywork-panel"><h3>My assignments</h3><p class="panel-sub">Investigations and corrective actions assigned directly to you.</p><div id="myWorkList" class="task-list"></div></div>
+            <div class="mywork-panel mywork-review" id="myWorkReviewPanel"><h3>Verification queue</h3><p class="panel-sub">Unassigned reviews and reviews assigned to you. Admins can see the full verification queue.</p><div id="myWorkReviewList" class="task-list"></div></div>
           </div>
         </section>
 
@@ -1370,7 +1370,7 @@
     var sev=r.potential_severity?('<span class="badge sev '+sevClass(r.potential_severity)+'" title="Potential severity">'+esc(sevShort(r.potential_severity))+'</span>'):"";
     var resolved=(r.status==="closed"||r.status==="no_action"||r.status==="duplicate");
     var wrap=document.createElement("div"); wrap.className="card"+(resolved?" resolved":""); wrap.setAttribute('data-report-id',r.id);
-    var meta=[fmtDate(r.created_at),(r.reporter_name||"Anonymous")]; if(r.hazard_category) meta.push(r.hazard_category); if(investigatorName(r)) meta.push("Investigator: "+investigatorName(r)); if(assigneeName(r)) meta.push("Action owner: "+assigneeName(r)); if(r.due_date) meta.push((isOverdue(r)?"Overdue \u2014 due ":"Due ")+shortDate(r.due_date));
+    var meta=[fmtDate(r.created_at),(r.reporter_name||"Anonymous")]; if(r.hazard_category) meta.push(r.hazard_category); if(investigatorName(r)) meta.push("Investigator: "+investigatorName(r)); if(assigneeName(r)) meta.push("Action owner: "+assigneeName(r)); if(verifierName(r)) meta.push("Verifier: "+verifierName(r)); if(r.due_date) meta.push((isOverdue(r)?"Overdue \u2014 due ":"Due ")+shortDate(r.due_date));
     var pri=r.priority?('<span class="badge pr-'+r.priority+'" title="Priority">'+({low:"Low priority",medium:"Medium priority",high:"High priority"}[r.priority]||r.priority)+'</span>'):"";
     wrap.innerHTML=
       '<button class="card-head" type="button">'+
@@ -1395,6 +1395,15 @@
     return opts.join("");
   }
   function investigatorOptions(selected){ return assignmentOptions(selected); }
+  function verifierOptions(selected){
+    var opts=['<option value="">Unassigned — any Admin / Safety Manager can verify</option>'];
+    allProfiles.filter(function(p){ return p.is_active!==false && (p.app_role==="admin"||p.app_role==="safety_manager"); })
+      .sort(function(a,b){ return profileName(a).localeCompare(profileName(b)); })
+      .forEach(function(p){
+        opts.push('<option value="'+esc(p.id)+'"'+(String(p.id)===String(selected||"")?' selected':'')+'>'+esc(profileName(p))+' · '+esc(roleLabel(p.app_role))+'</option>');
+      });
+    return opts.join("");
+  }
 
   var CALOSHA_SCREEN_LABELS={pending:"Pending - follow-up required",yes:"Yes - possible §342 event",no:"No - criteria not currently identified"};
   function caloshaScreenLabel(v){ return CALOSHA_SCREEN_LABELS[v]||"Not screened"; }
@@ -1702,6 +1711,8 @@
     if(currentRole==="supervisor" && n<=3 && !isInvestigatorAssignedToMe(r)) return "This investigation is owned by "+(investigatorName(r)||"another dashboard user")+". You can review this step, but only the assigned investigator can change it.";
     if(currentRole==="supervisor" && n===4 && !isActionAssignedToMe(r)) return "This corrective action is owned by "+(assigneeName(r)||"another dashboard user")+". You can review it, but only the assigned action owner can change it.";
     if(n===5 && !canVerify()) return "This step is waiting for an Admin or Safety Manager to verify the work.";
+    if(n===5 && isManager() && r.verifier_user_id && !canPerformVerification(r)) return "Verification is assigned to "+(verifierName(r)||"another reviewer")+". You can review the record or reassign the verification owner.";
+    if(n===5 && isManager() && !r.verifier_user_id) return "Verification is unassigned. Any Admin or Safety Manager can review it, or assign a specific verification owner.";
     if(n===6 && !canVerify()) return "An Admin or Safety Manager closes the record after verification.";
     return map[n]||"Follow the guided steps.";
   }
@@ -1722,7 +1733,7 @@
     if(n===2) return {save:"Save and close",complete:"Complete investigation →"};
     if(n===3) return {save:"Save and close",complete:"Save & assign action →"};
     if(n===4){ if(r.action_status==="awaiting_verification"||r.action_status==="verified") return {save:null,complete:null}; return {save:"Save and close",complete:r.action_status==="changes_requested"?"Resubmit for verification →":"Submit for verification →"}; }
-    if(n===5){ if(!canVerify()||r.action_status!=="awaiting_verification") return {save:null,complete:null}; return {save:"Save and close",complete:"Verify & continue →"}; }
+    if(n===5){ if(!canPerformVerification(r)||r.action_status!=="awaiting_verification") return {save:null,complete:null}; return {save:"Save and close",complete:"Verify & continue →"}; }
     if(n===6){ if(r.status==="closed"||r.status==="no_action"||r.status==="duplicate") return {save:null,complete:null}; return {save:null,complete:canClose(r)?"Close record":null}; }
     return {save:null,complete:null};
   }
@@ -2325,7 +2336,7 @@
     ["reporter_name","Reporter name"],["reporter_role","Reporter role"],["reporter_contact","Reporter contact"],
     ["language","Form language"],["involves_injury","Involves injury"],["job_site","Incident address"],["site_location","Specific location"],["observed_at","Observed at"],
     ["calosha_screening_status","Cal/OSHA serious-event screening"],["calosha_awareness_at","RBH awareness time"],
-    ["investigator_user_id","Case owner / investigator user ID"],
+    ["investigator_user_id","Case owner / investigator user ID"],["verifier_user_id","Verification owner user ID"],
     ["priority","Priority"],["likelihood","Likelihood"],["assigned_to","Assigned to"],
     ["assigned_user_id","Assigned dashboard user ID"],["action_status","Corrective action status"],
     ["root_cause","Root cause"],["corrective_action","Corrective action"],["corrective_control_type","Control type"],["responsible_person","Responsible person"],
@@ -2390,8 +2401,8 @@
 
       var pdfMode=languageMode||"viewer", pdfLang=(pdfMode==="original"?normalizeLanguageCode(r.language||"en"):(pdfMode==="viewer"?(activeIncident===r?activeIncidentLanguage:preferredReadingLanguage()):normalizeLanguageCode(pdfMode)));
       var pdfLabels={
-        en:{notRecorded:"Not recorded",dashboardUser:"Dashboard user",reportWord:"Report",step:"STEP",workflow:["Review","Investigation","Action Plan","Complete","Verify","Close"],headerSubtitle:"Incident record - after-action summary",submitted:"Submitted",generated:"Generated",section1:"Report and review",section1Sub:"What was submitted and how the report entered the safety workflow.",reportType:"Report type",actualInjury:"Actual injury or illness",address:"Address of incident",specificSpot:"Specific spot on the site",whenNoticed:"When noticed",potentialSeverity:"Potential severity",hazardType:"Type of hazard",formLanguage:"Form language",describe:"Describe what you saw",noDescription:"No description recorded",involved:"Who or what was involved / any witnesses",immediate:"What was done right away",suggested:"What would fix it or prevent it",reporter:"Reporter",reportedBy:"Reported by",reporterRole:"Reporter role",reporterContact:"Reporter contact",reviewCompleted:"Review completed",reviewedBy:"Reviewed by",investigator:"Case owner / investigator",workflowRestarts:"Workflow restarts",lastRestart:"Last restart",none:"None",originalFiles:"Original report photos and files",noOriginalFiles:"No original files attached",calosha:"Cal/OSHA serious-event screening",screeningResult:"Screening result",awareness:"RBH awareness time",screeningNote:"Screening note",screeningDisclaimer:"Management screening only. This application does not submit a report to Cal/OSHA and the screening does not replace required regulatory reporting.",section2:"Investigation",section2Sub:"Document the underlying reason the issue happened or was allowed to happen.",rootCause:"Root cause",notYetRecorded:"Not yet recorded",section3:"Corrective action plan",section3Sub:"Define the fix, ownership, due date, and priority.",correctiveRequired:"Corrective action required",controlType:"Control type",assignedUser:"Assigned dashboard user",notAssigned:"Not assigned",responsible:"Responsible person / crew",dueDate:"Due date",priority:"Priority",section4:"Complete corrective action",section4Sub:"Record what was actually completed and the supporting evidence.",completedWork:"Completed work submitted",notYetSubmitted:"Not yet submitted",completedOn:"Completed on",completedBy:"Completed by",currentEvidence:"Current-workflow corrective-action evidence",noCurrentEvidence:"No corrective-action evidence attached in the current workflow",priorEvidence:"Preserved evidence from earlier workflow",section5:"Verify corrective action",section5Sub:"Show the review decision and any verification or change-request note.",verificationOutcome:"Verification outcome",verifiedOn:"Verified on",verifiedBy:"Verified by",requestedChanges:"Requested changes",reviewerNote:"Reviewer verification note",noVerificationNote:"No verification note recorded",section6:"Close record",section6Sub:"Final disposition and closure information for the incident.",recordStatus:"Record status",closedOn:"Closed on",notYetClosed:"Not yet closed",closedBy:"Closed by",closurePath:"Closure path",closureReason:"Closure reason",closureNote:"Closure note",additionalNotes:"Additional notes",activityHistory:"Activity history",reportSubmitted:"Report submitted",anonymousReporter:"Anonymous reporter",note:"Note",system:"System",footer:"RBH Insulation, Inc. | Confidential safety document | License #558799",page:"Page",yes:"Yes",no:"No",originalRecord:"Original record",appendixTitle:"Attachment Appendix",appendixSub:"Files preserved with this record at the time the PDF was generated.",attachment:"Attachment",source:"Source",uploaded:"Uploaded",fileType:"File type",fileSize:"File size",sha256:"SHA-256",sourceOriginal:"Original report attachment",sourceCurrentEvidence:"Corrective-action evidence",sourcePriorEvidence:"Earlier-workflow corrective-action evidence",embeddedOnly:"Source file embedded in PDF",embeddedOnlyBody:"This file type cannot be rendered reliably as visible PDF pages in the browser. The original source file is embedded inside this PDF package so it remains with the exported record.",pdfPages:"Source PDF pages follow",appendixCount:"Attachments included",appendixNote:"Removed attachments are not included; their removal remains documented in the activity history.",summaryPage:"Summary page"},
-        es:{notRecorded:"No registrado",dashboardUser:"Usuario del panel",reportWord:"Reporte",step:"PASO",workflow:["Revisión","Investigación","Plan de acción","Completar","Verificar","Cerrar"],headerSubtitle:"Registro del incidente - resumen posterior a la acción",submitted:"Enviado",generated:"Generado",section1:"Reporte y revisión",section1Sub:"Lo que se envió y cómo el reporte ingresó al flujo de seguridad.",reportType:"Tipo de reporte",actualInjury:"Lesión o enfermedad real",address:"Dirección del incidente",specificSpot:"Lugar específico en la obra",whenNoticed:"Cuándo se observó",potentialSeverity:"Gravedad potencial",hazardType:"Tipo de peligro",formLanguage:"Idioma del formulario",describe:"Describa lo que vio",noDescription:"No se registró descripción",involved:"Quién o qué estuvo involucrado / testigos",immediate:"Qué se hizo de inmediato",suggested:"Qué lo corregiría o evitaría",reporter:"Reportante",reportedBy:"Reportado por",reporterRole:"Función del reportante",reporterContact:"Contacto del reportante",reviewCompleted:"Revisión completada",reviewedBy:"Revisado por",investigator:"Responsable / investigador",workflowRestarts:"Reinicios del flujo",lastRestart:"Último reinicio",none:"Ninguno",originalFiles:"Fotos y archivos del reporte original",noOriginalFiles:"No hay archivos originales adjuntos",calosha:"Evaluación de evento grave de Cal/OSHA",screeningResult:"Resultado de la evaluación",awareness:"Hora en que RBH tuvo conocimiento",screeningNote:"Nota de evaluación",screeningDisclaimer:"Solo evaluación de la gerencia. Esta aplicación no presenta un reporte a Cal/OSHA y la evaluación no reemplaza los reportes regulatorios requeridos.",section2:"Investigación",section2Sub:"Documente la razón subyacente por la que ocurrió o se permitió el problema.",rootCause:"Causa raíz",notYetRecorded:"Aún no registrado",section3:"Plan de acción correctiva",section3Sub:"Defina la corrección, el responsable, la fecha límite y la prioridad.",correctiveRequired:"Acción correctiva requerida",controlType:"Tipo de control",assignedUser:"Usuario asignado del panel",notAssigned:"No asignado",responsible:"Persona / equipo responsable",dueDate:"Fecha límite",priority:"Prioridad",section4:"Completar acción correctiva",section4Sub:"Registre lo que realmente se completó y la evidencia de respaldo.",completedWork:"Trabajo completado enviado",notYetSubmitted:"Aún no enviado",completedOn:"Completado el",completedBy:"Completado por",currentEvidence:"Evidencia de acción correctiva del flujo actual",noCurrentEvidence:"No hay evidencia de acción correctiva adjunta en el flujo actual",priorEvidence:"Evidencia preservada de un flujo anterior",section5:"Verificar acción correctiva",section5Sub:"Muestre la decisión de revisión y cualquier nota de verificación o solicitud de cambios.",verificationOutcome:"Resultado de la verificación",verifiedOn:"Verificado el",verifiedBy:"Verificado por",requestedChanges:"Cambios solicitados",reviewerNote:"Nota de verificación del revisor",noVerificationNote:"No se registró una nota de verificación",section6:"Cerrar registro",section6Sub:"Disposición final e información de cierre del incidente.",recordStatus:"Estado del registro",closedOn:"Cerrado el",notYetClosed:"Aún no cerrado",closedBy:"Cerrado por",closurePath:"Ruta de cierre",closureReason:"Motivo de cierre",closureNote:"Nota de cierre",additionalNotes:"Notas adicionales",activityHistory:"Historial de actividad",reportSubmitted:"Reporte enviado",anonymousReporter:"Reportante anónimo",note:"Nota",system:"Sistema",footer:"RBH Insulation, Inc. | Documento confidencial de seguridad | Licencia #558799",page:"Página",yes:"Sí",no:"No",originalRecord:"Registro original",appendixTitle:"Apéndice de archivos adjuntos",appendixSub:"Archivos preservados con este registro al momento de generar el PDF.",attachment:"Adjunto",source:"Origen",uploaded:"Cargado",fileType:"Tipo de archivo",fileSize:"Tamaño",sha256:"SHA-256",sourceOriginal:"Adjunto del reporte original",sourceCurrentEvidence:"Evidencia de acción correctiva",sourcePriorEvidence:"Evidencia de acción correctiva de un flujo anterior",embeddedOnly:"Archivo fuente incorporado en el PDF",embeddedOnlyBody:"Este tipo de archivo no se puede representar de forma confiable como páginas PDF visibles en el navegador. El archivo fuente original está incorporado dentro de este paquete PDF para que permanezca con el registro exportado.",pdfPages:"Las páginas del PDF fuente siguen",appendixCount:"Adjuntos incluidos",appendixNote:"Los adjuntos eliminados no se incluyen; su eliminación permanece documentada en el historial de actividad.",summaryPage:"Página de resumen"}
+        en:{notRecorded:"Not recorded",dashboardUser:"Dashboard user",reportWord:"Report",step:"STEP",workflow:["Review","Investigation","Action Plan","Complete","Verify","Close"],headerSubtitle:"Incident record - after-action summary",submitted:"Submitted",generated:"Generated",section1:"Report and review",section1Sub:"What was submitted and how the report entered the safety workflow.",reportType:"Report type",actualInjury:"Actual injury or illness",address:"Address of incident",specificSpot:"Specific spot on the site",whenNoticed:"When noticed",potentialSeverity:"Potential severity",hazardType:"Type of hazard",formLanguage:"Form language",describe:"Describe what you saw",noDescription:"No description recorded",involved:"Who or what was involved / any witnesses",immediate:"What was done right away",suggested:"What would fix it or prevent it",reporter:"Reporter",reportedBy:"Reported by",reporterRole:"Reporter role",reporterContact:"Reporter contact",reviewCompleted:"Review completed",reviewedBy:"Reviewed by",investigator:"Case owner / investigator",verifier:"Verification owner",workflowRestarts:"Workflow restarts",lastRestart:"Last restart",none:"None",originalFiles:"Original report photos and files",noOriginalFiles:"No original files attached",calosha:"Cal/OSHA serious-event screening",screeningResult:"Screening result",awareness:"RBH awareness time",screeningNote:"Screening note",screeningDisclaimer:"Management screening only. This application does not submit a report to Cal/OSHA and the screening does not replace required regulatory reporting.",section2:"Investigation",section2Sub:"Document the underlying reason the issue happened or was allowed to happen.",rootCause:"Root cause",notYetRecorded:"Not yet recorded",section3:"Corrective action plan",section3Sub:"Define the fix, ownership, due date, and priority.",correctiveRequired:"Corrective action required",controlType:"Control type",assignedUser:"Assigned dashboard user",notAssigned:"Not assigned",responsible:"Responsible person / crew",dueDate:"Due date",priority:"Priority",section4:"Complete corrective action",section4Sub:"Record what was actually completed and the supporting evidence.",completedWork:"Completed work submitted",notYetSubmitted:"Not yet submitted",completedOn:"Completed on",completedBy:"Completed by",currentEvidence:"Current-workflow corrective-action evidence",noCurrentEvidence:"No corrective-action evidence attached in the current workflow",priorEvidence:"Preserved evidence from earlier workflow",section5:"Verify corrective action",section5Sub:"Show the review decision and any verification or change-request note.",verificationOutcome:"Verification outcome",verifiedOn:"Verified on",verifiedBy:"Verified by",requestedChanges:"Requested changes",reviewerNote:"Reviewer verification note",noVerificationNote:"No verification note recorded",section6:"Close record",section6Sub:"Final disposition and closure information for the incident.",recordStatus:"Record status",closedOn:"Closed on",notYetClosed:"Not yet closed",closedBy:"Closed by",closurePath:"Closure path",closureReason:"Closure reason",closureNote:"Closure note",additionalNotes:"Additional notes",activityHistory:"Activity history",reportSubmitted:"Report submitted",anonymousReporter:"Anonymous reporter",note:"Note",system:"System",footer:"RBH Insulation, Inc. | Confidential safety document | License #558799",page:"Page",yes:"Yes",no:"No",originalRecord:"Original record",appendixTitle:"Attachment Appendix",appendixSub:"Files preserved with this record at the time the PDF was generated.",attachment:"Attachment",source:"Source",uploaded:"Uploaded",fileType:"File type",fileSize:"File size",sha256:"SHA-256",sourceOriginal:"Original report attachment",sourceCurrentEvidence:"Corrective-action evidence",sourcePriorEvidence:"Earlier-workflow corrective-action evidence",embeddedOnly:"Source file embedded in PDF",embeddedOnlyBody:"This file type cannot be rendered reliably as visible PDF pages in the browser. The original source file is embedded inside this PDF package so it remains with the exported record.",pdfPages:"Source PDF pages follow",appendixCount:"Attachments included",appendixNote:"Removed attachments are not included; their removal remains documented in the activity history.",summaryPage:"Summary page"},
+        es:{notRecorded:"No registrado",dashboardUser:"Usuario del panel",reportWord:"Reporte",step:"PASO",workflow:["Revisión","Investigación","Plan de acción","Completar","Verificar","Cerrar"],headerSubtitle:"Registro del incidente - resumen posterior a la acción",submitted:"Enviado",generated:"Generado",section1:"Reporte y revisión",section1Sub:"Lo que se envió y cómo el reporte ingresó al flujo de seguridad.",reportType:"Tipo de reporte",actualInjury:"Lesión o enfermedad real",address:"Dirección del incidente",specificSpot:"Lugar específico en la obra",whenNoticed:"Cuándo se observó",potentialSeverity:"Gravedad potencial",hazardType:"Tipo de peligro",formLanguage:"Idioma del formulario",describe:"Describa lo que vio",noDescription:"No se registró descripción",involved:"Quién o qué estuvo involucrado / testigos",immediate:"Qué se hizo de inmediato",suggested:"Qué lo corregiría o evitaría",reporter:"Reportante",reportedBy:"Reportado por",reporterRole:"Función del reportante",reporterContact:"Contacto del reportante",reviewCompleted:"Revisión completada",reviewedBy:"Revisado por",investigator:"Responsable / investigador",verifier:"Responsable de verificación",workflowRestarts:"Reinicios del flujo",lastRestart:"Último reinicio",none:"Ninguno",originalFiles:"Fotos y archivos del reporte original",noOriginalFiles:"No hay archivos originales adjuntos",calosha:"Evaluación de evento grave de Cal/OSHA",screeningResult:"Resultado de la evaluación",awareness:"Hora en que RBH tuvo conocimiento",screeningNote:"Nota de evaluación",screeningDisclaimer:"Solo evaluación de la gerencia. Esta aplicación no presenta un reporte a Cal/OSHA y la evaluación no reemplaza los reportes regulatorios requeridos.",section2:"Investigación",section2Sub:"Documente la razón subyacente por la que ocurrió o se permitió el problema.",rootCause:"Causa raíz",notYetRecorded:"Aún no registrado",section3:"Plan de acción correctiva",section3Sub:"Defina la corrección, el responsable, la fecha límite y la prioridad.",correctiveRequired:"Acción correctiva requerida",controlType:"Tipo de control",assignedUser:"Usuario asignado del panel",notAssigned:"No asignado",responsible:"Persona / equipo responsable",dueDate:"Fecha límite",priority:"Prioridad",section4:"Completar acción correctiva",section4Sub:"Registre lo que realmente se completó y la evidencia de respaldo.",completedWork:"Trabajo completado enviado",notYetSubmitted:"Aún no enviado",completedOn:"Completado el",completedBy:"Completado por",currentEvidence:"Evidencia de acción correctiva del flujo actual",noCurrentEvidence:"No hay evidencia de acción correctiva adjunta en el flujo actual",priorEvidence:"Evidencia preservada de un flujo anterior",section5:"Verificar acción correctiva",section5Sub:"Muestre la decisión de revisión y cualquier nota de verificación o solicitud de cambios.",verificationOutcome:"Resultado de la verificación",verifiedOn:"Verificado el",verifiedBy:"Verificado por",requestedChanges:"Cambios solicitados",reviewerNote:"Nota de verificación del revisor",noVerificationNote:"No se registró una nota de verificación",section6:"Cerrar registro",section6Sub:"Disposición final e información de cierre del incidente.",recordStatus:"Estado del registro",closedOn:"Cerrado el",notYetClosed:"Aún no cerrado",closedBy:"Cerrado por",closurePath:"Ruta de cierre",closureReason:"Motivo de cierre",closureNote:"Nota de cierre",additionalNotes:"Notas adicionales",activityHistory:"Historial de actividad",reportSubmitted:"Reporte enviado",anonymousReporter:"Reportante anónimo",note:"Nota",system:"Sistema",footer:"RBH Insulation, Inc. | Documento confidencial de seguridad | Licencia #558799",page:"Página",yes:"Sí",no:"No",originalRecord:"Registro original",appendixTitle:"Apéndice de archivos adjuntos",appendixSub:"Archivos preservados con este registro al momento de generar el PDF.",attachment:"Adjunto",source:"Origen",uploaded:"Cargado",fileType:"Tipo de archivo",fileSize:"Tamaño",sha256:"SHA-256",sourceOriginal:"Adjunto del reporte original",sourceCurrentEvidence:"Evidencia de acción correctiva",sourcePriorEvidence:"Evidencia de acción correctiva de un flujo anterior",embeddedOnly:"Archivo fuente incorporado en el PDF",embeddedOnlyBody:"Este tipo de archivo no se puede representar de forma confiable como páginas PDF visibles en el navegador. El archivo fuente original está incorporado dentro de este paquete PDF para que permanezca con el registro exportado.",pdfPages:"Las páginas del PDF fuente siguen",appendixCount:"Adjuntos incluidos",appendixNote:"Los adjuntos eliminados no se incluyen; su eliminación permanece documentada en el historial de actividad.",summaryPage:"Página de resumen"}
       };
       var L=pdfLabels[pdfLang]||pdfLabels.en;
       if(!pdfLabels[pdfLang] && pdfMode!=="original"){
@@ -2665,6 +2676,7 @@
       var verifyOutcome=PV("verification_outcome",actionLabel(r.action_status||"not_started"));
       pairRow([
         {label:L.verificationOutcome,value:verifyOutcome},
+        {label:L.verifier,value:verifierName(r)||L.notAssigned},
         {label:L.verifiedOn,value:r.action_verified_at?pdfDate(r.action_verified_at):""},
         {label:L.verifiedBy,value:r.action_verified_by?userById(r.action_verified_by):""}
       ]);
@@ -3179,11 +3191,18 @@
   function profileName(p){ return p?(p.full_name||p.email||"User"):""; }
   function assigneeName(r){ var p=r&&r.assigned_user_id?profileById[String(r.assigned_user_id)]:null; return p?profileName(p):""; }
   function investigatorName(r){ var p=r&&r.investigator_user_id?profileById[String(r.investigator_user_id)]:null; return p?profileName(p):""; }
+  function verifierName(r){ var p=r&&r.verifier_user_id?profileById[String(r.verifier_user_id)]:null; return p?profileName(p):""; }
   function isManager(){ return currentRole==="admin"||currentRole==="safety_manager"; }
   function canVerify(){ return isManager(); }
   function currentUserId(){ return currentSession&&currentSession.user?String(currentSession.user.id):""; }
   function isInvestigatorAssignedToMe(r){ return !!(r&&currentUserId()&&String(r.investigator_user_id||"")===currentUserId()); }
   function isActionAssignedToMe(r){ return !!(r&&currentUserId()&&String(r.assigned_user_id||"")===currentUserId()); }
+  function isVerifierAssignedToMe(r){ return !!(r&&currentUserId()&&String(r.verifier_user_id||"")===currentUserId()); }
+  function canPerformVerification(r){
+    if(!r||!isManager()) return false;
+    if(currentRole==="admin") return true;
+    return !r.verifier_user_id || isVerifierAssignedToMe(r);
+  }
   function canWorkInvestigation(r){
     if(!r||isResolvedReport(r)) return false;
     if(isManager()) return true;
@@ -3200,7 +3219,10 @@
   }
   function canEditStep(r,n){
     if(!r||isResolvedReport(r)) return false;
-    if(isManager()) return true;
+    if(isManager()){
+      if(n===5) return canPerformVerification(r);
+      return true;
+    }
     if(currentRole!=="supervisor") return false;
     if(n>=1&&n<=3) return isInvestigatorAssignedToMe(r);
     if(n===4) return isActionAssignedToMe(r);
@@ -3214,7 +3236,7 @@
     if(!r || isResolvedReport(r)) return false;
     return r.status!=="new" || hasWorkflowValue(r.root_cause) || hasWorkflowValue(r.corrective_action) ||
       hasWorkflowValue(r.assigned_user_id) || hasWorkflowValue(r.responsible_person) || hasWorkflowValue(r.due_date) ||
-      hasWorkflowValue(r.priority) || (r.action_status&&r.action_status!=="not_started") ||
+      hasWorkflowValue(r.priority) || hasWorkflowValue(r.verifier_user_id) || (r.action_status&&r.action_status!=="not_started") ||
       hasWorkflowValue(r.action_completion_note) || hasWorkflowValue(r.action_verification_note);
   }
   function canRestartWorkflow(r){ return !!(r && canVerify() && workflowHasProgress(r)); }
@@ -3232,7 +3254,7 @@
     if(myWorkNav) myWorkNav.style.display=(canOwnWork?"":"none");
     var hot=$("homeOpenTitle"), hod=$("homeOpenDesc");
     if(hot) hot.textContent=canOwnWork?"Open My Work":"Open Safety Inbox";
-    if(hod) hod.textContent=canOwnWork?"See the investigations and corrective actions assigned to you.":"Review reports and safety activity.";
+    if(hod) hod.textContent=canOwnWork?"See investigations, corrective actions, and verification reviews that need your attention.":"Review reports and safety activity.";
     var note=$("adminPermissionNote");
     var afs=$("adminFeedbackSection"); if(afs) afs.hidden=true;
     var hc=$("platformContextLabel"); if(hc) hc.textContent=currentOrgName?("Current company: "+currentOrgName):"Platform overview";
@@ -3306,7 +3328,7 @@
     storeIncident(r,lastOperationalView);
     var back=$("incidentBack"); if(back) back.textContent=lastOperationalView==="mywork"?"← Back to My Work":(lastOperationalView==="actions"?"← Back to Corrective Actions":"← Back to Safety Inbox");
     $("incidentTitle").textContent="#"+(r.ref_no||r.id)+" · "+(r.report_type||"Safety report");
-    var meta=[]; if(r.job_site) meta.push(r.job_site); if(investigatorName(r)) meta.push("Investigator: "+investigatorName(r)); if(assigneeName(r)) meta.push("Action owner: "+assigneeName(r)); meta.push(fmtDate(r.created_at)); $("incidentMeta").textContent=meta.join(" · ");
+    var meta=[]; if(r.job_site) meta.push(r.job_site); if(investigatorName(r)) meta.push("Investigator: "+investigatorName(r)); if(assigneeName(r)) meta.push("Action owner: "+assigneeName(r)); if(verifierName(r)) meta.push("Verifier: "+verifierName(r)); meta.push(fmtDate(r.created_at)); $("incidentMeta").textContent=meta.join(" · ");
     $("incidentSummary").innerHTML='<div class="is-badges">'+incidentBadgeHtml(r)+'</div><div class="is-desc">'+esc(r.description||"No description provided.")+'</div>';
     var langSel=$("incidentLanguage"); if(langSel){ langSel.value=activeIncidentLanguage; }
     setIncidentLanguageState(r,activeIncidentLanguage,"loading");
@@ -3361,6 +3383,11 @@
       label="Investigation · Step "+Math.min(step,3);
       actionText=step<=1?((r.involves_injury&&["yes","no","pending"].indexOf(String(r.calosha_screening_status||""))<0)?'Management regulatory screening is required before Review can advance.':'Review the report and move it into Investigation.'):(step===2?'Document the root cause and complete the investigation.':'Define the corrective action, owner, due date, and priority.');
       dueHtml='<div class="task-due"><b class="due-signal">Investigation owner</b><span>Submitted '+esc(shortDate(r.created_at))+'</span></div>';
+    } else if(status==="awaiting_verification" && isManager() && !kind){
+      var vOwner=verifierName(r);
+      label=vOwner?(isVerifierAssignedToMe(r)?'Verification · assigned to you':'Verification · '+vOwner):'Verification · unassigned';
+      actionText=r.corrective_action||'Corrective action is ready for verification.';
+      dueHtml='<div class="task-due"><b class="due-signal">'+(vOwner?'Reviewer: '+esc(vOwner):'Any Admin / Safety Manager')+'</b><span>'+(r.action_completed_at?'Submitted '+esc(shortDate(r.action_completed_at)):'Ready for review')+'</span></div>';
     } else {
       label=status==="changes_requested"?'Changes requested':(status==="awaiting_verification"?'Submitted for verification':actionLabel(status));
       actionText=r.corrective_action||'Corrective action needs to be documented.';
@@ -3381,17 +3408,27 @@
     var actionMine=mine.filter(function(r){return myWorkKind(r)==="action";});
     var overdue=actionMine.filter(isOverdue).length;
     var soon=actionMine.filter(function(r){ var d=daysUntilDue(r); return d!==null&&d>=0&&d<=3; }).length;
-    var verify=isManager()?allReports.filter(function(r){ return isOpenOperational(r)&&r.action_status==="awaiting_verification"; }):[];
+    var verify=isManager()?allReports.filter(function(r){
+      if(!isOpenOperational(r)||r.action_status!=="awaiting_verification") return false;
+      if(currentRole==="admin") return true;
+      return !r.verifier_user_id || isVerifierAssignedToMe(r);
+    }):[];
+    var verifyMine=verify.filter(function(r){ return isVerifierAssignedToMe(r); }).length;
     function stat(n,l,cls){ return '<div class="mywork-stat '+(cls||'')+'"><b>'+n+'</b><span>'+l+'</span></div>'; }
     summary.innerHTML=stat(mine.length,'Assigned to me')+stat(investigations,'Investigations')+stat(soon,'Due in 3 days',soon?'warn':'')+stat(overdue,'Overdue',overdue?'alert':'');
-    if(count) count.textContent=mine.length+(mine.length===1?' open assignment':' open assignments');
+    if(count){
+      var personalCount=mine.length+verifyMine;
+      count.textContent=personalCount+(personalCount===1?' open assignment':' open assignments');
+    }
     var ng=$("myWorkGreeting"), br=$("myWorkBannerText"), role=$("myWorkRole");
     var nm=currentProfile?profileName(currentProfile):((user&&user.email)||'');
     if(ng) ng.textContent=nm?('Work for '+nm):'Your work queue';
     if(br){
-      if(investigations) br.textContent=investigations+' investigation'+(investigations===1?'':'s')+' currently need'+(investigations===1?'s':'')+' your attention.';
+      if(verifyMine) br.textContent=verifyMine+' verification review'+(verifyMine===1?'':'s')+' assigned to you '+(verifyMine===1?'is':'are')+' waiting.';
+      else if(investigations) br.textContent=investigations+' investigation'+(investigations===1?'':'s')+' currently need'+(investigations===1?'s':'')+' your attention.';
       else if(actionMine.length) br.textContent='Start with overdue or due-soon corrective actions first.';
-      else br.textContent='Your assigned investigations and corrective actions will appear here.';
+      else if(verify.length&&isManager()) br.textContent=verify.length+' unassigned verification review'+(verify.length===1?' is':'s are')+' ready to be picked up.';
+      else br.textContent='Your assigned investigations, corrective actions, and verification reviews will appear here.';
     }
     if(role) role.textContent=roleLabel(currentRole);
     list.innerHTML='';
@@ -3676,10 +3713,31 @@
       if(r.action_completion_note) h+='<div class="action-context"><b>Completed work submitted</b><p>'+esc(r.action_completion_note)+'</p></div><div class="translation-preview" data-translation-field="action_completion_note" hidden></div>';
       if(completed){var cb2=r.action_completed_by&&profileById[String(r.action_completed_by)]?profileName(profileById[String(r.action_completed_by)]):'';h+='<div class="action-meta">'+esc(completed)+(cb2?' by '+esc(cb2):'')+'</div>';}
       h+='<div class="evidence-panel" data-action-evidence></div>';
-      if(status==="awaiting_verification"&&canVerify()){
-        h+='<label class="inv-l">Reviewer verification note <span style="font-weight:400;color:var(--muted)">(optional when approving)</span><textarea class="verify-note" placeholder="What did you verify? If requesting changes, explain exactly what still needs to be done.">'+esc(r.action_verification_note||'')+'</textarea></label><div class="wizard-required" data-verify-required>Add a verification note explaining the requested changes.</div>'+
-          '<div class="translation-preview" data-translation-field="action_verification_note" hidden></div><div class="wizard-footer"><div class="wizard-footer-copy">Save and close keeps a draft. Verify advances the record; Request changes returns it to Step 4.</div><div class="wizard-footer-actions"><button class="wizard-save btn-save-verification" data-step-save="5" type="button">Save and close</button><span class="verification-saved section-saved" hidden>Saved ✓</span><button class="btn-changes" type="button">Request changes</button><button class="wizard-primary btn-verify" data-step-complete="5" type="button">Verify &amp; continue →</button></div></div>';
+      if(status==="awaiting_verification"){
+        var vName=verifierName(r), vAssigned=!!r.verifier_user_id;
+        h+='<div class="investigator-card verifier-card" data-verifier-card>'+
+          '<div class="investigator-head"><div><b>Verification owner <span style="font-weight:500;color:var(--muted)">(optional)</span></b><p>Leave unassigned for a shared Admin/Safety Manager queue, or choose one reviewer for clear ownership. When practical, use someone other than the corrective-action owner.</p></div><span class="investigator-chip'+(vAssigned?' assigned':'')+'" data-verifier-chip>'+(vAssigned?'Assigned':'Shared queue')+'</span></div>';
+        if(canVerify()){
+          h+='<div class="investigator-controls">'+
+            '<label class="inv-l">Assigned verifier<select class="verify-owner-select">'+verifierOptions(r.verifier_user_id)+'</select></label>'+
+            '<button class="wizard-save verifier-self" type="button">Assign to me</button>'+
+            '<button class="wizard-primary verifier-save" type="button">Save assignment</button>'+
+          '</div><span class="investigator-saved verifier-saved" hidden>Assignment saved ✓</span>';
+          if(vAssigned && String(r.verifier_user_id||"")===String(r.assigned_user_id||"")) h+='<div class="ops-alert"><b>Independence check</b>The verification owner is also the corrective-action owner. This is allowed, but use a different qualified reviewer when practical.</div>';
+        } else {
+          h+='<div class="investigator-permission">'+(vAssigned?('Verification is assigned to '+esc(vName||"an Admin/Safety Manager")+'.'):'Verification is currently in the shared Admin/Safety Manager queue.')+'</div>';
+        }
+        h+='</div>';
+        if(canPerformVerification(r)){
+          h+='<label class="inv-l">Reviewer verification note <span style="font-weight:400;color:var(--muted)">(optional when approving)</span><textarea class="verify-note" placeholder="What did you verify? If requesting changes, explain exactly what still needs to be done.">'+esc(r.action_verification_note||'')+'</textarea></label><div class="wizard-required" data-verify-required>Add a verification note explaining the requested changes.</div>'+
+            '<div class="translation-preview" data-translation-field="action_verification_note" hidden></div><div class="wizard-footer"><div class="wizard-footer-copy">Save and close keeps a draft. Verify advances the record; Request changes returns it to Step 4.</div><div class="wizard-footer-actions"><button class="wizard-save btn-save-verification" data-step-save="5" type="button">Save and close</button><span class="verification-saved section-saved" hidden>Saved ✓</span><button class="btn-changes" type="button">Request changes</button><button class="wizard-primary btn-verify" data-step-complete="5" type="button">Verify &amp; continue →</button></div></div>';
+        } else if(isManager()){
+          h+='<div class="readonly-step-note">Verification is assigned to '+esc(vName||"another reviewer")+'. Reassign the verification owner above if responsibility needs to change.</div>';
+        } else {
+          h+='<div class="readonly-step-note">An Admin or Safety Manager handles verification. Assigned reviewer: '+esc(vName||"shared verification queue")+'.</div>';
+        }
       } else if(status==="verified"){
+        if(r.verifier_user_id) h+='<div class="action-meta">Verification owner: '+esc(verifierName(r)||"Assigned reviewer")+'</div>';
         if(r.action_verification_note) h+='<div class="action-context"><b>Verification note</b><p>'+esc(r.action_verification_note)+'</p></div><div class="translation-preview" data-translation-field="action_verification_note" hidden></div>';
         if(verified){var vb=r.action_verified_by&&profileById[String(r.action_verified_by)]?profileName(profileById[String(r.action_verified_by)]):'';h+='<div class="action-meta">'+esc(verified)+(vb?' by '+esc(vb):'')+'</div>';}
         h+='<div class="ops-alert"><b>Verification complete</b>The corrective action was approved. Continue to Close Record.</div>';
@@ -3732,9 +3790,29 @@
       catch(ex){console.error(ex);toast("Could not submit the corrective action.","err");}
       finally{if(completeBtn.isConnected)completeBtn.disabled=false;}
     });
-    var saveVerificationBtn=el.querySelector(".btn-save-verification"); if(saveVerificationBtn) saveVerificationBtn.addEventListener("click",async function(){await waitForActionEvidenceUpload(r.id);var note=(el.querySelector(".verify-note")&&el.querySelector(".verify-note").value.trim())||null;saveVerificationBtn.disabled=true;try{var res=await sb.from("reports").update({action_verification_note:note}).eq("id",r.id);if(res.error)throw res.error;r.action_verification_note=note;var flag=el.querySelector(".verification-saved");if(flag){flag.hidden=false;setTimeout(function(){flag.hidden=true;},2200);}toast("Verification note saved","ok");loadAudit(r.id,auditEl);showView("home");}catch(ex){console.error(ex);toast("Could not save verification note.","err");}finally{saveVerificationBtn.disabled=false;}});
-    var verifyBtn=el.querySelector(".btn-verify"); if(verifyBtn) verifyBtn.addEventListener("click",async function(){verifyBtn.disabled=true;try{await waitForActionEvidenceUpload(r.id);var note=(el.querySelector(".verify-note")&&el.querySelector(".verify-note").value.trim())||null;var patch={action_status:"verified",action_verified_at:new Date().toISOString(),action_verified_by:currentSession.user.id,action_verification_note:note};if(activeReopenStep(r))patch.reopen_workflow_step=6;var res=await sb.from("reports").update(patch).eq("id",r.id);if(res.error)throw res.error;Object.keys(patch).forEach(function(k){r[k]=patch[k];});renderActionWorkflow(r,detail.querySelector("[data-action-completion]"),auditEl,detail,"complete");renderActionWorkflow(r,detail.querySelector("[data-action-verification]"),auditEl,detail,"verify");loadAudit(r.id,auditEl);renderHomeSnapshot();renderMyWork();refreshRecordWorkflow(r,detail);setWizardStep(detail,r,6,true);toast("Corrective action verified — ready for closure","ok");}catch(ex){console.error(ex);toast("Could not verify corrective action.","err");}finally{if(verifyBtn.isConnected)verifyBtn.disabled=false;}});
+    var verifierSelect=el.querySelector(".verify-owner-select"), verifierSave=el.querySelector(".verifier-save"), verifierSelf=el.querySelector(".verifier-self");
+    async function persistVerifierAssignment(nextId,showToast){
+      if(!canVerify()) throw new Error("MANAGER_REQUIRED");
+      nextId=nextId||null;
+      if(nextId){
+        var vp=profileById[String(nextId)];
+        if(!vp || vp.is_active===false || (vp.app_role!=="admin"&&vp.app_role!=="safety_manager")) throw new Error("INVALID_VERIFIER");
+      }
+      if(String(r.verifier_user_id||"")===String(nextId||"")){ if(showToast) toast("Verification owner is already up to date","ok"); return true; }
+      var vr=await sb.from("reports").update({verifier_user_id:nextId}).eq("id",r.id);
+      if(vr.error) throw vr.error;
+      r.verifier_user_id=nextId;
+      renderActionWorkflow(r,el,auditEl,detail,"verify");
+      refreshRecordWorkflow(r,detail); renderMyWork(); renderHomeSnapshot(); loadAudit(r.id,auditEl);
+      if(showToast) toast(nextId?"Verification owner assigned":"Verification returned to the shared queue","ok");
+      return true;
+    }
+    if(verifierSave) verifierSave.addEventListener("click",async function(){verifierSave.disabled=true;try{await persistVerifierAssignment(verifierSelect?verifierSelect.value:null,true);}catch(ex){console.error(ex);toast(ex&&ex.message==="INVALID_VERIFIER"?"Choose an active Admin or Safety Manager.":"Could not save the verification owner.","err");}finally{if(verifierSave.isConnected)verifierSave.disabled=false;}});
+    if(verifierSelf) verifierSelf.addEventListener("click",async function(){if(!currentSession||!currentSession.user)return;verifierSelf.disabled=true;try{if(verifierSelect)verifierSelect.value=currentSession.user.id;await persistVerifierAssignment(currentSession.user.id,true);}catch(ex){console.error(ex);toast("Could not assign verification to you.","err");}finally{if(verifierSelf.isConnected)verifierSelf.disabled=false;}});
+    var saveVerificationBtn=el.querySelector(".btn-save-verification"); if(saveVerificationBtn) saveVerificationBtn.addEventListener("click",async function(){if(!canPerformVerification(r)){toast("This verification is assigned to another reviewer.","err");return;}await waitForActionEvidenceUpload(r.id);var note=(el.querySelector(".verify-note")&&el.querySelector(".verify-note").value.trim())||null;saveVerificationBtn.disabled=true;try{var res=await sb.from("reports").update({action_verification_note:note}).eq("id",r.id);if(res.error)throw res.error;r.action_verification_note=note;var flag=el.querySelector(".verification-saved");if(flag){flag.hidden=false;setTimeout(function(){flag.hidden=true;},2200);}toast("Verification note saved","ok");loadAudit(r.id,auditEl);showView("home");}catch(ex){console.error(ex);toast("Could not save verification note.","err");}finally{if(saveVerificationBtn.isConnected)saveVerificationBtn.disabled=false;}});
+    var verifyBtn=el.querySelector(".btn-verify"); if(verifyBtn) verifyBtn.addEventListener("click",async function(){if(!canPerformVerification(r)){toast("This verification is assigned to another reviewer.","err");return;}verifyBtn.disabled=true;try{await waitForActionEvidenceUpload(r.id);var note=(el.querySelector(".verify-note")&&el.querySelector(".verify-note").value.trim())||null;var patch={action_status:"verified",action_verified_at:new Date().toISOString(),action_verified_by:currentSession.user.id,action_verification_note:note};if(!r.verifier_user_id)patch.verifier_user_id=currentSession.user.id;if(activeReopenStep(r))patch.reopen_workflow_step=6;var res=await sb.from("reports").update(patch).eq("id",r.id);if(res.error)throw res.error;Object.keys(patch).forEach(function(k){r[k]=patch[k];});renderActionWorkflow(r,detail.querySelector("[data-action-completion]"),auditEl,detail,"complete");renderActionWorkflow(r,detail.querySelector("[data-action-verification]"),auditEl,detail,"verify");loadAudit(r.id,auditEl);renderHomeSnapshot();renderMyWork();refreshRecordWorkflow(r,detail);setWizardStep(detail,r,6,true);toast("Corrective action verified — ready for closure","ok");}catch(ex){console.error(ex);toast("Could not verify corrective action.","err");}finally{if(verifyBtn.isConnected)verifyBtn.disabled=false;}});
     var changesBtn=el.querySelector(".btn-changes"); if(changesBtn) changesBtn.addEventListener("click",async function(){
+      if(!canPerformVerification(r)){toast("This verification is assigned to another reviewer.","err");return;}
       await waitForActionEvidenceUpload(r.id);
       var note=(el.querySelector(".verify-note")&&el.querySelector(".verify-note").value.trim())||"";
       var req=el.querySelector("[data-verify-required]");
@@ -3742,7 +3820,7 @@
       if(req)req.classList.remove("show");
       changesBtn.disabled=true;
       try{
-        var patch={action_status:"changes_requested",action_verification_note:note,action_verified_at:null,action_verified_by:null};
+        var patch={action_status:"changes_requested",action_verification_note:note,action_verified_at:null,action_verified_by:null};if(!r.verifier_user_id)patch.verifier_user_id=currentSession.user.id;
         if(activeReopenStep(r)) patch.reopen_workflow_step=4;
         var res=await sb.from("reports").update(patch).eq("id",r.id); if(res.error)throw res.error;
         Object.keys(patch).forEach(function(k){r[k]=patch[k];});
@@ -3969,6 +4047,7 @@
     if(a.field==="due_date") return "Due date: "+(a.old_value?shortDate(a.old_value):"—")+" → "+(a.new_value?shortDate(a.new_value):"—");
     if(a.field==="assigned_user_id") return "Corrective-action owner: "+auditAssignee(a.old_value)+" → "+auditAssignee(a.new_value);
     if(a.field==="investigator_user_id") return "Case owner / investigator: "+auditAssignee(a.old_value)+" → "+auditAssignee(a.new_value);
+    if(a.field==="verifier_user_id") return "Verification owner: "+auditAssignee(a.old_value)+" → "+auditAssignee(a.new_value);
     if(a.field==="action_status") return "Corrective-action status: "+actionLabel(a.old_value)+" → "+actionLabel(a.new_value);
     if(a.field==="action_completed_at") return a.new_value?"Corrective action submitted as complete":"Completion submission cleared";
     if(a.field==="action_verified_at") return a.new_value?"Corrective action verified":"Verification cleared";
@@ -4007,6 +4086,7 @@
       return "Report status updated";
     }
     if(fields.indexOf("investigator_user_id")>=0) return "Investigator assignment updated";
+    if(fields.indexOf("verifier_user_id")>=0) return "Verification owner updated";
     if(fields.some(function(f){return ["corrective_action","corrective_control_type","assigned_user_id","responsible_person","due_date","priority"].indexOf(f)>=0;})) return "Corrective-action plan updated";
     if(fields.indexOf("calosha_screening_status")>=0 || fields.indexOf("calosha_awareness_at")>=0) return "Regulatory screening updated";
     if(fields.indexOf("root_cause")>=0) return "Root cause updated";
