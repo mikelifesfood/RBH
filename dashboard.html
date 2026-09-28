@@ -595,6 +595,43 @@
     background:#FCEAF3;
     border-color:#B83280;
   }
+
+  /* Corrective Action workflow-status pills.
+     Card tint communicates due-state; pill communicates workflow-state. */
+  .corrective-action-card .task-state{
+    display:inline-flex;
+    align-items:center;
+    margin-left:8px;
+    padding:4px 9px;
+    border-radius:999px;
+    border:1px solid transparent;
+    font-size:10px;
+    font-weight:850;
+    line-height:1;
+    letter-spacing:.03em;
+    text-transform:uppercase;
+    white-space:nowrap;
+  }
+  .corrective-action-card .task-state.ca-status-awaiting_verification{
+    background:#EFE7FB;
+    border-color:#D5C4EE;
+    color:#5B3FA0;
+  }
+  .corrective-action-card .task-state.ca-status-in_progress{
+    background:#E6EEFB;
+    border-color:#C2D3EF;
+    color:#1F4F9E;
+  }
+  .corrective-action-card .task-state.ca-status-changes_requested{
+    background:#FFF2D9;
+    border-color:#E9D29E;
+    color:#8A5D00;
+  }
+  .corrective-action-card .task-state.ca-status-not_started{
+    background:#EEF0EE;
+    border-color:#D7DAD7;
+    color:#5C635C;
+  }
   .task-title{font-family:var(--display);font-weight:700;font-size:14px}.task-action{font-size:13px;grid-column:1/2}.task-meta{font-size:11.5px;color:var(--muted);grid-column:1/2}.task-due{grid-column:2;grid-row:1/4;align-self:center;text-align:right}.task-due b{display:block;font-family:var(--display);font-size:12px}.task-due span{font-size:11.5px;color:var(--muted)}
   .admin-info{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}.admin-info h3{font-family:var(--display);margin:0 0 4px;font-size:16px}.admin-info p{margin:0;color:var(--muted);font-size:13px}
 
@@ -1522,7 +1559,7 @@
   var dispositionReport=null, dispositionWrap=null, dispositionNotesEl=null;
   var reopenReport=null, reopenReturnView="records", restartReport=null, restartReturnView="records";
   var NAV_VIEW_KEY="rbh_safety_active_view_v1", NAV_INCIDENT_KEY="rbh_safety_active_incident_v1";
-  var APP_VERSION="2026.09.28 · Corrective Action Color Coding V1";
+  var APP_VERSION="2026.09.28 · Corrective Action Status Pills V1";
 
   function storedView(){
     try{ var v=localStorage.getItem(NAV_VIEW_KEY); return v||(currentRole==="supervisor"?"mywork":"home"); }catch(_e){ return currentRole==="supervisor"?"mywork":"home"; }
@@ -4766,7 +4803,7 @@
 
       b.innerHTML=
         '<div class="task-title">#'+esc(r.ref_no)+' · Action #'+esc(a.action_number||"")+' · '+esc(reportType)+
-          '<span class="task-state">'+esc(actionLabel(a.status||"not_started"))+'</span></div>'+
+          '<span class="task-state ca-status-'+esc(String(a.status||"not_started"))+'">'+esc(actionLabel(a.status||"not_started"))+'</span></div>'+
         '<div class="task-action">'+esc(a.description||'Corrective action needs to be documented.')+'</div>'+
         '<div class="task-meta">Assigned: <span class="assignment-name">'+esc(assignee)+'</span>'+
           (r.job_site?' · '+esc(r.job_site):'')+'</div>'+
