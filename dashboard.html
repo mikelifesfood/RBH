@@ -573,6 +573,28 @@
   .task-list{display:grid;gap:10px}
   .task-card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:15px 16px;display:grid;grid-template-columns:1fr auto;gap:6px 14px;cursor:pointer;text-align:left;color:var(--ink)}
   .task-card:hover{border-color:var(--red);box-shadow:var(--shadow)}
+
+  /* Corrective Actions workspace color coding */
+  .task-card.corrective-action-card{
+    background:#F4F8FF;
+    border-color:#C9D8ED;
+    border-left:6px solid #4A78B8;
+    transition:box-shadow .12s,border-color .12s,background-color .12s;
+  }
+  .task-card.corrective-action-card:hover{
+    background:#EDF4FF;
+    border-color:#4A78B8;
+    box-shadow:var(--shadow);
+  }
+  .task-card.corrective-action-card.ca-overdue{
+    background:#FFF3F8;
+    border-color:#E7BDD2;
+    border-left-color:#B83280;
+  }
+  .task-card.corrective-action-card.ca-overdue:hover{
+    background:#FCEAF3;
+    border-color:#B83280;
+  }
   .task-title{font-family:var(--display);font-weight:700;font-size:14px}.task-action{font-size:13px;grid-column:1/2}.task-meta{font-size:11.5px;color:var(--muted);grid-column:1/2}.task-due{grid-column:2;grid-row:1/4;align-self:center;text-align:right}.task-due b{display:block;font-family:var(--display);font-size:12px}.task-due span{font-size:11.5px;color:var(--muted)}
   .admin-info{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}.admin-info h3{font-family:var(--display);margin:0 0 4px;font-size:16px}.admin-info p{margin:0;color:var(--muted);font-size:13px}
 
@@ -1500,7 +1522,7 @@
   var dispositionReport=null, dispositionWrap=null, dispositionNotesEl=null;
   var reopenReport=null, reopenReturnView="records", restartReport=null, restartReturnView="records";
   var NAV_VIEW_KEY="rbh_safety_active_view_v1", NAV_INCIDENT_KEY="rbh_safety_active_incident_v1";
-  var APP_VERSION="2026.09.28 · Safety Inbox Color Coding V1";
+  var APP_VERSION="2026.09.28 · Corrective Action Color Coding V1";
 
   function storedView(){
     try{ var v=localStorage.getItem(NAV_VIEW_KEY); return v||(currentRole==="supervisor"?"mywork":"home"); }catch(_e){ return currentRole==="supervisor"?"mywork":"home"; }
@@ -4735,7 +4757,7 @@
 
       var b=document.createElement('button');
       b.type='button';
-      b.className='task-card';
+      b.className='task-card corrective-action-card'+(isOverdue(a)?' ca-overdue':'');
 
       var escInfo=escalationInfo(a);
       var ownerProfile=a.owner_user_id?profileById[String(a.owner_user_id)]:null;
