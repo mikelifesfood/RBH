@@ -372,6 +372,42 @@
   .users-help{margin-top:16px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:14px 16px;font-size:13px;color:var(--muted);line-height:1.65}
   .users-help b{color:var(--ink);font-family:var(--display)}
   .admin-user-actions{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin:0 0 12px}
+  .admin-user-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 14px}
+  .admin-user-stat{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .admin-user-stat b{display:block;font-family:var(--display);font-size:22px;line-height:1;margin-bottom:5px}
+  .admin-user-stat span{display:block;color:var(--muted);font-size:11.5px}
+  .admin-user-tools{display:grid;grid-template-columns:minmax(220px,1fr) 180px 180px auto;gap:10px;align-items:center;margin:0 0 14px}
+  .admin-user-tools input,.admin-user-tools select{width:100%;min-width:0;border:1.5px solid var(--line-strong);border-radius:9px;background:var(--paper);padding:10px 11px;font:inherit;font-size:12px;color:var(--ink)}
+  .admin-user-tools .users-result-count{font-size:11.5px;color:var(--muted);text-align:right;white-space:nowrap}
+  .user-rows{display:grid;gap:10px}
+  .user-row,.user-row.phase2{display:block;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px}
+  .user-row.removed{background:var(--paper-2);opacity:.88}
+  .user-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+  .u-main{min-width:0;display:grid;gap:3px}
+  .u-name{font-family:var(--display);font-weight:850;font-size:13px;line-height:1.25;overflow-wrap:anywhere}
+  .u-email{font-size:11.5px;color:var(--muted);overflow-wrap:anywhere}
+  .u-status{display:inline-flex;align-items:center;border:1px solid var(--line-strong);border-radius:999px;padding:4px 8px;font-size:10.5px;font-weight:800;white-space:nowrap}
+  .u-status.off{color:var(--red);border-color:#d6a7aa;background:#fff7f7}
+  .u-status.removed{color:#6f6464;background:#f2eeee;border-color:#d4cccc}
+  .user-card-grid{display:grid;grid-template-columns:minmax(180px,220px) minmax(160px,1fr);gap:12px 18px;align-items:end;margin-top:13px;padding-top:12px;border-top:1px solid var(--line)}
+  .user-field{display:grid;gap:5px;min-width:0}
+  .user-field>span{font-size:10.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .user-field select{width:100%;min-width:0;padding:9px 10px;border:1px solid var(--line-strong);border-radius:8px;background:var(--paper);color:var(--ink)}
+  .u-access-meta{font-size:11.5px;color:var(--muted);line-height:1.45;overflow-wrap:anywhere;white-space:normal}
+  .user-card-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .user-card-actions button{border:1px solid var(--line-strong);background:var(--paper);color:var(--ink);border-radius:8px;padding:8px 10px;font-size:11.5px;font-weight:800;cursor:pointer}
+  .user-card-actions button:hover:not(:disabled){background:var(--paper-2)}
+  .user-card-actions button:disabled{opacity:.45;cursor:not-allowed}
+  .user-card-actions .danger{border-color:#bd3b42;color:#a91f26}
+  .user-card-actions .danger:hover:not(:disabled){background:#fff0f1}
+  .user-self-note,.user-removed-note{font-size:10.5px;color:var(--muted);line-height:1.4;margin-top:7px}
+  .admin-user-history{margin-top:20px;border-top:1px solid var(--line);padding-top:18px}
+  .admin-history-list{display:grid;gap:8px;margin-top:10px}
+  .admin-history-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 14px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+  .admin-history-item b{font-size:11.5px}
+  .admin-history-item p{margin:3px 0 0;color:var(--muted);font-size:10.8px;line-height:1.45}
+  .admin-history-time{font-size:10.5px;color:var(--muted);white-space:nowrap;text-align:right}
+
   .add-user-btn{background:var(--gradient-red);color:#fff;border:none;border-radius:9px;padding:10px 15px;font-family:var(--display);font-weight:700;font-size:13px;cursor:pointer;box-shadow:var(--button-shadow)}
   .add-user-btn:hover{background:var(--gradient-red-hover)}
   .setup-check{display:flex;align-items:flex-start;gap:9px;padding:10px 11px;border:1px solid var(--line);border-radius:9px;background:var(--surface)}
@@ -580,8 +616,7 @@
   .action-state{display:inline-flex;align-items:center;border-radius:999px;padding:5px 8px;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.035em;background:var(--paper);border:1px solid var(--line-strong)}
   .as-awaiting_verification{background:#fff5d8;color:#725300;border-color:#ead28b}.as-verified{background:#e9f7ef;color:#23623c;border-color:#b9dfc9}.as-changes_requested{background:#fff0f0;color:#8a2929;border-color:#edbbbb}.as-in_progress{background:#eef4ff;color:#264f83;border-color:#c8d8ed}
   .action-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.action-actions button{border-radius:9px;padding:9px 12px;font-size:12.5px;font-weight:800;cursor:pointer}.btn-complete{background:var(--ink);color:var(--paper);border:1px solid var(--ink)}.btn-verify{background:#1f6f43;color:white;border:1px solid #1f6f43}.btn-changes{background:var(--paper);color:var(--ink);border:1.5px solid var(--line-strong);border-radius:9px;padding:9px 13px;font-family:var(--display);font-weight:800;font-size:12px;cursor:pointer;white-space:nowrap}.btn-changes:hover{border-color:var(--red);color:var(--red)}
-  .action-help{font-size:11.5px;color:var(--muted);margin:8px 0 0;line-height:1.45}.action-context{border:1px solid var(--line);background:var(--paper);border-radius:10px;padding:11px 12px;margin:10px 0}.action-context b{display:block;font-family:var(--display);font-size:12px;margin-bottom:4px}.action-context p{margin:0;font-size:12.5px;line-height:1.5;white-space:pre-wrap}.action-meta{font-size:11.5px;color:var(--muted);margin:6px 0 10px}.user-row.phase2{display:grid;grid-template-columns:minmax(180px,1fr) 160px 120px 170px;gap:12px;align-items:center}.user-row.phase2 select{min-width:0;padding:8px 9px;border:1px solid var(--line-strong);border-radius:8px;background:var(--paper);color:var(--ink)}
-  .u-status{font-size:11.5px;font-weight:700}.u-status.off{color:var(--red)}.user-toggle{border:1px solid var(--line-strong);background:var(--paper);color:var(--ink);border-radius:8px;padding:8px 9px;font-size:11.5px;font-weight:800;cursor:pointer}.user-toggle:disabled{opacity:.45;cursor:not-allowed}
+  .action-help{font-size:11.5px;color:var(--muted);margin:8px 0 0;line-height:1.45}.action-context{border:1px solid var(--line);background:var(--paper);border-radius:10px;padding:11px 12px;margin:10px 0}.action-context b{display:block;font-family:var(--display);font-size:12px;margin-bottom:4px}.action-context p{margin:0;font-size:12.5px;line-height:1.5;white-space:pre-wrap}.action-meta{font-size:11.5px;color:var(--muted);margin:6px 0 10px}
   .role-legend{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0 16px}.role-card{border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--paper)}.role-card b{font-size:12px}.role-card span{display:block;font-size:11px;color:var(--muted);line-height:1.4;margin-top:3px}
   .action-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:0 0 14px}.action-stat{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px}.action-stat b{font-family:var(--display);font-size:22px;display:block}.action-stat span{font-size:11.5px;color:var(--muted)}
   .task-state{display:inline-block;margin-left:6px;font-size:10px;font-weight:800;text-transform:uppercase;color:var(--muted)}.due-signal{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.03em}.due-signal.over{color:var(--red)}.due-signal.soon{color:#8a6500}.assignment-name{font-weight:700}
@@ -590,8 +625,8 @@
   .mywork-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(280px,.75fr);gap:14px}.mywork-panel{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:15px;box-shadow:var(--shadow)}.mywork-panel h3{font-family:var(--display);font-size:15px;margin:0}.mywork-panel .panel-sub{font-size:11.5px;color:var(--muted);margin:3px 0 12px}.mywork-panel .task-list{margin-top:8px}.mywork-panel .state{padding:24px 10px}
   .mywork-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}.mywork-stat{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px;cursor:default}.mywork-stat b{font-family:var(--display);font-size:22px;display:block}.mywork-stat span{font-size:11.5px;color:var(--muted)}.mywork-stat.alert b{color:var(--red)}.mywork-stat.warn b{color:#8a6500}
   .mywork-review{display:none}.mywork-review.show{display:block}.mywork-review .task-card{grid-template-columns:1fr}.mywork-review .task-due{grid-column:1;grid-row:auto;text-align:left;display:flex;gap:8px;align-items:center}.mywork-review .task-due span{display:none}
-  @media(max-width:900px){.user-row.phase2{grid-template-columns:1fr 1fr}.role-legend,.action-summary,.mywork-summary{grid-template-columns:1fr 1fr}.assignment-grid{grid-template-columns:1fr}.mywork-grid{grid-template-columns:1fr}}
-  @media(max-width:560px){.user-row.phase2,.role-legend,.action-summary,.mywork-summary{grid-template-columns:1fr}.mywork-banner{align-items:flex-start;flex-direction:column}}
+  @media(max-width:900px){.role-legend,.action-summary,.mywork-summary{grid-template-columns:1fr 1fr}.assignment-grid{grid-template-columns:1fr}.mywork-grid{grid-template-columns:1fr}.admin-user-tools{grid-template-columns:1fr 1fr}.admin-user-summary{grid-template-columns:1fr 1fr}}
+  @media(max-width:560px){.role-legend,.action-summary,.mywork-summary,.admin-user-summary{grid-template-columns:1fr}.mywork-banner{align-items:flex-start;flex-direction:column}.admin-user-tools,.user-card-grid{grid-template-columns:1fr}.admin-user-tools .users-result-count{text-align:left}.user-card-top{flex-direction:column}.admin-history-item{grid-template-columns:1fr}.admin-history-time{text-align:left;white-space:normal}.user-card-actions{display:grid}.user-card-actions button{width:100%}}
 
 
 
@@ -900,9 +935,33 @@
           </div>
           <div id="adminPermissionNote" class="permission-note"></div>
           <div class="admin-user-actions"><button class="add-user-btn" id="addUserBtn" type="button">+ Add dashboard user</button></div>
-          <div class="users-head"><p class="muted" style="margin:0">Dashboard users, most recently active first.</p></div>
+          <div class="admin-user-summary" id="adminUserSummary"></div>
+          <div class="admin-user-tools">
+            <input id="adminUserSearch" type="search" placeholder="Search name or email…" aria-label="Search dashboard users">
+            <select id="adminUserStatusFilter" aria-label="Filter users by access status">
+              <option value="all">All access states</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="removed">Removed</option>
+            </select>
+            <select id="adminUserRoleFilter" aria-label="Filter users by role">
+              <option value="all">All roles</option>
+              <option value="admin">Admin</option>
+              <option value="safety_manager">Safety Manager</option>
+              <option value="supervisor">Supervisor</option>
+              <option value="read_only">Read Only</option>
+            </select>
+            <span class="users-result-count" id="adminUserResultCount"></span>
+          </div>
           <div id="usersList"></div>
-          <div class="users-help"><b>Adding a new user</b><br>Use <b>Add dashboard user</b>. RBH will create or repair the Auth account, activate the profile, attach the person to this company, apply the selected role, and optionally email a secure password-setup link.</div>
+          <div class="users-help"><b>User access and history</b><br>Deactivate temporarily blocks dashboard access. <b>Delete user</b> permanently removes login access while retaining the person&rsquo;s RBH profile and historical report/audit references. Removed users cannot be reactivated; create new access if they return later.</div>
+          <div class="admin-user-history">
+            <div class="admin-subhead">
+              <div><h3>Admin activity</h3><p>Password resets, role changes, activation changes, and removed user access.</p></div>
+              <button class="refresh" id="adminHistoryRefresh" type="button">Refresh</button>
+            </div>
+            <div class="admin-history-list" id="adminUserHistory"><div class="state">Open Admin to load activity.</div></div>
+          </div>
 
           <div class="admin-subsection" id="adminFeedbackSection" hidden>
             <div class="admin-subhead">
@@ -1403,7 +1462,7 @@
   var dispositionReport=null, dispositionWrap=null, dispositionNotesEl=null;
   var reopenReport=null, reopenReturnView="records", restartReport=null, restartReturnView="records";
   var NAV_VIEW_KEY="rbh_safety_active_view_v1", NAV_INCIDENT_KEY="rbh_safety_active_incident_v1";
-  var APP_VERSION="2026.09.27 · Step 14F Multi-Action Finalization";
+  var APP_VERSION="2026.09.28 · Admin Management C V1";
 
   function storedView(){
     try{ var v=localStorage.getItem(NAV_VIEW_KEY); return v||(currentRole==="supervisor"?"mywork":"home"); }catch(_e){ return currentRole==="supervisor"?"mywork":"home"; }
@@ -4670,7 +4729,7 @@
     if(name==="mywork") renderMyWork();
     if(name==="actions") renderActions();
     if(name==="platform") loadPlatformDashboard();
-    if(name==="users"){ loadUsers(); }
+    if(name==="users"){ loadUsers(); loadAdminUserEvents(); }
     if(name==="home") renderHomeSnapshot();
     closeSidebar();
     window.scrollTo({top:0});
@@ -4713,22 +4772,275 @@
     }
   }
 
-  async function updateUserAccess(user, patch){
-    if(!canManageUsers()){ toast("Admin access is required.","err"); return; }
+  async function adminManageUser(payload){
+    if(!canManageUsers()) return {ok:false,error:"ADMIN_REQUIRED"};
+    if(!currentSession||!currentSession.access_token) return {ok:false,error:"AUTH_REQUIRED"};
     try{
-      var isSelf=String(user.id)===String(currentSession&&currentSession.user&&currentSession.user.id);
-      if(isSelf && Object.prototype.hasOwnProperty.call(patch,'app_role')){
-        toast("You cannot change your own role. Ask another Admin if your access needs to change.","err"); return;
-      }
-      if(isSelf && patch.is_active===false){
-        toast("You cannot deactivate your own account.","err"); return;
-      }
-      var res=await sb.from("profiles").update(patch).eq("id",user.id);
+      var resp=await fetch(SUPA_URL+"/functions/v1/admin-manage-user",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","Authorization":"Bearer "+currentSession.access_token,"apikey":SUPA_KEY},
+        body:JSON.stringify(payload||{})
+      });
+      var data=await resp.json().catch(function(){return {};});
+      if(!resp.ok) return {ok:false,error:data.error||("HTTP_"+resp.status),detail:data.detail||""};
+      return data||{ok:true};
+    }catch(ex){
+      console.error("admin manage user",ex);
+      return {ok:false,error:"NETWORK_ERROR",detail:(ex&&ex.message)||""};
+    }
+  }
+  function adminActionErrorMessage(code){
+    var map={
+      ADMIN_REQUIRED:"Admin access is required.",
+      AUTH_REQUIRED:"Your session expired. Sign in again.",
+      CANNOT_CHANGE_OWN_ROLE:"You cannot change your own role. Ask another Admin.",
+      CANNOT_DEACTIVATE_SELF:"You cannot deactivate your own account.",
+      CANNOT_DELETE_SELF:"You cannot delete your own account.",
+      LAST_ACTIVE_ADMIN_REQUIRED:"RBH must retain at least one active Admin.",
+      USER_ACCESS_DELETED:"This user's login access has already been removed.",
+      USER_INACTIVE:"Reactivate this user before sending a password reset.",
+      INVALID_RESET_REDIRECT:"The password-reset destination was not accepted.",
+      PASSWORD_RESET_SEND_FAILED:"Supabase could not send the password-reset email.",
+      ROLE_UPDATE_FAILED:"The role could not be updated.",
+      ACTIVATION_FAILED:"The account could not be activated.",
+      DEACTIVATION_FAILED:"The account could not be deactivated.",
+      AUTH_DELETE_FAILED:"The login could not be deleted.",
+      PROFILE_DELETE_MARK_FAILED:"RBH could not preserve the user's historical removal state."
+    };
+    return map[code]||"The Admin action could not be completed.";
+  }
+  function adminUserState(u){
+    if(u&&u.access_deleted_at) return "removed";
+    return u&&u.is_active===false?"inactive":"active";
+  }
+  function adminResetRedirect(){
+    var u=new URL(window.location.href);
+    u.search="";
+    u.hash="";
+    u.searchParams.set("setup","1");
+    return u.toString();
+  }
+  async function changeAdminUserRole(user,nextRole,selectEl){
+    var oldRole=user.app_role||"read_only";
+    if(String(nextRole)===String(oldRole)) return;
+    if(selectEl) selectEl.disabled=true;
+    var result=await adminManageUser({action:"set_role",targetUserId:user.id,role:nextRole});
+    if(!result.ok){
+      if(selectEl){selectEl.value=oldRole;selectEl.disabled=false;}
+      toast(adminActionErrorMessage(result.error),"err");
+      return;
+    }
+    toast("Role updated","ok");
+    await loadProfiles(); await loadUsers(); await loadAdminUserEvents();
+  }
+  async function setAdminUserActive(user,nextActive,buttonEl){
+    if(buttonEl) buttonEl.disabled=true;
+    var result=await adminManageUser({action:"set_active",targetUserId:user.id,active:!!nextActive});
+    if(!result.ok){
+      if(buttonEl) buttonEl.disabled=false;
+      toast(adminActionErrorMessage(result.error),"err");
+      return;
+    }
+    toast(nextActive?"User reactivated":"User deactivated","ok");
+    await loadProfiles(); await loadUsers(); await loadAdminUserEvents();
+  }
+  async function sendAdminPasswordReset(user,buttonEl){
+    if(buttonEl){buttonEl.disabled=true;buttonEl.textContent="Sending…";}
+    var result=await adminManageUser({action:"password_reset",targetUserId:user.id,redirectTo:adminResetRedirect()});
+    if(!result.ok){
+      if(buttonEl){buttonEl.disabled=false;buttonEl.textContent="Send password reset";}
+      toast(adminActionErrorMessage(result.error),"err");
+      return;
+    }
+    toast("Password reset email sent to "+(user.email||"user"),"ok");
+    if(buttonEl){buttonEl.disabled=false;buttonEl.textContent="Send password reset";}
+    await loadAdminUserEvents();
+  }
+  async function deleteAdminUserAccess(user,buttonEl){
+    var label=user.full_name||user.email||"this user";
+    if(!window.confirm(
+      'Delete login access for '+label+'?\n\n'+
+      'This permanently removes the user’s ability to sign in. RBH will retain their profile, report assignments, audit history, and other historical references.'
+    )) return;
+
+    var typed=window.prompt('Type the user’s email address to confirm deletion:\n\n'+String(user.email||""));
+    if(String(typed||"").trim().toLowerCase()!==String(user.email||"").trim().toLowerCase()){
+      toast("Deletion cancelled — the email confirmation did not match.","err");
+      return;
+    }
+
+    var reason=window.prompt("Optional removal reason (stored in the Admin audit):","")||"";
+    if(buttonEl){buttonEl.disabled=true;buttonEl.textContent="Deleting…";}
+    var result=await adminManageUser({action:"delete_access",targetUserId:user.id,reason:String(reason||"").trim()});
+    if(!result.ok){
+      if(buttonEl){buttonEl.disabled=false;buttonEl.textContent="Delete user";}
+      toast(adminActionErrorMessage(result.error),"err");
+      return;
+    }
+    toast("User login deleted — RBH history retained","ok");
+    await loadProfiles(); await loadUsers(); await loadAdminUserEvents();
+  }
+  function renderAdminUserSummary(rows){
+    var el=$("adminUserSummary"); if(!el) return;
+    var active=0,inactive=0,removed=0,admins=0;
+    (rows||[]).forEach(function(u){
+      var st=adminUserState(u);
+      if(st==="removed") removed++;
+      else if(st==="inactive") inactive++;
+      else active++;
+      if(st!=="removed"&&String(u.app_role||"")==="admin") admins++;
+    });
+    function card(n,label){return '<div class="admin-user-stat"><b>'+n+'</b><span>'+label+'</span></div>';}
+    el.innerHTML=card(active,"Active users")+card(inactive,"Inactive users")+card(removed,"Removed · history retained")+card(admins,"Admins");
+  }
+  function filteredAdminUsers(){
+    var q=String(($("adminUserSearch")&&$("adminUserSearch").value)||"").trim().toLowerCase();
+    var status=String(($("adminUserStatusFilter")&&$("adminUserStatusFilter").value)||"all");
+    var role=String(($("adminUserRoleFilter")&&$("adminUserRoleFilter").value)||"all");
+    return (allProfiles||[]).filter(function(u){
+      var hay=(String(u.full_name||"")+" "+String(u.email||"")).toLowerCase();
+      if(q&&hay.indexOf(q)<0) return false;
+      if(status!=="all"&&adminUserState(u)!==status) return false;
+      if(role!=="all"&&String(u.app_role||"read_only")!==role) return false;
+      return true;
+    }).sort(function(a,b){
+      var order={active:0,inactive:1,removed:2};
+      var as=adminUserState(a),bs=adminUserState(b);
+      if(order[as]!==order[bs]) return order[as]-order[bs];
+      return new Date(b.last_active||0)-new Date(a.last_active||0);
+    });
+  }
+  async function loadUsers(){
+    var el=$("usersList"); if(!el) return;
+    el.innerHTML='<div class="state">Loading team…</div>';
+    try{
+      if(!allProfiles.length) await loadProfiles();
+      renderAdminUserSummary(allProfiles);
+      var rows=filteredAdminUsers();
+      var resultCount=$("adminUserResultCount");
+      if(resultCount) resultCount.textContent=rows.length+" of "+allProfiles.length+" users";
+      if(!rows.length){el.innerHTML='<div class="state">No users match these filters.</div>';return;}
+
+      el.innerHTML="";
+      var box=document.createElement("div"); box.className="user-rows";
+
+      rows.forEach(function(u){
+        var state=adminUserState(u);
+        var isRemoved=state==="removed";
+        var isSelf=currentSession&&currentSession.user&&String(u.id)===String(currentSession.user.id);
+        var d=document.createElement("div");
+        d.className="user-row"+(isRemoved?" removed":"");
+
+        var roleOptions=Object.keys(ROLE_LABELS).map(function(k){
+          return '<option value="'+k+'"'+((u.app_role||"read_only")===k?' selected':'')+'>'+ROLE_LABELS[k]+'</option>';
+        }).join("");
+
+        var statusText=isRemoved?"Removed":(state==="inactive"?"Inactive":"Active");
+        var lastActive=u.last_active?fmtDate(u.last_active):"—";
+        var deletedAt=u.access_deleted_at?fmtDate(u.access_deleted_at):"";
+        var deletedBy=u.access_deleted_by&&profileById[String(u.access_deleted_by)]?profileName(profileById[String(u.access_deleted_by)]):"";
+        var removalMeta=isRemoved
+          ? ("Removed "+deletedAt+(deletedBy?" by "+deletedBy:"")+(u.access_deletion_reason?" · "+u.access_deletion_reason:""))
+          : ("Last active "+lastActive);
+
+        d.innerHTML=
+          '<div class="user-card-top">'+
+            '<div class="u-main"><div class="u-name"></div><div class="u-email"></div></div>'+
+            '<span class="u-status '+(state==="inactive"?"off":(isRemoved?"removed":""))+'">'+esc(statusText)+'</span>'+
+          '</div>'+
+          '<div class="user-card-grid">'+
+            '<label class="user-field"><span>Role</span><select class="u-role" aria-label="Application role">'+roleOptions+'</select></label>'+
+            '<div class="user-field"><span>Access activity</span><div class="u-access-meta"></div></div>'+
+          '</div>'+
+          '<div class="user-card-actions">'+
+            '<button class="user-reset" type="button">Send password reset</button>'+
+            '<button class="user-toggle" type="button"></button>'+
+            '<button class="user-delete danger" type="button">Delete user</button>'+
+          '</div>'+
+          '<div class="user-self-note" hidden></div>'+
+          '<div class="user-removed-note" hidden></div>';
+
+        d.querySelector(".u-name").textContent=u.full_name||u.email||"(unknown)";
+        d.querySelector(".u-email").textContent=u.full_name?(u.email||""):"";
+        d.querySelector(".u-access-meta").textContent=removalMeta;
+
+        var rs=d.querySelector(".u-role");
+        var reset=d.querySelector(".user-reset");
+        var tog=d.querySelector(".user-toggle");
+        var del=d.querySelector(".user-delete");
+        var selfNote=d.querySelector(".user-self-note");
+        var removedNote=d.querySelector(".user-removed-note");
+
+        tog.textContent=state==="inactive"?"Reactivate":"Deactivate";
+
+        if(isSelf){
+          selfNote.hidden=false;
+          selfNote.textContent="Your own role, activation state, and login access can only be changed by another Admin.";
+        }
+        if(isRemoved){
+          removedNote.hidden=false;
+          removedNote.textContent="Login access has been permanently removed. Historical RBH information is retained.";
+        }
+
+        rs.disabled=!canManageUsers()||isSelf||isRemoved;
+        reset.disabled=!canManageUsers()||isRemoved||state==="inactive";
+        tog.disabled=!canManageUsers()||isSelf||isRemoved;
+        del.disabled=!canManageUsers()||isSelf||isRemoved;
+
+        rs.addEventListener("change",function(){changeAdminUserRole(u,rs.value,rs);});
+        reset.addEventListener("click",function(){sendAdminPasswordReset(u,reset);});
+        tog.addEventListener("click",function(){setAdminUserActive(u,state==="inactive",tog);});
+        del.addEventListener("click",function(){deleteAdminUserAccess(u,del);});
+
+        box.appendChild(d);
+      });
+
+      el.appendChild(box);
+      applyRoleUi();
+    }catch(ex){
+      console.error(ex);
+      el.innerHTML='<div class="state">Could not load users.</div>';
+    }
+  }
+  async function loadAdminUserEvents(){
+    var el=$("adminUserHistory"); if(!el||currentRole!=="admin") return;
+    el.innerHTML='<div class="state">Loading Admin activity…</div>';
+    try{
+      var q=sb.from("admin_user_events").select("*").order("created_at",{ascending:false}).limit(40);
+      if(currentOrgId) q=q.eq("organization_id",currentOrgId);
+      var res=await q;
       if(res.error) throw res.error;
-      Object.keys(patch).forEach(function(k){ user[k]=patch[k]; });
-      toast("User access updated","ok");
-      await loadProfiles(); applyRoleUi(); loadUsers();
-    }catch(ex){ console.error(ex); toast("Could not update user access.","err"); }
+      var rows=res.data||[];
+      if(!rows.length){el.innerHTML='<div class="state">No Admin user-management activity yet.</div>';return;}
+
+      var labels={
+        role_changed:"Role changed",
+        activated:"User activated",
+        deactivated:"User deactivated",
+        password_reset_sent:"Password reset sent",
+        user_access_deleted:"User access deleted"
+      };
+
+      el.innerHTML=rows.map(function(ev){
+        var actor=ev.actor_user_id&&profileById[String(ev.actor_user_id)]?profileName(profileById[String(ev.actor_user_id)]):"Admin";
+        var target=ev.target_name_snapshot||ev.target_email_snapshot||"User";
+        var detail="";
+        if(ev.event_type==="role_changed") detail=(ROLE_LABELS[ev.old_role]||ev.old_role||"")+" → "+(ROLE_LABELS[ev.new_role]||ev.new_role||"");
+        else if(ev.event_type==="activated") detail="Dashboard access restored.";
+        else if(ev.event_type==="deactivated") detail="Dashboard access temporarily disabled.";
+        else if(ev.event_type==="password_reset_sent") detail="Recovery email requested.";
+        else if(ev.event_type==="user_access_deleted") detail="Login access removed; RBH historical identity retained.";
+
+        return '<div class="admin-history-item">'+
+          '<div><b>'+esc(labels[ev.event_type]||"Admin user update")+' · '+esc(target)+'</b>'+
+          '<p>'+esc(detail)+(actor?' · by '+esc(actor):'')+'</p></div>'+
+          '<div class="admin-history-time">'+esc(fmtDate(ev.created_at))+'</div>'+
+        '</div>';
+      }).join("");
+    }catch(ex){
+      console.error("admin user events",ex);
+      el.innerHTML='<div class="state">Could not load Admin activity.</div>';
+    }
   }
 
   function openAddUserModal(){
@@ -4755,12 +5067,18 @@
       var data=await resp.json().catch(function(){return {};});
       if(!resp.ok) throw new Error(data.detail||data.error||("HTTP "+resp.status));
       closeAddUserModal();
-      await loadProfiles(); await loadUsers();
+      await loadProfiles(); await loadUsers(); await loadAdminUserEvents();
       if(data.emailWarning){ toast("User access created, but the setup email needs attention.","err"); console.warn("user setup email",data.emailWarning); }
       else if(data.setupEmailSent){ toast((data.createdAuthUser?"User created":"Existing user repaired")+" — setup email sent","ok"); }
       else { toast((data.createdAuthUser?"User created":"Existing user repaired")+" and activated","ok"); }
-    }catch(ex){ console.error("provision user",ex); err.textContent="Could not create access: "+((ex&&ex.message)||"Unknown error"); err.classList.add("show"); }
-    finally{btn.disabled=false;btn.textContent="Create access";}
+    }catch(ex){
+      console.error("provision user",ex);
+      err.textContent="Could not create access: "+((ex&&ex.message)||"Unknown error");
+      err.classList.add("show");
+    }finally{
+      btn.disabled=false;
+      btn.textContent="Create access";
+    }
   }
   function setupPasswordModeRequested(){ try{return new URLSearchParams(window.location.search).get("setup")==="1";}catch(_e){return false;} }
   function showPasswordSetup(){
@@ -4780,51 +5098,20 @@
       var u=new URL(window.location.href);u.searchParams.delete("setup");history.replaceState({},"",u.pathname+(u.search||"")+(u.hash||""));
       toast("Password saved — welcome to RBH Safety","ok");
       var ses=(await sb.auth.getSession()).data.session;if(ses) await showApp(ses);else showLogin();
-    }catch(ex){console.error("password setup",ex);e.textContent="Could not save the password. Request a new setup link from an Admin.";e.classList.add("show");}
-    finally{b.disabled=false;b.textContent="Save password & continue";}
+    }catch(ex){
+      console.error("password setup",ex);
+      e.textContent="Could not save the password. Request a new setup link from an Admin.";
+      e.classList.add("show");
+    }finally{
+      b.disabled=false;
+      b.textContent="Save password & continue";
+    }
   }
 
-  async function loadUsers(){
-    var el=$("usersList"); el.innerHTML='<div class="state">Loading team…</div>';
-    try{
-      if(!allProfiles.length) await loadProfiles();
-      var rows=allProfiles.slice().sort(function(a,b){return new Date(b.last_active||0)-new Date(a.last_active||0);});
-      if(!rows.length){ el.innerHTML='<div class="state">No users have signed in yet.</div>'; return; }
-      el.innerHTML=""; var box=document.createElement("div"); box.className="user-rows";
-      rows.forEach(function(u){
-        var d=document.createElement("div"); d.className="user-row phase2";
-        var roleOptions=Object.keys(ROLE_LABELS).map(function(k){return '<option value="'+k+'"'+(u.app_role===k?' selected':'')+'>'+ROLE_LABELS[k]+'</option>';}).join("");
-        d.innerHTML='<div class="u-main"><div class="u-name"></div><div class="u-email"></div></div>'+
-          '<select class="u-role" aria-label="Application role">'+roleOptions+'</select>'+
-          '<div class="u-status"></div>'+
-          '<div><button class="user-toggle" type="button"></button><div class="u-active" style="margin-top:4px"></div></div>';
-        d.querySelector(".u-name").textContent=u.full_name||u.email||"(unknown)";
-        d.querySelector(".u-email").textContent=u.full_name?(u.email||""):"";
-        var st=d.querySelector(".u-status"); st.textContent=u.is_active===false?"Inactive":"Active"; st.classList.toggle("off",u.is_active===false);
-        d.querySelector(".u-active").textContent="Last active "+(u.last_active?fmtDate(u.last_active):"—");
-        var rs=d.querySelector(".u-role"), tog=d.querySelector(".user-toggle");
-        var isSelf=currentSession&&currentSession.user&&String(u.id)===String(currentSession.user.id);
-        if(isSelf){
-          var selfNote=document.createElement('div');
-          selfNote.className='u-active';
-          selfNote.style.marginTop='4px';
-          selfNote.textContent='Your own role can only be changed by another Admin.';
-          d.querySelector('.u-main').appendChild(selfNote);
-        }
-        rs.disabled=!canManageUsers() || !!isSelf;
-        tog.disabled=!canManageUsers() || !!isSelf;
-        if(isSelf){
-          rs.title="You cannot change your own role. Ask another Admin if your access needs to change.";
-        }
-        tog.textContent=u.is_active===false?"Reactivate":"Deactivate";
-        rs.addEventListener("change",function(){ updateUserAccess(u,{app_role:rs.value}); });
-        tog.addEventListener("click",function(){ updateUserAccess(u,{is_active:!(u.is_active!==false)}); });
-        box.appendChild(d);
-      });
-      el.appendChild(box);
-      applyRoleUi();
-    }catch(ex){ console.error(ex); el.innerHTML='<div class="state">Could not load users.</div>'; }
-  }
+  var _adminSearch=$("adminUserSearch"); if(_adminSearch) _adminSearch.addEventListener("input",function(){loadUsers();});
+  var _adminStatus=$("adminUserStatusFilter"); if(_adminStatus) _adminStatus.addEventListener("change",function(){loadUsers();});
+  var _adminRole=$("adminUserRoleFilter"); if(_adminRole) _adminRole.addEventListener("change",function(){loadUsers();});
+  var _adminHistoryRefresh=$("adminHistoryRefresh"); if(_adminHistoryRefresh) _adminHistoryRefresh.addEventListener("click",loadAdminUserEvents);
 
   var _aub=$("addUserBtn"); if(_aub) _aub.addEventListener("click",openAddUserModal);
   var _auc=$("addUserCancel"); if(_auc) _auc.addEventListener("click",closeAddUserModal);
