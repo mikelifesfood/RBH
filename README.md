@@ -69,5 +69,5 @@ The next planned build step is **Step 12 - Notification Acknowledgment + Acknowl
 
 Before deploying this dashboard version, run `supabase/RBH_STEP2_INVESTIGATION_FINDINGS_V1.sql` once in Supabase. Step 2 then uses two required plain-language questions (`What happened?` and `Why did it happen?`) plus optional investigation evidence. See `docs/RBH_STEP2_SIMPLE_INVESTIGATION_2026-10-05.md`.
 
-## Build 24 — 2026-10-05
+## Build 25 — 2026-10-05
 Step 3 Verify was simplified for small-company use. The visible Verification owner assignment controls were removed. Authorized reviewers now go directly from completed work/evidence to Verify or Request changes. See `docs/RBH_STEP3_VERIFICATION_SIMPLIFICATION_2026-10-05.md`.

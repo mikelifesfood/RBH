@@ -2472,7 +2472,7 @@
           '<div class="ca-life-item next" data-ca-life="5"><span class="ca-life-dot">3</span><div class="ca-life-copy"><b>Verify</b><span>Approve or request changes</span></div></div>'+
         '</div>'+
         '<div class="ca-stage-heading"><span class="ca-stage-num">3</span><div><b>Verify work</b><p>Approve each completed action or return only the action that needs more work.</p></div><span class="ca-stage-state" data-ca-stage-state>Next</span></div>'+
-        '<div class="ca-focus-note"><b>Review one action at a time</b>Verify the actions that are complete. If one needs changes, send back only that action. You can finish reviewing the other waiting actions first; returned actions then appear by themselves in Complete Work.</div>'+
+        '<div class="ca-focus-note"><b>Review and decide — no verification assignment needed</b>Each submitted action is ready for an authorized reviewer. Verify the actions that are complete, or send back only the action that needs more work. Returned actions go back to their assigned corrective-action owner.</div>'+
         '<div class="multi-action-verification-list" data-multi-action-verification-stage hidden></div>'+
         '<div class="action-workflow" data-action-verification></div>'+
       '</section>'+
@@ -2579,7 +2579,7 @@
       (childSummary.awaiting>0?
         (childSummary.awaiting+" action"+(childSummary.awaiting===1?" is":"s are")+" waiting for a verification decision; "+childSummary.verified+" already verified."):
         (childSummary.verified+" of "+childSummary.total+" corrective actions verified."))):
-      (step5?"Corrective action was verified.":"Admin or Safety Manager must verify the completed work.");
+      (step5?"Corrective action was verified.":"An authorized reviewer must verify the completed work.");
     var details=[
       step1?"Report acknowledged and moved out of New.":"Review the report and change status to Under review.",
       step2?"Investigation documented.":"Document what happened and why it happened.",
@@ -2710,7 +2710,14 @@
     if(n===2) return {save:"Save and close",complete:"Continue to corrective actions →"};
     if(n===3) return {save:"Save and close",complete:"Assign actions →"};
     if(n===4){ if(r.action_status==="awaiting_verification"||r.action_status==="verified") return {save:null,complete:null}; return {save:"Save and close",complete:r.action_status==="changes_requested"?"Resubmit for verification →":"Submit for verification →"}; }
-    if(n===5){ if(!canPerformVerification(r)||r.action_status!=="awaiting_verification") return {save:null,complete:null}; return {save:"Save and close",complete:"Verify & continue →"}; }
+    if(n===5){
+      /* Multi-action verification is intentionally decision-based, not assigned.
+         Each submitted corrective action has its own Verify / Send back controls,
+         and the workflow advances only after every action is verified. */
+      if(correctiveActionSummary(r)) return {save:null,complete:null};
+      if(!canPerformVerification(r)||r.action_status!=="awaiting_verification") return {save:null,complete:null};
+      return {save:"Save and close",complete:"Verify & continue →"};
+    }
     if(n===6){ if(r.status==="closed"||r.status==="no_action"||r.status==="duplicate") return {save:null,complete:null}; return {save:null,complete:canClose(r)?"Close record":null}; }
     return {save:null,complete:null};
   }
@@ -2839,6 +2846,14 @@
     }
     var n=parseInt(detail.dataset.wizardStep||"0",10)||initialWizardStep(r);
     if(!wizardStepAccessible(r,n)) n=recommendedWizardStep(r);
+    /* Corrective Actions is one visible Step 3 with three internal stages.
+       If Complete Work just finished or a returned action becomes active,
+       always show the stage that currently needs attention instead of leaving
+       a completed internal panel on screen. */
+    if(n>=3&&n<=5){
+      var currentCorrectiveStage=correctiveGroupTarget(r);
+      if(currentCorrectiveStage>=3&&currentCorrectiveStage<=5) n=currentCorrectiveStage;
+    }
     setWizardStep(detail,r,n,true);
   }
 
@@ -3094,19 +3109,19 @@
         } else if(status==="awaiting_verification"){
           var canReview=canVerifyCorrectiveAction(a);
           if(canReview){
-            review='<div class="multi-action-verifier-note"><b>Ready for verification</b>Review the completed work and evidence below. Verify it if the fix is complete, or request changes for this action only.</div>'+
+            review='<div class="multi-action-verifier-note"><b>Ready for verification</b>Review the completed work and evidence below. No verifier needs to be assigned. Verify it if the fix is complete, or send this action back for changes.</div>'+
               '<div class="mav-review">'+
                 '<label class="inv-l">Verification notes <span style="font-weight:400;color:var(--muted)">(optional when approving)</span>'+
                   '<textarea data-child-verification-note="'+esc(a.id)+'" placeholder="What did you verify? If requesting changes, explain exactly what still needs to be done.">'+esc(a.verification_note||"")+'</textarea>'+
                 '</label>'+
                 '<div class="wizard-required" data-child-verification-required="'+esc(a.id)+'">Add a reviewer note explaining the requested changes.</div>'+
                 '<div class="multi-action-verification-actions">'+
-                  '<button class="multi-action-request-changes" type="button" data-child-request-changes="'+esc(a.id)+'">Request changes</button>'+
+                  '<button class="multi-action-request-changes" type="button" data-child-request-changes="'+esc(a.id)+'">Send back for changes</button>'+
                   '<button class="wizard-primary" type="button" data-child-verify-action="'+esc(a.id)+'">Verify action</button>'+
                 '</div>'+
               '</div>';
           } else {
-            review='<div class="multi-action-verifier-note"><b>Verification required</b>An Admin or Safety Manager reviews the completed work and decides whether to verify it or request changes.</div>';
+            review='<div class="multi-action-verifier-note"><b>Verification required</b>An authorized reviewer must review the completed work and either verify it or send it back for changes.</div>';
           }
         } else if(status==="changes_requested"){
           review='<div class="ops-alert critical"><b>Changes requested</b>'+esc(a.verification_note||"The reviewer requested additional work.")+'</div>'+
@@ -6375,6 +6390,6 @@
 
 })();
 </script>
-<!-- RBH Build 24: verification-owner UI removed; verification is handled by the authorized company reviewer queue. -->
+<!-- RBH Build 25: corrective-action owners remain assigned; verification is an unassigned reviewer decision with per-action verify/send-back controls. -->
 </body>
 </html>
