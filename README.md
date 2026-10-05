@@ -64,3 +64,7 @@ The latest build handoff is stored at:
 `docs/TeamWorkt_RBH_Buildout_Handoff_Step11A_2026-09-27.txt`
 
 The next planned build step is **Step 12 - Notification Acknowledgment + Acknowledgment History**.
+
+## Build 23 - simplified Investigation
+
+Before deploying this dashboard version, run `supabase/RBH_STEP2_INVESTIGATION_FINDINGS_V1.sql` once in Supabase. Step 2 then uses two required plain-language questions (`What happened?` and `Why did it happen?`) plus optional investigation evidence. See `docs/RBH_STEP2_SIMPLE_INVESTIGATION_2026-10-05.md`.

@@ -19,6 +19,7 @@ This directory is **not yet the final from-zero customer migration set**. Older 
 - `RBH_STEP8_INVESTIGATOR_PERMISSIONS_MYWORK_V1.sql`
 - `RBH_STEP9_VERIFIER_ASSIGNMENT_QUEUE_V1.sql`
 - `RBH_STEP11_IN_APP_NOTIFICATION_CENTER_V1.sql`
+- `RBH_STEP2_INVESTIGATION_FINDINGS_V1.sql` - Build 23 Step 2 investigation findings field and restart handling.
 
 ## Edge Functions
 
