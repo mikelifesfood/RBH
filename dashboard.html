@@ -580,6 +580,7 @@
   .multi-action-completion-card .mac-work,.multi-action-verification-card .mav-review{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
   .multi-action-completion-card textarea,.multi-action-verification-card textarea{min-height:96px;font-size:13.5px}
   .multi-action-completion-actions,.multi-action-verification-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px;flex-wrap:wrap}
+  .multi-action-submit-after-evidence{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
   .multi-action-completion-note,.multi-action-verifier-note{margin-top:10px;border-radius:var(--r);background:var(--canvas);padding:10px 12px;font-size:12.5px;line-height:1.45}
   .multi-action-completion-note b,.multi-action-verifier-note b{display:block;margin-bottom:3px}
   .multi-action-verifier-controls{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:end;margin-top:12px}
@@ -3182,8 +3183,7 @@
           work='<div class="multi-action-completion-note"><b>Awaiting verification</b>'+esc(a.completion_note||"Completion submitted.")+(a.completed_at?'<div class="action-meta">Submitted '+esc(fmtDate(a.completed_at))+(completedBy?' by '+esc(completedBy):'')+'</div>':'')+'</div>';
         } else if(editable){
           work=(status==="changes_requested"&&a.verification_note?'<div class="ops-alert"><b>Changes requested</b>'+esc(a.verification_note)+'</div>':'')+
-            '<div class="mac-work"><div class="action-missing-list"><b>Required:</b> Describe what was completed. Evidence is optional unless your company requires it.</div><label class="inv-l">What was completed?<textarea data-child-completion-note="'+esc(a.id)+'" placeholder="Describe what was completed and anything the reviewer should know.">'+esc(a.completion_note||"")+'</textarea></label>'+
-            '<div class="multi-action-completion-actions"><button class="wizard-primary" type="button" data-submit-child-completion="'+esc(a.id)+'">'+(status==="changes_requested"?'Resubmit for verification →':'Submit for verification →')+'</button></div></div>';
+            '<div class="mac-work"><div class="action-missing-list"><b>Required:</b> Describe what was completed. Add any supporting evidence below before submitting. Evidence is optional unless your company requires it.</div><label class="inv-l">What was completed?<textarea data-child-completion-note="'+esc(a.id)+'" placeholder="Describe what was completed and anything the reviewer should know.">'+esc(a.completion_note||"")+'</textarea></label></div>';
         } else {
           work='<div class="multi-action-completion-note"><b>Assigned owner</b>'+esc(owner)+' must complete this corrective action before it can move to verification.</div>';
         }
@@ -3193,6 +3193,7 @@
           '<div class="mac-meta"><span><b>Due:</b> '+esc(due)+'</span><span><b>Priority:</b> '+esc(priority)+'</span><span><b>Control:</b> '+esc(control)+'</span></div>'+
           work+
           '<div class="evidence-panel" data-action-evidence data-corrective-action-id="'+esc(a.id)+'"></div>'+
+          (editable?'<div class="multi-action-completion-actions multi-action-submit-after-evidence"><button class="wizard-primary" type="button" data-submit-child-completion="'+esc(a.id)+'">'+(status==="changes_requested"?'Resubmit for verification →':'Submit for verification →')+'</button></div>':'')+
         '</div>';
       }).join("");
       Array.prototype.slice.call(multiActionCompletionEl.querySelectorAll("[data-action-evidence][data-corrective-action-id]")).forEach(function(panel){
