@@ -382,6 +382,16 @@
   .noaction-copy{min-width:220px;flex:1}
   .noaction-copy b{display:block;font-size:14px;margin-bottom:2px}
   .noaction-copy span{display:block;color:var(--muted);font-size:13px;line-height:1.45}
+  .review-decision-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+  .review-decision-card{border:1px solid var(--line);border-radius:var(--r-lg);background:var(--paper);padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
+  .review-decision-card.continue{border-left:4px solid var(--ink)}
+  .review-decision-card.close{background:var(--canvas)}
+  .review-decision-copy{min-width:0;flex:1}
+  .review-decision-kicker{display:block;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+  .review-decision-copy b{display:block;font-size:16px;margin-bottom:4px}
+  .review-decision-copy span:not(.review-decision-kicker){display:block;color:var(--muted);font-size:13px;line-height:1.45}
+  .review-decision-card button{align-self:flex-start}
+  #incidentBody.resolved-review .review-decision-grid{display:none!important}
   .disposition-warning{margin:0 0 14px;padding:11px 13px;border-radius:var(--r);background:var(--canvas);font-size:13px;color:var(--muted);line-height:1.5}
   .disposition-warning b{color:var(--ink)}
 
@@ -940,6 +950,9 @@
     .evidence-selected{width:100%;text-align:center}
     .noaction-box{display:grid;grid-template-columns:1fr;gap:10px}
     .noaction-btn{width:100%;min-height:46px;white-space:normal}
+    .review-decision-grid{grid-template-columns:1fr;gap:10px}
+    .review-decision-card{padding:14px}
+    .review-decision-card button{width:100%;min-height:48px;justify-content:center;text-align:center;white-space:normal}
     .record-support summary{padding:13px 14px;font-size:17px}
     .record-support-body{padding:0 14px 14px}
     .detail-actions{margin-top:10px!important;margin-bottom:0!important}
@@ -2394,25 +2407,16 @@
       '<div data-urgent-triage>'+urgentTriageHtml(r)+'</div>'+
 
       '<section class="wizard-panel" data-wizard-step="1" hidden>'+
-        '<div class="wizard-step-head"><span class="wizard-step-badge">1</span><div class="wizard-step-copy"><h3>Review the report</h3><p>Confirm what was submitted and decide whether the report needs further action.</p></div></div>'+
-        '<div class="wizard-task"><b>Start here</b><span>Review the report, confirm who owns the investigation, and complete the serious-event screen when an injury is involved.</span></div>'+
-        '<span class="field-guidance">Review the submission and attachments below. Continue when the report needs investigation, or use the no-action option when no corrective work is required.</span>'+
+        '<div class="wizard-step-head"><span class="wizard-step-badge">1</span><div class="wizard-step-copy"><h3>Review the report</h3><p>Confirm what was submitted, then choose what happens next.</p></div></div>'+
+        '<div class="wizard-task"><b>Start here</b><span>Review the report and attachments. If an injury is involved, complete the serious-event screen. Then either acknowledge the report and investigate it, or close it with a documented reason.</span></div>'+
+        '<span class="field-guidance">This step is intentionally simple: make sure the report is on your radar, then choose one of the two decisions below.</span>'+
         '<div class="d-rows">'+rows.join("")+'</div>'+
         '<div class="d-atts" data-atts></div>'+
-        '<div class="investigator-card" data-investigator-card>'+
-          '<div class="investigator-head"><div><b>Case owner / investigator</b><p>Tracks who is responsible for carrying the investigation forward. The corrective action can be assigned to a different person in Step 3.</p></div><span class="investigator-chip'+(r.investigator_user_id?' assigned':'')+'" data-investigator-chip>'+(r.investigator_user_id?'Assigned':'Unassigned')+'</span></div>'+
-          '<div class="investigator-controls">'+
-            '<label class="inv-l">Assigned investigator<select class="inv-investigator">'+investigatorOptions(r.investigator_user_id)+'</select></label>'+
-            '<button class="wizard-save investigator-self" type="button">Assign to me</button>'+
-            '<button class="wizard-primary investigator-save" type="button">Save assignment</button>'+
-          '</div>'+
-          '<span class="field-guidance compact">Active Admin, Safety Manager, and Supervisor accounts are available. Read Only accounts are excluded.</span>'+
-          '<div class="investigator-permission" data-investigator-permission hidden>Only an Admin or Safety Manager can assign or reassign the investigator.</div>'+
-          '<span class="investigator-saved" hidden>Assignment saved ✓</span>'+
-        '</div>'+
         regulatoryReviewHtml(r)+
-        '<div class="noaction-box" data-noaction-box><div class="noaction-copy"><b>Nothing to correct?</b><span>Close this report with a documented reason instead of creating unnecessary corrective-action work.</span></div><button class="noaction-btn" type="button" data-noaction-btn>Close — no action required</button></div>'+
-        '<div class="wizard-footer"><div class="wizard-footer-copy">Complete review moves the report to Investigation.</div><div class="wizard-footer-actions"><button class="wizard-primary" data-step-complete="1" type="button">Complete review →</button></div></div>'+
+        '<div class="review-decision-grid">'+
+          '<div class="review-decision-card continue"><div class="review-decision-copy"><span class="review-decision-kicker">Continue</span><b>Acknowledge and investigate</b><span>Mark the report as reviewed and move directly into Investigation.</span></div><button class="wizard-primary" data-step-complete="1" type="button">Acknowledge &amp; start investigation →</button></div>'+
+          '<div class="review-decision-card close" data-noaction-box><div class="review-decision-copy"><span class="review-decision-kicker">Close</span><b>No further investigation needed?</b><span>Close the report completely with a documented reason. It will leave the open work queues and remain in history.</span></div><button class="noaction-btn" type="button" data-noaction-btn>Close report</button></div>'+
+        '</div>'+
         '<div class="gate-msg" data-role-gate>This account can view this incident but does not have permission to update it.</div>'+
       '</section>'+
 
@@ -2661,7 +2665,7 @@
   function wizardShortTitle(n){ return ({1:"Review",2:"Investigation",3:"Corrective Actions",4:"Corrective Actions",5:"Corrective Actions",6:"Close"})[n]||"Step"; }
   function wizardLongTitle(n){ return ({1:"Review Report",2:"Investigation",3:"Corrective Actions · Plan & Assign",4:"Corrective Actions · Complete Work",5:"Corrective Actions · Verify Work",6:"Close Record"})[n]||"Record"; }
   function wizardHelp(n,r){
-    var map={1:"Review the submission and decide what happens next.",2:"Document the underlying cause.",3:"Create each fix, assign an owner, and complete every required field.",4:"Record what was completed for each action and submit it for review.",5:"Review each submitted action and either verify it or clearly request changes.",6:"Confirm everything is complete and close the record."};
+    var map={1:"Review the submission, then acknowledge it for investigation or close it with a documented reason.",2:"Document the underlying cause.",3:"Create each fix, assign an owner, and complete every required field.",4:"Record what was completed for each action and submit it for review.",5:"Review each submitted action and either verify it or clearly request changes.",6:"Confirm everything is complete and close the record."};
     var childSummary=correctiveActionSummary(r);
     if(childSummary&&n===4){
       if(childSummary.changes_requested>0&&childSummary.work_open===0) return childSummary.changes_requested+" returned action"+(childSummary.changes_requested===1?" needs":"s need")+" an update. Only returned work is shown here.";
@@ -2696,7 +2700,7 @@
     if(!canEdit) return {save:null,complete:null};
     if(st&&st.state==="done" && n!==6) return {save:(n===2||n===3?"Save and close":null),complete:null};
     if(!isCurrent && n!==6) return {save:null,complete:null};
-    if(n===1) return {save:null,complete:"Complete review →"};
+    if(n===1) return {save:null,complete:"Acknowledge & start investigation →"};
     if(n===2) return {save:"Save and close",complete:"Complete investigation →"};
     if(n===3) return {save:"Save and close",complete:"Assign actions →"};
     if(n===4){ if(r.action_status==="awaiting_verification"||r.action_status==="verified") return {save:null,complete:null}; return {save:"Save and close",complete:r.action_status==="changes_requested"?"Resubmit for verification →":"Submit for verification →"}; }
@@ -3551,9 +3555,11 @@
     });
 
     var complete1=detail.querySelector('[data-step-complete="1"]'); if(complete1) complete1.addEventListener("click",async function(){
-      if(!canEditStep(r,1)){toast("Only the assigned investigator or an Admin/Safety Manager can complete Review.","err");return;} complete1.disabled=true;
+      if(!canEditStep(r,1)){toast("You do not have permission to acknowledge this report.","err");return;} complete1.disabled=true;
       try{
-        if(isManager() && investigatorSelect) await persistInvestigator(investigatorSelect.value||null,false);
+        /* Keep ownership out of Review. When an authorized manager acknowledges an unassigned report,
+           quietly make that user the investigator so Step 2 has a clear owner without another decision here. */
+        if(isManager() && !r.investigator_user_id && currentUserId()) await persistInvestigator(currentUserId(),false);
         if(r.involves_injury){
           if(canVerify()){
             if(!(await persistRegulatoryReview(false))) return;
@@ -3563,9 +3569,9 @@
         }
         if(r.status==="new") await updateStatus(r.id,"under_review",wrap,activeReopenStep(r)?2:null);
         else if(activeReopenStep(r)===1) await updateStatus(r.id,r.status,wrap,2);
-        refreshRecordWorkflow(r,detail); setWizardStep(detail,r,2,true); loadAudit(r.id,auditEl); toast("Review complete — continue to Investigation","ok");
+        refreshRecordWorkflow(r,detail); setWizardStep(detail,r,2,true); loadAudit(r.id,auditEl); toast("Report acknowledged — continue to Investigation","ok");
       }
-      catch(ex){console.error(ex);toast("Could not complete the review.","err");} finally{if(complete1.isConnected)complete1.disabled=!canEditStep(r,1);} });
+      catch(ex){console.error(ex);toast("Could not acknowledge the report.","err");} finally{if(complete1.isConnected)complete1.disabled=!canEditStep(r,1);} });
 
     var complete2=detail.querySelector('[data-step-complete="2"]'); if(complete2) complete2.addEventListener("click",async function(){
       if(!canEditStep(r,2)){toast("Only the assigned investigator or an Admin/Safety Manager can complete Investigation.","err");return;}
