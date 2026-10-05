@@ -507,6 +507,8 @@
   .wizard-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line);margin-top:20px;padding-top:16px}
   .wizard-footer-copy{font-size:12.5px;color:var(--muted);max-width:520px;line-height:1.45}
   .wizard-footer-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-left:auto}
+  .review-footer .wizard-footer-copy b{display:block;color:var(--ink);font-size:13.5px;margin-bottom:2px}
+  .review-footer .wizard-footer-copy span{display:block}
   .wizard-context{background:var(--canvas);border-radius:var(--r);padding:12px 14px;margin:10px 0}
   .wizard-context b{font-size:13.5px}
   .wizard-context p{margin:4px 0 0;font-size:13.5px;line-height:1.5;white-space:pre-wrap}
@@ -2408,14 +2410,17 @@
 
       '<section class="wizard-panel" data-wizard-step="1" hidden>'+
         '<div class="wizard-step-head"><span class="wizard-step-badge">1</span><div class="wizard-step-copy"><h3>Review the report</h3><p>Confirm what was submitted, then choose what happens next.</p></div></div>'+
-        '<div class="wizard-task"><b>Start here</b><span>Review the report and attachments. If an injury is involved, complete the serious-event screen. Then either acknowledge the report and investigate it, or close it with a documented reason.</span></div>'+
-        '<span class="field-guidance">This step is intentionally simple: make sure the report is on your radar, then choose one of the two decisions below.</span>'+
+        '<div class="wizard-task"><b>Start here</b><span>Review the report and attachments. If an injury is involved, complete the serious-event screen. Then either continue to Investigation or close the report with a documented reason.</span></div>'+
+        '<span class="field-guidance">This step is intentionally simple: review what was submitted, then choose what happens next.</span>'+
         '<div class="d-rows">'+rows.join("")+'</div>'+
         '<div class="d-atts" data-atts></div>'+
         regulatoryReviewHtml(r)+
-        '<div class="review-decision-grid">'+
-          '<div class="review-decision-card continue"><div class="review-decision-copy"><span class="review-decision-kicker">Continue</span><b>Acknowledge and investigate</b><span>Mark the report as reviewed and move directly into Investigation.</span></div><button class="wizard-primary" data-step-complete="1" type="button">Acknowledge &amp; start investigation →</button></div>'+
-          '<div class="review-decision-card close" data-noaction-box><div class="review-decision-copy"><span class="review-decision-kicker">Close</span><b>No further investigation needed?</b><span>Close the report completely with a documented reason. It will leave the open work queues and remain in history.</span></div><button class="noaction-btn" type="button" data-noaction-btn>Close report</button></div>'+
+        '<div class="wizard-footer review-footer">'+
+          '<div class="wizard-footer-copy"><b>Choose what happens next.</b><span>Continue to Investigation if this report needs follow-up, or close it now when no further action is needed.</span></div>'+
+          '<div class="wizard-footer-actions review-footer-actions">'+
+            '<button class="wizard-save noaction-btn" type="button" data-noaction-btn>Close — no action needed</button>'+
+            '<button class="wizard-primary" data-step-complete="1" type="button">Continue to investigation →</button>'+
+          '</div>'+
         '</div>'+
         '<div class="gate-msg" data-role-gate>This account can view this incident but does not have permission to update it.</div>'+
       '</section>'+
@@ -2700,7 +2705,7 @@
     if(!canEdit) return {save:null,complete:null};
     if(st&&st.state==="done" && n!==6) return {save:(n===2||n===3?"Save and close":null),complete:null};
     if(!isCurrent && n!==6) return {save:null,complete:null};
-    if(n===1) return {save:null,complete:"Acknowledge & start investigation →"};
+    if(n===1) return {save:null,complete:"Continue to investigation →"};
     if(n===2) return {save:"Save and close",complete:"Complete investigation →"};
     if(n===3) return {save:"Save and close",complete:"Assign actions →"};
     if(n===4){ if(r.action_status==="awaiting_verification"||r.action_status==="verified") return {save:null,complete:null}; return {save:"Save and close",complete:r.action_status==="changes_requested"?"Resubmit for verification →":"Submit for verification →"}; }
