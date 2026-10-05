@@ -1747,6 +1747,9 @@
       var res=await sb.from("report_corrective_actions").select("id,report_id,organization_id,workflow_generation,action_number,description,control_type,owner_user_id,due_date,priority,status,completion_note,completed_at,completed_by,verifier_user_id,verification_note,verified_at,verified_by,activated_at,activation_reopen_count,retired_at").eq("report_id",r.id).eq("workflow_generation",parseInt(r.workflow_restart_count||0,10)).is("retired_at",null).order("action_number",{ascending:true});
       if(res.error) throw res.error;
       actionPlanState.actions=(res.data||[]).map(function(a){return Object.assign({},a,{control_type:a.control_type||"",owner_user_id:a.owner_user_id||"",due_date:a.due_date||"",priority:a.priority||""});});
+      // Keep My Work and the Corrective Actions list synchronized immediately
+      // when a child action is submitted, verified, or sent back from the full incident workflow.
+      actionPlanState.actions.forEach(function(a){ if(a&&a.id) replaceGlobalCorrectiveAction(a); });
       if(!actionPlanState.actions.length) actionPlanState.actions=[newLocalCorrectiveAction()];
       actionPlanState.loading=false; actionPlanState.loaded=true; renderCorrectiveActionPlan();
       refreshRecordWorkflow(r,detail);
@@ -3274,6 +3277,7 @@
 
   /* ================= Phase 2 workspaces ================= */
   var lastOperationalView="records";
+  var activeFocusedAction=null, focusedActionOrigin="mywork";
   var ROLE_LABELS={admin:"Admin",safety_manager:"Safety Manager",supervisor:"Supervisor",read_only:"Read Only"};
   var ACTION_LABELS={not_started:"Not started",in_progress:"In progress",awaiting_verification:"Awaiting verification",verified:"Verified",changes_requested:"Changes requested"};
 
@@ -3496,7 +3500,7 @@
       '<div class="task-meta">'+esc(meta)+'</div>'+
       '<div class="task-due"><b class="due-signal '+(mode==="verify"?"":esc(info.cls))+'">'+
         esc(mode==="verify"?"Ready for verification":info.label)+'</b><span>'+esc(due)+'</span></div>';
-    b.addEventListener("click",function(){ if(r) openIncident(r,"mywork"); });
+    b.addEventListener("click",function(){ if(r) openFocusedCorrectiveAction(a,"mywork"); });
     return b;
   }
   function renderMyWork(){
@@ -3649,13 +3653,221 @@
         '<div class="task-due"><b class="due-signal '+escInfo.cls+'">'+esc(escInfo.label)+'</b><span>'+
           (a.due_date?esc(shortDate(a.due_date)):'No due date')+'</span></div>';
 
-      b.addEventListener('click',function(){ openIncident(r,'actions'); });
+      b.addEventListener('click',function(){ openFocusedCorrectiveAction(a,'actions'); });
       el.appendChild(b);
     });
   }
 
+  function focusedActionCanComplete(a,r){
+    if(!a||!r||isResolvedReport(r)||!correctiveActionInCurrentCycle(a,r)) return false;
+    if(isManager()) return true;
+    return currentRole==="supervisor" && currentUserId() && String(a.owner_user_id||"")===currentUserId();
+  }
+  function focusedActionCanVerify(a,r){
+    return !!(a&&r&&!isResolvedReport(r)&&correctiveActionInCurrentCycle(a,r)&&isManager()&&String(a.status||"")==="awaiting_verification");
+  }
+  function replaceGlobalCorrectiveAction(row){
+    if(!row||!row.id) return;
+    var found=false;
+    allCorrectiveActions=(allCorrectiveActions||[]).map(function(a){
+      if(String(a.id)===String(row.id)){found=true;return Object.assign({},a,row);}
+      return a;
+    });
+    if(!found) allCorrectiveActions.push(row);
+  }
+  function replaceGlobalReport(row){
+    if(!row||!row.id) return;
+    allReports=(allReports||[]).map(function(r){return String(r.id)===String(row.id)?Object.assign(r,row):r;});
+    if(activeIncident&&String(activeIncident.id)===String(row.id)) Object.assign(activeIncident,row);
+  }
+  async function refreshFocusedCorrectiveActionData(actionId,reportId){
+    var actionRes=await sb.from("report_corrective_actions")
+      .select("id,report_id,organization_id,workflow_generation,action_number,description,control_type,owner_user_id,due_date,priority,status,completion_note,completed_at,completed_by,verifier_user_id,verification_note,verified_at,verified_by,activated_at,activation_reopen_count,retired_at,created_at,updated_at")
+      .eq("id",actionId).maybeSingle();
+    if(actionRes.error) throw actionRes.error;
+    if(actionRes.data){ replaceGlobalCorrectiveAction(actionRes.data); activeFocusedAction=actionRes.data; }
+    if(reportId){
+      var reportRes=await sb.from("reports").select("*").eq("id",reportId).maybeSingle();
+      if(reportRes.error) throw reportRes.error;
+      if(reportRes.data) replaceGlobalReport(reportRes.data);
+      await refreshReportAttachments(reportId);
+    }
+    renderMyWork(); renderActions(); renderHomeSnapshot();
+    return activeFocusedAction;
+  }
+  async function clearFocusedLegacyVerifier(a){
+    if(!a||!a.verifier_user_id||!isManager()) return true;
+    var res=await sb.rpc("rbh_set_corrective_action_verifier",{p_action_id:a.id,p_verifier_user_id:null});
+    if(res.error) throw res.error;
+    a.verifier_user_id=null;
+    return true;
+  }
+  function focusedActionOwnerName(a){
+    var p=a&&a.owner_user_id?profileById[String(a.owner_user_id)]:null;
+    return p?profileName(p):"Not assigned";
+  }
+  function focusedActionPersonName(id,fallback){
+    var p=id?profileById[String(id)]:null;
+    return p?profileName(p):(fallback||"");
+  }
+  function focusedMeta(label,value){
+    return '<div class="focused-action-meta-item"><span>'+esc(label)+'</span><b>'+esc(value||"Not recorded")+'</b></div>';
+  }
+  function openFocusedCorrectiveAction(a,from){
+    if(!a) return;
+    var r=findReport(a.report_id);
+    if(!r) return;
+    activeFocusedAction=a;
+    focusedActionOrigin=from==="actions"?"actions":"mywork";
+    var back=$("myActionBack"); if(back) back.textContent=focusedActionOrigin==="actions"?"← Back to Corrective Actions":"← Back to My Work";
+    showView("myaction");
+    renderFocusedCorrectiveAction();
+  }
+  function renderFocusedCorrectiveAction(){
+    var shell=$("myActionShell"); if(!shell) return;
+    var a=activeFocusedAction;
+    var r=a?findReport(a.report_id):null;
+    if(!a||!r){shell.innerHTML='<div class="state">This corrective action is no longer available.</div>';return;}
+    if(!correctiveActionInCurrentCycle(a,r)&&!isResolvedReport(r)){
+      shell.innerHTML='<div class="state">This corrective action belongs to an earlier workflow cycle. Open the incident details to review its history.</div>';return;
+    }
+
+    var status=String(a.status||"not_started");
+    var owner=focusedActionOwnerName(a);
+    var control=a.control_type?(controlTypeLabel(a.control_type)||a.control_type):"Not selected";
+    var due=a.due_date?fmtDate(a.due_date):"No due date";
+    var priority=a.priority?String(a.priority).charAt(0).toUpperCase()+String(a.priority).slice(1):"No priority";
+    var completedBy=focusedActionPersonName(a.completed_by,"");
+    var verifiedBy=focusedActionPersonName(a.verified_by,"");
+    var canComplete=focusedActionCanComplete(a,r)&&["not_started","in_progress","changes_requested"].indexOf(status)>=0;
+    var canVerify=focusedActionCanVerify(a,r);
+    var isMine=currentUserId()&&String(a.owner_user_id||"")===currentUserId();
+    var reportLine='Report #'+String(r.ref_no||r.id)+(r.report_type?' · '+r.report_type:'')+(r.job_site?' · '+r.job_site:'');
+    var statusClass='mas-status-'+status;
+
+    var html='<div class="focused-action-head"><div><div class="home-kicker">'+esc(reportLine)+'</div><h2>Corrective Action #'+esc(a.action_number||"")+'</h2><p>This page is only for this corrective action. Updates save to the same action shown in the main incident workflow.</p></div><div class="focused-action-status"><span class="multi-action-status '+esc(statusClass)+'">'+esc(actionLabel(status))+'</span></div></div>'+
+      '<div class="focused-action-body">';
+
+    if(status==="changes_requested"){
+      html+='<div class="focused-action-callout returned"><b>Changes requested</b>'+esc(a.verification_note||"The reviewer requested an update to this corrective action.")+'</div>';
+    } else if(status==="awaiting_verification"){
+      html+='<div class="focused-action-callout waiting"><b>Submitted for verification</b>'+(canVerify?'Review the completed work and evidence below. No verifier assignment is required.':'Your work is waiting for an authorized reviewer. You do not need to do anything unless it is sent back.')+'</div>';
+    } else if(status==="verified"){
+      html+='<div class="focused-action-complete"><b>Verified</b>This corrective action is complete and no longer needs work.</div>';
+    } else if(isMine){
+      html+='<div class="focused-action-callout"><b>This is your assigned action</b>Complete only the work shown on this page. Other corrective actions for this incident stay out of the way.</div>';
+    } else {
+      html+='<div class="focused-action-callout"><b>Focused action view</b>You are viewing this corrective action by itself. Only the assigned owner or an authorized manager can update the completion work.</div>';
+    }
+
+    html+='<section class="focused-action-section"><h3>Assigned work</h3><p class="focused-action-description">'+esc(a.description||"No corrective-action description recorded.")+'</p><div class="focused-action-meta">'+
+      focusedMeta("Assigned to",owner)+focusedMeta("Due date",due)+focusedMeta("Priority",priority)+focusedMeta("Control type",control)+
+      '</div></section>';
+
+    if(["not_started","in_progress","changes_requested"].indexOf(status)>=0){
+      html+='<section class="focused-action-section focused-action-work"><h3>'+(status==="changes_requested"?'Update completed work':'Complete this action')+'</h3>'+
+        '<label for="focusedCompletionNote">What was completed?</label><textarea id="focusedCompletionNote" '+(canComplete?'':'disabled')+' placeholder="Describe exactly what was done to complete this corrective action.">'+esc(a.completion_note||"")+'</textarea>'+
+        '<p class="focused-action-help">Required before submitting for verification. Be specific enough that a reviewer can understand what changed.</p>'+
+        '<div class="evidence-panel" id="focusedActionEvidence"></div>'+
+        (canComplete?'<div class="focused-action-actions"><button class="wizard-primary" id="focusedSubmitAction" type="button">'+(status==="changes_requested"?'Resubmit for verification →':'Submit for verification →')+'</button></div>':'<div class="focused-action-readonly">This action is assigned to '+esc(owner)+'. You can review it here, but you cannot submit work for this owner.</div>')+
+        '</section>';
+    } else {
+      html+='<section class="focused-action-section"><h3>Completed work</h3>'+
+        '<div class="focused-action-submitted"><b>Completed work submitted</b><p>'+esc(a.completion_note||"No completion note recorded.")+'</p>'+
+        (a.completed_at?'<div class="action-meta">Submitted '+esc(fmtDate(a.completed_at))+(completedBy?' by '+esc(completedBy):'')+'</div>':'')+'</div>'+
+        '<div class="evidence-panel" id="focusedActionEvidence"></div></section>';
+    }
+
+    if(status==="awaiting_verification"){
+      html+='<section class="focused-action-section focused-action-review"><h3>Verification</h3>';
+      if(canVerify){
+        html+='<label for="focusedVerificationNote">Verification notes <span style="font-weight:400;color:var(--muted)">(optional when approving)</span></label>'+
+          '<textarea id="focusedVerificationNote" placeholder="What did you verify? If sending this back, explain exactly what still needs to be done.">'+esc(a.verification_note||"")+'</textarea>'+
+          '<div class="wizard-required" id="focusedVerificationRequired">Add a reviewer note explaining the requested changes.</div>'+
+          '<div class="focused-action-actions"><button class="multi-action-request-changes" id="focusedRequestChanges" type="button">Send back for changes</button><button class="wizard-primary" id="focusedVerifyAction" type="button">Verify action</button></div>';
+      } else {
+        html+='<div class="focused-action-readonly">An authorized reviewer will verify this action or send it back with a specific note. No verification owner needs to be assigned.</div>';
+      }
+      html+='</section>';
+    } else if(status==="verified"){
+      html+='<section class="focused-action-section"><h3>Verification</h3><div class="focused-action-submitted"><b>Verified'+(a.verified_at?' · '+esc(fmtDate(a.verified_at)):'')+'</b><p>'+esc(a.verification_note||"No reviewer note recorded.")+'</p>'+(verifiedBy?'<div class="action-meta">Verified by '+esc(verifiedBy)+'</div>':'')+'</div></section>';
+    }
+
+    html+='</div>';
+    shell.innerHTML=html;
+
+    var evidence=$("focusedActionEvidence");
+    if(evidence) renderActionEvidence(r,evidence,null,a,{readOnly:status==="awaiting_verification"||status==="verified"}).catch(function(ex){console.error("focused action evidence",ex);});
+
+    var submit=$("focusedSubmitAction");
+    if(submit) submit.addEventListener("click",async function(){
+      var ta=$("focusedCompletionNote"), note=(ta&&ta.value.trim())||"";
+      if(!note){toast("Describe what was completed before submitting this action for verification.","err");if(ta)ta.focus();return;}
+      submit.disabled=true; var old=submit.textContent; submit.textContent="Submitting…";
+      try{
+        await waitForActionEvidenceUpload(r.id,a.id);
+        var res=await sb.rpc("rbh_submit_corrective_action_completion",{p_action_id:a.id,p_completion_note:note});
+        if(res.error) throw res.error;
+        await refreshFocusedCorrectiveActionData(a.id,r.id);
+        var fresh=activeFocusedAction||a;
+        var emailResult=await sendCorrectiveActionVerificationRequestedEmail(r,fresh);
+        if(!emailResult||(!emailResult.sent&&!emailResult.skipped&&emailResult.ok===false)) console.error("focused verification-request email failed",emailResult);
+        renderFocusedCorrectiveAction();
+        toast("Corrective Action #"+String(a.action_number||"")+" submitted for verification","ok");
+      }catch(ex){console.error(ex);toast("Could not submit this corrective action.","err");}
+      finally{if(submit.isConnected){submit.disabled=false;submit.textContent=old;}}
+    });
+
+    var verify=$("focusedVerifyAction");
+    if(verify) verify.addEventListener("click",async function(){
+      if(!focusedActionCanVerify(a,r)){toast("You do not have verification permission for this corrective action.","err");return;}
+      var noteEl=$("focusedVerificationNote"), note=(noteEl&&noteEl.value.trim())||null;
+      verify.disabled=true; var old=verify.textContent; verify.textContent="Verifying…";
+      try{
+        await waitForActionEvidenceUpload(r.id,a.id);
+        await clearFocusedLegacyVerifier(a);
+        var res=await sb.rpc("rbh_verify_corrective_action",{p_action_id:a.id,p_verification_note:note});
+        if(res.error) throw res.error;
+        await refreshFocusedCorrectiveActionData(a.id,r.id);
+        await loadNotifications(true);
+        renderFocusedCorrectiveAction();
+        toast("Corrective Action #"+String(a.action_number||"")+" verified","ok");
+      }catch(ex){console.error(ex);toast("Could not verify this corrective action.","err");}
+      finally{if(verify.isConnected){verify.disabled=false;verify.textContent=old;}}
+    });
+
+    var changes=$("focusedRequestChanges");
+    if(changes) changes.addEventListener("click",async function(){
+      if(!focusedActionCanVerify(a,r)){toast("You do not have verification permission for this corrective action.","err");return;}
+      var noteEl=$("focusedVerificationNote"), note=(noteEl&&noteEl.value.trim())||"", req=$("focusedVerificationRequired");
+      if(!note){if(req)req.classList.add("show");toast("Explain what still needs to be changed before sending this action back.","err");if(noteEl)noteEl.focus();return;}
+      if(req) req.classList.remove("show");
+      changes.disabled=true; var old=changes.textContent; changes.textContent="Sending back…";
+      try{
+        await waitForActionEvidenceUpload(r.id,a.id);
+        await clearFocusedLegacyVerifier(a);
+        var res=await sb.rpc("rbh_request_corrective_action_changes",{p_action_id:a.id,p_verification_note:note});
+        if(res.error) throw res.error;
+        await refreshFocusedCorrectiveActionData(a.id,r.id);
+        var fresh=activeFocusedAction||a;
+        var emailResult=await sendCorrectiveActionChangesRequestedEmail(r,fresh);
+        if(!emailResult||(!emailResult.sent&&!emailResult.skipped&&emailResult.ok===false)) console.error("focused changes-requested email failed",emailResult);
+        await loadNotifications(true);
+        renderFocusedCorrectiveAction();
+        toast("Corrective Action #"+String(a.action_number||"")+" sent back for changes","ok");
+      }catch(ex){console.error(ex);toast("Could not request changes for this corrective action.","err");}
+      finally{if(changes.isConnected){changes.disabled=false;changes.textContent=old;}}
+    });
+  }
+
+  var _myActionBack=$("myActionBack"); if(_myActionBack) _myActionBack.addEventListener("click",function(){showView(focusedActionOrigin==="actions"?"actions":"mywork");});
+  var _myActionIncident=$("myActionViewIncident"); if(_myActionIncident) _myActionIncident.addEventListener("click",function(){
+    var r=activeFocusedAction?findReport(activeFocusedAction.report_id):null;
+    if(r) openIncident(r,focusedActionOrigin==="actions"?"actions":"mywork");
+  });
+
   /* ================= App shell: navigation, home, users ================= */
-  var PAGE_TITLES={home:"Home",mywork:"My Work",records:"Safety Inbox",actions:"Corrective Actions",metrics:"Analytics",users:"Admin",incident:"Incident"};
+  var PAGE_TITLES={home:"Home",mywork:"My Work",records:"Safety Inbox",actions:"Corrective Actions",myaction:"Corrective Action",metrics:"Analytics",users:"Admin",incident:"Incident"};
   var sidebarEl=document.getElementById("sidebar"), sbBackdrop=document.getElementById("sbBackdrop");
   function openSidebar(){ if(sidebarEl) sidebarEl.classList.add("open"); if(sbBackdrop) sbBackdrop.classList.add("show"); }
   function closeSidebar(){ if(sidebarEl) sidebarEl.classList.remove("open"); if(sbBackdrop) sbBackdrop.classList.remove("show"); }
@@ -3664,9 +3876,11 @@
     if(name==="users" && currentRole!=="admin") name="home";
     if(name==="platform" && !isPlatformAdmin) name="home";
     if(name==="mywork" && currentRole==="read_only") name="records";
-    storeView(name);
-    ["home","mywork","records","actions","metrics","platform","users","incident"].forEach(function(v){ var el=document.getElementById("view-"+v); if(el) el.hidden=(v!==name); });
-    document.querySelectorAll(".nav-item").forEach(function(n){ n.classList.toggle("active", n.getAttribute("data-view")===name); });
+    if(name==="myaction" && !activeFocusedAction) name=(focusedActionOrigin==="actions"?"actions":"mywork");
+    if(name!=="myaction") storeView(name);
+    ["home","mywork","records","actions","myaction","metrics","platform","users","incident"].forEach(function(v){ var el=document.getElementById("view-"+v); if(el) el.hidden=(v!==name); });
+    var activeNav=name==="myaction"?(focusedActionOrigin==="actions"?"actions":"mywork"):name;
+    document.querySelectorAll(".nav-item").forEach(function(n){ n.classList.toggle("active", n.getAttribute("data-view")===activeNav); });
     var pt=$("pageTitle"); if(pt) pt.textContent=PAGE_TITLES[name]||"";
     if(name==="metrics") renderMetrics();
     if(name==="mywork") renderMyWork();
@@ -4405,7 +4619,7 @@
       await renderActionEvidence(r,panels[i],auditEl,action||null);
     }
   }
-  async function renderActionEvidence(r,el,auditEl,correctiveAction){
+  async function renderActionEvidence(r,el,auditEl,correctiveAction,options){
     if(!el) return;
 
     var allEvidence=(attByReport[r.id]||[]).filter(isActionEvidence);
@@ -4423,7 +4637,7 @@
       priorEvidence=legacyEvidence.filter(function(a){ if(!resetAt) return false; var t=new Date(a.created_at||0).getTime(); return !isNaN(t)&&t<resetAt; });
     }
 
-    var canManage=canManageActionEvidence(r,correctiveAction||null);
+    var canManage=canManageActionEvidence(r,correctiveAction||null) && !(options&&options.readOnly);
     var countLabel=arr.length+(arr.length===1?" file":" files");
     var heading=correctiveAction&&correctiveAction.action_number
       ? "Corrective Action #"+correctiveAction.action_number+" evidence"

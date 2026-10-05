@@ -71,3 +71,7 @@ Before deploying this dashboard version, run `supabase/RBH_STEP2_INVESTIGATION_F
 
 ## Build 25 — 2026-10-05
 Step 3 Verify was simplified for small-company use. The visible Verification owner assignment controls were removed. Authorized reviewers now go directly from completed work/evidence to Verify or Request changes. See `docs/RBH_STEP3_VERIFICATION_SIMPLIFICATION_2026-10-05.md`.
+
+## Build 26 — focused personal corrective-action work — 2026-10-05
+
+Corrective-action cards opened from **My Work** or **Corrective Actions** now open a single-action workspace instead of the full incident workflow. The focused page writes to the same `report_corrective_actions` row and corrective-action evidence records used by the incident workflow. Returned actions remain visible to their assigned owner even while other actions on the same incident are still in verification. No database migration is required. See `docs/RBH_BUILD26_FOCUSED_PERSONAL_ACTION_WORKSPACE_2026-10-05.md`.
