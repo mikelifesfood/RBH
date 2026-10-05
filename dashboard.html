@@ -2223,7 +2223,7 @@
     var wrap=document.createElement("div");
     wrap.className="card"+(resolved?" resolved":"")+inboxStateClass;
     wrap.setAttribute('data-report-id',r.id);
-    var meta=[fmtDate(r.created_at),(r.reporter_name||"Anonymous")]; if(r.hazard_category) meta.push(r.hazard_category); if(investigatorName(r)) meta.push("Investigator: "+investigatorName(r)); if(assigneeName(r)) meta.push("Action owner: "+assigneeName(r)); if(verifierName(r)) meta.push("Verifier: "+verifierName(r)); if(r.due_date) meta.push((isOverdue(r)?"Overdue \u2014 due ":"Due ")+shortDate(r.due_date));
+    var meta=[fmtDate(r.created_at),(r.reporter_name||"Anonymous")]; if(r.hazard_category) meta.push(r.hazard_category); if(investigatorName(r)) meta.push("Investigator: "+investigatorName(r)); if(assigneeName(r)) meta.push("Action owner: "+assigneeName(r)); if(r.due_date) meta.push((isOverdue(r)?"Overdue \u2014 due ":"Due ")+shortDate(r.due_date));
     var pri=r.priority?('<span class="badge pr-'+r.priority+'" title="Priority">'+({low:"Low priority",medium:"Medium priority",high:"High priority"}[r.priority]||r.priority)+'</span>'):"";
     wrap.innerHTML=
       '<button class="card-head" type="button">'+
@@ -2687,8 +2687,7 @@
     if(currentRole==="supervisor" && n<=3 && !isInvestigatorAssignedToMe(r)) return "This investigation is owned by "+(investigatorName(r)||"another dashboard user")+". You can review this step, but only the assigned investigator can change it.";
     if(currentRole==="supervisor" && n===4 && !isActionAssignedToMe(r)) return "This corrective action is owned by "+(assigneeName(r)||"another dashboard user")+". You can review it, but only the assigned action owner can change it.";
     if(n===5 && !canVerify()) return "This step is waiting for an Admin or Safety Manager to verify the work.";
-    if(n===5 && isManager() && r.verifier_user_id && !canPerformVerification(r)) return "Verification is assigned to "+(verifierName(r)||"another reviewer")+". You can review the record or reassign the verification owner.";
-    if(n===5 && isManager() && !r.verifier_user_id) return "Verification is unassigned. Any Admin or Safety Manager can review it, or assign a specific verification owner.";
+    if(n===5 && isManager()) return "Review the completed work and evidence, then verify it or request changes.";
     if(n===6 && !canVerify()) return "An Admin or Safety Manager closes the record after verification.";
     return map[n]||"Follow the guided steps.";
   }
@@ -3048,9 +3047,14 @@
       return currentRole==="supervisor" && currentUserId() && String(a.owner_user_id||"")===currentUserId();
     }
     function canVerifyCorrectiveAction(a){
-      if(!a||isResolvedReport(r)||!isManager()) return false;
-      if(currentRole==="admin") return true;
-      return currentRole==="safety_manager" && (!a.verifier_user_id || String(a.verifier_user_id)===currentUserId());
+      return !!(a&&!isResolvedReport(r)&&isManager());
+    }
+    async function releaseLegacyCorrectiveActionVerifier(a){
+      if(!a||!a.verifier_user_id||!isManager()) return true;
+      var res=await sb.rpc("rbh_set_corrective_action_verifier",{p_action_id:a.id,p_verifier_user_id:null});
+      if(res.error) throw res.error;
+      a.verifier_user_id=null;
+      return true;
     }
     function renderMultiActionVerification(){
       var summary=syncCorrectiveActionSummary();
@@ -3080,7 +3084,6 @@
         var owner=a.owner_user_id&&profileById[String(a.owner_user_id)]?profileName(profileById[String(a.owner_user_id)]):"Not assigned";
         var completedBy=a.completed_by&&profileById[String(a.completed_by)]?profileName(profileById[String(a.completed_by)]):"";
         var verifiedBy=a.verified_by&&profileById[String(a.verified_by)]?profileName(profileById[String(a.verified_by)]):"";
-        var verifier=a.verifier_user_id&&profileById[String(a.verifier_user_id)]?profileName(profileById[String(a.verifier_user_id)]):"Shared Admin / Safety Manager queue";
         var review="";
 
         if(status==="verified"){
@@ -3090,19 +3093,8 @@
           '</div>';
         } else if(status==="awaiting_verification"){
           var canReview=canVerifyCorrectiveAction(a);
-          var assignment="";
-          if(isManager()){
-            assignment='<div class="multi-action-verifier-controls">'+
-              '<label class="inv-l">Verification owner<select data-child-verifier-select="'+esc(a.id)+'">'+verifierOptions(a.verifier_user_id||"")+'</select></label>'+
-              '<button class="wizard-save" type="button" data-child-verifier-self="'+esc(a.id)+'">Assign to me</button>'+
-              '<button class="wizard-save" type="button" data-child-verifier-save="'+esc(a.id)+'">Save assignment</button>'+
-            '</div>';
-          } else {
-            assignment='<div class="multi-action-verifier-note"><b>Verification owner</b>'+esc(verifier)+'</div>';
-          }
-
           if(canReview){
-            review=assignment+
+            review='<div class="multi-action-verifier-note"><b>Ready for verification</b>Review the completed work and evidence below. Verify it if the fix is complete, or request changes for this action only.</div>'+
               '<div class="mav-review">'+
                 '<label class="inv-l">Verification notes <span style="font-weight:400;color:var(--muted)">(optional when approving)</span>'+
                   '<textarea data-child-verification-note="'+esc(a.id)+'" placeholder="What did you verify? If requesting changes, explain exactly what still needs to be done.">'+esc(a.verification_note||"")+'</textarea>'+
@@ -3114,8 +3106,7 @@
                 '</div>'+
               '</div>';
           } else {
-            review=assignment+
-              '<div class="multi-action-verifier-note"><b>Waiting for assigned reviewer</b>Verification is assigned to '+esc(verifier)+'. An Admin may override the assignment; otherwise the assigned Safety Manager completes this review.</div>';
+            review='<div class="multi-action-verifier-note"><b>Verification required</b>An Admin or Safety Manager reviews the completed work and decides whether to verify it or request changes.</div>';
           }
         } else if(status==="changes_requested"){
           review='<div class="ops-alert critical"><b>Changes requested</b>'+esc(a.verification_note||"The reviewer requested additional work.")+'</div>'+
@@ -3412,74 +3403,20 @@
         return;
       }
 
-      var selfBtn=e.target.closest("[data-child-verifier-self]");
-      var saveBtn=e.target.closest("[data-child-verifier-save]");
       var verifyBtn=e.target.closest("[data-child-verify-action]");
       var changesBtn=e.target.closest("[data-child-request-changes]");
-
-      if(selfBtn){
-        var selfId=selfBtn.getAttribute("data-child-verifier-self");
-        var selfAction=actionPlanState.actions.find(function(x){return String(x.id||"")===String(selfId||"");});
-        if(!selfAction||!isManager()||!currentSession||!currentSession.user){toast("Only an Admin or Safety Manager can assign a verification owner.","err");return;}
-        selfBtn.disabled=true;
-        try{
-          var selfWasAlreadyAssigned=String(selfAction.verifier_user_id||"")===String(currentSession.user.id||"");
-          var selfRes=await sb.rpc("rbh_set_corrective_action_verifier",{p_action_id:selfAction.id,p_verifier_user_id:currentSession.user.id});
-          if(selfRes.error) throw selfRes.error;
-          await loadCorrectiveActionPlan();
-          var refreshedSelfAction=actionPlanState.actions.find(function(x){return String(x.id||"")===String(selfAction.id||"");})||selfAction;
-          var selfEmail=selfWasAlreadyAssigned?{ok:true,sent:false,skipped:true,reason:"UNCHANGED_VERIFIER"}:await sendCorrectiveActionVerifierAssignmentEmail(r,refreshedSelfAction);
-          await loadNotifications(true);
-          if(!selfEmail || (!selfEmail.sent&&!selfEmail.skipped&&selfEmail.ok===false)){
-            console.error("action verifier-assignment email failed",selfEmail);
-            toast("Verification was assigned to you, but the email could not be sent.","err");
-          } else {
-            toast("Corrective Action #"+selfAction.action_number+" assigned to you for verification","ok");
-          }
-        }catch(ex){console.error(ex);toast("Could not assign this verification to you.","err");}
-        finally{if(selfBtn.isConnected)selfBtn.disabled=false;}
-        return;
-      }
-
-      if(saveBtn){
-        var saveId=saveBtn.getAttribute("data-child-verifier-save");
-        var saveAction=actionPlanState.actions.find(function(x){return String(x.id||"")===String(saveId||"");});
-        if(!saveAction||!isManager()){toast("Only an Admin or Safety Manager can assign a verification owner.","err");return;}
-        var saveCard=saveBtn.closest("[data-child-verification-card]");
-        var saveSelect=saveCard&&saveCard.querySelector("[data-child-verifier-select]");
-        var nextVerifier=(saveSelect&&saveSelect.value)||null;
-        var previousVerifier=saveAction.verifier_user_id||null;
-        var verifierChanged=String(previousVerifier||"")!==String(nextVerifier||"");
-        saveBtn.disabled=true;
-        try{
-          var saveRes=await sb.rpc("rbh_set_corrective_action_verifier",{p_action_id:saveAction.id,p_verifier_user_id:nextVerifier||null});
-          if(saveRes.error) throw saveRes.error;
-          await loadCorrectiveActionPlan();
-          var refreshedSaveAction=actionPlanState.actions.find(function(x){return String(x.id||"")===String(saveAction.id||"");})||saveAction;
-          var saveEmail={ok:true,sent:false,skipped:true,reason:verifierChanged?"NO_VERIFIER":"UNCHANGED_VERIFIER"};
-          if(verifierChanged&&nextVerifier) saveEmail=await sendCorrectiveActionVerifierAssignmentEmail(r,refreshedSaveAction);
-          await loadNotifications(true);
-          if(!saveEmail || (!saveEmail.sent&&!saveEmail.skipped&&saveEmail.ok===false)){
-            console.error("action verifier-assignment email failed",saveEmail);
-            toast("Verification owner was saved, but the assignment email could not be sent.","err");
-          } else {
-            toast(nextVerifier?"Verification owner saved":"Verification returned to the shared queue","ok");
-          }
-        }catch(ex){console.error(ex);toast("Could not save the verification owner.","err");}
-        finally{if(saveBtn.isConnected)saveBtn.disabled=false;}
-        return;
-      }
 
       if(verifyBtn){
         var verifyId=verifyBtn.getAttribute("data-child-verify-action");
         var verifyAction=actionPlanState.actions.find(function(x){return String(x.id||"")===String(verifyId||"");});
-        if(!verifyAction||!canVerifyCorrectiveAction(verifyAction)){toast("This corrective action is assigned to another reviewer or you do not have verification permission.","err");return;}
+        if(!verifyAction||!canVerifyCorrectiveAction(verifyAction)){toast("You do not have verification permission for this corrective action.","err");return;}
         var verifyCard=verifyBtn.closest("[data-child-verification-card]");
         var verifyNoteEl=verifyCard&&verifyCard.querySelector("[data-child-verification-note]");
         var verifyNote=(verifyNoteEl&&verifyNoteEl.value.trim())||null;
         verifyBtn.disabled=true;
         try{
           await waitForActionEvidenceUpload(r.id,verifyAction.id);
+          await releaseLegacyCorrectiveActionVerifier(verifyAction);
           var verifyRes=await sb.rpc("rbh_verify_corrective_action",{p_action_id:verifyAction.id,p_verification_note:verifyNote});
           if(verifyRes.error) throw verifyRes.error;
           await loadCorrectiveActionPlan();
@@ -3504,7 +3441,7 @@
       if(changesBtn){
         var changesId=changesBtn.getAttribute("data-child-request-changes");
         var changesAction=actionPlanState.actions.find(function(x){return String(x.id||"")===String(changesId||"");});
-        if(!changesAction||!canVerifyCorrectiveAction(changesAction)){toast("This corrective action is assigned to another reviewer or you do not have verification permission.","err");return;}
+        if(!changesAction||!canVerifyCorrectiveAction(changesAction)){toast("You do not have verification permission for this corrective action.","err");return;}
         var changesCard=changesBtn.closest("[data-child-verification-card]");
         var changesNoteEl=changesCard&&changesCard.querySelector("[data-child-verification-note]");
         var changesNote=(changesNoteEl&&changesNoteEl.value.trim())||"";
@@ -3519,6 +3456,7 @@
         changesBtn.disabled=true;
         try{
           await waitForActionEvidenceUpload(r.id,changesAction.id);
+          await releaseLegacyCorrectiveActionVerifier(changesAction);
           var changesRes=await sb.rpc("rbh_request_corrective_action_changes",{p_action_id:changesAction.id,p_verification_note:changesNote});
           if(changesRes.error) throw changesRes.error;
           await loadCorrectiveActionPlan();
@@ -3924,7 +3862,7 @@
     ["reporter_name","Reporter name"],["reporter_role","Reporter role"],["reporter_contact","Reporter contact"],
     ["language","Form language"],["involves_injury","Involves injury"],["job_site","Incident address"],["site_location","Specific location"],["observed_at","Observed at"],
     ["calosha_screening_status","Cal/OSHA serious-event screening"],["calosha_awareness_at","RBH awareness time"],
-    ["investigator_user_id","Case owner / investigator user ID"],["verifier_user_id","Verification owner user ID"],
+    ["investigator_user_id","Case owner / investigator user ID"],
     ["priority","Priority"],["likelihood","Likelihood"],["assigned_to","Assigned to"],
     ["assigned_user_id","Assigned dashboard user ID"],["action_status","Corrective action status"],
     ["investigation_findings","Investigation — what happened"],["root_cause","Investigation — why it happened"],["corrective_action","Corrective action"],["corrective_control_type","Control type"],["responsible_person","Responsible person"],
@@ -3953,7 +3891,6 @@
       childActions.forEach(function(a){childActionIds[String(a.id)]=true;});
       var childText=childActions.map(function(a){
         var owner=a.owner_user_id&&profileById[String(a.owner_user_id)]?profileName(profileById[String(a.owner_user_id)]):"";
-        var verifier=a.verifier_user_id&&profileById[String(a.verifier_user_id)]?profileName(profileById[String(a.verifier_user_id)]):"";
         return [
           "Action #"+String(a.action_number||""),
           "Description: "+String(a.description||""),
@@ -3963,7 +3900,6 @@
           "Priority: "+String(a.priority||""),
           "Status: "+String(a.status||""),
           "Completion: "+String(a.completion_note||""),
-          "Verifier: "+verifier,
           "Verification: "+String(a.verification_note||"")
         ].join(" | ");
       }).join("  ||  ");
@@ -4378,7 +4314,6 @@
           subhead(L.actionNumber+" #"+String(a.action_number||""));
           pairRow([
             {label:L.verificationOutcome,value:actionLabel(a.status||"not_started")},
-            {label:L.verifier,value:a.verifier_user_id?userById(a.verifier_user_id):L.notAssigned},
             {label:L.verifiedOn,value:a.verified_at?pdfDate(a.verified_at):""},
             {label:L.verifiedBy,value:a.verified_by?userById(a.verified_by):""}
           ]);
@@ -4389,7 +4324,6 @@
         var verifyOutcome=PV("verification_outcome",actionLabel(r.action_status||"not_started"));
         pairRow([
           {label:L.verificationOutcome,value:verifyOutcome},
-          {label:L.verifier,value:verifierName(r)||L.notAssigned},
           {label:L.verifiedOn,value:r.action_verified_at?pdfDate(r.action_verified_at):""},
           {label:L.verifiedBy,value:r.action_verified_by?userById(r.action_verified_by):""}
         ]);
@@ -4918,9 +4852,7 @@
   function isActionAssignedToMe(r){ return !!(r&&currentUserId()&&String(r.assigned_user_id||"")===currentUserId()); }
   function isVerifierAssignedToMe(r){ return !!(r&&currentUserId()&&String(r.verifier_user_id||"")===currentUserId()); }
   function canPerformVerification(r){
-    if(!r||!isManager()) return false;
-    if(currentRole==="admin") return true;
-    return !r.verifier_user_id || isVerifierAssignedToMe(r);
+    return !!(r&&isManager());
   }
   function canWorkInvestigation(r){
     if(!r||isResolvedReport(r)) return false;
@@ -5048,7 +4980,7 @@
     storeIncident(r,lastOperationalView);
     var back=$("incidentBack"); if(back) back.textContent=lastOperationalView==="mywork"?"← Back to My Work":(lastOperationalView==="actions"?"← Back to Corrective Actions":"← Back to Safety Inbox");
     $("incidentTitle").textContent="#"+(r.ref_no||r.id)+" · "+(r.report_type||"Safety report");
-    var meta=[]; if(r.job_site) meta.push(r.job_site); if(investigatorName(r)) meta.push("Investigator: "+investigatorName(r)); if(assigneeName(r)) meta.push("Action owner: "+assigneeName(r)); if(verifierName(r)) meta.push("Verifier: "+verifierName(r)); meta.push(fmtDate(r.created_at)); $("incidentMeta").textContent=meta.join(" · ");
+    var meta=[]; if(r.job_site) meta.push(r.job_site); if(investigatorName(r)) meta.push("Investigator: "+investigatorName(r)); if(assigneeName(r)) meta.push("Action owner: "+assigneeName(r)); meta.push(fmtDate(r.created_at)); $("incidentMeta").textContent=meta.join(" · ");
     $("incidentSummary").innerHTML='<div class="is-badges">'+incidentBadgeHtml(r)+'</div><div class="is-desc">'+esc(r.description||"No description provided.")+'</div>';
     var langSel=$("incidentLanguage"); if(langSel){ langSel.value=activeIncidentLanguage; }
     setIncidentLanguageState(r,activeIncidentLanguage,"loading");
@@ -5090,8 +5022,7 @@
       var r=findReport(a.report_id);
       if(!r||!isOpenOperational(r)||!correctiveActionInCurrentCycle(a,r)) return false;
       if(String(a.status||"")!=="awaiting_verification") return false;
-      if(currentRole==="admin") return true;
-      return !a.verifier_user_id || String(a.verifier_user_id)===currentUserId();
+      return true;
     });
   }
   function childActionSort(a,b){
@@ -5107,13 +5038,12 @@
     var r=findReport(a.report_id);
     var b=document.createElement("button"); b.type="button"; b.className="task-card";
     var owner=a.owner_user_id&&profileById[String(a.owner_user_id)]?profileName(profileById[String(a.owner_user_id)]):"Not assigned";
-    var verifier=a.verifier_user_id&&profileById[String(a.verifier_user_id)]?profileName(profileById[String(a.verifier_user_id)]):"Shared Admin / Safety Manager queue";
     var info=escalationInfo(a), status=String(a.status||"not_started");
     var label=mode==="verify"
-      ? (a.verifier_user_id?"Verification · "+verifier:"Verification · shared queue")
+      ? "Ready for verification"
       : (status==="changes_requested"?"Changes requested":actionLabel(status));
     var meta=mode==="verify"
-      ? "Owner: "+owner+" · Reviewer: "+verifier
+      ? "Action owner: "+owner
       : "Assigned: "+owner+(r&&r.job_site?" · "+r.job_site:"");
     var due=mode==="verify"
       ? (a.completed_at?"Submitted "+shortDate(a.completed_at):"Ready for review")
@@ -5143,8 +5073,7 @@
     var reviews=myVerificationWorkRows().sort(childActionSort);
     var overdue=actions.filter(isOverdue).length;
     var soon=actions.filter(function(a){var d=daysUntilDue(a);return d!==null&&d>=0&&d<=3;}).length;
-    var assignedReviews=reviews.filter(function(a){return String(a.verifier_user_id||"")===currentUserId();}).length;
-    var sharedReviews=reviews.length-assignedReviews;
+    var reviewCount=reviews.length;
 
     function stat(n,l,cls){return '<div class="mywork-stat '+(cls||'')+'"><b>'+n+'</b><span>'+l+'</span></div>';}
     summary.innerHTML=
@@ -5153,17 +5082,16 @@
       stat(soon,'Due in 3 days',soon?'warn':'')+
       stat(overdue,'Overdue',overdue?'alert':'');
 
-    var personalCount=investigations.length+actions.length+assignedReviews;
+    var personalCount=investigations.length+actions.length+reviewCount;
     if(count) count.textContent=personalCount+(personalCount===1?' open assignment':' open assignments');
 
     var ng=$("myWorkGreeting"), br=$("myWorkBannerText"), role=$("myWorkRole");
     var nm=currentProfile?profileName(currentProfile):((user&&user.email)||'');
     if(ng) ng.textContent=nm?('Work for '+nm):'Your work queue';
     if(br){
-      if(assignedReviews) br.textContent=assignedReviews+' verification review'+(assignedReviews===1?'':'s')+' assigned to you '+(assignedReviews===1?'is':'are')+' waiting.';
+      if(reviewCount) br.textContent=reviewCount+' corrective action'+(reviewCount===1?' is':'s are')+' ready for verification.';
       else if(investigations.length) br.textContent=investigations.length+' investigation'+(investigations.length===1?'':'s')+' currently need'+(investigations.length===1?'s':'')+' your attention.';
       else if(actions.length) br.textContent='Start with overdue, changes-requested, or due-soon corrective actions first.';
-      else if(sharedReviews&&isManager()) br.textContent=sharedReviews+' shared verification review'+(sharedReviews===1?' is':'s are')+' ready to be picked up.';
       else br.textContent='Your assigned investigations, corrective actions, and verification reviews will appear here.';
     }
     if(role) role.textContent=roleLabel(currentRole);
@@ -5183,7 +5111,7 @@
 
     var nav=$("navMyWorkCount");
     if(nav){
-      var attention=investigations.length+actions.length+assignedReviews;
+      var attention=investigations.length+actions.length+reviewCount;
       nav.textContent=attention?String(attention):'';
     }
   }
@@ -5211,10 +5139,7 @@
   function correctiveActionNeedsMyAttention(a){
     if(!a||!currentUserId()) return false;
     if(String(a.owner_user_id||"")===currentUserId()) return true;
-    if(String(a.status||"")==="awaiting_verification" && isManager()){
-      if(currentRole==="admin") return true;
-      return !a.verifier_user_id || String(a.verifier_user_id)===currentUserId();
-    }
+    if(String(a.status||"")==="awaiting_verification" && isManager()) return true;
     return false;
   }
   function renderActionSummary(arr){
@@ -5748,30 +5673,14 @@
       if(completed){var cb2=r.action_completed_by&&profileById[String(r.action_completed_by)]?profileName(profileById[String(r.action_completed_by)]):'';h+='<div class="action-meta">'+esc(completed)+(cb2?' by '+esc(cb2):'')+'</div>';}
       h+='<div class="evidence-panel" data-action-evidence></div>';
       if(status==="awaiting_verification"){
-        var vName=verifierName(r), vAssigned=!!r.verifier_user_id;
-        h+='<div class="investigator-card verifier-card" data-verifier-card>'+
-          '<div class="investigator-head"><div><b>Verification owner <span style="font-weight:500;color:var(--muted)">(optional)</span></b><p>Leave unassigned for a shared Admin/Safety Manager queue, or choose one reviewer for clear ownership. When practical, use someone other than the corrective-action owner.</p></div><span class="investigator-chip'+(vAssigned?' assigned':'')+'" data-verifier-chip>'+(vAssigned?'Assigned':'Shared queue')+'</span></div>';
-        if(canVerify()){
-          h+='<div class="investigator-controls">'+
-            '<label class="inv-l">Assigned verifier<select class="verify-owner-select">'+verifierOptions(r.verifier_user_id)+'</select></label>'+
-            '<button class="wizard-save verifier-self" type="button">Assign to me</button>'+
-            '<button class="wizard-primary verifier-save" type="button">Save assignment</button>'+
-          '</div><span class="investigator-saved verifier-saved" hidden>Assignment saved ✓</span>';
-          if(vAssigned && String(r.verifier_user_id||"")===String(r.assigned_user_id||"")) h+='<div class="ops-alert"><b>Independence check</b>The verification owner is also the corrective-action owner. This is allowed, but use a different qualified reviewer when practical.</div>';
-        } else {
-          h+='<div class="investigator-permission">'+(vAssigned?('Verification is assigned to '+esc(vName||"an Admin/Safety Manager")+'.'):'Verification is currently in the shared Admin/Safety Manager queue.')+'</div>';
-        }
-        h+='</div>';
         if(canPerformVerification(r)){
-          h+='<label class="inv-l">Reviewer verification note <span style="font-weight:400;color:var(--muted)">(optional when approving)</span><textarea class="verify-note" placeholder="What did you verify? If requesting changes, explain exactly what still needs to be done.">'+esc(r.action_verification_note||'')+'</textarea></label><div class="wizard-required" data-verify-required>Add a verification note explaining the requested changes.</div>'+
+          h+='<div class="multi-action-verifier-note"><b>Ready for verification</b>Review the completed work and evidence. Verify it if the fix is complete, or request changes if more work is needed.</div>'+
+            '<label class="inv-l">Reviewer verification note <span style="font-weight:400;color:var(--muted)">(optional when approving)</span><textarea class="verify-note" placeholder="What did you verify? If requesting changes, explain exactly what still needs to be done.">'+esc(r.action_verification_note||'')+'</textarea></label><div class="wizard-required" data-verify-required>Add a verification note explaining the requested changes.</div>'+
             '<div class="translation-preview" data-translation-field="action_verification_note" hidden></div><div class="wizard-footer"><div class="wizard-footer-copy">Save and close keeps a draft. Verify advances the record; Request changes sends it back to Complete work.</div><div class="wizard-footer-actions"><button class="wizard-save btn-save-verification" data-step-save="5" type="button">Save and close</button><span class="verification-saved section-saved" hidden>Saved ✓</span><button class="btn-changes" type="button">Request changes</button><button class="wizard-primary btn-verify" data-step-complete="5" type="button">Verify &amp; continue →</button></div></div>';
-        } else if(isManager()){
-          h+='<div class="readonly-step-note">Verification is assigned to '+esc(vName||"another reviewer")+'. Reassign the verification owner above if responsibility needs to change.</div>';
         } else {
-          h+='<div class="readonly-step-note">An Admin or Safety Manager handles verification. Assigned reviewer: '+esc(vName||"shared verification queue")+'.</div>';
+          h+='<div class="readonly-step-note">An Admin or Safety Manager reviews completed corrective actions and either verifies them or requests changes.</div>';
         }
       } else if(status==="verified"){
-        if(r.verifier_user_id) h+='<div class="action-meta">Verification owner: '+esc(verifierName(r)||"Assigned reviewer")+'</div>';
         if(r.action_verification_note) h+='<div class="action-context"><b>Verification note</b><p>'+esc(r.action_verification_note)+'</p></div><div class="translation-preview" data-translation-field="action_verification_note" hidden></div>';
         if(verified){var vb=r.action_verified_by&&profileById[String(r.action_verified_by)]?profileName(profileById[String(r.action_verified_by)]):'';h+='<div class="action-meta">'+esc(verified)+(vb?' by '+esc(vb):'')+'</div>';}
         h+='<div class="ops-alert"><b>Verification complete</b>The corrective action was approved. Continue to Close Record.</div>';
@@ -5824,44 +5733,26 @@
       catch(ex){console.error(ex);toast("Could not submit the corrective action.","err");}
       finally{if(completeBtn.isConnected)completeBtn.disabled=false;}
     });
-    var verifierSelect=el.querySelector(".verify-owner-select"), verifierSave=el.querySelector(".verifier-save"), verifierSelf=el.querySelector(".verifier-self");
-    async function persistVerifierAssignment(nextId,showToast){
-      if(!canVerify()) throw new Error("MANAGER_REQUIRED");
-      nextId=nextId||null;
-      if(nextId){
-        var vp=profileById[String(nextId)];
-        if(!vp || vp.is_active===false || (vp.app_role!=="admin"&&vp.app_role!=="safety_manager")) throw new Error("INVALID_VERIFIER");
-      }
-      if(String(r.verifier_user_id||"")===String(nextId||"")){ if(showToast) toast("Verification owner is already up to date","ok"); return true; }
-      var vr=await sb.from("reports").update({verifier_user_id:nextId}).eq("id",r.id);
+    async function releaseLegacyReportVerifier(){
+      if(!r.verifier_user_id||!isManager()) return true;
+      var vr=await sb.from("reports").update({verifier_user_id:null}).eq("id",r.id);
       if(vr.error) throw vr.error;
-      r.verifier_user_id=nextId;
-      renderActionWorkflow(r,el,auditEl,detail,"verify");
-      refreshRecordWorkflow(r,detail); renderMyWork(); renderHomeSnapshot(); loadAudit(r.id,auditEl);
-      var notify=null;
-      if(nextId) notify=await sendVerifierAssignmentEmail(r);
-      if(showToast){
-        if(!nextId) toast("Verification returned to the shared queue","ok");
-        else if(notify&&notify.sent) toast(notify.duplicate?"Verification owner assigned — email was already sent":"Verification owner assigned — email notification sent","ok");
-        else if(notify&&notify.skipped&&(notify.reason==="NO_VERIFIER_EMAIL"||notify.reason==="SEND_ALREADY_IN_PROGRESS")) toast(notify.reason==="NO_VERIFIER_EMAIL"?"Verification owner assigned — no email is available for that user":"Verification owner assigned — email notification is already in progress","ok");
-        else { console.error("verifier assignment notification failed",notify); toast("Verification owner assigned, but the email notification could not be sent.","err"); }
-      }
+      r.verifier_user_id=null;
       return true;
     }
-    if(verifierSave) verifierSave.addEventListener("click",async function(){verifierSave.disabled=true;try{await persistVerifierAssignment(verifierSelect?verifierSelect.value:null,true);}catch(ex){console.error(ex);toast(ex&&ex.message==="INVALID_VERIFIER"?"Choose an active Admin or Safety Manager.":"Could not save the verification owner.","err");}finally{if(verifierSave.isConnected)verifierSave.disabled=false;}});
-    if(verifierSelf) verifierSelf.addEventListener("click",async function(){if(!currentSession||!currentSession.user)return;verifierSelf.disabled=true;try{if(verifierSelect)verifierSelect.value=currentSession.user.id;await persistVerifierAssignment(currentSession.user.id,true);}catch(ex){console.error(ex);toast("Could not assign verification to you.","err");}finally{if(verifierSelf.isConnected)verifierSelf.disabled=false;}});
-    var saveVerificationBtn=el.querySelector(".btn-save-verification"); if(saveVerificationBtn) saveVerificationBtn.addEventListener("click",async function(){if(!canPerformVerification(r)){toast("This verification is assigned to another reviewer.","err");return;}await waitForActionEvidenceUpload(r.id);var note=(el.querySelector(".verify-note")&&el.querySelector(".verify-note").value.trim())||null;saveVerificationBtn.disabled=true;try{var res=await sb.from("reports").update({action_verification_note:note}).eq("id",r.id);if(res.error)throw res.error;r.action_verification_note=note;var flag=el.querySelector(".verification-saved");if(flag){flag.hidden=false;setTimeout(function(){flag.hidden=true;},2200);}toast("Verification note saved","ok");loadAudit(r.id,auditEl);showView("home");}catch(ex){console.error(ex);toast("Could not save verification note.","err");}finally{if(saveVerificationBtn.isConnected)saveVerificationBtn.disabled=false;}});
-    var verifyBtn=el.querySelector(".btn-verify"); if(verifyBtn) verifyBtn.addEventListener("click",async function(){if(!canPerformVerification(r)){toast("This verification is assigned to another reviewer.","err");return;}verifyBtn.disabled=true;try{await waitForActionEvidenceUpload(r.id);var note=(el.querySelector(".verify-note")&&el.querySelector(".verify-note").value.trim())||null;var patch={action_status:"verified",action_verified_at:new Date().toISOString(),action_verified_by:currentSession.user.id,action_verification_note:note};if(!r.verifier_user_id)patch.verifier_user_id=currentSession.user.id;if(activeReopenStep(r))patch.reopen_workflow_step=6;var res=await sb.from("reports").update(patch).eq("id",r.id);if(res.error)throw res.error;Object.keys(patch).forEach(function(k){r[k]=patch[k];});renderActionWorkflow(r,detail.querySelector("[data-action-completion]"),auditEl,detail,"complete");renderActionWorkflow(r,detail.querySelector("[data-action-verification]"),auditEl,detail,"verify");loadAudit(r.id,auditEl);renderHomeSnapshot();renderMyWork();refreshRecordWorkflow(r,detail);setWizardStep(detail,r,6,true);toast("Corrective action verified — ready for closure","ok");}catch(ex){console.error(ex);toast("Could not verify corrective action.","err");}finally{if(verifyBtn.isConnected)verifyBtn.disabled=false;}});
+    var saveVerificationBtn=el.querySelector(".btn-save-verification"); if(saveVerificationBtn) saveVerificationBtn.addEventListener("click",async function(){if(!canPerformVerification(r)){toast("You do not have verification permission.","err");return;}await waitForActionEvidenceUpload(r.id);await releaseLegacyReportVerifier();var note=(el.querySelector(".verify-note")&&el.querySelector(".verify-note").value.trim())||null;saveVerificationBtn.disabled=true;try{var res=await sb.from("reports").update({action_verification_note:note}).eq("id",r.id);if(res.error)throw res.error;r.action_verification_note=note;var flag=el.querySelector(".verification-saved");if(flag){flag.hidden=false;setTimeout(function(){flag.hidden=true;},2200);}toast("Verification note saved","ok");loadAudit(r.id,auditEl);showView("home");}catch(ex){console.error(ex);toast("Could not save verification note.","err");}finally{if(saveVerificationBtn.isConnected)saveVerificationBtn.disabled=false;}});
+    var verifyBtn=el.querySelector(".btn-verify"); if(verifyBtn) verifyBtn.addEventListener("click",async function(){if(!canPerformVerification(r)){toast("You do not have verification permission.","err");return;}verifyBtn.disabled=true;try{await waitForActionEvidenceUpload(r.id);await releaseLegacyReportVerifier();var note=(el.querySelector(".verify-note")&&el.querySelector(".verify-note").value.trim())||null;var patch={action_status:"verified",action_verified_at:new Date().toISOString(),action_verified_by:currentSession.user.id,action_verification_note:note};if(activeReopenStep(r))patch.reopen_workflow_step=6;var res=await sb.from("reports").update(patch).eq("id",r.id);if(res.error)throw res.error;Object.keys(patch).forEach(function(k){r[k]=patch[k];});renderActionWorkflow(r,detail.querySelector("[data-action-completion]"),auditEl,detail,"complete");renderActionWorkflow(r,detail.querySelector("[data-action-verification]"),auditEl,detail,"verify");loadAudit(r.id,auditEl);renderHomeSnapshot();renderMyWork();refreshRecordWorkflow(r,detail);setWizardStep(detail,r,6,true);toast("Corrective action verified — ready for closure","ok");}catch(ex){console.error(ex);toast("Could not verify corrective action.","err");}finally{if(verifyBtn.isConnected)verifyBtn.disabled=false;}});
     var changesBtn=el.querySelector(".btn-changes"); if(changesBtn) changesBtn.addEventListener("click",async function(){
-      if(!canPerformVerification(r)){toast("This verification is assigned to another reviewer.","err");return;}
+      if(!canPerformVerification(r)){toast("You do not have verification permission.","err");return;}
       await waitForActionEvidenceUpload(r.id);
+      await releaseLegacyReportVerifier();
       var note=(el.querySelector(".verify-note")&&el.querySelector(".verify-note").value.trim())||"";
       var req=el.querySelector("[data-verify-required]");
       if(!note){if(req)req.classList.add("show");toast("Explain what evidence or changes are still needed before sending the action back.","err");return;}
       if(req)req.classList.remove("show");
       changesBtn.disabled=true;
       try{
-        var patch={action_status:"changes_requested",action_verification_note:note,action_verified_at:null,action_verified_by:null};if(!r.verifier_user_id)patch.verifier_user_id=currentSession.user.id;
+        var patch={action_status:"changes_requested",action_verification_note:note,action_verified_at:null,action_verified_by:null};
         if(activeReopenStep(r)) patch.reopen_workflow_step=4;
         var res=await sb.from("reports").update(patch).eq("id",r.id); if(res.error)throw res.error;
         Object.keys(patch).forEach(function(k){r[k]=patch[k];});
@@ -6484,5 +6375,6 @@
 
 })();
 </script>
+<!-- RBH Build 24: verification-owner UI removed; verification is handled by the authorized company reviewer queue. -->
 </body>
 </html>
