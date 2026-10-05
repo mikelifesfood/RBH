@@ -649,7 +649,7 @@
   .wizard-high{background:#fff5d8;border:1.5px solid #e1c66f;color:#725300}.wizard-high:hover{border-color:#cba838}
   .wizard-save:disabled,.wizard-primary:disabled,.wizard-close:disabled,.wizard-high:disabled{opacity:.5;cursor:not-allowed}
   .process-flow{display:flex;align-items:stretch;width:100%;overflow-x:auto;padding:1px 0 2px;scrollbar-width:thin}
-  .process-step{position:relative;min-width:132px;flex:0 0 calc((100% + 40px)/6);border:0;color:#5f625f;background:#e9ebe9;padding:10px 22px 10px 27px;text-align:center;font-family:var(--display);font-weight:800;font-size:11px;line-height:1.18;cursor:pointer;clip-path:polygon(0 0,calc(100% - 13px) 0,100% 50%,calc(100% - 13px) 100%,0 100%,13px 50%);margin-left:-8px}
+  .process-step{position:relative;min-width:132px;flex:0 0 calc((100% + 24px)/4);border:0;color:#5f625f;background:#e9ebe9;padding:10px 22px 10px 27px;text-align:center;font-family:var(--display);font-weight:800;font-size:11px;line-height:1.18;cursor:pointer;clip-path:polygon(0 0,calc(100% - 13px) 0,100% 50%,calc(100% - 13px) 100%,0 100%,13px 50%);margin-left:-8px}
   .process-step:first-child{margin-left:0;clip-path:polygon(0 0,calc(100% - 13px) 0,100% 50%,calc(100% - 13px) 100%,0 100%)}
   .process-step .ps-num{display:block;font-size:9px;font-weight:700;opacity:.75;margin-bottom:2px}.process-step .ps-check{font-size:11px;margin-right:4px}
   .process-step.ps-done{background:linear-gradient(135deg,#68c38a 0%,#469d68 100%);color:#fff}.process-step.ps-current{background:var(--gradient-blue);color:#fff}.process-step.ps-blocked{background:linear-gradient(135deg,#cb3c45 0%,#9e2028 100%);color:#fff}.process-step.ps-future{background:#e8e9e8;color:#666}.process-step.ps-na{background:#efefef;color:#929292}.process-step.ps-viewing{box-shadow:none;filter:brightness(.88)}
@@ -673,6 +673,41 @@
   .investigator-card{margin:16px 0 2px;border:1px solid var(--line);border-radius:12px;background:var(--paper-2);padding:13px 14px}.investigator-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px}.investigator-head b{display:block;font-family:var(--display);font-size:13.5px}.investigator-head p{margin:3px 0 0;color:var(--muted);font-size:11.5px;line-height:1.45}.investigator-chip{display:inline-flex;align-items:center;border:1px solid var(--line-strong);background:var(--paper);border-radius:999px;padding:5px 9px;font-size:10.5px;font-weight:800;color:var(--muted);white-space:nowrap}.investigator-chip.assigned{background:#e9f7ef;color:#23623c;border-color:#b9dfc9}.investigator-controls{display:grid;grid-template-columns:minmax(240px,1fr) auto auto;gap:8px;align-items:end}.investigator-controls .inv-l{margin:0}.investigator-controls button{height:42px;white-space:nowrap}.investigator-saved{display:inline-block;margin-top:8px;color:var(--ok);font-size:11.5px;font-weight:800}.investigator-permission{margin-top:8px;color:var(--muted);font-size:11.5px;line-height:1.45}.investigator-card .field-guidance{margin:8px 0 0}.wizard-shell.guidance-hidden .investigator-head p,.wizard-shell.guidance-hidden .investigator-card .field-guidance{display:none!important}
   .multi-action-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 12px}.multi-action-summary{display:grid;gap:2px}.multi-action-summary b{font-family:var(--display);font-size:13px}.multi-action-summary span{font-size:11.5px;color:var(--muted);line-height:1.4}.multi-action-add-wrap{display:flex;justify-content:flex-start;margin-top:12px}.multi-action-add{border:1.5px solid var(--line-strong);background:var(--paper);color:var(--ink);border-radius:10px;padding:9px 12px;font-family:var(--display);font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap}.multi-action-add:hover{border-color:var(--red);color:var(--red)}.multi-action-add:disabled{opacity:.55;cursor:default;color:var(--muted);border-color:var(--line)}
   .multi-action-list{display:grid;gap:12px}.multi-action-loading{border:1px dashed var(--line-strong);border-radius:12px;padding:16px;color:var(--muted);font-size:12px;text-align:center;background:var(--paper-2)}.multi-action-card{border:1px solid var(--line);border-radius:13px;background:var(--paper-2);padding:14px}.multi-action-card.is-activated{border-left:4px solid #2d6f4a}.multi-action-card.is-locked{background:color-mix(in srgb,var(--paper-2) 92%,#dfe7ef)}.multi-action-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}.multi-action-title{display:grid;gap:3px}.multi-action-title b{font-family:var(--display);font-size:14px}.multi-action-title span{font-size:11px;color:var(--muted)}.multi-action-head-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:flex-end}.multi-action-status{display:inline-flex;align-items:center;border-radius:999px;border:1px solid var(--line-strong);background:var(--paper);padding:4px 8px;font-size:10px;font-weight:800;color:var(--muted);white-space:nowrap}.multi-action-remove{border:0;background:transparent;color:#8a141c;font-size:11px;font-weight:800;cursor:pointer;padding:5px 7px;border-radius:7px}.multi-action-remove:hover{background:#fff0f1}.multi-action-remove:disabled{display:none}.multi-action-fields{display:grid;gap:11px}.multi-action-fields .inv-row{margin:0}.multi-action-card textarea{min-height:78px}.multi-action-translation{margin-top:7px;border-left:3px solid var(--red);padding:7px 9px;background:var(--paper);border-radius:0 8px 8px 0;font-size:11.5px;color:var(--muted)}.multi-action-translation b{display:block;color:var(--ink);font-size:10.5px;margin-bottom:3px}.multi-action-translation p{margin:0;white-space:pre-wrap;line-height:1.45}.multi-action-live-note{margin:10px 0 0;border:1px solid #c7ddcf;background:#eff8f2;color:#275d3d;border-radius:9px;padding:9px 11px;font-size:11.5px;line-height:1.45}.multi-action-live-note b{display:block;margin-bottom:2px}.multi-action-overview{display:grid;gap:10px;margin-bottom:14px}.multi-action-overview-head{display:grid;gap:3px}.multi-action-overview-head b{font-family:var(--display);font-size:13px}.multi-action-overview-head span{font-size:11.5px;color:var(--muted);line-height:1.4}.multi-action-overview-card{border:1px solid var(--line);border-radius:11px;background:var(--paper-2);padding:11px 12px}.multi-action-overview-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.multi-action-overview-title{font-family:var(--display);font-size:12.5px;font-weight:800}.multi-action-overview-desc{margin:7px 0 0;font-size:12px;line-height:1.45;color:var(--ink)}.multi-action-overview-meta{display:flex;gap:7px 12px;flex-wrap:wrap;margin-top:8px;font-size:10.5px;color:var(--muted)}.multi-action-overview-note{border:1px solid var(--line);background:var(--paper);border-radius:9px;padding:9px 11px;font-size:11px;line-height:1.45;color:var(--muted)}.multi-action-completion-list{display:grid;gap:12px}.multi-action-completion-card{border:1px solid var(--line);border-radius:12px;background:var(--paper);padding:13px}.multi-action-completion-card .mac-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.multi-action-completion-card .mac-title{display:grid;gap:3px}.multi-action-completion-card .mac-title b{font-family:var(--display);font-size:13px}.multi-action-completion-card .mac-title span{font-size:11px;color:var(--muted)}.multi-action-completion-card .mac-desc{margin:10px 0 0;font-size:12px;line-height:1.5}.multi-action-completion-card .mac-meta{display:flex;gap:7px 14px;flex-wrap:wrap;margin-top:8px;font-size:10.5px;color:var(--muted)}.multi-action-completion-card .mac-work{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}.multi-action-completion-card textarea{width:100%;min-height:96px;resize:vertical;border:1.5px solid var(--line-strong);border-radius:9px;background:var(--paper);padding:10px 11px;font:inherit;font-size:12px;line-height:1.45;color:var(--ink)}.multi-action-completion-card textarea:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 3px rgba(188,34,41,.08)}.multi-action-completion-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}.multi-action-completion-note{margin-top:10px;border:1px solid var(--line);border-radius:9px;background:var(--paper-2);padding:10px 11px;font-size:11.5px;line-height:1.45}.multi-action-completion-note b{display:block;margin-bottom:3px}.multi-action-stage-note{border:1px solid var(--line);background:var(--paper-2);border-radius:10px;padding:11px 12px;font-size:11.5px;line-height:1.5;color:var(--muted)}.multi-action-verification-list{display:grid;gap:12px}.multi-action-verification-card{border:1px solid var(--line);border-radius:12px;background:var(--paper);padding:13px}.multi-action-verification-card .mav-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.multi-action-verification-card .mav-title{display:grid;gap:3px}.multi-action-verification-card .mav-title b{font-family:var(--display);font-size:13px}.multi-action-verification-card .mav-title span{font-size:11px;color:var(--muted)}.multi-action-verification-card .mav-desc{margin:10px 0 0;font-size:12px;line-height:1.5}.multi-action-verification-card .mav-meta{display:flex;gap:7px 14px;flex-wrap:wrap;margin-top:8px;font-size:10.5px;color:var(--muted)}.multi-action-verification-card .mav-review{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}.multi-action-verification-card textarea{width:100%;min-height:96px;resize:vertical;border:1.5px solid var(--line-strong);border-radius:9px;background:var(--paper);padding:10px 11px;font:inherit;font-size:12px;line-height:1.45;color:var(--ink)}.multi-action-verification-card textarea:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 3px rgba(188,34,41,.08)}.multi-action-verifier-controls{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:end;margin-top:12px}.multi-action-verifier-controls .inv-l{margin:0}.multi-action-verification-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px;flex-wrap:wrap}.multi-action-request-changes{border:1.5px solid #b9272e;background:var(--paper);color:#9f1d24;border-radius:9px;padding:9px 12px;font-family:var(--display);font-size:11.5px;font-weight:800;cursor:pointer}.multi-action-request-changes:hover{background:#fff0f1}.multi-action-verifier-note{margin-top:10px;border:1px solid var(--line);border-radius:9px;background:var(--paper-2);padding:10px 11px;font-size:11.5px;line-height:1.45}.multi-action-verifier-note b{display:block;margin-bottom:3px}.multi-action-verification-footer{margin-top:12px;border:1px solid var(--line);border-radius:12px;background:var(--paper-2);padding:12px 13px;display:grid;gap:10px}.multi-action-verification-footer .mavf-status{font-size:11.5px;color:var(--muted);line-height:1.45}.multi-action-verification-footer .mavf-status b{color:var(--ink)}.multi-action-verification-footer .wizard-primary{justify-self:end}.wizard-shell.guidance-hidden .multi-action-summary span,.wizard-shell.guidance-hidden .multi-action-card .field-guidance,.wizard-shell.guidance-hidden .multi-action-live-note,.wizard-shell.guidance-hidden .multi-action-overview-head span,.wizard-shell.guidance-hidden .multi-action-overview-note{display:none!important}
+  /* ---------- Phase 2.10 simplified corrective-action workspace ---------- */
+  .ca-unified-stage{position:relative;border-left:5px solid #cfd5dc}
+  .ca-unified-stage.ca-stage-done{border-left-color:#3f9b63}
+  .ca-unified-stage.ca-stage-current{border-left-color:#376fb5}
+  .ca-unified-stage.ca-stage-blocked{border-left-color:#b83280}
+  .ca-unified-stage.ca-stage-next{border-left-color:#cfd5dc}
+  .ca-unified-stage.ca-follow-on{margin-top:-8px;border-top-left-radius:8px;border-top-right-radius:8px}
+  .ca-stage-heading{display:flex;align-items:flex-start;gap:10px;padding-bottom:12px;margin-bottom:13px;border-bottom:1px solid var(--line)}
+  .ca-stage-heading .ca-stage-num{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:0 0 auto;background:#eef2f6;color:#52606d;border:1px solid #cbd3dc;font-family:var(--display);font-weight:900;font-size:12px}
+  .ca-stage-heading b{display:block;font-family:var(--display);font-size:15px;margin:1px 0 2px}.ca-stage-heading p{margin:0;color:var(--muted);font-size:11.8px;line-height:1.45}
+  .ca-stage-state{margin-left:auto;display:inline-flex;align-items:center;border:1px solid var(--line-strong);background:var(--paper-2);border-radius:999px;padding:5px 9px;font-size:10px;font-weight:850;text-transform:uppercase;letter-spacing:.035em;color:var(--muted);white-space:nowrap}
+  .ca-stage-done .ca-stage-state{background:#e9f7ef;border-color:#b9dfc9;color:#23623c}.ca-stage-current .ca-stage-state{background:#eaf2ff;border-color:#bfd0e8;color:#234f88}.ca-stage-blocked .ca-stage-state{background:#fff0f6;border-color:#e7bdd2;color:#8d245f}
+  .ca-lifecycle{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:2px 0 16px}
+  .ca-life-item{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;background:var(--paper-2);padding:9px 10px;min-width:0}
+  .ca-life-dot{width:23px;height:23px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:0 0 auto;border:1.5px solid #b9c1c9;color:#6b747d;font-size:10px;font-weight:900;background:var(--paper)}
+  .ca-life-copy{min-width:0}.ca-life-copy b{display:block;font-family:var(--display);font-size:11.5px}.ca-life-copy span{display:block;font-size:10px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ca-life-item.done{background:#edf8f1;border-color:#b9dfc9}.ca-life-item.done .ca-life-dot{background:#3f9b63;border-color:#3f9b63;color:#fff}
+  .ca-life-item.current{background:#eef4ff;border-color:#bfd0e8}.ca-life-item.current .ca-life-dot{background:#376fb5;border-color:#376fb5;color:#fff}
+  .ca-life-item.blocked{background:#fff3f8;border-color:#e7bdd2}.ca-life-item.blocked .ca-life-dot{background:#b83280;border-color:#b83280;color:#fff}
+  .ca-life-item.next{opacity:.82}
+  .multi-action-card.ca-status-not_started,.multi-action-card.ca-status-in_progress,.multi-action-completion-card.ca-status-not_started,.multi-action-completion-card.ca-status-in_progress,.multi-action-verification-card.ca-status-not_started,.multi-action-verification-card.ca-status-in_progress{border-left:4px solid #4a78b8}
+  .multi-action-card.ca-status-awaiting_verification,.multi-action-completion-card.ca-status-awaiting_verification,.multi-action-verification-card.ca-status-awaiting_verification{border-left:4px solid #7256b5}
+  .multi-action-card.ca-status-changes_requested,.multi-action-completion-card.ca-status-changes_requested,.multi-action-verification-card.ca-status-changes_requested{border-left:4px solid #b83280}
+  .multi-action-card.ca-status-verified,.multi-action-completion-card.ca-status-verified,.multi-action-verification-card.ca-status-verified{border-left:4px solid #3f9b63}
+  .multi-action-status.mas-status-not_started{background:#eef0ee;border-color:#d7dad7;color:#5c635c}.multi-action-status.mas-status-in_progress{background:#e6eefb;border-color:#c2d3ef;color:#1f4f9e}.multi-action-status.mas-status-awaiting_verification{background:#efe7fb;border-color:#d5c4ee;color:#5b3fa0}.multi-action-status.mas-status-changes_requested{background:#fff2e0;border-color:#e8c986;color:#825900}.multi-action-status.mas-status-verified{background:#e9f7ef;border-color:#b9dfc9;color:#23623c}
+  .action-field-progress{display:inline-flex;align-items:center;border-radius:999px;padding:4px 8px;font-size:10px;font-weight:850;border:1px solid var(--line-strong);background:var(--paper);color:var(--muted);white-space:nowrap}
+  .action-field-progress.complete{background:#e9f7ef;border-color:#b9dfc9;color:#23623c}.action-field-progress.missing{background:#fff3f3;border-color:#e6b6b6;color:#922b2b}
+  .action-missing-list{margin:0 0 11px;border:1px solid #e6b6b6;background:#fff5f5;color:#84262b;border-radius:9px;padding:9px 10px;font-size:11.5px;line-height:1.4}.action-missing-list b{font-weight:850}
+  .action-plan-details{margin-top:10px}.action-plan-details>summary{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;list-style:none;border:1px solid var(--line);border-radius:9px;background:var(--paper);padding:9px 11px;font-family:var(--display);font-weight:800;font-size:11.5px}.action-plan-details>summary::-webkit-details-marker{display:none}.action-plan-details>summary:after{content:"Show details";font-family:var(--sans);font-size:10.5px;color:var(--muted);font-weight:700}.action-plan-details[open]>summary:after{content:"Hide details"}.action-plan-details[open] .multi-action-fields{margin-top:11px}
+  .ca-focus-note{border:1px solid #bfd0e8;background:#f4f8ff;border-radius:10px;padding:10px 11px;margin:0 0 12px;font-size:11.5px;line-height:1.45;color:#365a7f}.ca-focus-note b{display:block;font-family:var(--display);color:#244a75;margin-bottom:2px}
+  .ca-unified-stage .multi-action-overview{margin-bottom:12px}
+  .ca-plan-summary-mode>.ca-focus-note,.ca-plan-summary-mode>.multi-action-toolbar,.ca-plan-summary-mode>.multi-action-add-wrap,.ca-plan-summary-mode>.wizard-required,.ca-plan-summary-mode>.wizard-footer{display:none!important}
+  .resolved-review .ca-focus-note,.resolved-review [data-wizard-step="3"]>.multi-action-toolbar,.resolved-review [data-wizard-step="3"]>.multi-action-add-wrap,.resolved-review [data-wizard-step="3"]>.wizard-required,.resolved-review [data-wizard-step="3"]>.wizard-footer{display:none!important}
+  .resolved-review .ca-unified-stage{border-left-color:#3f9b63}
+  @media(max-width:700px){.ca-lifecycle{grid-template-columns:1fr}.ca-life-copy span{white-space:normal}.ca-stage-heading{flex-wrap:wrap}.ca-stage-state{margin-left:40px}.action-plan-details>summary:after{display:none}}
   .close-checklist{display:grid;gap:7px;margin:12px 0}.close-check{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-size:12.5px}.close-check.ok{background:#edf8f1;color:#23623c;border-color:#b9dfc9}.close-check.missing{background:#fff2f2;color:#91262d;border-color:#e1a4a4}
   .record-support{background:var(--paper);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}.record-support summary{cursor:pointer;list-style:none;padding:14px 16px;font-family:var(--display);font-weight:800;font-size:13px;display:flex;justify-content:space-between;align-items:center}.record-support summary::-webkit-details-marker{display:none}.record-support summary:after{content:"▾";color:var(--muted)}.record-support[open] summary:after{content:"▴"}.record-support-body{padding:0 16px 16px;border-top:1px solid var(--line)}
   .support-grid{display:grid;grid-template-columns:minmax(0,.75fr) minmax(0,1.25fr);gap:16px;margin-top:14px}.support-grid .d-section{margin:0;padding:0;border:0}
@@ -1027,7 +1062,7 @@
           <div class="role-legend">
             <div class="role-card"><b>Admin</b><span>Full operational access plus user roles and account activation.</span></div>
             <div class="role-card"><b>Safety Manager</b><span>Full incident, investigation, corrective-action, and verification access.</span></div>
-            <div class="role-card"><b>Supervisor</b><span>Can work investigations and corrective actions assigned to their account. Investigation ownership covers Steps 1–3; corrective-action ownership covers Step 4.</span></div>
+            <div class="role-card"><b>Supervisor</b><span>Can work investigations and corrective actions assigned to their account. Investigation ownership covers Review and Investigation; corrective-action ownership covers the assigned completion work.</span></div>
             <div class="role-card"><b>Read Only</b><span>Can review reports, activity, and analytics without making changes.</span></div>
           </div>
           <div id="adminPermissionNote" class="permission-note"></div>
@@ -2124,6 +2159,7 @@
 
       '<section class="wizard-panel" data-wizard-step="1" hidden>'+
         '<div class="wizard-step-head"><span class="wizard-step-badge">1</span><div class="wizard-step-copy"><h3>Review the report</h3><p>Confirm what was submitted and decide whether the report needs further action.</p></div></div>'+
+        '<div class="wizard-task"><b>Start here</b><span>Review the report, confirm who owns the investigation, and complete the serious-event screen when an injury is involved.</span></div>'+
         '<span class="field-guidance">Review the submission and attachments below. Continue when the report needs investigation, or use the no-action option when no corrective work is required.</span>'+
         '<div class="d-rows">'+rows.join("")+'</div>'+
         '<div class="d-atts" data-atts></div>'+
@@ -2146,36 +2182,44 @@
 
       '<section class="wizard-panel" data-wizard-step="2" hidden>'+
         '<div class="wizard-step-head"><span class="wizard-step-badge">2</span><div class="wizard-step-copy"><h3>Investigation</h3><p>Document why the issue happened or what underlying condition allowed it to happen.</p></div></div>'+
+        '<div class="wizard-task"><b>Required before continuing</b><span>Add the root cause. You can save a draft and return later.</span></div>'+
         '<label class="inv-l">Root cause<textarea class="inv-root" placeholder="What caused or allowed this issue to happen?"></textarea><span class="field-guidance">Describe the underlying condition or reason, not only what happened. Keep it factual and specific.</span></label><div class="translation-preview" data-translation-field="root_cause" hidden></div>'+
         '<div class="wizard-required" data-required="2">Root cause is required before this step can be completed.</div>'+
         '<div class="wizard-footer"><div class="wizard-footer-copy">Save and close keeps a draft. Complete investigation advances the workflow.</div><div class="wizard-footer-actions"><button class="wizard-save root-save" data-step-save="2" type="button">Save and close</button><span class="root-saved section-saved" hidden>Saved ✓</span><button class="wizard-primary" data-step-complete="2" type="button">Complete investigation →</button></div></div>'+
       '</section>'+
 
-      '<section class="wizard-panel" data-wizard-step="3" hidden>'+
-        '<div class="wizard-step-head"><span class="wizard-step-badge">3</span><div class="wizard-step-copy"><h3>Corrective action plan</h3><p>Create one or more corrective actions. Each action can have its own control type, owner, due date, priority, and status.</p></div></div>'+
+      '<section class="wizard-panel ca-unified-stage" data-wizard-step="3" data-ca-stage="plan" hidden>'+
+        '<div class="wizard-step-head"><span class="wizard-step-badge">3</span><div class="wizard-step-copy"><h3>Corrective Actions</h3><p>Plan, assign, complete, and verify each corrective action in one guided workspace.</p></div></div>'+
+        '<div class="ca-lifecycle" data-ca-lifecycle>'+
+          '<div class="ca-life-item next" data-ca-life="3"><span class="ca-life-dot">1</span><div class="ca-life-copy"><b>Plan &amp; assign</b><span>Define the fix and owner</span></div></div>'+
+          '<div class="ca-life-item next" data-ca-life="4"><span class="ca-life-dot">2</span><div class="ca-life-copy"><b>Complete work</b><span>Document what was done</span></div></div>'+
+          '<div class="ca-life-item next" data-ca-life="5"><span class="ca-life-dot">3</span><div class="ca-life-copy"><b>Verify</b><span>Approve or request changes</span></div></div>'+
+        '</div>'+
+        '<div class="ca-stage-heading"><span class="ca-stage-num">1</span><div><b>Plan &amp; assign</b><p>Create one action for each distinct fix, owner, or deadline.</p></div><span class="ca-stage-state" data-ca-stage-state>Next</span></div>'+
+        '<div class="ca-focus-note"><b>What you need to do</b>Complete the required fields shown on each action. The card tells you exactly what is still missing.</div>'+
         '<div class="multi-action-toolbar"><div class="multi-action-summary"><b>Corrective actions</b><span>Add a separate action when different work, owners, or deadlines are needed.</span></div></div>'+
         '<div class="multi-action-list" data-corrective-action-plan><div class="multi-action-loading">Loading corrective-action plan…</div></div>'+
         '<div class="multi-action-add-wrap"><button class="multi-action-add" type="button" data-add-corrective-action>+ Add another corrective action</button></div>'+
         '<div class="wizard-required" data-required="3"></div>'+
-        '<div class="wizard-footer"><div class="wizard-footer-copy">Save and close keeps the plan as a draft. Save &amp; assign actions activates every current action and notifies each assigned owner.</div><div class="wizard-footer-actions"><button class="wizard-save action-plan-save" data-step-save="3" type="button">Save and close</button><span class="action-plan-saved section-saved" hidden>Saved ✓</span><button class="wizard-primary" data-step-complete="3" type="button">Save &amp; assign actions →</button></div></div>'+
+        '<div class="wizard-footer"><div class="wizard-footer-copy">Save and close keeps a draft. Assign actions when every required field is complete.</div><div class="wizard-footer-actions"><button class="wizard-save action-plan-save" data-step-save="3" type="button">Save and close</button><span class="action-plan-saved section-saved" hidden>Saved ✓</span><button class="wizard-primary" data-step-complete="3" type="button">Assign actions →</button></div></div>'+
       '</section>'+
 
-      '<section class="wizard-panel" data-wizard-step="4" hidden>'+
-        '<div class="wizard-step-head"><span class="wizard-step-badge">4</span><div class="wizard-step-copy"><h3>Complete corrective action</h3><p>Document the completed work and attach supporting evidence when helpful.</p></div></div>'+
-        '<div class="multi-action-overview" data-corrective-action-overview></div>'+
+      '<section class="wizard-panel ca-unified-stage ca-follow-on" data-wizard-step="4" data-ca-stage="complete" hidden>'+
+        '<div class="ca-stage-heading"><span class="ca-stage-num">2</span><div><b>Complete work</b><p>The assigned owner records what was completed and adds evidence when useful.</p></div><span class="ca-stage-state" data-ca-stage-state>Next</span></div>'+
+        '<div class="ca-focus-note"><b>Focus on what still needs work</b>Only actions that still need completion or changes are shown here. Submitted actions move to Verify work.</div>'+
         '<div class="multi-action-completion-list" data-multi-action-completion></div>'+
         '<div class="action-workflow" data-action-completion></div>'+
       '</section>'+
 
-      '<section class="wizard-panel" data-wizard-step="5" hidden>'+
-        '<div class="wizard-step-head"><span class="wizard-step-badge">5</span><div class="wizard-step-copy"><h3>Verify corrective action</h3><p>Review the completed work and evidence, then approve it or request changes.</p></div></div>'+
-        '<div class="multi-action-overview" data-corrective-action-overview></div>'+
+      '<section class="wizard-panel ca-unified-stage ca-follow-on" data-wizard-step="5" data-ca-stage="verify" hidden>'+
+        '<div class="ca-stage-heading"><span class="ca-stage-num">3</span><div><b>Verify work</b><p>Review the completed work and evidence, then approve it or send it back with clear instructions.</p></div><span class="ca-stage-state" data-ca-stage-state>Next</span></div>'+
+        '<div class="ca-focus-note"><b>One decision per action</b>Review what was completed, then choose Verify action or Request changes. A note is required only when requesting changes.</div>'+
         '<div class="multi-action-verification-list" data-multi-action-verification-stage hidden></div>'+
         '<div class="action-workflow" data-action-verification></div>'+
       '</section>'+
 
       '<section class="wizard-panel" data-wizard-step="6" hidden>'+
-        '<div class="wizard-step-head"><span class="wizard-step-badge">6</span><div class="wizard-step-copy"><h3>Close record</h3><p>Perform one final check and close the incident when every required step is complete.</p></div></div>'+
+        '<div class="wizard-step-head"><span class="wizard-step-badge">4</span><div class="wizard-step-copy"><h3>Close record</h3><p>Perform one final check and close the incident when every required step is complete.</p></div></div>'+
         '<div data-close-step></div>'+
       '</section>'+
 
@@ -2274,35 +2318,90 @@
     var steps=titles.map(function(title,i){ return {n:i+1,title:title,state:done[i]?"done":(i===current?"current":"needed"),detail:details[i]}; });
     return {complete:current===-1,steps:steps,current:current};
   }
+  function visibleWizardStep(n){
+    n=parseInt(n,10)||1;
+    if(n<=2) return n;
+    if(n<=5) return 3;
+    return 4;
+  }
+  function correctiveGroupTarget(r){
+    if(isResolvedReport(r)) return 3;
+    var p=workflowProgress(r);
+    for(var n=3;n<=5;n++){ if(p.steps[n-1]&&p.steps[n-1].state==="current") return n; }
+    for(var m=3;m<=5;m++){ if(p.steps[m-1]&&p.steps[m-1].state==="needed"&&wizardStepAccessible(r,m)) return m; }
+    return 5;
+  }
+  function updateCorrectiveLifecycle(detail,r){
+    if(!detail) return;
+    var p=workflowProgress(r);
+    [3,4,5].forEach(function(n){
+      var st=p.steps[n-1]||{state:"needed"};
+      var caSummary=correctiveActionSummary(r);
+      var blocked=n===4 && st.state==="current" && ((caSummary&&caSummary.changes_requested>0)||r.action_status==="changes_requested");
+      var uiState=st.state==="done"?"done":(blocked?"blocked":(st.state==="current"?"current":"next"));
+      var panel=detail.querySelector('[data-wizard-step="'+n+'"]');
+      if(panel){
+        panel.classList.remove("ca-stage-done","ca-stage-current","ca-stage-blocked","ca-stage-next");
+        panel.classList.add("ca-stage-"+uiState);
+        var chip=panel.querySelector("[data-ca-stage-state]");
+        if(chip) chip.textContent=uiState==="done"?"Complete":(uiState==="blocked"?"Changes requested":(uiState==="current"?"Current":"Next"));
+      }
+      var life=detail.querySelector('[data-ca-life="'+n+'"]');
+      if(life){
+        life.classList.remove("done","current","blocked","next");
+        life.classList.add(uiState);
+        var dot=life.querySelector(".ca-life-dot");
+        if(dot) dot.textContent=uiState==="done"?"✓":String(n-2);
+        var copy=life.querySelector(".ca-life-copy span");
+        if(copy){
+          if(n===3) copy.textContent=uiState==="done"?"Plan assigned":(uiState==="current"?"Finish required fields":"Define the fix and owner");
+          if(n===4) copy.textContent=uiState==="done"?"Work submitted":(uiState==="blocked"?"Owner must update work":(uiState==="current"?"Record completed work":"Document what was done"));
+          if(n===5) copy.textContent=uiState==="done"?"All actions verified":(uiState==="current"?"Approve or request changes":"Review completed work");
+        }
+      }
+    });
+  }
   function renderRecordProgress(r, el){
     if(!el) return;
     var p=workflowProgress(r), detail=el.closest("#incidentBody")||el.parentElement;
     var active=parseInt((detail&&detail.dataset.wizardStep)||"0",10)||recommendedWizardStep(r);
     var activeState=p.steps[active-1]||null;
-    var blocked=(active===4 && r.action_status==="changes_requested");
-    var arrows=p.steps.map(function(st){
-      var cls=st.state==="done"?"ps-done":(st.state==="current"?(blocked&&st.n===4?"ps-blocked":"ps-current"):(st.state==="na"?"ps-na":"ps-future"));
-      if(st.n===active && st.state!=="current") cls+=" ps-viewing";
-      var accessible=wizardStepAccessible(r,st.n);
-      var icon=st.state==="done"?'<span class="ps-check">✓</span>':'';
-      return '<button type="button" class="process-step '+cls+'" data-wizard-nav="'+st.n+'"'+(accessible?'':' disabled')+'><span class="ps-num">STEP '+st.n+'</span>'+icon+esc(wizardShortTitle(st.n))+'</button>';
+    var groupTarget=correctiveGroupTarget(r);
+    var defs=[
+      {visible:1,internal:1,title:"Review",steps:[1]},
+      {visible:2,internal:2,title:"Investigation",steps:[2]},
+      {visible:3,internal:groupTarget,title:"Corrective Actions",steps:[3,4,5]},
+      {visible:4,internal:6,title:"Close",steps:[6]}
+    ];
+    var activeVisible=visibleWizardStep(active);
+    var arrows=defs.map(function(def){
+      var states=def.steps.map(function(n){return p.steps[n-1]?p.steps[n-1].state:"needed";});
+      var state=states.every(function(x){return x==="done"||x==="na";})?(states.every(function(x){return x==="na";})?"na":"done"):(states.indexOf("current")>=0?"current":"needed");
+      var caSummary=correctiveActionSummary(r);
+      var blocked=def.visible===3 && ((caSummary&&caSummary.changes_requested>0)||r.action_status==="changes_requested") && p.steps[3] && p.steps[3].state==="current";
+      var cls=state==="done"?"ps-done":(state==="current"?(blocked?"ps-blocked":"ps-current"):(state==="na"?"ps-na":"ps-future"));
+      if(def.visible===activeVisible && state!=="current") cls+=" ps-viewing";
+      var accessible=def.visible===3?def.steps.some(function(n){return wizardStepAccessible(r,n);}):wizardStepAccessible(r,def.internal);
+      var icon=state==="done"?'<span class="ps-check">✓</span>':'';
+      return '<button type="button" class="process-step '+cls+'" data-wizard-nav="'+def.internal+'"'+(accessible?'':' disabled')+'><span class="ps-num">STEP '+def.visible+'</span>'+icon+esc(def.title)+'</button>';
     }).join("");
     var labels=wizardActionLabels(r,active);
     var topSave=labels.save?'<button class="wizard-save" type="button" data-wizard-top-save>'+esc(labels.save)+'</button>':'';
     var topPrimary=labels.complete?'<button class="wizard-primary" type="button" data-wizard-top-complete>'+esc(labels.complete)+'</button>':'';
     var resolved=isResolvedReport(r);
-    var currentText=resolved?'Closed record review':((activeState&&activeState.state==="done")?'Reviewing a completed step':('Step '+active+' of 6'));
-    var helpText=resolved?'Read-only record. All completed sections are shown below; on desktop, click a green step to jump to it. Notes can still be added.':wizardHelp(active,r);
+    var currentText=resolved?'Closed record review':((activeState&&activeState.state==="done")?'Reviewing a completed step':('Step '+activeVisible+' of 4'));
+    var helpText=resolved?'Read-only record. Completed information is grouped by stage below. Click a green step to jump to it. Notes can still be added.':wizardHelp(active,r);
     el.className="wizard-process";
     el.innerHTML='<div class="wizard-process-head"><div class="wizard-process-copy"><b>'+esc(currentText)+(resolved?'':' · '+esc(wizardLongTitle(active)))+'</b><span>'+esc(helpText)+'</span></div><div class="wizard-top-actions">'+topSave+topPrimary+'</div></div><div class="process-flow">'+arrows+'</div><div class="reg-persistent-host" data-reg-persistent-host>'+persistentRegulatoryBannerHtml(r,active)+'</div>';
+    updateCorrectiveLifecycle(detail,r);
   }
 
-  function wizardShortTitle(n){ return ({1:"Review",2:"Investigation",3:"Action Plan",4:"Complete Action",5:"Verify",6:"Close"})[n]||"Step"; }
-  function wizardLongTitle(n){ return ({1:"Review Report",2:"Investigation",3:"Corrective Action Plan",4:"Complete Corrective Action",5:"Verify Corrective Action",6:"Close Record"})[n]||"Record"; }
+  function wizardShortTitle(n){ return ({1:"Review",2:"Investigation",3:"Corrective Actions",4:"Corrective Actions",5:"Corrective Actions",6:"Close"})[n]||"Step"; }
+  function wizardLongTitle(n){ return ({1:"Review Report",2:"Investigation",3:"Corrective Actions · Plan & Assign",4:"Corrective Actions · Complete Work",5:"Corrective Actions · Verify Work",6:"Close Record"})[n]||"Record"; }
   function wizardHelp(n,r){
-    var map={1:"Review the submission and decide what happens next.",2:"Document the underlying cause.",3:"Define the fix, control type, assigned user, due date, and priority.",4:"Each action owner documents and submits their assigned corrective action.",5:"Review each submitted corrective action and approve it or request changes.",6:"Confirm every required step is complete and close the record."};
+    var map={1:"Review the submission and decide what happens next.",2:"Document the underlying cause.",3:"Create each fix, assign an owner, and complete every required field.",4:"Record what was completed for each action and submit it for review.",5:"Review each submitted action and either verify it or clearly request changes.",6:"Confirm everything is complete and close the record."};
     var childSummary=correctiveActionSummary(r);
-    if(childSummary&&n===4) return childSummary.open>0?(childSummary.open+" corrective action"+(childSummary.open===1?" still needs":"s still need")+" completion before the workflow moves to verification."):"All corrective actions have been submitted for verification.";
+    if(childSummary&&n===4) return childSummary.open>0?(childSummary.open+" corrective action"+(childSummary.open===1?" still needs":"s still need")+" completion. Submitted actions appear in Verify work below."):"All corrective actions have been submitted for verification.";
     if(childSummary&&n===5) return childSummary.verified+" of "+childSummary.total+" corrective actions verified.";
     if(n===4 && r.action_status==="changes_requested" && canEditStep(r,4)) return "Changes were requested. Update the work and resubmit it for verification.";
     if(currentRole==="supervisor" && n===1 && isInvestigatorAssignedToMe(r) && r.involves_injury && ["yes","no","pending"].indexOf(String(r.calosha_screening_status||""))<0) return "You own this investigation, but an Admin or Safety Manager must complete the regulatory screening before Review can advance.";
@@ -2331,7 +2430,7 @@
     if(!isCurrent && n!==6) return {save:null,complete:null};
     if(n===1) return {save:null,complete:"Complete review →"};
     if(n===2) return {save:"Save and close",complete:"Complete investigation →"};
-    if(n===3) return {save:"Save and close",complete:"Save & assign action →"};
+    if(n===3) return {save:"Save and close",complete:"Assign actions →"};
     if(n===4){ if(r.action_status==="awaiting_verification"||r.action_status==="verified") return {save:null,complete:null}; return {save:"Save and close",complete:r.action_status==="changes_requested"?"Resubmit for verification →":"Submit for verification →"}; }
     if(n===5){ if(!canPerformVerification(r)||r.action_status!=="awaiting_verification") return {save:null,complete:null}; return {save:"Save and close",complete:"Verify & continue →"}; }
     if(n===6){ if(r.status==="closed"||r.status==="no_action"||r.status==="duplicate") return {save:null,complete:null}; return {save:null,complete:canClose(r)?"Close record":null}; }
@@ -2374,20 +2473,39 @@
     n=parseInt(n,10)||recommendedWizardStep(r);
     if(!force && !wizardStepAccessible(r,n)){ toast("Finish the current step before moving forward.","err"); return; }
     detail.dataset.wizardStep=String(n);
-    detail.querySelectorAll("[data-wizard-step]").forEach(function(panel){ panel.hidden=String(panel.getAttribute("data-wizard-step"))!==String(n); });
+    var inCorrectiveWorkspace=n>=3&&n<=5;
+    var caSummary=correctiveActionSummary(r);
+    detail.querySelectorAll("[data-wizard-step]").forEach(function(panel){
+      var pn=parseInt(panel.getAttribute("data-wizard-step"),10);
+      if(inCorrectiveWorkspace && pn>=3&&pn<=5){
+        if(pn===3) panel.hidden=false;
+        else if(pn===4) panel.hidden=!(caSummary||n>=4) || (n>=5&&caSummary&&caSummary.open===0);
+        else if(pn===5) panel.hidden=!(n>=5 || (caSummary&&(caSummary.awaiting>0||caSummary.verified>0||caSummary.changes_requested>0)));
+      } else panel.hidden=pn!==n;
+    });
+    var planPanel=detail.querySelector('[data-wizard-step="3"]');
+    if(planPanel) planPanel.classList.toggle("ca-plan-summary-mode",inCorrectiveWorkspace&&n>3);
     var p=workflowProgress(r), panel=detail.querySelector('[data-wizard-step="'+n+'"]'), state=p.steps[n-1]?p.steps[n-1].state:"needed";
     if(panel){ var staticComplete=panel.querySelector('[data-step-complete="'+n+'"]'); if(staticComplete && n<=3) staticComplete.style.display=(state==="done"?"none":"inline-flex"); }
+    updateCorrectiveLifecycle(detail,r);
     renderRecordProgress(r,detail.querySelector("[data-record-progress]"));
-    scrollWizardStepIntoView(detail,n);
+    scrollWizardStepIntoView(detail,inCorrectiveWorkspace?3:n);
   }
   function initialWizardStep(r){ return recommendedWizardStep(r); }
   function renderCloseStep(r,el,detail,auditEl){
     if(!el) return;
     var disposed=r.status==="no_action"||r.status==="duplicate", closed=r.status==="closed";
     if(disposed){ el.innerHTML='<div class="ops-alert"><b>Record complete — no corrective action required</b>This report was reviewed and closed with a documented disposition.</div>'; return; }
-    var checks=[
+    var childSummary=correctiveActionSummary(r);
+    var checks=childSummary?[
       [!!(r.status&&r.status!=="new"),"Report reviewed"],
-      [hasWorkflowValue(r.root_cause),"Root cause documented"],
+      [hasWorkflowValue(r.root_cause),"Investigation completed"],
+      [childSummary.total>0,childSummary.total+" corrective action"+(childSummary.total===1?"":"s")+" assigned"],
+      [childSummary.open===0,"All corrective actions submitted for verification"],
+      [childSummary.verified===childSummary.total,"All corrective actions verified"]
+    ]:[
+      [!!(r.status&&r.status!=="new"),"Report reviewed"],
+      [hasWorkflowValue(r.root_cause),"Investigation completed"],
       [hasWorkflowValue(r.corrective_action),"Corrective action documented"],
       [hasWorkflowValue(r.assigned_user_id),"Corrective action owner assigned"],
       [hasWorkflowValue(r.due_date),"Due date documented"],
@@ -2401,7 +2519,7 @@
     var btn=el.querySelector('[data-step-complete="6"]');
     if(btn) btn.addEventListener("click",async function(){
       if(!canEditStep(r,6)){ toast("Only an Admin or Safety Manager can close the record.","err"); return; }
-      if(!canClose(r)){ toast("Complete and verify the corrective action before closing the record.","err"); return; }
+      if(!canClose(r)){ toast("Finish and verify every corrective action before closing the record.","err"); return; }
       btn.disabled=true; var old=btn.textContent; btn.textContent="Closing…";
       try{ await updateStatus(r.id,"closed",null); $("incidentSummary").innerHTML='<div class="is-badges">'+incidentBadgeHtml(r)+'</div><div class="is-desc">'+esc(r.description||"No description provided.")+'</div>'; refreshRecordWorkflow(r,detail); loadAudit(r.id,auditEl); renderMyWork(); renderActions(); applyFilters(); toast("Record closed","ok"); }
       catch(ex){ console.error(ex); toast("Could not close the record.","err"); }
@@ -2413,10 +2531,11 @@
     detail.classList.add("resolved-review");
     var reopenBtn=detail.querySelector(".reopen-record-btn"); if(reopenBtn) reopenBtn.hidden=!canReopenReport(r);
     var restartBtn=detail.querySelector(".restart-workflow-btn"); if(restartBtn) restartBtn.hidden=true;
-    var progress=workflowProgress(r);
+    var progress=workflowProgress(r), resolvedActionSummary=correctiveActionSummary(r);
     detail.querySelectorAll("[data-wizard-step]").forEach(function(panel){
       var n=parseInt(panel.getAttribute("data-wizard-step"),10), st=progress.steps[n-1];
-      panel.hidden=!!(st&&st.state==="na");
+      var redundantCompletion=n===4 && resolvedActionSummary && resolvedActionSummary.total>0 && resolvedActionSummary.verified===resolvedActionSummary.total;
+      panel.hidden=!!(st&&st.state==="na") || redundantCompletion;
       panel.querySelectorAll("input,textarea,select,button").forEach(function(control){ control.disabled=true; });
     });
     var banner=detail.querySelector("[data-resolved-banner]");
@@ -2668,15 +2787,15 @@
       }
 
       multiActionVerificationStage.hidden=false;
-      var rows=actionPlanState.actions.filter(function(a){return !!a.id&&correctiveActionInCurrentCycle(a,r);});
-      if(!rows.length){
+      var allRows=actionPlanState.actions.filter(function(a){return !!a.id&&correctiveActionInCurrentCycle(a,r);});
+      if(!allRows.length){
         multiActionVerificationStage.innerHTML='<div class="multi-action-stage-note">No active corrective actions are available for verification.</div>';
         return;
       }
-
-      var verifiedCount=rows.filter(function(a){return String(a.status||"")==="verified";}).length;
-      var allVerified=rows.length>0&&verifiedCount===rows.length;
-      var cardsHtml=rows.map(function(a){
+      var rows=allRows.filter(function(a){return ["awaiting_verification","verified"].indexOf(String(a.status||""))>=0;});
+      var verifiedCount=allRows.filter(function(a){return String(a.status||"")==="verified";}).length;
+      var allVerified=allRows.length>0&&verifiedCount===allRows.length;
+      var cardsHtml=rows.length?rows.map(function(a){
         var status=String(a.status||"not_started");
         var owner=a.owner_user_id&&profileById[String(a.owner_user_id)]?profileName(profileById[String(a.owner_user_id)]):"Not assigned";
         var completedBy=a.completed_by&&profileById[String(a.completed_by)]?profileName(profileById[String(a.completed_by)]):"";
@@ -2705,7 +2824,7 @@
           if(canReview){
             review=assignment+
               '<div class="mav-review">'+
-                '<label class="inv-l">Reviewer verification note <span style="font-weight:400;color:var(--muted)">(optional when approving)</span>'+
+                '<label class="inv-l">Verification notes <span style="font-weight:400;color:var(--muted)">(optional when approving)</span>'+
                   '<textarea data-child-verification-note="'+esc(a.id)+'" placeholder="What did you verify? If requesting changes, explain exactly what still needs to be done.">'+esc(a.verification_note||"")+'</textarea>'+
                 '</label>'+
                 '<div class="wizard-required" data-child-verification-required="'+esc(a.id)+'">Add a reviewer note explaining the requested changes.</div>'+
@@ -2725,18 +2844,18 @@
           review='<div class="multi-action-verifier-note"><b>Not ready for verification</b>This action must be completed and submitted by '+esc(owner)+' before a reviewer can verify it.</div>';
         }
 
-        return '<div class="multi-action-verification-card" data-child-verification-card="'+esc(a.id)+'">'+
-          '<div class="mav-head"><div class="mav-title"><b>Corrective Action #'+esc(a.action_number||"")+'</b><span>Owner: '+esc(owner)+'</span></div><span class="multi-action-status">'+esc(actionStatusLabel(status))+'</span></div>'+
+        return '<div class="multi-action-verification-card ca-status-'+esc(status)+'" data-child-verification-card="'+esc(a.id)+'">'+
+          '<div class="mav-head"><div class="mav-title"><b>Corrective Action #'+esc(a.action_number||"")+'</b><span>Owner: '+esc(owner)+'</span></div><span class="multi-action-status mas-status-'+esc(status)+'">'+esc(actionStatusLabel(status))+'</span></div>'+
           '<div class="mav-desc">'+esc(a.description||"No description recorded.")+'</div>'+
           (a.completion_note?'<div class="multi-action-completion-note"><b>Completed work submitted</b>'+esc(a.completion_note)+(a.completed_at?'<div class="action-meta">Submitted '+esc(fmtDate(a.completed_at))+(completedBy?' by '+esc(completedBy):'')+'</div>':'')+'</div>':'')+
           '<div class="evidence-panel" data-action-evidence data-corrective-action-id="'+esc(a.id)+'"></div>'+
           review+
         '</div>';
-      }).join("");
+      }).join(""):'<div class="multi-action-stage-note">Nothing is waiting for verification right now. Actions that need more work remain in Complete work.</div>';
 
       var footerHtml=
         '<div class="multi-action-verification-footer">'+
-          '<div class="mavf-status"><b>'+verifiedCount+' of '+rows.length+' corrective action'+(rows.length===1?'':'s')+' verified.</b>'+
+          '<div class="mavf-status"><b>'+verifiedCount+' of '+allRows.length+' corrective action'+(allRows.length===1?'':'s')+' verified.</b>'+
           (allVerified?' All corrective actions are complete. Continue to the final Close step.':' Verify each remaining action before the report can move to Close.')+
           '</div>'+
           (allVerified?'<button class="wizard-primary" type="button" data-all-actions-verified>All actions verified — Continue to Close</button>':'')+
@@ -2769,7 +2888,12 @@
       if(multiActionVerificationStage) multiActionVerificationStage.hidden=false;
       if(!multiActionCompletionEl) return;
       multiActionCompletionEl.hidden=false;
-      var rows=actionPlanState.actions.filter(function(a){return !!a.id&&correctiveActionInCurrentCycle(a,r);});
+      var allRows=actionPlanState.actions.filter(function(a){return !!a.id&&correctiveActionInCurrentCycle(a,r);});
+      var rows=allRows.filter(function(a){return ["awaiting_verification","verified"].indexOf(String(a.status||"not_started"))<0;});
+      if(!rows.length){
+        multiActionCompletionEl.innerHTML='<div class="multi-action-stage-note"><b>No work needs updating here.</b> Submitted actions are shown in Verify work below.</div>';
+        return;
+      }
       multiActionCompletionEl.innerHTML=rows.map(function(a){
         var owner=a.owner_user_id&&profileById[String(a.owner_user_id)]?profileName(profileById[String(a.owner_user_id)]):"Not assigned";
         var control=a.control_type?(controlTypeLabel(a.control_type)||a.control_type):"Not selected";
@@ -2784,13 +2908,13 @@
           work='<div class="multi-action-completion-note"><b>Awaiting verification</b>'+esc(a.completion_note||"Completion submitted.")+(a.completed_at?'<div class="action-meta">Submitted '+esc(fmtDate(a.completed_at))+(completedBy?' by '+esc(completedBy):'')+'</div>':'')+'</div>';
         } else if(editable){
           work=(status==="changes_requested"&&a.verification_note?'<div class="ops-alert"><b>Changes requested</b>'+esc(a.verification_note)+'</div>':'')+
-            '<div class="mac-work"><label class="inv-l">Completed work<textarea data-child-completion-note="'+esc(a.id)+'" placeholder="Describe exactly what was completed or changed.">'+esc(a.completion_note||"")+'</textarea></label>'+
+            '<div class="mac-work"><div class="action-missing-list"><b>Required:</b> Describe what was completed. Evidence is optional unless your company requires it.</div><label class="inv-l">What was completed?<textarea data-child-completion-note="'+esc(a.id)+'" placeholder="Describe what was completed and anything the reviewer should know.">'+esc(a.completion_note||"")+'</textarea></label>'+
             '<div class="multi-action-completion-actions"><button class="wizard-primary" type="button" data-submit-child-completion="'+esc(a.id)+'">'+(status==="changes_requested"?'Resubmit for verification →':'Submit for verification →')+'</button></div></div>';
         } else {
           work='<div class="multi-action-completion-note"><b>Assigned owner</b>'+esc(owner)+' must complete this corrective action before it can move to verification.</div>';
         }
-        return '<div class="multi-action-completion-card" data-child-completion-card="'+esc(a.id)+'">'+
-          '<div class="mac-head"><div class="mac-title"><b>Corrective Action #'+esc(a.action_number||"")+'</b><span>'+esc(owner)+'</span></div><span class="multi-action-status">'+esc(actionStatusLabel(status))+'</span></div>'+
+        return '<div class="multi-action-completion-card ca-status-'+esc(status)+'" data-child-completion-card="'+esc(a.id)+'">'+
+          '<div class="mac-head"><div class="mac-title"><b>Corrective Action #'+esc(a.action_number||"")+'</b><span>'+esc(owner)+'</span></div><span class="multi-action-status mas-status-'+esc(status)+'">'+esc(actionStatusLabel(status))+'</span></div>'+
           '<div class="mac-desc">'+esc(a.description||"No description recorded.")+'</div>'+
           '<div class="mac-meta"><span><b>Due:</b> '+esc(due)+'</span><span><b>Priority:</b> '+esc(priority)+'</span><span><b>Control:</b> '+esc(control)+'</span></div>'+
           work+
@@ -2803,6 +2927,34 @@
         if(action) renderActionEvidence(r,panel,auditEl,action).catch(function(ex){console.error("action evidence",ex);});
       });
     }
+    function correctiveActionMissingFields(a){
+      var missing=[];
+      if(!String(a.description||"").trim()) missing.push("what needs to be fixed");
+      if(!a.control_type) missing.push("control type");
+      if(!a.owner_user_id) missing.push("owner");
+      if(!a.due_date) missing.push("due date");
+      if(!a.priority) missing.push("priority");
+      return missing;
+    }
+    function refreshPlanCardFieldProgress(card){
+      if(!card) return;
+      var labels={description:"what needs to be fixed",control_type:"control type",owner_user_id:"owner",due_date:"due date",priority:"priority"};
+      var missing=[];
+      Object.keys(labels).forEach(function(key){
+        var field=card.querySelector('[data-action-field="'+key+'"]');
+        if(!field||!String(field.value||"").trim()) missing.push(labels[key]);
+      });
+      var progress=card.querySelector("[data-action-field-progress]");
+      if(progress){
+        progress.className="action-field-progress "+(missing.length?"missing":"complete");
+        progress.textContent=missing.length?((5-missing.length)+" of 5 required fields"):"Plan complete ✓";
+      }
+      var msg=card.querySelector("[data-action-missing]");
+      if(msg){
+        msg.hidden=!missing.length;
+        msg.innerHTML=missing.length?'<b>Still needed:</b> '+esc(missing.join(", "))+'.':'';
+      }
+    }
     function renderCorrectiveActionPlan(){
       renderCorrectiveActionOverview();
       if(!actionPlanList) return;
@@ -2810,26 +2962,39 @@
       if(!actionPlanState.actions.length) actionPlanState.actions=[newLocalCorrectiveAction()];
       var editable=canEditStep(r,3);
       actionPlanList.innerHTML=actionPlanState.actions.map(function(a,idx){
-        var locked=!!(a.id && ["awaiting_verification","verified","changes_requested"].indexOf(String(a.status||""))>=0);
+        var status=String(a.status||"not_started");
+        var locked=!!(a.id && ["awaiting_verification","verified","changes_requested"].indexOf(status)>=0);
         var disabled=(!editable||locked)?' disabled':'';
         var title=a.action_number?("Corrective Action #"+a.action_number):("New Corrective Action "+(idx+1));
         var live=!!a.activated_at;
-        return '<div class="multi-action-card'+(live?' is-activated':'')+(locked?' is-locked':'')+'" data-action-card data-action-index="'+idx+'">'+
-          '<div class="multi-action-head"><div class="multi-action-title"><b>'+esc(title)+'</b><span>'+(live?'Active assignment':'Draft action')+(locked?' · locked at current workflow status':'')+'</span></div><div class="multi-action-head-actions"><span class="multi-action-status">'+esc(actionStatusLabel(a.status))+'</span><button class="multi-action-remove" type="button" data-remove-corrective-action="'+idx+'"'+((!editable||locked)?' disabled':'')+'>Remove</button></div></div>'+
-          '<div class="multi-action-fields">'+
-            '<label class="inv-l">Corrective action required<textarea data-action-field="description" placeholder="What needs to be corrected or changed?"'+disabled+'>'+esc(a.description||"")+'</textarea><span class="field-guidance compact">State the specific work or change needed to correct the issue.</span><div class="multi-action-translation" data-action-translation hidden></div></label>'+
-            '<label class="inv-l">Control type<select data-action-field="control_type"'+disabled+'><option value="">— Select control type —</option><option value="elimination"'+(a.control_type==="elimination"?' selected':'')+'>Elimination — remove the hazard</option><option value="substitution"'+(a.control_type==="substitution"?' selected':'')+'>Substitution — replace the hazard</option><option value="engineering"'+(a.control_type==="engineering"?' selected':'')+'>Engineering control — isolate people from the hazard</option><option value="administrative"'+(a.control_type==="administrative"?' selected':'')+'>Administrative / work practice — change how work is performed</option><option value="ppe"'+(a.control_type==="ppe"?' selected':'')+'>PPE — protect the worker</option><option value="other"'+(a.control_type==="other"?' selected':'')+'>Other</option></select><span class="field-guidance compact">Choose the highest practical level in the hierarchy of controls.</span></label>'+
-            '<label class="inv-l">Assigned dashboard user<select data-action-field="owner_user_id"'+disabled+'>'+assignmentOptions(a.owner_user_id||"")+'</select><span class="field-guidance compact">Choose the person responsible for completing this specific corrective action.</span></label>'+
-            '<div class="inv-row"><label class="inv-l">Due date<input type="date" data-action-field="due_date" value="'+esc(a.due_date||"")+'"'+disabled+'><span class="field-guidance compact">Set this action’s completion deadline.</span></label><label class="inv-l">Priority<select data-action-field="priority"'+disabled+'><option value="">— Choose priority —</option><option value="low"'+(a.priority==="low"?' selected':'')+'>Low</option><option value="medium"'+(a.priority==="medium"?' selected':'')+'>Medium</option><option value="high"'+(a.priority==="high"?' selected':'')+'>High</option></select><span class="field-guidance compact">Set the urgency for this action.</span></label></div>'+
-          '</div>'+(live?'<div class="multi-action-live-note"><b>Active action</b>Changes to an active plan save immediately to the action record. Owner changes generate a fresh assignment alert for that action.</div>':'')+
+        var missing=correctiveActionMissingFields(a), completeCount=5-missing.length;
+        var owner=a.owner_user_id&&profileById[String(a.owner_user_id)]?profileName(profileById[String(a.owner_user_id)]):"Not assigned";
+        var due=a.due_date?fmtDate(a.due_date):"No due date";
+        var priority=a.priority?String(a.priority).charAt(0).toUpperCase()+String(a.priority).slice(1):"No priority";
+        var control=a.control_type?(controlTypeLabel(a.control_type)||a.control_type):"Not selected";
+        var progress='<span class="action-field-progress '+(missing.length?'missing':'complete')+'" data-action-field-progress>'+(missing.length?(completeCount+' of 5 required fields'):'Plan complete ✓')+'</span>';
+        var missingHtml='<div class="action-missing-list" data-action-missing'+(missing.length?'':' hidden')+'>'+(missing.length?'<b>Still needed:</b> '+esc(missing.join(", "))+'.':'')+'</div>';
+        var fields='<div class="multi-action-fields">'+
+            '<label class="inv-l">What needs to be fixed?<textarea data-action-field="description" placeholder="Describe the specific fix or change needed."'+disabled+'>'+esc(a.description||"")+'</textarea><span class="field-guidance compact">Be specific enough that the assigned person knows exactly what to do.</span><div class="multi-action-translation" data-action-translation hidden></div></label>'+ 
+            '<label class="inv-l">Control type<select data-action-field="control_type"'+disabled+'><option value="">— Select control type —</option><option value="elimination"'+(a.control_type==="elimination"?' selected':'')+'>Elimination — remove the hazard</option><option value="substitution"'+(a.control_type==="substitution"?' selected':'')+'>Substitution — replace the hazard</option><option value="engineering"'+(a.control_type==="engineering"?' selected':'')+'>Engineering control — isolate people from the hazard</option><option value="administrative"'+(a.control_type==="administrative"?' selected':'')+'>Administrative / work practice — change how work is performed</option><option value="ppe"'+(a.control_type==="ppe"?' selected':'')+'>PPE — protect the worker</option><option value="other"'+(a.control_type==="other"?' selected':'')+'>Other</option></select><span class="field-guidance compact">Choose the highest practical level in the hierarchy of controls.</span></label>'+ 
+            '<label class="inv-l">Who will complete this?<select data-action-field="owner_user_id"'+disabled+'>'+assignmentOptions(a.owner_user_id||"")+'</select><span class="field-guidance compact">Choose the person responsible for this specific action.</span></label>'+ 
+            '<div class="inv-row"><label class="inv-l">Due date<input type="date" data-action-field="due_date" value="'+esc(a.due_date||"")+'"'+disabled+'><span class="field-guidance compact">When should this work be finished?</span></label><label class="inv-l">Priority<select data-action-field="priority"'+disabled+'><option value="">— Choose priority —</option><option value="low"'+(a.priority==="low"?' selected':'')+'>Low</option><option value="medium"'+(a.priority==="medium"?' selected':'')+'>Medium</option><option value="high"'+(a.priority==="high"?' selected':'')+'>High</option></select><span class="field-guidance compact">How urgent is this action?</span></label></div>'+ 
+          '</div>';
+        var planBody=live?('<details class="action-plan-details"><summary>'+((!editable||locked)?'View plan details':'View / edit plan details')+' · '+esc(owner)+' · '+esc(due)+'</summary>'+fields+'</details>'):fields;
+        var liveMessage=status==="verified"?"Work completed and verified.":(status==="awaiting_verification"?"Work submitted and waiting for verification.":(status==="changes_requested"?"The reviewer requested changes. Continue in Complete work below.":"Continue below to Complete work."));
+        var liveNote=live?'<div class="multi-action-live-note"><b>Plan assigned</b>'+esc(control)+' · '+esc(priority)+' priority. '+esc(liveMessage)+' Open the plan details only if the plan itself needs attention.</div>':'';
+        return '<div class="multi-action-card ca-status-'+esc(status)+(live?' is-activated':'')+(locked?' is-locked':'')+'" data-action-card data-action-index="'+idx+'">'+
+          '<div class="multi-action-head"><div class="multi-action-title"><b>'+esc(title)+'</b><span>'+(live?'Assigned action':'Draft action')+(locked?' · plan locked while this action is in review':'')+'</span></div><div class="multi-action-head-actions">'+progress+'<span class="multi-action-status mas-status-'+esc(status)+'">'+esc(actionStatusLabel(status))+'</span><button class="multi-action-remove" type="button" data-remove-corrective-action="'+idx+'"'+((!editable||locked)?' disabled':'')+'>Remove</button></div></div>'+ 
+          missingHtml+planBody+liveNote+
         '</div>';
       }).join("");
-      if(actionPlanAdd) actionPlanAdd.disabled=!editable || actionPlanState.actions.length>=25;
+      if(actionPlanAdd){ actionPlanAdd.disabled=!editable || actionPlanState.actions.length>=25; actionPlanAdd.hidden=!editable&&planHasBeenActivated(); }
       refreshCorrectiveActionTranslations(r,detail,actionPlanState);
       syncCorrectiveActionSummary();
       renderCorrectiveActionOverview();
       renderMultiActionCompletion();
       renderMultiActionVerification();
+      Array.prototype.slice.call(actionPlanList.querySelectorAll("[data-action-card]")).forEach(refreshPlanCardFieldProgress);
     }
     function syncCorrectiveActionStateFromUi(){
       if(!actionPlanList) return;
@@ -2918,8 +3083,8 @@
       if(actionPlanState.actions.length<=1){toast("Keep at least one corrective action in the plan.","err");return;}
       syncCorrectiveActionStateFromUi(); actionPlanState.actions.splice(idx,1); renderCorrectiveActionPlan();
     });
-    if(actionPlanList) actionPlanList.addEventListener("input",function(){ var req=detail.querySelector('[data-required="3"]'); if(req)req.classList.remove("show"); });
-    if(actionPlanList) actionPlanList.addEventListener("change",function(){ var req=detail.querySelector('[data-required="3"]'); if(req)req.classList.remove("show"); });
+    if(actionPlanList) actionPlanList.addEventListener("input",function(e){ var req=detail.querySelector('[data-required="3"]'); if(req)req.classList.remove("show"); refreshPlanCardFieldProgress(e.target.closest("[data-action-card]")); });
+    if(actionPlanList) actionPlanList.addEventListener("change",function(e){ var req=detail.querySelector('[data-required="3"]'); if(req)req.classList.remove("show"); refreshPlanCardFieldProgress(e.target.closest("[data-action-card]")); });
     if(multiActionCompletionEl) multiActionCompletionEl.addEventListener("click",async function(e){
       var btn=e.target.closest("[data-submit-child-completion]"); if(!btn||btn.disabled) return;
       var actionId=btn.getAttribute("data-submit-child-completion"), a=actionPlanState.actions.find(function(x){return String(x.id||"")===String(actionId||"");});
@@ -3122,7 +3287,7 @@
     var complete2=detail.querySelector('[data-step-complete="2"]'); if(complete2) complete2.addEventListener("click",async function(){
       if(!canEditStep(r,2)){toast("Only the assigned investigator or an Admin/Safety Manager can complete Investigation.","err");return;}
       var req=detail.querySelector('[data-required="2"]'); if(!invRoot.value.trim()){if(req)req.classList.add("show");toast("Add the root cause before completing Investigation.","err");return;} if(req)req.classList.remove("show"); complete2.disabled=true;
-      try{await persistRootCause(false,true);setWizardStep(detail,r,3,true);toast("Investigation complete — build the corrective action plan","ok");}catch(ex){console.error(ex);toast("Could not complete Investigation.","err");}finally{if(complete2.isConnected)complete2.disabled=!canEditStep(r,2);} });
+      try{await persistRootCause(false,true);setWizardStep(detail,r,3,true);toast("Investigation complete — continue to Corrective Actions","ok");}catch(ex){console.error(ex);toast("Could not complete Investigation.","err");}finally{if(complete2.isConnected)complete2.disabled=!canEditStep(r,2);} });
 
     var complete3=detail.querySelector('[data-step-complete="3"]'); if(complete3) complete3.addEventListener("click",async function(){
       if(!canEditStep(r,3)){toast("Only the assigned investigator or an Admin/Safety Manager can assign the corrective actions.","err");return;}
@@ -3570,8 +3735,8 @@
 
       var pdfMode=languageMode||"viewer", pdfLang=(pdfMode==="original"?normalizeLanguageCode(r.language||"en"):(pdfMode==="viewer"?(activeIncident===r?activeIncidentLanguage:preferredReadingLanguage()):normalizeLanguageCode(pdfMode)));
       var pdfLabels={
-        en:{notRecorded:"Not recorded",dashboardUser:"Dashboard user",reportWord:"Report",step:"STEP",workflow:["Review","Investigation","Action Plan","Complete","Verify","Close"],headerSubtitle:"Incident record - after-action summary",submitted:"Submitted",generated:"Generated",section1:"Report and review",section1Sub:"What was submitted and how the report entered the safety workflow.",reportType:"Report type",actualInjury:"Actual injury or illness",address:"Address of incident",specificSpot:"Specific spot on the site",whenNoticed:"When noticed",potentialSeverity:"Potential severity",hazardType:"Type of hazard",formLanguage:"Form language",describe:"Describe what you saw",noDescription:"No description recorded",involved:"Who or what was involved / any witnesses",immediate:"What was done right away",suggested:"What would fix it or prevent it",reporter:"Reporter",reportedBy:"Reported by",reporterRole:"Reporter role",reporterContact:"Reporter contact",reviewCompleted:"Review completed",reviewedBy:"Reviewed by",investigator:"Case owner / investigator",verifier:"Verification owner",workflowRestarts:"Workflow restarts",lastRestart:"Last restart",none:"None",originalFiles:"Original report photos and files",noOriginalFiles:"No original files attached",calosha:"Cal/OSHA serious-event screening",screeningResult:"Screening result",awareness:"RBH awareness time",screeningNote:"Screening note",screeningDisclaimer:"Management screening only. This application does not submit a report to Cal/OSHA and the screening does not replace required regulatory reporting.",section2:"Investigation",section2Sub:"Document the underlying reason the issue happened or was allowed to happen.",rootCause:"Root cause",notYetRecorded:"Not yet recorded",section3:"Corrective action plan",section3Sub:"Define the fix, ownership, due date, and priority.",correctiveRequired:"Corrective action required",actionNumber:"Corrective Action",actionStatus:"Action status",controlType:"Control type",assignedUser:"Assigned dashboard user",notAssigned:"Not assigned",responsible:"Responsible person / crew",dueDate:"Due date",priority:"Priority",section4:"Complete corrective action",section4Sub:"Record what was actually completed and the supporting evidence.",completedWork:"Completed work submitted",notYetSubmitted:"Not yet submitted",completedOn:"Completed on",completedBy:"Completed by",currentEvidence:"Current-workflow corrective-action evidence",noCurrentEvidence:"No corrective-action evidence attached in the current workflow",priorEvidence:"Preserved evidence from earlier workflow",section5:"Verify corrective action",section5Sub:"Show the review decision and any verification or change-request note.",verificationOutcome:"Verification outcome",verifiedOn:"Verified on",verifiedBy:"Verified by",requestedChanges:"Requested changes",reviewerNote:"Reviewer verification note",noVerificationNote:"No verification note recorded",section6:"Close record",section6Sub:"Final disposition and closure information for the incident.",recordStatus:"Record status",closedOn:"Closed on",notYetClosed:"Not yet closed",closedBy:"Closed by",closurePath:"Closure path",closureReason:"Closure reason",closureNote:"Closure note",additionalNotes:"Additional notes",activityHistory:"Activity history",reportSubmitted:"Report submitted",anonymousReporter:"Anonymous reporter",note:"Note",system:"System",footer:"RBH Insulation, Inc. | Confidential safety document | License #558799",page:"Page",yes:"Yes",no:"No",originalRecord:"Original record",appendixTitle:"Attachment Appendix",appendixSub:"Files preserved with this record at the time the PDF was generated.",attachment:"Attachment",source:"Source",uploaded:"Uploaded",fileType:"File type",fileSize:"File size",sha256:"SHA-256",sourceOriginal:"Original report attachment",sourceCurrentEvidence:"Corrective-action evidence",sourcePriorEvidence:"Earlier-workflow corrective-action evidence",embeddedOnly:"Source file embedded in PDF",embeddedOnlyBody:"This file type cannot be rendered reliably as visible PDF pages in the browser. The original source file is embedded inside this PDF package so it remains with the exported record.",pdfPages:"Source PDF pages follow",appendixCount:"Attachments included",appendixNote:"Removed attachments are not included; their removal remains documented in the activity history.",summaryPage:"Summary page"},
-        es:{notRecorded:"No registrado",dashboardUser:"Usuario del panel",reportWord:"Reporte",step:"PASO",workflow:["Revisión","Investigación","Plan de acción","Completar","Verificar","Cerrar"],headerSubtitle:"Registro del incidente - resumen posterior a la acción",submitted:"Enviado",generated:"Generado",section1:"Reporte y revisión",section1Sub:"Lo que se envió y cómo el reporte ingresó al flujo de seguridad.",reportType:"Tipo de reporte",actualInjury:"Lesión o enfermedad real",address:"Dirección del incidente",specificSpot:"Lugar específico en la obra",whenNoticed:"Cuándo se observó",potentialSeverity:"Gravedad potencial",hazardType:"Tipo de peligro",formLanguage:"Idioma del formulario",describe:"Describa lo que vio",noDescription:"No se registró descripción",involved:"Quién o qué estuvo involucrado / testigos",immediate:"Qué se hizo de inmediato",suggested:"Qué lo corregiría o evitaría",reporter:"Reportante",reportedBy:"Reportado por",reporterRole:"Función del reportante",reporterContact:"Contacto del reportante",reviewCompleted:"Revisión completada",reviewedBy:"Revisado por",investigator:"Responsable / investigador",verifier:"Responsable de verificación",workflowRestarts:"Reinicios del flujo",lastRestart:"Último reinicio",none:"Ninguno",originalFiles:"Fotos y archivos del reporte original",noOriginalFiles:"No hay archivos originales adjuntos",calosha:"Evaluación de evento grave de Cal/OSHA",screeningResult:"Resultado de la evaluación",awareness:"Hora en que RBH tuvo conocimiento",screeningNote:"Nota de evaluación",screeningDisclaimer:"Solo evaluación de la gerencia. Esta aplicación no presenta un reporte a Cal/OSHA y la evaluación no reemplaza los reportes regulatorios requeridos.",section2:"Investigación",section2Sub:"Documente la razón subyacente por la que ocurrió o se permitió el problema.",rootCause:"Causa raíz",notYetRecorded:"Aún no registrado",section3:"Plan de acción correctiva",section3Sub:"Defina la corrección, el responsable, la fecha límite y la prioridad.",correctiveRequired:"Acción correctiva requerida",actionNumber:"Acción correctiva",actionStatus:"Estado de la acción",controlType:"Tipo de control",assignedUser:"Usuario asignado del panel",notAssigned:"No asignado",responsible:"Persona / equipo responsable",dueDate:"Fecha límite",priority:"Prioridad",section4:"Completar acción correctiva",section4Sub:"Registre lo que realmente se completó y la evidencia de respaldo.",completedWork:"Trabajo completado enviado",notYetSubmitted:"Aún no enviado",completedOn:"Completado el",completedBy:"Completado por",currentEvidence:"Evidencia de acción correctiva del flujo actual",noCurrentEvidence:"No hay evidencia de acción correctiva adjunta en el flujo actual",priorEvidence:"Evidencia preservada de un flujo anterior",section5:"Verificar acción correctiva",section5Sub:"Muestre la decisión de revisión y cualquier nota de verificación o solicitud de cambios.",verificationOutcome:"Resultado de la verificación",verifiedOn:"Verificado el",verifiedBy:"Verificado por",requestedChanges:"Cambios solicitados",reviewerNote:"Nota de verificación del revisor",noVerificationNote:"No se registró una nota de verificación",section6:"Cerrar registro",section6Sub:"Disposición final e información de cierre del incidente.",recordStatus:"Estado del registro",closedOn:"Cerrado el",notYetClosed:"Aún no cerrado",closedBy:"Cerrado por",closurePath:"Ruta de cierre",closureReason:"Motivo de cierre",closureNote:"Nota de cierre",additionalNotes:"Notas adicionales",activityHistory:"Historial de actividad",reportSubmitted:"Reporte enviado",anonymousReporter:"Reportante anónimo",note:"Nota",system:"Sistema",footer:"RBH Insulation, Inc. | Documento confidencial de seguridad | Licencia #558799",page:"Página",yes:"Sí",no:"No",originalRecord:"Registro original",appendixTitle:"Apéndice de archivos adjuntos",appendixSub:"Archivos preservados con este registro al momento de generar el PDF.",attachment:"Adjunto",source:"Origen",uploaded:"Cargado",fileType:"Tipo de archivo",fileSize:"Tamaño",sha256:"SHA-256",sourceOriginal:"Adjunto del reporte original",sourceCurrentEvidence:"Evidencia de acción correctiva",sourcePriorEvidence:"Evidencia de acción correctiva de un flujo anterior",embeddedOnly:"Archivo fuente incorporado en el PDF",embeddedOnlyBody:"Este tipo de archivo no se puede representar de forma confiable como páginas PDF visibles en el navegador. El archivo fuente original está incorporado dentro de este paquete PDF para que permanezca con el registro exportado.",pdfPages:"Las páginas del PDF fuente siguen",appendixCount:"Adjuntos incluidos",appendixNote:"Los adjuntos eliminados no se incluyen; su eliminación permanece documentada en el historial de actividad.",summaryPage:"Página de resumen"}
+        en:{notRecorded:"Not recorded",dashboardUser:"Dashboard user",reportWord:"Report",step:"STEP",workflow:["Review","Investigation","Corrective Actions","Close"],headerSubtitle:"Incident record - after-action summary",submitted:"Submitted",generated:"Generated",section1:"Report and review",section1Sub:"What was submitted and how the report entered the safety workflow.",reportType:"Report type",actualInjury:"Actual injury or illness",address:"Address of incident",specificSpot:"Specific spot on the site",whenNoticed:"When noticed",potentialSeverity:"Potential severity",hazardType:"Type of hazard",formLanguage:"Form language",describe:"Describe what you saw",noDescription:"No description recorded",involved:"Who or what was involved / any witnesses",immediate:"What was done right away",suggested:"What would fix it or prevent it",reporter:"Reporter",reportedBy:"Reported by",reporterRole:"Reporter role",reporterContact:"Reporter contact",reviewCompleted:"Review completed",reviewedBy:"Reviewed by",investigator:"Case owner / investigator",verifier:"Verification owner",workflowRestarts:"Workflow restarts",lastRestart:"Last restart",none:"None",originalFiles:"Original report photos and files",noOriginalFiles:"No original files attached",calosha:"Cal/OSHA serious-event screening",screeningResult:"Screening result",awareness:"RBH awareness time",screeningNote:"Screening note",screeningDisclaimer:"Management screening only. This application does not submit a report to Cal/OSHA and the screening does not replace required regulatory reporting.",section2:"Investigation",section2Sub:"Document the underlying reason the issue happened or was allowed to happen.",rootCause:"Root cause",notYetRecorded:"Not yet recorded",section3:"Corrective actions - Plan & assign",section3Sub:"Define the fix, ownership, due date, and priority.",correctiveRequired:"Corrective action required",actionNumber:"Corrective Action",actionStatus:"Action status",controlType:"Control type",assignedUser:"Assigned dashboard user",notAssigned:"Not assigned",responsible:"Responsible person / crew",dueDate:"Due date",priority:"Priority",section4:"Corrective actions - Complete work",section4Sub:"Record what was actually completed and the supporting evidence.",completedWork:"Completed work submitted",notYetSubmitted:"Not yet submitted",completedOn:"Completed on",completedBy:"Completed by",currentEvidence:"Current-workflow corrective-action evidence",noCurrentEvidence:"No corrective-action evidence attached in the current workflow",priorEvidence:"Preserved evidence from earlier workflow",section5:"Corrective actions - Verify work",section5Sub:"Show the review decision and any verification or change-request note.",verificationOutcome:"Verification outcome",verifiedOn:"Verified on",verifiedBy:"Verified by",requestedChanges:"Requested changes",reviewerNote:"Reviewer verification note",noVerificationNote:"No verification note recorded",section6:"Close record",section6Sub:"Final disposition and closure information for the incident.",recordStatus:"Record status",closedOn:"Closed on",notYetClosed:"Not yet closed",closedBy:"Closed by",closurePath:"Closure path",closureReason:"Closure reason",closureNote:"Closure note",additionalNotes:"Additional notes",activityHistory:"Activity history",reportSubmitted:"Report submitted",anonymousReporter:"Anonymous reporter",note:"Note",system:"System",footer:"RBH Insulation, Inc. | Confidential safety document | License #558799",page:"Page",yes:"Yes",no:"No",originalRecord:"Original record",appendixTitle:"Attachment Appendix",appendixSub:"Files preserved with this record at the time the PDF was generated.",attachment:"Attachment",source:"Source",uploaded:"Uploaded",fileType:"File type",fileSize:"File size",sha256:"SHA-256",sourceOriginal:"Original report attachment",sourceCurrentEvidence:"Corrective-action evidence",sourcePriorEvidence:"Earlier-workflow corrective-action evidence",embeddedOnly:"Source file embedded in PDF",embeddedOnlyBody:"This file type cannot be rendered reliably as visible PDF pages in the browser. The original source file is embedded inside this PDF package so it remains with the exported record.",pdfPages:"Source PDF pages follow",appendixCount:"Attachments included",appendixNote:"Removed attachments are not included; their removal remains documented in the activity history.",summaryPage:"Summary page"},
+        es:{notRecorded:"No registrado",dashboardUser:"Usuario del panel",reportWord:"Reporte",step:"PASO",workflow:["Revisión","Investigación","Acciones correctivas","Cerrar"],headerSubtitle:"Registro del incidente - resumen posterior a la acción",submitted:"Enviado",generated:"Generado",section1:"Reporte y revisión",section1Sub:"Lo que se envió y cómo el reporte ingresó al flujo de seguridad.",reportType:"Tipo de reporte",actualInjury:"Lesión o enfermedad real",address:"Dirección del incidente",specificSpot:"Lugar específico en la obra",whenNoticed:"Cuándo se observó",potentialSeverity:"Gravedad potencial",hazardType:"Tipo de peligro",formLanguage:"Idioma del formulario",describe:"Describa lo que vio",noDescription:"No se registró descripción",involved:"Quién o qué estuvo involucrado / testigos",immediate:"Qué se hizo de inmediato",suggested:"Qué lo corregiría o evitaría",reporter:"Reportante",reportedBy:"Reportado por",reporterRole:"Función del reportante",reporterContact:"Contacto del reportante",reviewCompleted:"Revisión completada",reviewedBy:"Revisado por",investigator:"Responsable / investigador",verifier:"Responsable de verificación",workflowRestarts:"Reinicios del flujo",lastRestart:"Último reinicio",none:"Ninguno",originalFiles:"Fotos y archivos del reporte original",noOriginalFiles:"No hay archivos originales adjuntos",calosha:"Evaluación de evento grave de Cal/OSHA",screeningResult:"Resultado de la evaluación",awareness:"Hora en que RBH tuvo conocimiento",screeningNote:"Nota de evaluación",screeningDisclaimer:"Solo evaluación de la gerencia. Esta aplicación no presenta un reporte a Cal/OSHA y la evaluación no reemplaza los reportes regulatorios requeridos.",section2:"Investigación",section2Sub:"Documente la razón subyacente por la que ocurrió o se permitió el problema.",rootCause:"Causa raíz",notYetRecorded:"Aún no registrado",section3:"Acciones correctivas - Planificar y asignar",section3Sub:"Defina la corrección, el responsable, la fecha límite y la prioridad.",correctiveRequired:"Acción correctiva requerida",actionNumber:"Acción correctiva",actionStatus:"Estado de la acción",controlType:"Tipo de control",assignedUser:"Usuario asignado del panel",notAssigned:"No asignado",responsible:"Persona / equipo responsable",dueDate:"Fecha límite",priority:"Prioridad",section4:"Acciones correctivas - Completar trabajo",section4Sub:"Registre lo que realmente se completó y la evidencia de respaldo.",completedWork:"Trabajo completado enviado",notYetSubmitted:"Aún no enviado",completedOn:"Completado el",completedBy:"Completado por",currentEvidence:"Evidencia de acción correctiva del flujo actual",noCurrentEvidence:"No hay evidencia de acción correctiva adjunta en el flujo actual",priorEvidence:"Evidencia preservada de un flujo anterior",section5:"Acciones correctivas - Verificar trabajo",section5Sub:"Muestre la decisión de revisión y cualquier nota de verificación o solicitud de cambios.",verificationOutcome:"Resultado de la verificación",verifiedOn:"Verificado el",verifiedBy:"Verificado por",requestedChanges:"Cambios solicitados",reviewerNote:"Nota de verificación del revisor",noVerificationNote:"No se registró una nota de verificación",section6:"Cerrar registro",section6Sub:"Disposición final e información de cierre del incidente.",recordStatus:"Estado del registro",closedOn:"Cerrado el",notYetClosed:"Aún no cerrado",closedBy:"Cerrado por",closurePath:"Ruta de cierre",closureReason:"Motivo de cierre",closureNote:"Nota de cierre",additionalNotes:"Notas adicionales",activityHistory:"Historial de actividad",reportSubmitted:"Reporte enviado",anonymousReporter:"Reportante anónimo",note:"Nota",system:"Sistema",footer:"RBH Insulation, Inc. | Documento confidencial de seguridad | Licencia #558799",page:"Página",yes:"Sí",no:"No",originalRecord:"Registro original",appendixTitle:"Apéndice de archivos adjuntos",appendixSub:"Archivos preservados con este registro al momento de generar el PDF.",attachment:"Adjunto",source:"Origen",uploaded:"Cargado",fileType:"Tipo de archivo",fileSize:"Tamaño",sha256:"SHA-256",sourceOriginal:"Adjunto del reporte original",sourceCurrentEvidence:"Evidencia de acción correctiva",sourcePriorEvidence:"Evidencia de acción correctiva de un flujo anterior",embeddedOnly:"Archivo fuente incorporado en el PDF",embeddedOnlyBody:"Este tipo de archivo no se puede representar de forma confiable como páginas PDF visibles en el navegador. El archivo fuente original está incorporado dentro de este paquete PDF para que permanezca con el registro exportado.",pdfPages:"Las páginas del PDF fuente siguen",appendixCount:"Adjuntos incluidos",appendixNote:"Los adjuntos eliminados no se incluyen; su eliminación permanece documentada en el historial de actividad.",summaryPage:"Página de resumen"}
       };
       var L=pdfLabels[pdfLang]||pdfLabels.en;
       if(!pdfLabels[pdfLang] && pdfMode!=="original"){
@@ -3685,12 +3850,14 @@
       function workflowBar(){
         var prog=workflowProgress(r), names=L.workflow;
         ensure(42);
-        var gapW=5, boxW=(contentW-gapW*5)/6, yy=y;
-        prog.steps.forEach(function(st,i){
+        var groups=[[0],[1],[2,3,4],[5]], gapW=5, boxW=(contentW-gapW*3)/4, yy=y;
+        groups.forEach(function(indexes,i){
+          var states=indexes.map(function(idx){return prog.steps[idx]?prog.steps[idx].state:"needed";});
+          var state=states.every(function(x){return x==="done"||x==="na";})?(states.every(function(x){return x==="na";})?"na":"done"):(states.indexOf("current")>=0?"current":"needed");
           var fill=C.grayBg, txt=C.gray;
-          if(st.state==="done"){ fill=C.green; txt=C.white; }
-          else if(st.state==="current"){ fill=C.blue; txt=C.white; }
-          else if(st.state==="na"){ fill=C.surface2; txt=C.muted; }
+          if(state==="done"){ fill=C.green; txt=C.white; }
+          else if(state==="current"){ fill=C.blue; txt=C.white; }
+          else if(state==="na"){ fill=C.surface2; txt=C.muted; }
           setFill(fill); doc.roundedRect(M+i*(boxW+gapW),yy,boxW,29,5,5,"F");
           doc.setFont("helvetica","bold"); doc.setFontSize(5.7); setText(txt);
           doc.text(L.step+" "+(i+1),M+i*(boxW+gapW)+7,yy+10);
@@ -3853,7 +4020,7 @@
       section(2,L.section2,L.section2Sub);
       wideField(L.rootCause,PV("root_cause",r.root_cause),{skipEmpty:false,emptyText:L.notYetRecorded});
 
-      section(3,L.section3,L.section3Sub);
+      section("3A",L.section3,L.section3Sub);
       if(pdfActions.length){
         pdfActions.forEach(function(a,i){
           subhead(L.actionNumber+" #"+String(a.action_number||""));
@@ -3876,7 +4043,7 @@
         ]);
       }
 
-      section(4,L.section4,L.section4Sub);
+      section("3B",L.section4,L.section4Sub);
       if(pdfActions.length){
         pdfActions.forEach(function(a,i){
           subhead(L.actionNumber+" #"+String(a.action_number||""));
@@ -3900,7 +4067,7 @@
       }
       if(priorEvidenceAtts.length) fileBox(L.priorEvidence,priorEvidenceAtts.map(function(a){return a.file_name||a.storage_path;}),"");
 
-      section(5,L.section5,L.section5Sub);
+      section("3C",L.section5,L.section5Sub);
       if(pdfActions.length){
         pdfActions.forEach(function(a,i){
           subhead(L.actionNumber+" #"+String(a.action_number||""));
@@ -3925,7 +4092,7 @@
         wideField(verifyLabel,PV("action_verification_note",r.action_verification_note),{skipEmpty:false,emptyText:L.noVerificationNote});
       }
 
-      section(6,L.section6,L.section6Sub);
+      section(4,L.section6,L.section6Sub);
       pairRow([
         {label:L.recordStatus,value:PV("status_value",statusLabel())},
         {label:L.closedOn,value:r.closed_at?pdfDate(r.closed_at):L.notYetClosed},
@@ -5291,7 +5458,7 @@
         h+='</div>';
         if(canPerformVerification(r)){
           h+='<label class="inv-l">Reviewer verification note <span style="font-weight:400;color:var(--muted)">(optional when approving)</span><textarea class="verify-note" placeholder="What did you verify? If requesting changes, explain exactly what still needs to be done.">'+esc(r.action_verification_note||'')+'</textarea></label><div class="wizard-required" data-verify-required>Add a verification note explaining the requested changes.</div>'+
-            '<div class="translation-preview" data-translation-field="action_verification_note" hidden></div><div class="wizard-footer"><div class="wizard-footer-copy">Save and close keeps a draft. Verify advances the record; Request changes returns it to Step 4.</div><div class="wizard-footer-actions"><button class="wizard-save btn-save-verification" data-step-save="5" type="button">Save and close</button><span class="verification-saved section-saved" hidden>Saved ✓</span><button class="btn-changes" type="button">Request changes</button><button class="wizard-primary btn-verify" data-step-complete="5" type="button">Verify &amp; continue →</button></div></div>';
+            '<div class="translation-preview" data-translation-field="action_verification_note" hidden></div><div class="wizard-footer"><div class="wizard-footer-copy">Save and close keeps a draft. Verify advances the record; Request changes sends it back to Complete work.</div><div class="wizard-footer-actions"><button class="wizard-save btn-save-verification" data-step-save="5" type="button">Save and close</button><span class="verification-saved section-saved" hidden>Saved ✓</span><button class="btn-changes" type="button">Request changes</button><button class="wizard-primary btn-verify" data-step-complete="5" type="button">Verify &amp; continue →</button></div></div>';
         } else if(isManager()){
           h+='<div class="readonly-step-note">Verification is assigned to '+esc(vName||"another reviewer")+'. Reassign the verification owner above if responsibility needs to change.</div>';
         } else {
@@ -5302,8 +5469,8 @@
         if(r.action_verification_note) h+='<div class="action-context"><b>Verification note</b><p>'+esc(r.action_verification_note)+'</p></div><div class="translation-preview" data-translation-field="action_verification_note" hidden></div>';
         if(verified){var vb=r.action_verified_by&&profileById[String(r.action_verified_by)]?profileName(profileById[String(r.action_verified_by)]):'';h+='<div class="action-meta">'+esc(verified)+(vb?' by '+esc(vb):'')+'</div>';}
         h+='<div class="ops-alert"><b>Verification complete</b>The corrective action was approved. Continue to Close Record.</div>';
-      } else if(status==="changes_requested") h+='<div class="readonly-step-note">Changes were requested. Step 4 is active again so the assigned owner can update and resubmit the work.</div>';
-      else h+='<div class="readonly-step-note">This step becomes available after the assigned owner submits Step 4 for verification.</div>';
+      } else if(status==="changes_requested") h+='<div class="readonly-step-note">Changes were requested. Complete work is active again so the assigned owner can update and resubmit the work.</div>';
+      else h+='<div class="readonly-step-note">Verification becomes available after the assigned owner submits the completed work.</div>';
     }
     el.innerHTML=h;
     renderActionEvidence(r,el.querySelector("[data-action-evidence]"),auditEl);
