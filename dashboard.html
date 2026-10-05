@@ -3562,9 +3562,8 @@
     var complete1=detail.querySelector('[data-step-complete="1"]'); if(complete1) complete1.addEventListener("click",async function(){
       if(!canEditStep(r,1)){toast("You do not have permission to acknowledge this report.","err");return;} complete1.disabled=true;
       try{
-        /* Keep ownership out of Review. When an authorized manager acknowledges an unassigned report,
-           quietly make that user the investigator so Step 2 has a clear owner without another decision here. */
-        if(isManager() && !r.investigator_user_id && currentUserId()) await persistInvestigator(currentUserId(),false);
+        /* Step 1 is acknowledgment/triage only. Do not change investigator ownership here.
+           Ownership can be handled in Investigation without blocking the Review -> Investigation transition. */
         if(r.involves_injury){
           if(canVerify()){
             if(!(await persistRegulatoryReview(false))) return;
