@@ -2424,8 +2424,8 @@
 
       var pdfMode=languageMode||"viewer", pdfLang=(pdfMode==="original"?normalizeLanguageCode(r.language||"en"):(pdfMode==="viewer"?(activeIncident===r?activeIncidentLanguage:preferredReadingLanguage()):normalizeLanguageCode(pdfMode)));
       var pdfLabels={
-        en:{notRecorded:"Not recorded",dashboardUser:"Dashboard user",reportWord:"Report",step:"STEP",workflow:["Review","Investigation","Corrective Actions","Close"],headerSubtitle:"Incident record - after-action summary",submitted:"Submitted",generated:"Generated",section1:"Report and review",section1Sub:"What was submitted and how the report entered the safety workflow.",reportType:"Report type",actualInjury:"Actual injury or illness",address:"Address of incident",specificSpot:"Specific spot on the site",whenNoticed:"When noticed",potentialSeverity:"Potential severity",hazardType:"Type of hazard",formLanguage:"Form language",describe:"Describe what you saw",noDescription:"No description recorded",involved:"Who or what was involved / any witnesses",immediate:"What was done right away",suggested:"What would fix it or prevent it",reporter:"Reporter",reportedBy:"Reported by",reporterRole:"Reporter role",reporterContact:"Reporter contact",reviewCompleted:"Review completed",reviewedBy:"Reviewed by",investigator:"Case owner / investigator",verifier:"Verification owner",workflowRestarts:"Workflow restarts",lastRestart:"Last restart",none:"None",originalFiles:"Original report photos and files",noOriginalFiles:"No original files attached",calosha:"Cal/OSHA serious-event screening",screeningResult:"Screening result",awareness:"RBH awareness time",screeningNote:"Screening note",screeningDisclaimer:"Management screening only. This application does not submit a report to Cal/OSHA and the screening does not replace required regulatory reporting.",section2:"Investigation",section2Sub:"Document what the investigation found and why it happened.",whatHappened:"What happened?",rootCause:"Why did it happen?",investigationEvidence:"Investigation evidence",noInvestigationEvidence:"No investigation evidence attached",notYetRecorded:"Not yet recorded",section3:"Corrective actions - Plan & assign",section3Sub:"Define the fix, ownership, due date, and priority.",correctiveRequired:"Corrective action required",actionNumber:"Corrective Action",actionStatus:"Action status",controlType:"Control type",assignedUser:"Assigned dashboard user",notAssigned:"Not assigned",responsible:"Responsible person / crew",dueDate:"Due date",priority:"Priority",section4:"Corrective actions - Complete work",section4Sub:"Record what was actually completed and the supporting evidence.",completedWork:"Completed work submitted",notYetSubmitted:"Not yet submitted",completedOn:"Completed on",completedBy:"Completed by",currentEvidence:"Current-workflow corrective-action evidence",noCurrentEvidence:"No corrective-action evidence attached in the current workflow",priorEvidence:"Preserved evidence from earlier workflow",section5:"Corrective actions - Verify work",section5Sub:"Show the review decision and any verification or change-request note.",verificationOutcome:"Verification outcome",verifiedOn:"Verified on",verifiedBy:"Verified by",requestedChanges:"Requested changes",reviewerNote:"Reviewer verification note",noVerificationNote:"No verification note recorded",section6:"Close record",section6Sub:"Final disposition and closure information for the incident.",recordStatus:"Record status",closedOn:"Closed on",notYetClosed:"Not yet closed",closedBy:"Closed by",closurePath:"Closure path",closureReason:"Closure reason",closureNote:"Closure note",additionalNotes:"Additional notes",activityHistory:"Activity history",reportSubmitted:"Report submitted",anonymousReporter:"Anonymous reporter",note:"Note",system:"System",footer:"RBH Insulation, Inc. | Confidential safety document | License #558799",page:"Page",yes:"Yes",no:"No",originalRecord:"Original record",appendixTitle:"Attachment Appendix",appendixSub:"Files preserved with this record at the time the PDF was generated.",attachment:"Attachment",source:"Source",uploaded:"Uploaded",fileType:"File type",fileSize:"File size",sha256:"SHA-256",sourceOriginal:"Original report attachment",sourceInvestigationEvidence:"Investigation evidence",sourceCurrentEvidence:"Corrective-action evidence",sourcePriorEvidence:"Earlier-workflow corrective-action evidence",embeddedOnly:"Source file embedded in PDF",embeddedOnlyBody:"This file type cannot be rendered reliably as visible PDF pages in the browser. The original source file is embedded inside this PDF package so it remains with the exported record.",pdfPages:"Source PDF pages follow",appendixCount:"Attachments included",appendixNote:"Removed attachments are not included; their removal remains documented in the activity history.",summaryPage:"Summary page"},
-        es:{notRecorded:"No registrado",dashboardUser:"Usuario del panel",reportWord:"Reporte",step:"PASO",workflow:["Revisión","Investigación","Acciones correctivas","Cerrar"],headerSubtitle:"Registro del incidente - resumen posterior a la acción",submitted:"Enviado",generated:"Generado",section1:"Reporte y revisión",section1Sub:"Lo que se envió y cómo el reporte ingresó al flujo de seguridad.",reportType:"Tipo de reporte",actualInjury:"Lesión o enfermedad real",address:"Dirección del incidente",specificSpot:"Lugar específico en la obra",whenNoticed:"Cuándo se observó",potentialSeverity:"Gravedad potencial",hazardType:"Tipo de peligro",formLanguage:"Idioma del formulario",describe:"Describa lo que vio",noDescription:"No se registró descripción",involved:"Quién o qué estuvo involucrado / testigos",immediate:"Qué se hizo de inmediato",suggested:"Qué lo corregiría o evitaría",reporter:"Reportante",reportedBy:"Reportado por",reporterRole:"Función del reportante",reporterContact:"Contacto del reportante",reviewCompleted:"Revisión completada",reviewedBy:"Revisado por",investigator:"Responsable / investigador",verifier:"Responsable de verificación",workflowRestarts:"Reinicios del flujo",lastRestart:"Último reinicio",none:"Ninguno",originalFiles:"Fotos y archivos del reporte original",noOriginalFiles:"No hay archivos originales adjuntos",calosha:"Evaluación de evento grave de Cal/OSHA",screeningResult:"Resultado de la evaluación",awareness:"Hora en que RBH tuvo conocimiento",screeningNote:"Nota de evaluación",screeningDisclaimer:"Solo evaluación de la gerencia. Esta aplicación no presenta un reporte a Cal/OSHA y la evaluación no reemplaza los reportes regulatorios requeridos.",section2:"Investigación",section2Sub:"Documente lo que determinó la investigación y por qué ocurrió.",whatHappened:"¿Qué pasó?",rootCause:"¿Por qué pasó?",investigationEvidence:"Evidencia de la investigación",noInvestigationEvidence:"No hay evidencia de investigación adjunta",notYetRecorded:"Aún no registrado",section3:"Acciones correctivas - Planificar y asignar",section3Sub:"Defina la corrección, el responsable, la fecha límite y la prioridad.",correctiveRequired:"Acción correctiva requerida",actionNumber:"Acción correctiva",actionStatus:"Estado de la acción",controlType:"Tipo de control",assignedUser:"Usuario asignado del panel",notAssigned:"No asignado",responsible:"Persona / equipo responsable",dueDate:"Fecha límite",priority:"Prioridad",section4:"Acciones correctivas - Completar trabajo",section4Sub:"Registre lo que realmente se completó y la evidencia de respaldo.",completedWork:"Trabajo completado enviado",notYetSubmitted:"Aún no enviado",completedOn:"Completado el",completedBy:"Completado por",currentEvidence:"Evidencia de acción correctiva del flujo actual",noCurrentEvidence:"No hay evidencia de acción correctiva adjunta en el flujo actual",priorEvidence:"Evidencia preservada de un flujo anterior",section5:"Acciones correctivas - Verificar trabajo",section5Sub:"Muestre la decisión de revisión y cualquier nota de verificación o solicitud de cambios.",verificationOutcome:"Resultado de la verificación",verifiedOn:"Verificado el",verifiedBy:"Verificado por",requestedChanges:"Cambios solicitados",reviewerNote:"Nota de verificación del revisor",noVerificationNote:"No se registró una nota de verificación",section6:"Cerrar registro",section6Sub:"Disposición final e información de cierre del incidente.",recordStatus:"Estado del registro",closedOn:"Cerrado el",notYetClosed:"Aún no cerrado",closedBy:"Cerrado por",closurePath:"Ruta de cierre",closureReason:"Motivo de cierre",closureNote:"Nota de cierre",additionalNotes:"Notas adicionales",activityHistory:"Historial de actividad",reportSubmitted:"Reporte enviado",anonymousReporter:"Reportante anónimo",note:"Nota",system:"Sistema",footer:"RBH Insulation, Inc. | Documento confidencial de seguridad | Licencia #558799",page:"Página",yes:"Sí",no:"No",originalRecord:"Registro original",appendixTitle:"Apéndice de archivos adjuntos",appendixSub:"Archivos preservados con este registro al momento de generar el PDF.",attachment:"Adjunto",source:"Origen",uploaded:"Cargado",fileType:"Tipo de archivo",fileSize:"Tamaño",sha256:"SHA-256",sourceOriginal:"Adjunto del reporte original",sourceInvestigationEvidence:"Evidencia de la investigación",sourceCurrentEvidence:"Evidencia de acción correctiva",sourcePriorEvidence:"Evidencia de acción correctiva de un flujo anterior",embeddedOnly:"Archivo fuente incorporado en el PDF",embeddedOnlyBody:"Este tipo de archivo no se puede representar de forma confiable como páginas PDF visibles en el navegador. El archivo fuente original está incorporado dentro de este paquete PDF para que permanezca con el registro exportado.",pdfPages:"Las páginas del PDF fuente siguen",appendixCount:"Adjuntos incluidos",appendixNote:"Los adjuntos eliminados no se incluyen; su eliminación permanece documentada en el historial de actividad.",summaryPage:"Página de resumen"}
+        en:{notRecorded:"Not recorded",dashboardUser:"Dashboard user",reportWord:"Report",step:"STEP",workflow:["Review","Investigation","Corrective Actions","Close"],headerSubtitle:"Incident record - after-action summary",submitted:"Submitted",generated:"Generated",section1:"Report and review",section1Sub:"What was submitted and how the report entered the safety workflow.",reportType:"Report type",actualInjury:"Actual injury or illness",address:"Address of incident",specificSpot:"Specific spot on the site",whenNoticed:"When noticed",potentialSeverity:"Potential severity",hazardType:"Type of hazard",formLanguage:"Form language",describe:"Describe what you saw",noDescription:"No description recorded",involved:"Who or what was involved / any witnesses",immediate:"What was done right away",suggested:"What would fix it or prevent it",reporter:"Reporter",reportedBy:"Reported by",reporterRole:"Reporter role",reporterContact:"Reporter contact",reviewCompleted:"Review completed",reviewedBy:"Reviewed by",investigator:"Case owner / investigator",verifier:"Verification owner",workflowRestarts:"Workflow restarts",lastRestart:"Last restart",none:"None",originalFiles:"Original report photos and files",noOriginalFiles:"No original files attached",calosha:"Cal/OSHA serious-event screening",screeningResult:"Screening result",awareness:"RBH awareness time",screeningNote:"Screening note",screeningDisclaimer:"Management screening only. This application does not submit a report to Cal/OSHA and the screening does not replace required regulatory reporting.",section2:"Investigation",section2Sub:"Document what the investigation found and why it happened.",whatHappened:"What happened?",rootCause:"Why did it happen?",investigationEvidence:"Investigation evidence",noInvestigationEvidence:"No investigation evidence attached",notYetRecorded:"Not yet recorded",section3:"Corrective actions - Plan & assign",section3Sub:"Define the fix, ownership, due date, and priority.",correctiveRequired:"Corrective action required",actionNumber:"Corrective Action",actionStatus:"Action status",controlType:"Control type",assignedUser:"Assigned dashboard user",notAssigned:"Not assigned",responsible:"Responsible person / crew",dueDate:"Due date",priority:"Priority",section4:"Corrective actions - Complete work",section4Sub:"Record what was actually completed and the supporting evidence.",completedWork:"Completed work submitted",notYetSubmitted:"Not yet submitted",completedOn:"Completed on",completedBy:"Completed by",currentEvidence:"Current-workflow corrective-action evidence",noCurrentEvidence:"No corrective-action evidence attached in the current workflow",priorEvidence:"Preserved evidence from earlier workflow",section5:"Corrective actions - Verify work",section5Sub:"Show the review decision and any verification or change-request note.",verificationOutcome:"Verification outcome",verifiedOn:"Verified on",verifiedBy:"Verified by",requestedChanges:"Requested changes",reviewerNote:"Reviewer verification note",noVerificationNote:"No verification note recorded",section6:"Close record",section6Sub:"Final disposition and closure information for the incident.",recordStatus:"Record status",closedOn:"Closed on",notYetClosed:"Not yet closed",closedBy:"Closed by",closurePath:"Closure path",closureReason:"Closure reason",closureNote:"Closure note",additionalNotes:"Additional notes",activityHistory:"Activity history",reportSubmitted:"Report submitted",anonymousReporter:"Anonymous reporter",note:"Note",system:"System",footer:"RBH Insulation, Inc. | Confidential safety document | License #558799",page:"Page",yes:"Yes",no:"No",originalRecord:"Original record",appendixTitle:"Attachment Appendix",appendixSub:"Files preserved with this record at the time the PDF was generated.",attachment:"Attachment",source:"Source",uploaded:"Uploaded",fileType:"File type",fileSize:"File size",sha256:"SHA-256",sourceOriginal:"Original report attachment",sourceInvestigationEvidence:"Investigation evidence",sourceCurrentEvidence:"Corrective-action evidence",sourcePriorEvidence:"Earlier-workflow corrective-action evidence",embeddedOnly:"Source file embedded in PDF",embeddedOnlyBody:"This file type cannot be rendered reliably as visible PDF pages in the browser. The original source file is embedded inside this PDF package so it remains with the exported record.",pdfPages:"Source PDF pages follow",appendixCount:"Attachments included",appendixNote:"Removed attachments are not included; their removal remains documented in the activity history.",attachmentUnavailable:"Attachment could not be loaded",attachmentUnavailableBody:"This attachment could not be retrieved when the PDF was generated. Its metadata remains listed in the appendix.",summaryPage:"Summary page"},
+        es:{notRecorded:"No registrado",dashboardUser:"Usuario del panel",reportWord:"Reporte",step:"PASO",workflow:["Revisión","Investigación","Acciones correctivas","Cerrar"],headerSubtitle:"Registro del incidente - resumen posterior a la acción",submitted:"Enviado",generated:"Generado",section1:"Reporte y revisión",section1Sub:"Lo que se envió y cómo el reporte ingresó al flujo de seguridad.",reportType:"Tipo de reporte",actualInjury:"Lesión o enfermedad real",address:"Dirección del incidente",specificSpot:"Lugar específico en la obra",whenNoticed:"Cuándo se observó",potentialSeverity:"Gravedad potencial",hazardType:"Tipo de peligro",formLanguage:"Idioma del formulario",describe:"Describa lo que vio",noDescription:"No se registró descripción",involved:"Quién o qué estuvo involucrado / testigos",immediate:"Qué se hizo de inmediato",suggested:"Qué lo corregiría o evitaría",reporter:"Reportante",reportedBy:"Reportado por",reporterRole:"Función del reportante",reporterContact:"Contacto del reportante",reviewCompleted:"Revisión completada",reviewedBy:"Revisado por",investigator:"Responsable / investigador",verifier:"Responsable de verificación",workflowRestarts:"Reinicios del flujo",lastRestart:"Último reinicio",none:"Ninguno",originalFiles:"Fotos y archivos del reporte original",noOriginalFiles:"No hay archivos originales adjuntos",calosha:"Evaluación de evento grave de Cal/OSHA",screeningResult:"Resultado de la evaluación",awareness:"Hora en que RBH tuvo conocimiento",screeningNote:"Nota de evaluación",screeningDisclaimer:"Solo evaluación de la gerencia. Esta aplicación no presenta un reporte a Cal/OSHA y la evaluación no reemplaza los reportes regulatorios requeridos.",section2:"Investigación",section2Sub:"Documente lo que determinó la investigación y por qué ocurrió.",whatHappened:"¿Qué pasó?",rootCause:"¿Por qué pasó?",investigationEvidence:"Evidencia de la investigación",noInvestigationEvidence:"No hay evidencia de investigación adjunta",notYetRecorded:"Aún no registrado",section3:"Acciones correctivas - Planificar y asignar",section3Sub:"Defina la corrección, el responsable, la fecha límite y la prioridad.",correctiveRequired:"Acción correctiva requerida",actionNumber:"Acción correctiva",actionStatus:"Estado de la acción",controlType:"Tipo de control",assignedUser:"Usuario asignado del panel",notAssigned:"No asignado",responsible:"Persona / equipo responsable",dueDate:"Fecha límite",priority:"Prioridad",section4:"Acciones correctivas - Completar trabajo",section4Sub:"Registre lo que realmente se completó y la evidencia de respaldo.",completedWork:"Trabajo completado enviado",notYetSubmitted:"Aún no enviado",completedOn:"Completado el",completedBy:"Completado por",currentEvidence:"Evidencia de acción correctiva del flujo actual",noCurrentEvidence:"No hay evidencia de acción correctiva adjunta en el flujo actual",priorEvidence:"Evidencia preservada de un flujo anterior",section5:"Acciones correctivas - Verificar trabajo",section5Sub:"Muestre la decisión de revisión y cualquier nota de verificación o solicitud de cambios.",verificationOutcome:"Resultado de la verificación",verifiedOn:"Verificado el",verifiedBy:"Verificado por",requestedChanges:"Cambios solicitados",reviewerNote:"Nota de verificación del revisor",noVerificationNote:"No se registró una nota de verificación",section6:"Cerrar registro",section6Sub:"Disposición final e información de cierre del incidente.",recordStatus:"Estado del registro",closedOn:"Cerrado el",notYetClosed:"Aún no cerrado",closedBy:"Cerrado por",closurePath:"Ruta de cierre",closureReason:"Motivo de cierre",closureNote:"Nota de cierre",additionalNotes:"Notas adicionales",activityHistory:"Historial de actividad",reportSubmitted:"Reporte enviado",anonymousReporter:"Reportante anónimo",note:"Nota",system:"Sistema",footer:"RBH Insulation, Inc. | Documento confidencial de seguridad | Licencia #558799",page:"Página",yes:"Sí",no:"No",originalRecord:"Registro original",appendixTitle:"Apéndice de archivos adjuntos",appendixSub:"Archivos preservados con este registro al momento de generar el PDF.",attachment:"Adjunto",source:"Origen",uploaded:"Cargado",fileType:"Tipo de archivo",fileSize:"Tamaño",sha256:"SHA-256",sourceOriginal:"Adjunto del reporte original",sourceInvestigationEvidence:"Evidencia de la investigación",sourceCurrentEvidence:"Evidencia de acción correctiva",sourcePriorEvidence:"Evidencia de acción correctiva de un flujo anterior",embeddedOnly:"Archivo fuente incorporado en el PDF",embeddedOnlyBody:"Este tipo de archivo no se puede representar de forma confiable como páginas PDF visibles en el navegador. El archivo fuente original está incorporado dentro de este paquete PDF para que permanezca con el registro exportado.",pdfPages:"Las páginas del PDF fuente siguen",appendixCount:"Adjuntos incluidos",appendixNote:"Los adjuntos eliminados no se incluyen; su eliminación permanece documentada en el historial de actividad.",attachmentUnavailable:"No se pudo cargar el adjunto",attachmentUnavailableBody:"No se pudo recuperar este adjunto cuando se generó el PDF. Sus metadatos permanecen listados en el apéndice.",summaryPage:"Página de resumen"}
       };
       var L=pdfLabels[pdfLang]||pdfLabels.en;
       if(!pdfLabels[pdfLang] && pdfMode!=="original"){
@@ -2461,9 +2461,16 @@
       pdfFields.closure_path=(r.status==="no_action"||r.status==="duplicate")?"Closed without corrective action":(r.status==="closed"?"Corrective action verified and record closed":"Record remains open");
       if(r.priority) pdfFields.priority_value=String(r.priority).charAt(0).toUpperCase()+String(r.priority).slice(1);
       if(r.corrective_control_type) pdfFields.control_type_value=controlTypeLabel(r.corrective_control_type,pdfLang)||r.corrective_control_type;
-      var pdfTx=(pdfMode==="original")?{}:await translateTextMap(pdfFields,pdfLang,"pdf:"+String(r.id));
-      if(pdfMode!=="original" && !pdfTx) throw new Error("TRANSLATION_UNAVAILABLE");
-      pdfTx=pdfTx||{};
+      // Only call the translation service when the requested PDF language actually
+      // differs from the language in which the report was recorded. This keeps the
+      // normal/original-language PDF path independent from the translation service.
+      var sourcePdfLang=normalizeLanguageCode(r.language||"en");
+      var needsPdfTranslation=(pdfMode!=="original" && pdfLang!==sourcePdfLang);
+      var pdfTx={};
+      if(needsPdfTranslation){
+        pdfTx=await translateTextMap(pdfFields,pdfLang,"pdf:"+String(r.id));
+        if(!pdfTx) throw new Error("TRANSLATION_UNAVAILABLE");
+      }
       function PV(key,fallback){ return Object.prototype.hasOwnProperty.call(pdfTx,key)?pdfTx[key]:fallback; }
 
       var doc=new window.jspdf.jsPDF({unit:"pt",format:"letter"});
@@ -2813,8 +2820,15 @@
 
       var outputName="RBH-Safety-Report-"+(r.ref_no!=null?("No"+r.ref_no):String(r.id).slice(0,8))+".pdf";
       if(atts.length){
-        if(!window.PDFLib || !window.PDFLib.PDFDocument) throw new Error("PDF_APPENDIX_LIBRARY_UNAVAILABLE");
+        // A missing appendix library should never block the report summary PDF.
+        if(!window.PDFLib || !window.PDFLib.PDFDocument){
+          console.error("PDF appendix library unavailable");
+          doc.save(outputName);
+          toast("PDF downloaded without the attachment appendix. Try again if you need the files included.","err");
+          return;
+        }
         btn.textContent="Adding attachments...";
+        try{
         var basePdfBytes=doc.output("arraybuffer");
         var PDFDocument=window.PDFLib.PDFDocument, StandardFonts=window.PDFLib.StandardFonts, rgb=window.PDFLib.rgb;
         var merged=await PDFDocument.load(basePdfBytes);
@@ -2849,13 +2863,25 @@
           if(pdfResetAt && !isNaN(t) && t<pdfResetAt) return L.sourcePriorEvidence;
           return L.sourceCurrentEvidence;
         }
+        function pdfLibSafeText(value){
+          return String(value==null?"":value)
+            .replace(/[\u2013\u2014]/g,"-")
+            .replace(/[\u2018\u2019]/g,"'")
+            .replace(/[\u201c\u201d]/g,'"')
+            .replace(/\u2026/g,"...")
+            .replace(/[^\u0020-\u00ff]/g,"?");
+        }
+        function safeEmbeddedName(value){
+          var name=pdfLibSafeText(value||"file").replace(/[\\/:*?"<>|]+/g,"_").trim();
+          return name||"file";
+        }
         function pdfWrap(text,font,size,maxW){
-          text=String(text||""); var words=text.split(/\s+/), lines=[], cur="";
+          text=pdfLibSafeText(text); var words=text.split(/\s+/), lines=[], cur="";
           words.forEach(function(w){ var test=cur?cur+" "+w:w; if(font.widthOfTextAtSize(test,size)<=maxW) cur=test; else { if(cur) lines.push(cur); cur=w; } }); if(cur) lines.push(cur); return lines.length?lines:[""];
         }
         function drawAppendixHeader(page,title,sub){
           page.drawText("RBH SAFETY",{x:appendixMargin,y:742,size:15,font:helvBold,color:rgb(.086,.086,.086)});
-          page.drawText(title,{x:appendixMargin,y:709,size:18,font:helvBold,color:rgb(.086,.086,.086)});
+          page.drawText(pdfLibSafeText(title),{x:appendixMargin,y:709,size:18,font:helvBold,color:rgb(.086,.086,.086)});
           if(sub){ var ls=pdfWrap(sub,helv,9,524); ls.slice(0,3).forEach(function(line,i){page.drawText(line,{x:appendixMargin,y:690-i*12,size:9,font:helv,color:rgb(.42,.4,.38)});}); }
           page.drawLine({start:{x:appendixMargin,y:670},end:{x:568,y:670},thickness:.8,color:rgb(.85,.84,.82)});
         }
@@ -2870,7 +2896,7 @@
           ].filter(function(x){return x[1];});
           var y0=642;
           fields.forEach(function(f,i){
-            page.drawText(String(f[0]).toUpperCase(),{x:appendixMargin,y:y0-i*24,size:7,font:helvBold,color:rgb(.42,.4,.38)});
+            page.drawText(pdfLibSafeText(String(f[0]).toUpperCase()),{x:appendixMargin,y:y0-i*24,size:7,font:helvBold,color:rgb(.42,.4,.38)});
             var ls=pdfWrap(f[1],helv,9,392); ls.slice(0,2).forEach(function(line,j){page.drawText(line,{x:172,y:y0-i*24-j*10,size:9,font:helv,color:rgb(.086,.086,.086)});});
           });
           return {name:name,bottom:y0-fields.length*24-12};
@@ -2894,32 +2920,49 @@
           return {page:page,bottom:meta.bottom};
         }
 
-        // Create signed links for every attachment before assembling the package.
-        var paths=atts.map(function(a){return a.storage_path;});
+        // Create signed links for attachments that still have a valid storage path.
+        // Incomplete legacy metadata should not prevent the report itself from downloading.
+        var appendAtts=atts.filter(function(a){return !!String(a&&a.storage_path||"").trim();});
+        var skippedAttachmentMetadata=atts.length-appendAtts.length;
+        if(!appendAtts.length){
+          doc.save(outputName);
+          toast("PDF downloaded. Attachment metadata was incomplete, so files were not appended.","err");
+          return;
+        }
+        var paths=appendAtts.map(function(a){return a.storage_path;});
         var signed=await sb.storage.from("report-attachments").createSignedUrls(paths,3600);
         if(signed.error) throw signed.error;
         var signedRows=signed.data||[];
-        if(signedRows.length!==atts.length) throw new Error("ATTACHMENT_URL_COUNT_MISMATCH");
 
         // Appendix cover / manifest.
         var cover=merged.addPage(letter); drawAppendixHeader(cover,L.appendixTitle,L.appendixSub);
-        cover.drawText((L.appendixCount||"Attachments included")+": "+atts.length,{x:appendixMargin,y:642,size:10,font:helvBold,color:rgb(.086,.086,.086)});
+        cover.drawText(pdfLibSafeText((L.appendixCount||"Attachments included")+": "+appendAtts.length),{x:appendixMargin,y:642,size:10,font:helvBold,color:rgb(.086,.086,.086)});
         var cy=616;
-        atts.forEach(function(a,i){
+        appendAtts.forEach(function(a,i){
           var n=(i+1)+". "+String(a.file_name||a.storage_path||"file");
           var ls=pdfWrap(n,helv,8.5,500), needed=Math.max(28,ls.length*10+16);
           if(cy-needed<72){ cover=merged.addPage(letter); drawAppendixHeader(cover,L.appendixTitle,L.appendixSub); cy=642; }
           ls.slice(0,2).forEach(function(line,j){cover.drawText(line,{x:appendixMargin+6,y:cy-j*10,size:8.5,font:helv,color:rgb(.086,.086,.086)});});
-          cover.drawText(attachmentSource(a),{x:appendixMargin+18,y:cy-12-ls.length*8,size:7.2,font:helv,color:rgb(.42,.4,.38)});
+          cover.drawText(pdfLibSafeText(attachmentSource(a)),{x:appendixMargin+18,y:cy-12-ls.length*8,size:7.2,font:helv,color:rgb(.42,.4,.38)});
           cy-=needed;
         });
         if(cy<64){ cover=merged.addPage(letter); drawAppendixHeader(cover,L.appendixTitle,L.appendixSub); cy=642; }
         pdfWrap(L.appendixNote,helv,7.8,500).slice(0,3).forEach(function(line,j){cover.drawText(line,{x:appendixMargin,y:cy-j*10,size:7.8,font:helv,color:rgb(.42,.4,.38)});});
 
-        for(var ai=0;ai<atts.length;ai++){
-          var a=atts[ai], sr=signedRows[ai]; btn.textContent="Adding attachment "+(ai+1)+" of "+atts.length+"...";
-          if(!sr||sr.error||!sr.signedUrl) throw new Error('Could not prepare attachment "'+String(a.file_name||"file")+'".');
-          var response=await fetch(sr.signedUrl); if(!response.ok) throw new Error('Could not load attachment "'+String(a.file_name||"file")+'".');
+        for(var ai=0;ai<appendAtts.length;ai++){
+          var a=appendAtts[ai], sr=signedRows[ai]; btn.textContent="Adding attachment "+(ai+1)+" of "+appendAtts.length+"...";
+          if(!sr||sr.error||!sr.signedUrl){
+            var missingSigned=addInfoPage(a,ai+1,"",L.attachmentUnavailable);
+            pdfWrap(L.attachmentUnavailableBody,helv,10,500).slice(0,9).forEach(function(line,j){missingSigned.page.drawText(line,{x:appendixMargin,y:missingSigned.bottom-12-j*13,size:10,font:helv,color:rgb(.086,.086,.086)});});
+            continue;
+          }
+          var response;
+          try{ response=await fetch(sr.signedUrl); }catch(fetchErr){ response=null; }
+          if(!response||!response.ok){
+            var missingFetch=addInfoPage(a,ai+1,"",L.attachmentUnavailable);
+            pdfWrap(L.attachmentUnavailableBody,helv,10,500).slice(0,9).forEach(function(line,j){missingFetch.page.drawText(line,{x:appendixMargin,y:missingFetch.bottom-12-j*13,size:10,font:helv,color:rgb(.086,.086,.086)});});
+            continue;
+          }
           var buf=await response.arrayBuffer(), bytes=new Uint8Array(buf), mime=inferAttachmentMime(a), hash="";
           try{hash=await sha256Hex(buf);}catch(e){}
           if(mime==="application/pdf" || /\.pdf$/i.test(String(a.file_name||""))){
@@ -2929,7 +2972,7 @@
               var copied=await merged.copyPages(srcPdf,srcPdf.getPageIndices()); copied.forEach(function(pg){merged.addPage(pg);});
             }catch(pdfErr){
               // Keep the original file inside the PDF package if the source PDF cannot be rendered/copied.
-              await merged.attach(bytes,"Attachment-"+String(ai+1).padStart(2,"0")+"-"+String(a.file_name||"file.pdf"),{mimeType:mime,description:attachmentSource(a)});
+              await merged.attach(bytes,"Attachment-"+String(ai+1).padStart(2,"0")+"-"+safeEmbeddedName(a.file_name||"file.pdf"),{mimeType:mime,description:pdfLibSafeText(attachmentSource(a))});
               var fallback=addInfoPage(a,ai+1,hash,L.embeddedOnly);
               pdfWrap(L.embeddedOnlyBody,helv,10,500).slice(0,9).forEach(function(line,j){fallback.page.drawText(line,{x:appendixMargin,y:fallback.bottom-12-j*13,size:10,font:helv,color:rgb(.086,.086,.086)});});
             }
@@ -2945,7 +2988,7 @@
               page.drawText((L.uploaded||"Uploaded")+": "+(a.created_at?pdfDate(a.created_at):"")+"   |   "+(L.fileSize||"File size")+": "+prettyBytes(a.size_bytes),{x:appendixMargin,y:50,size:7.5,font:helv,color:rgb(.42,.4,.38)});
               if(hash) page.drawText("SHA-256: "+hash,{x:appendixMargin,y:37,size:6.2,font:helv,color:rgb(.42,.4,.38)});
             }catch(imgErr){
-              await merged.attach(bytes,"Attachment-"+String(ai+1).padStart(2,"0")+"-"+String(a.file_name||"image"),{mimeType:mime,description:attachmentSource(a)});
+              await merged.attach(bytes,"Attachment-"+String(ai+1).padStart(2,"0")+"-"+safeEmbeddedName(a.file_name||"image"),{mimeType:mime,description:pdfLibSafeText(attachmentSource(a))});
               var fallbackImg=addInfoPage(a,ai+1,hash,L.embeddedOnly);
               pdfWrap(L.embeddedOnlyBody,helv,10,500).slice(0,9).forEach(function(line,j){fallbackImg.page.drawText(line,{x:appendixMargin,y:fallbackImg.bottom-12-j*13,size:10,font:helv,color:rgb(.086,.086,.086)});});
             }
@@ -2953,13 +2996,19 @@
           }
           // Word and other non-page formats remain part of the export as true embedded source files,
           // with a visible appendix page so reviewers know exactly what is included.
-          await merged.attach(bytes,"Attachment-"+String(ai+1).padStart(2,"0")+"-"+String(a.file_name||"file"),{mimeType:mime,description:attachmentSource(a)});
+          await merged.attach(bytes,"Attachment-"+String(ai+1).padStart(2,"0")+"-"+safeEmbeddedName(a.file_name||"file"),{mimeType:mime,description:pdfLibSafeText(attachmentSource(a))});
           var fp=addInfoPage(a,ai+1,hash,L.embeddedOnly);
           pdfWrap(L.embeddedOnlyBody,helv,10,500).slice(0,9).forEach(function(line,j){fp.page.drawText(line,{x:appendixMargin,y:fp.bottom-12-j*13,size:10,font:helv,color:rgb(.086,.086,.086)});});
         }
         var finalBytes=await merged.save();
         var blob=new Blob([finalBytes],{type:"application/pdf"}), url=URL.createObjectURL(blob), a=document.createElement("a");
         a.href=url; a.download=outputName; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){URL.revokeObjectURL(url);},1500);
+        if(skippedAttachmentMetadata>0) toast("PDF downloaded. "+skippedAttachmentMetadata+" attachment record"+(skippedAttachmentMetadata===1?" was":"s were")+" missing storage information and could not be appended.","err");
+        }catch(appendixErr){
+          console.error("PDF attachment appendix failed",appendixErr);
+          doc.save(outputName);
+          toast("PDF downloaded, but the attachment appendix could not be added. The report summary is complete.","err");
+        }
       }else{
         doc.save(outputName);
       }
