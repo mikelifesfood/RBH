@@ -335,6 +335,8 @@
   .report-owner-step-card label{display:grid;gap:6px;font-size:12.5px;font-weight:700;color:var(--ink-2)}
   .report-owner-step-card select{background:var(--paper)}
   .report-owner-modal-note{margin:0 0 14px;color:var(--muted);font-size:13px;line-height:1.5}
+  .report-owner-email-note{margin:10px 0 0;padding:10px 12px;border:1px solid #b9d7f0;border-radius:10px;background:#eef6fc;color:#245f8f;font-size:12.5px;line-height:1.45}
+  .report-owner-email-note.neutral{border-color:#d8d4cd;background:#f6f5f2;color:#5e5a55}
   .incident-language-state{font-size:12.5px;color:var(--muted);margin-left:auto}
   .incident-language-state.loading{font-weight:700;color:var(--brand)}
   .pdf-language-wrap{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)}
@@ -1590,8 +1592,9 @@
     <h3>Change report owner</h3>
     <p class="report-owner-modal-note">The Report Owner is responsible for moving this report forward and receives report-level workflow emails. Changing the owner does not change anyone's role, access, or editing permissions.</p>
     <label class="inv-l">Report owner<select id="reportOwnerSelect"></select></label>
+    <div class="report-owner-email-note neutral" id="reportOwnerEmailNote" role="status">Select a different owner to review what will happen before anything is saved or emailed.</div>
     <div class="err" id="reportOwnerErr"></div>
-    <div class="modal-actions"><button class="btn-secondary" id="reportOwnerCancel" type="button">Cancel</button><button class="wizard-primary" id="reportOwnerSave" type="button">Change owner</button></div>
+    <div class="modal-actions"><button class="btn-secondary" id="reportOwnerCancel" type="button">Cancel</button><button class="wizard-primary" id="reportOwnerSave" type="button">Confirm owner change</button></div>
   </div>
 </div>
 
@@ -3011,7 +3014,7 @@
         '<div class="wizard-task"><b>Start here</b><span>Review the report and attachments. If an injury is involved, complete the serious-event screen. Then either start an investigation or close the report with a documented reason.</span></div>'+
         '<span class="field-guidance">This step is intentionally simple: review what was submitted, then choose what happens next.</span>'+
         investigatorAssignmentCardHtml(r)+
-        '<div class="report-owner-step-card" data-report-owner-step><b>Report owner</b><p>The person responsible for moving this report through the workflow. If you do not change this field, the report will be assigned to you when you start the investigation.</p><label>Assign report to<select class="review-owner-select">'+reportOwnerOptions(r.report_owner_user_id||(isManager()?currentUserId():""))+'</select></label></div>'+
+        '<div class="report-owner-step-card" data-report-owner-step><b>Report owner</b><p>The person responsible for moving this report through the workflow. If you do not change this field, the report will be assigned to you when you start the investigation. Changing this dropdown does not send an email. If you choose someone else, they are notified only after you click Start investigation.</p><label>Assign report to<select class="review-owner-select">'+reportOwnerOptions(r.report_owner_user_id||(isManager()?currentUserId():""))+'</select></label></div>'+
         '<div class="d-rows">'+rows.join("")+'</div>'+
         '<div class="d-atts" data-atts></div>'+
         regulatoryReviewHtml(r)+
@@ -4624,11 +4627,7 @@
         var ownerId=(reviewOwnerSelect&&reviewOwnerSelect.value)||r.report_owner_user_id||currentUserId();
         if(!ownerId){toast("Choose a Report Owner before starting the investigation.","err");return;}
         var ownerWasChanged=String(r.report_owner_user_id||"")!==String(ownerId);
-        if(ownerWasChanged){
-          var shouldNotify=String(ownerId)!==currentUserId();
-          var ownerResult=await persistReportOwner(r,ownerId,shouldNotify);
-          if(ownerResult&&ownerResult.email&&!ownerResult.email.sent&&!ownerResult.email.skipped){ console.error("report owner notification failed",ownerResult.email); toast("Report Owner saved, but the handoff email could not be sent.","err"); }
-        }
+        var shouldNotifyAfterAdvance=String(ownerId)!==currentUserId()&&(ownerWasChanged||String(r.status||"")==="new");
         if(r.involves_injury){
           if(canVerify()){
             if(!(await persistRegulatoryReview(false))) return;
@@ -4636,9 +4635,17 @@
             toast("An Admin or Safety Manager must complete the regulatory screening before this injury review can advance.","err"); return;
           }
         }
+        if(ownerWasChanged) await persistReportOwner(r,ownerId,false);
         if(r.status==="new") await updateStatus(r.id,"under_review",wrap,activeReopenStep(r)?2:null);
         else if(activeReopenStep(r)===1) await updateStatus(r.id,r.status,wrap,2);
-        refreshRecordWorkflow(r,detail); setWizardStep(detail,r,2,true); syncStepEditability(); loadAudit(r.id,auditEl); toast("Report acknowledged — "+(reportOwnerName(r)||"Report Owner")+" owns the report","ok");
+        var ownerEmail=null;
+        if(shouldNotifyAfterAdvance) ownerEmail=await sendReportOwnerAssignmentEmail(r);
+        refreshRecordWorkflow(r,detail); setWizardStep(detail,r,2,true); syncStepEditability(); loadAudit(r.id,auditEl);
+        var ownerName=reportOwnerName(r)||"Report Owner";
+        if(ownerEmail&&ownerEmail.sent) toast("Report acknowledged — "+ownerName+" owns the report and was notified by email","ok");
+        else if(ownerEmail&&!ownerEmail.sent&&!ownerEmail.skipped){ console.error("report owner notification failed",ownerEmail); toast("Report acknowledged and assigned to "+ownerName+", but the handoff email could not be sent.","err"); }
+        else if(ownerEmail&&ownerEmail.skipped){ toast("Report acknowledged — "+ownerName+" owns the report, but no new handoff email was sent.","err"); }
+        else toast("Report acknowledged — "+ownerName+" owns the report","ok");
       }
       catch(ex){console.error(ex);toast("Could not acknowledge the report.","err");} finally{if(complete1.isConnected)complete1.disabled=!canEditStep(r,1);} });
 
@@ -4761,36 +4768,75 @@
     finally{ btn.disabled=false; btn.textContent=old; }
   });
 
+  function updateReportOwnerModalState(){
+    var r=reportOwnerModalReport, sel=$("reportOwnerSelect"), note=$("reportOwnerEmailNote"), btn=$("reportOwnerSave");
+    if(!r||!sel||!note||!btn) return;
+    var nextId=String(sel.value||""), currentId=String(r.report_owner_user_id||""), p=profileById[nextId], name=p?profileName(p):"the selected user";
+    note.classList.remove("neutral");
+    if(!nextId){
+      note.textContent="Choose a Report Owner before confirming."; note.classList.add("neutral");
+      btn.disabled=true; btn.textContent="Confirm owner change"; return;
+    }
+    if(nextId===currentId){
+      note.textContent=name+" is already the current Report Owner. Nothing will be changed or emailed."; note.classList.add("neutral");
+      btn.disabled=true; btn.textContent="No change"; return;
+    }
+    if(nextId===currentUserId()){
+      note.textContent="You are changing the Report Owner to yourself. The change will be saved when you confirm, but no handoff email will be sent.";
+      btn.disabled=false; btn.textContent="Confirm owner change"; return;
+    }
+    note.textContent="Changing the Report Owner to "+name+" will save the handoff and immediately send that person an email when you confirm.";
+    btn.disabled=false; btn.textContent="Confirm change & send email";
+  }
   function openReportOwnerModal(r){
     if(!r||!canChangeReportOwner(r)){toast("Only an Admin or Safety Manager can change the Report Owner while the report is open.","err");return;}
     reportOwnerModalReport=r;
     var sel=$("reportOwnerSelect"), err=$("reportOwnerErr");
     if(sel){ sel.innerHTML=reportOwnerOptions(r.report_owner_user_id||currentUserId()); sel.value=r.report_owner_user_id||currentUserId(); }
     if(err){err.textContent="";err.classList.remove("show");}
+    updateReportOwnerModalState();
     $("reportOwnerBackdrop").classList.add("open");
     setTimeout(function(){if(sel)sel.focus();},40);
   }
   function closeReportOwnerModal(){ $("reportOwnerBackdrop").classList.remove("open"); reportOwnerModalReport=null; }
   var _ownerChange=$("incidentOwnerChange"); if(_ownerChange) _ownerChange.addEventListener("click",function(){ if(activeIncident) openReportOwnerModal(activeIncident); });
+  var _ownerSelect=$("reportOwnerSelect"); if(_ownerSelect) _ownerSelect.addEventListener("change",updateReportOwnerModalState);
   var _ownerCancel=$("reportOwnerCancel"); if(_ownerCancel) _ownerCancel.addEventListener("click",closeReportOwnerModal);
   var _ownerBackdrop=$("reportOwnerBackdrop"); if(_ownerBackdrop) _ownerBackdrop.addEventListener("click",function(e){if(e.target===_ownerBackdrop)closeReportOwnerModal();});
   document.addEventListener("keydown",function(e){if(e.key==="Escape"&&_ownerBackdrop&&_ownerBackdrop.classList.contains("open"))closeReportOwnerModal();});
   var _ownerSave=$("reportOwnerSave"); if(_ownerSave) _ownerSave.addEventListener("click",async function(){
     if(!reportOwnerModalReport) return;
-    var r=reportOwnerModalReport, sel=$("reportOwnerSelect"), err=$("reportOwnerErr"), nextId=sel?sel.value:"";
+    var r=reportOwnerModalReport, sel=$("reportOwnerSelect"), err=$("reportOwnerErr"), nextId=sel?String(sel.value||""):"";
     if(!nextId){if(err){err.textContent="Choose a Report Owner.";err.classList.add("show");}return;}
+    if(nextId===String(r.report_owner_user_id||"")){updateReportOwnerModalState();return;}
     _ownerSave.disabled=true; var old=_ownerSave.textContent; _ownerSave.textContent="Saving…";
     try{
-      var result=await persistReportOwner(r,nextId,String(nextId)!==currentUserId());
+      var notifyEmail=nextId!==currentUserId();
+      var result=await persistReportOwner(r,nextId,notifyEmail);
       closeReportOwnerModal();
       var owner=reportOwnerName(r)||"Report Owner";
-      if(result&&result.email&&!result.email.sent&&!result.email.skipped){console.error("report owner handoff email",result.email);toast("Report owner changed to "+owner+", but the handoff email could not be sent.","err");}
-      else toast(result&&result.changed?("Report owner changed to "+owner):("Report owner is already "+owner),"ok");
+      if(result&&result.email&&result.email.sent){
+        toast("Report owner changed to "+owner+" — handoff email sent","ok");
+      } else if(result&&result.email&&!result.email.sent&&!result.email.skipped){
+        console.error("report owner handoff email",result.email);
+        toast("Report owner changed to "+owner+", but the handoff email could not be sent.","err");
+      } else if(result&&result.email&&result.email.skipped){
+        if(result.email.reason==="SEND_ALREADY_IN_PROGRESS") toast("Report owner changed to "+owner+" — handoff email is already being processed","ok");
+        else toast("Report owner changed to "+owner+", but no additional handoff email was sent.","err");
+      } else if(result&&result.changed&&nextId===currentUserId()){
+        toast("Report owner changed to "+owner+" — no email sent","ok");
+      } else {
+        toast(result&&result.changed?("Report owner changed to "+owner):("Report owner is already "+owner),"ok");
+      }
       var d=$("incidentBody"); if(d&&d.isConnected) loadAudit(r.id,d.querySelector("[data-audit]"));
     }catch(ex){
       console.error("change report owner",ex);
       if(err){err.textContent=(ex&&ex.message==="INVALID_REPORT_OWNER")?"Choose an active Admin or Safety Manager.":"Could not change the Report Owner. Refresh the record and try again.";err.classList.add("show");}
-    }finally{_ownerSave.disabled=false;_ownerSave.textContent=old;}
+    }finally{
+      _ownerSave.textContent=old;
+      if(reportOwnerModalReport) updateReportOwnerModalState();
+      else _ownerSave.disabled=false;
+    }
   });
 
   var DISPOSITION_LABELS={no_issue:"No issue found",informational:"Informational only",not_safety:"Not safety-related",duplicate:"Duplicate report",other:"Other"};
