@@ -80,3 +80,12 @@ Corrective-action cards opened from **My Work** or **Corrective Actions** now op
 ## Build 27 UI refinement
 - Step 4 Close stays gray while the reviewer remains in Step 3 after all corrective actions are verified.
 - Close becomes active only after **All actions verified - Continue to Close** is selected.
+
+## Build 28 - Final verification visibility + completed-step locking (2026-10-05)
+
+- Step 3 Verify now keeps every current-cycle corrective action visible, including actions already verified, so the reviewer can see the complete corrective-action set before continuing to Close.
+- Verified actions remain read-only and display their verification result; awaiting actions retain Verify / Send back controls.
+- Evidence is read-only once an action has been submitted for verification. If evidence needs to change, the reviewer sends that action back to its owner.
+- Completed workflow stages are read-only for every role, including Admin. Prior stages remain viewable, but their fields and workflow controls cannot be edited.
+- Completed-stage guidance directs users to add a note for a minor clarification or restart the workflow for a material correction.
+- No Supabase migration is required for this build.

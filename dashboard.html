@@ -513,6 +513,8 @@
   .wizard-context b{font-size:13.5px}
   .wizard-context p{margin:4px 0 0;font-size:13.5px;line-height:1.5;white-space:pre-wrap}
   .readonly-step-note,.permission-note{border:1px solid var(--line);background:var(--canvas);border-radius:var(--r);padding:11px 13px;color:var(--muted);font-size:13px;line-height:1.45}
+  .completed-step-lock{margin:0 0 18px;border:1px solid var(--line);border-left:4px solid var(--muted);background:var(--canvas);border-radius:var(--r);padding:12px 14px;color:var(--ink-2);font-size:13px;line-height:1.5}
+  .completed-step-lock b{display:block;color:var(--ink);margin-bottom:3px}
   .permission-note{margin:0 0 14px}
   .permission-note:empty{display:none}
   .permission-note strong{color:var(--ink)}
@@ -2727,7 +2729,7 @@
     var topPrimary=labels.complete?'<button class="wizard-primary" type="button" data-wizard-top-complete>'+esc(labels.complete)+'</button>':'';
     var resolved=isResolvedReport(r);
     var currentText=resolved?'Closed record review':((activeState&&activeState.state==="done")?'Reviewing a completed step':('Step '+activeVisible+' of 4'));
-    var helpText=resolved?'Read-only record. Completed information is grouped by stage below. Click a green step to jump to it. Notes can still be added.':wizardHelp(active,r);
+    var helpText=resolved?'Read-only record. Completed information is grouped by stage below. Click a green step to jump to it. Notes can still be added.':((activeState&&activeState.state==="done"&&active<6)?'Completed step — read only. Add a note for a clarification, or restart the workflow if a material correction is required.':wizardHelp(active,r));
     el.className="wizard-process";
     el.innerHTML='<div class="wizard-process-head"><div class="wizard-process-copy"><b>'+esc(currentText)+(resolved?'':' · '+esc(wizardLongTitle(active)))+'</b><span>'+esc(helpText)+'</span></div><div class="wizard-top-actions">'+topSave+topPrimary+'</div></div><div class="process-flow">'+arrows+'</div><div class="reg-persistent-host" data-reg-persistent-host>'+persistentRegulatoryBannerHtml(r,active)+'</div>';
     updateCorrectiveLifecycle(detail,r);
@@ -2817,6 +2819,23 @@
       try{ focusTarget.focus({preventScroll:true}); }catch(_){ focusTarget.focus(); }
     },reduceMotion?0:260);
   }
+  function updateCompletedStepLock(detail,r,n){
+    if(!detail) return;
+    var panel=detail.querySelector('[data-wizard-step="'+n+'"]');
+    if(!panel) return;
+    var existing=panel.querySelector('[data-completed-step-lock]');
+    if(existing) existing.remove();
+    if(isResolvedReport(r) || n>=6) return;
+    var p=workflowProgress(r), st=p.steps[n-1];
+    if(!st || st.state!=="done") return;
+    var note=document.createElement("div");
+    note.className="completed-step-lock";
+    note.setAttribute("data-completed-step-lock","");
+    note.innerHTML='<b>Completed step · read only</b>This information is locked to protect the record history. For a minor clarification, add a note. If the underlying information must be changed, restart the workflow and document the correction.';
+    var head=panel.querySelector(".wizard-step-head");
+    if(head && head.parentNode) head.insertAdjacentElement("afterend",note);
+    else panel.insertBefore(note,panel.firstChild);
+  }
   function setWizardStep(detail,r,n,force){
     if(!detail) return;
     n=parseInt(n,10)||recommendedWizardStep(r);
@@ -2832,6 +2851,7 @@
     var p=workflowProgress(r), panel=detail.querySelector('[data-wizard-step="'+n+'"]'), state=p.steps[n-1]?p.steps[n-1].state:"needed";
     if(panel){ var staticComplete=panel.querySelector('[data-step-complete="'+n+'"]'); if(staticComplete && n<=3) staticComplete.style.display=(state==="done"?"none":"inline-flex"); }
     updateCorrectiveLifecycle(detail,r);
+    updateCompletedStepLock(detail,r,n);
     renderRecordProgress(r,detail.querySelector("[data-record-progress]"));
     scrollWizardStepIntoView(detail,n);
   }
@@ -3010,12 +3030,12 @@
         refreshRegulatoryElapsed(regCard);
         refreshPersistentRegulatoryBanner(detail,r);
       },60000);
-      if(!canVerify() || isResolvedReport(r)){ [regStatus,regAwareness,regSave].forEach(function(x){if(x)x.disabled=true;}); }
+      if(!canVerify() || !canEditStep(r,1)){ [regStatus,regAwareness,regSave].forEach(function(x){if(x)x.disabled=true;}); }
     }
     async function persistRegulatoryReview(showToast){
       if(!r.involves_injury) return true;
       if(!regCard || !regStatus || !regAwareness) return false;
-      if(!canVerify()){ toast("Only an Admin or Safety Manager can complete the regulatory screening.","err"); return false; }
+      if(!canVerify() || !canEditStep(r,1)){ toast("The Review step is read only after it is completed.","err"); return false; }
       var status=regStatus.value, awareRaw=regAwareness.value;
       if(!status){ if(regRequired){regRequired.textContent="Choose a screening result before completing this review.";regRequired.classList.add("show");} toast("Choose a regulatory screening result.","err"); return false; }
       if((status==="yes"||status==="pending")&&!awareRaw){ if(regRequired){regRequired.textContent="Record when RBH first knew of the potentially serious outcome for a Yes or Pending screening.";regRequired.classList.add("show");} toast("Add the RBH awareness date and time.","err"); return false; }
@@ -3038,15 +3058,15 @@
       if(showToast) toast("Regulatory screening saved","ok");
       return true;
     }
-    if(regSave) regSave.addEventListener("click",async function(){ regSave.disabled=true; try{await persistRegulatoryReview(true);}catch(ex){console.error(ex);toast("Could not save the regulatory screening.","err");}finally{if(regSave.isConnected)regSave.disabled=!canVerify()||isResolvedReport(r);} });
+    if(regSave) regSave.addEventListener("click",async function(){ regSave.disabled=true; try{await persistRegulatoryReview(true);}catch(ex){console.error(ex);toast("Could not save the regulatory screening.","err");}finally{if(regSave.isConnected)regSave.disabled=!canVerify()||!canEditStep(r,1);} });
 
     var noActionBox=detail.querySelector("[data-noaction-box]"), noActionBtn=detail.querySelector("[data-noaction-btn]");
     if(noActionBox) noActionBox.style.display=(canVerify() && r.status!=="closed" && r.status!=="no_action" && r.status!=="duplicate")?"flex":"none";
-    if(noActionBtn) noActionBtn.addEventListener("click",async function(){
-      if(!canVerify()){toast("Only an Admin or Safety Manager can close a report without corrective action.","err");return;}
+    if(noActionBtn){ noActionBtn.disabled=!(canVerify()&&canEditStep(r,1)); noActionBtn.addEventListener("click",async function(){
+      if(!canVerify()||!canEditStep(r,1)){toast("The Review step is read only after it is completed.","err");return;}
       if(r.involves_injury){ try{ if(!(await persistRegulatoryReview(false))) return; }catch(ex){console.error(ex);toast("Could not save the regulatory screening.","err");return;} }
       openDispositionModal(r,wrap,detail.querySelector("[data-notes]"));
-    });
+    }); }
 
     var invFindings=detail.querySelector(".inv-findings"), invRoot=detail.querySelector(".inv-root");
     var rootSave=detail.querySelector(".root-save"), rootSaved=detail.querySelector(".root-saved"), actionPlanSave=detail.querySelector(".action-plan-save"), actionPlanSaved=detail.querySelector(".action-plan-saved");
@@ -3150,15 +3170,15 @@
         multiActionVerificationStage.innerHTML='<div class="multi-action-stage-note">No active corrective actions are available for verification.</div>';
         return;
       }
-      var rows=allRows.filter(function(a){
-        var s=String(a.status||"");
-        return isResolvedReport(r)?["awaiting_verification","verified"].indexOf(s)>=0:s==="awaiting_verification";
-      });
+      // Verify is also the final Step 3 review surface. Keep every current-cycle
+      // corrective action visible here so the reviewer can see the full set,
+      // including actions already verified and any action that was sent back.
+      var rows=allRows.slice().sort(function(a,b){return Number(a.action_number||0)-Number(b.action_number||0);});
       var verifiedCount=allRows.filter(function(a){return String(a.status||"")==="verified";}).length;
       var awaitingCount=allRows.filter(function(a){return String(a.status||"")==="awaiting_verification";}).length;
       var returnedCount=allRows.filter(function(a){return String(a.status||"")==="changes_requested";}).length;
       var allVerified=allRows.length>0&&verifiedCount===allRows.length;
-      var cardsHtml=rows.length?rows.map(function(a){
+      var cardsHtml=rows.map(function(a){
         var status=String(a.status||"not_started");
         var owner=a.owner_user_id&&profileById[String(a.owner_user_id)]?profileName(profileById[String(a.owner_user_id)]):"Not assigned";
         var completedBy=a.completed_by&&profileById[String(a.completed_by)]?profileName(profileById[String(a.completed_by)]):"";
@@ -3201,10 +3221,10 @@
           '<div class="evidence-panel" data-action-evidence data-corrective-action-id="'+esc(a.id)+'"></div>'+
           review+
         '</div>';
-      }).join(""):(allVerified?
-        '<div class="multi-action-stage-note"><b>All corrective actions are verified.</b> Nothing else needs a verification decision.</div>':
-        '<div class="multi-action-stage-note"><b>No actions are waiting for a decision.</b> Returned actions will appear in Complete Work.</div>');
+      }).join("");
 
+      var finalReviewHtml=allVerified?
+        '<div class="multi-action-review-status"><b>All corrective actions are verified.</b><span>Review the completed actions below for visibility, then continue to the final Close step when you are ready.</span></div>':'';
       var reviewStatusHtml=!isResolvedReport(r)&&returnedCount>0&&awaitingCount>0?
         '<div class="multi-action-review-status"><b>'+returnedCount+' action'+(returnedCount===1?' has':'s have')+' been sent back.</b><span>Finish reviewing the '+awaitingCount+' action'+(awaitingCount===1?'':'s')+' still waiting. Returned actions will then appear by themselves in Complete Work.</span></div>':'';
 
@@ -3220,12 +3240,12 @@
 
       // Build the complete DOM once. Do not mutate innerHTML after evidence
       // rendering starts, or the browser destroys the evidence nodes/listeners.
-      multiActionVerificationStage.innerHTML=reviewStatusHtml+cardsHtml+footerHtml;
+      multiActionVerificationStage.innerHTML=finalReviewHtml+reviewStatusHtml+cardsHtml+footerHtml;
 
       Array.prototype.slice.call(multiActionVerificationStage.querySelectorAll("[data-action-evidence][data-corrective-action-id]")).forEach(function(panel){
         var aid=panel.getAttribute("data-corrective-action-id");
         var action=actionPlanState.actions.find(function(x){return String(x.id||"")===String(aid||"");});
-        if(action) renderActionEvidence(r,panel,auditEl,action).catch(function(ex){console.error("action evidence",ex);});
+        if(action) renderActionEvidence(r,panel,auditEl,action,{readOnly:true}).catch(function(ex){console.error("action evidence",ex);});
       });
     }
 
@@ -4953,6 +4973,11 @@
   }
   function canEditStep(r,n){
     if(!r||isResolvedReport(r)) return false;
+    var progress=workflowProgress(r), stepState=progress&&progress.steps?progress.steps[n-1]:null;
+    // Once a workflow stage is completed it becomes read only for everyone,
+    // including Admins. Corrections belong in Notes or require a deliberate
+    // workflow restart so the audit trail stays intact.
+    if(!stepState || stepState.state!=="current") return false;
     if(n===3 && ["new","under_review","assigned"].indexOf(String(r.status||"new"))<0) return false;
     if(isManager()){
       if(n===5) return canPerformVerification(r);
@@ -6187,6 +6212,8 @@
     if(a&&a.id){
       if(a.retired_at||!a.activated_at) return false;
       if(parseInt(a.workflow_generation||0,10)!==parseInt(r&&r.workflow_restart_count||0,10)) return false;
+      var status=String(a.status||"not_started");
+      if(["not_started","in_progress","changes_requested"].indexOf(status)<0) return false;
       if(isManager()) return true;
       return currentRole==="supervisor" && currentUserId() && String(a.owner_user_id||"")===currentUserId();
     }
