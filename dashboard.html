@@ -1588,13 +1588,13 @@
 
 <!-- ============ ADMIN ADD USER MODAL ============ -->
 <div class="modal-backdrop" id="reportOwnerBackdrop">
-  <div class="modal-card">
-    <h3>Change report owner</h3>
-    <p class="report-owner-modal-note">The Report Owner is responsible for moving this report forward and receives report-level workflow emails. Changing the owner does not change anyone's role, access, or editing permissions.</p>
-    <label class="inv-l">Report owner<select id="reportOwnerSelect"></select></label>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="reportOwnerHeading">
+    <h3 id="reportOwnerHeading">Change report owner</h3>
+    <p class="msub">The Report Owner is responsible for moving this report forward and receives report-level workflow emails. Changing the owner does not change anyone's role, access, or editing permissions.</p>
+    <div class="field"><label for="reportOwnerSelect">Report owner</label><select id="reportOwnerSelect"></select></div>
     <div class="report-owner-email-note neutral" id="reportOwnerEmailNote" role="status">Select a different owner to review what will happen before anything is saved or emailed.</div>
-    <div class="err" id="reportOwnerErr"></div>
-    <div class="modal-actions"><button class="btn-secondary" id="reportOwnerCancel" type="button">Cancel</button><button class="wizard-primary" id="reportOwnerSave" type="button">Confirm owner change</button></div>
+    <div class="login-err" id="reportOwnerErr"></div>
+    <div class="modal-actions"><button class="btn-secondary" id="reportOwnerCancel" type="button">Cancel</button><button class="btn-primary" id="reportOwnerSave" type="button">Confirm owner change</button></div>
   </div>
 </div>
 
@@ -2088,7 +2088,7 @@
   var reopenReport=null, reopenReturnView="records", restartReport=null, restartReturnView="records";
   var regFollowupReport=null, regFollowupDetail=null, reportOwnerModalReport=null;
   var NAV_VIEW_KEY="rbh_safety_active_view_v1", NAV_INCIDENT_KEY="rbh_safety_active_incident_v1";
-  var APP_VERSION="2026.10.06 · Build 46 Report Ownership & Dynamic Notifications";
+  var APP_VERSION="2026.10.06 · Build 48 Presence & Modal Polish";
 
   /* ---------- Build 44: live dashboard sync + presence + stale-save protection ---------- */
   var LIVE_SYNC_FALLBACK_MS=60000, PRESENCE_HEARTBEAT_MS=20000, PRESENCE_ACTIVE_MS=55000, PRESENCE_EDITING_IDLE_MS=90000;
@@ -2131,6 +2131,19 @@
     (rows||[]).forEach(function(row){var n=String(row.display_name||"Another user");if(!seen[n]){seen[n]=true;names.push(n);}});
     if(!names.length) return ""; if(names.length===1) return names[0]; if(names.length===2) return names[0]+" and "+names[1]; return names[0]+", "+names[1]+" and "+(names.length-2)+" others";
   }
+  function presenceOpenedAt(row){
+    var raw=row&&(row.opened_at||row.last_seen_at); if(!raw) return 0;
+    var t=new Date(raw).getTime(); return Number.isFinite(t)?t:0;
+  }
+  function firstPresenceRow(rows){
+    var copy=(rows||[]).slice().filter(function(row){return !!row;});
+    copy.sort(function(a,b){var at=presenceOpenedAt(a),bt=presenceOpenedAt(b); if(at!==bt)return at-bt; return String(a.user_id||"").localeCompare(String(b.user_id||""));});
+    return copy[0]||null;
+  }
+  function presenceTimeLabel(v){
+    if(!v) return "";
+    try{return new Date(v).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"});}catch(_e){return "";}
+  }
   function renderLiveRecordNotices(){
     var host=ensureLiveNoticeHost(); if(!host) return;
     var html="";
@@ -2138,14 +2151,24 @@
       var who=recordChangePersonName(activeOpenResource.changedBy);
       html+='<div class="live-record-notice stale"><div class="live-record-notice-copy"><b>This '+liveResourceLabel()+' was updated by '+esc(who)+'.</b><span>Refresh to see the latest changes before continuing. Unsaved edits on this screen will be discarded when you refresh.</span></div><div class="live-record-notice-actions"><button class="live-record-refresh" type="button" data-refresh-open-resource>Refresh '+(activeOpenResource.type==="corrective_action"?'action':'record')+'</button></div></div>';
     }
-    var others=(remotePresenceRows||[]).filter(function(row){return String(row.user_id||"")!==currentUserId();});
+    var relevant=(remotePresenceRows||[]);
+    var others=relevant.filter(function(row){return String(row.user_id||"")!==currentUserId();});
     if(others.length){
+      var editing=others.filter(function(row){return String(row.mode||"")==="editing";});
       var shown=editing.length?editing:others, names=presenceNames(shown);
       var cls=editing.length?" presence-editing":"";
       var plural=shown.length>1;
       var target=activeOpenResource&&activeOpenResource.type==="corrective_action"?"this corrective action":"this record";
       var headline=editing.length?(names+(plural?" are":" is")+" currently editing "+target+"."):(names+(plural?" also have ":" also has ")+target+" open.");
+      var first=firstPresenceRow(relevant), firstLine="";
+      if(first){
+        var firstIsMe=String(first.user_id||"")===currentUserId();
+        var firstName=firstIsMe?"You":String(first.display_name||"Another user");
+        var when=presenceTimeLabel(first.opened_at||first.last_seen_at);
+        firstLine=firstName+(firstIsMe?" opened ":" opened ")+target+" first"+(when?" at "+when:"")+".";
+      }
       var guidance=editing.length?"To avoid conflicting changes, wait until they finish or contact them before making updates.":"You can continue, but coordinate before editing the same information.";
+      if(firstLine) guidance+=" "+firstLine;
       html+='<div class="live-record-notice'+cls+'"><div class="live-record-notice-copy"><b>'+esc(headline)+'</b><span>'+esc(guidance)+'</span></div></div>';
     }
     host.innerHTML=html; host.hidden=!html;
@@ -2158,7 +2181,6 @@
   function relevantPresenceRows(rows){
     if(!activeOpenResource) return [];
     return (rows||[]).filter(function(row){
-      if(String(row.user_id||"")===currentUserId()) return false;
       if(String(row.report_id||"")!==String(activeOpenResource.reportId||"")) return false;
       if(activeOpenResource.type==="report") return true;
       return row.resource_type==="report" || String(row.resource_id||"")===String(activeOpenResource.resourceId||"");
@@ -2168,7 +2190,7 @@
     if(!activeOpenResource||!currentSession||!currentOrgId) return;
     try{
       var cutoff=new Date(Date.now()-PRESENCE_ACTIVE_MS).toISOString();
-      var q=await sb.from("rbh_record_presence").select("organization_id,report_id,resource_type,resource_id,user_id,display_name,mode,last_seen_at").eq("organization_id",currentOrgId).eq("report_id",activeOpenResource.reportId).gte("last_seen_at",cutoff).order("last_seen_at",{ascending:false});
+      var q=await sb.from("rbh_record_presence").select("organization_id,report_id,resource_type,resource_id,user_id,display_name,mode,opened_at,last_seen_at").eq("organization_id",currentOrgId).eq("report_id",activeOpenResource.reportId).gte("last_seen_at",cutoff).order("opened_at",{ascending:true});
       if(q.error) throw q.error;
       remotePresenceRows=relevantPresenceRows(q.data||[]); renderLiveRecordNotices();
     }catch(ex){ console.warn("record presence refresh",ex); }
