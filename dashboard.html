@@ -320,7 +320,7 @@
   .incident-language-tools{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:4px 2px;margin-bottom:14px}
   .incident-language-tools label{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:650;color:var(--ink-2)}
   .incident-language-tools select,.pdf-language-select{width:auto;min-height:36px;padding:6px 32px 6px 10px;font-size:13px}
-  .incident-language-state{font-size:12.5px;color:var(--muted)}
+  .incident-language-state{font-size:12.5px;color:var(--muted);margin-left:auto}
   .incident-language-state.loading{font-weight:700;color:var(--brand)}
   .pdf-language-wrap{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)}
   .translation-preview{margin-top:8px;border-left:3px solid var(--ink);background:var(--canvas);border-radius:0 var(--r) var(--r) 0;padding:9px 12px;font-size:13px;line-height:1.5;color:var(--ink)}
@@ -498,10 +498,10 @@
   .wizard-task span{font-size:13px;line-height:1.45;color:var(--ink-2)}
   .field-guidance{display:block;margin:5px 0 12px;color:var(--muted);font-size:12.5px;line-height:1.45;font-weight:400}
   .field-guidance.compact{margin-bottom:7px}
-  .guidance-control{display:flex;justify-content:flex-end;align-items:center;margin:0 0 10px}
-  .guidance-toggle{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:6px 12px;color:var(--muted);font-size:12.5px;font-weight:650;cursor:pointer;user-select:none}
+    .guidance-toggle{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:6px 12px;color:var(--muted);font-size:12.5px;font-weight:650;cursor:pointer;user-select:none}
   .guidance-toggle:hover{border-color:var(--ink);color:var(--ink)}
   .guidance-toggle input{width:15px;height:15px;margin:0;accent-color:var(--ink);cursor:pointer}
+  .incident-guidance-toggle{flex:0 0 auto}
   .wizard-shell.guidance-hidden .field-guidance,.wizard-shell.guidance-hidden .wizard-step-copy p,.wizard-shell.guidance-hidden .wizard-footer-copy,.wizard-shell.guidance-hidden .action-help{display:none!important}
   .wizard-required{display:none;border:1px solid var(--brand-line);background:var(--brand-tint);color:var(--brand);border-radius:var(--r);padding:10px 12px;font-size:13px;font-weight:650;margin:10px 0}
   .wizard-required.show{display:block}
@@ -956,7 +956,7 @@
     .back-link{padding:8px 12px;font-size:13px}
     .incident-summary{padding:13px 14px}
     .incident-summary .is-desc{font-size:14.5px;line-height:1.5}
-    .incident-language-tools{align-items:stretch;flex-direction:column}.incident-language-tools label{justify-content:space-between}
+    .incident-language-tools{align-items:stretch;flex-direction:column}.incident-language-tools>label{justify-content:space-between}.incident-language-state{margin-left:0}.incident-guidance-toggle{align-self:flex-end}
     .badge{font-size:11.5px;padding:4px 8px}
     .toolbar .search{min-width:0;flex:1 1 100%}
     .toolbar select{flex:1}
@@ -1358,6 +1358,7 @@
               <select id="incidentLanguage"><option value="en">English</option><option value="es">Español</option></select>
             </label>
             <span class="incident-language-state" id="incidentLanguageState"></span>
+            <label class="guidance-toggle incident-guidance-toggle" for="incidentGuidanceToggle"><input type="checkbox" id="incidentGuidanceToggle"><span>Show guidance</span></label>
           </div>
           <div class="incident-body" id="incidentBody"></div>
         </section>
@@ -2474,7 +2475,6 @@
     var guidanceOn=workflowGuidanceEnabled();
     return '<div class="wizard-shell'+(guidanceOn?'':' guidance-hidden')+'">'+
       '<div class="record-progress" data-record-progress></div>'+
-      '<div class="guidance-control"><label class="guidance-toggle"><input type="checkbox" data-guidance-toggle'+(guidanceOn?' checked':'')+'><span>Show guidance</span></label></div>'+
       '<div data-resolved-banner></div>'+
       '<div data-urgent-triage>'+urgentTriageHtml(r)+'</div>'+
 
@@ -3039,9 +3039,10 @@
 
   function buildDetail(r, detail, wrap){
     detail.innerHTML=detailHtml(r);
-    var guidanceToggle=detail.querySelector("[data-guidance-toggle]");
+    var guidanceToggle=$("incidentGuidanceToggle");
     if(guidanceToggle){
-      guidanceToggle.addEventListener("change",async function(){
+      guidanceToggle.checked=workflowGuidanceEnabled();
+      guidanceToggle.onchange=async function(){
         var shell=detail.querySelector(".wizard-shell");
         var enabled=!!guidanceToggle.checked;
         if(shell) shell.classList.toggle("guidance-hidden",!enabled);
@@ -3058,7 +3059,7 @@
         }finally{
           guidanceToggle.disabled=false;
         }
-      });
+      };
     }
     var mobileSupport=detail.querySelector(".record-support");
     if(mobileSupport && window.matchMedia && window.matchMedia("(max-width: 620px)").matches) mobileSupport.removeAttribute("open");
