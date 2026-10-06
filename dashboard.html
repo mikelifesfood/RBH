@@ -977,6 +977,48 @@
   .toast.ok{border-left-color:#3DBE7E}
   .toast.err{border-left-color:var(--brand-on-dark)}
 
+  /* ---------- Build 50: desktop Help Coach ---------- */
+  .help-coach-fab{position:fixed;right:24px;bottom:24px;z-index:88;width:52px;height:52px;border-radius:50%;border:0;background:var(--chrome);color:#fff;box-shadow:var(--shadow-pop);font-family:var(--display);font-size:26px;font-weight:850;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s,background .15s}
+  .help-coach-fab:hover{transform:translateY(-2px);background:#242424}
+  .help-coach-fab[aria-expanded="true"]{background:var(--brand)}
+  .help-coach-panel{position:fixed;right:24px;bottom:88px;z-index:87;width:min(410px,calc(100vw - 48px));max-height:min(690px,calc(100vh - 120px));display:none;flex-direction:column;background:var(--paper);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow-pop);overflow:hidden}
+  .help-coach-panel.open{display:flex}
+  .help-coach-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:18px 18px 14px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#fff 0%,#faf9f7 100%)}
+  .help-coach-eyebrow{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--brand);margin-bottom:4px}
+  .help-coach-head h3{font-family:var(--display);font-size:22px;line-height:1.1;margin:0;color:var(--ink)}
+  .help-coach-role{font-size:12px;color:var(--muted);margin-top:5px}
+  .help-coach-close{width:34px;height:34px;border:1px solid var(--line);border-radius:50%;background:var(--paper);color:var(--ink);font-size:22px;line-height:1;cursor:pointer;flex:0 0 auto}
+  .help-coach-scroll{overflow:auto;padding:18px;overscroll-behavior:contain}
+  .help-coach-question{font-family:var(--display);font-size:22px;line-height:1.15;margin:0 0 6px;color:var(--ink)}
+  .help-coach-intro{font-size:13.5px;line-height:1.5;color:var(--muted);margin:0 0 15px}
+  .help-coach-context{width:100%;border:1px solid #BDD5E8;background:#F2F7FB;border-radius:var(--r);padding:12px 13px;text-align:left;color:var(--ink);cursor:pointer;margin:0 0 14px}
+  .help-coach-context span{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#3E6D91;font-weight:800;margin-bottom:3px}
+  .help-coach-context b{display:block;font-size:14px;line-height:1.35}
+  .help-coach-topic-list{display:grid;gap:8px}
+  .help-coach-topic{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--line);background:var(--paper);border-radius:var(--r);padding:12px 13px;text-align:left;color:var(--ink);font-size:14px;font-weight:750;cursor:pointer}
+  .help-coach-topic:hover{border-color:var(--line-strong);background:var(--canvas)}
+  .help-coach-topic:after{content:"›";font-size:22px;font-weight:500;color:var(--muted)}
+  .help-coach-empty{border:1px solid var(--line);background:var(--canvas);border-radius:var(--r);padding:13px;font-size:13px;line-height:1.5;color:var(--muted)}
+  .help-coach-guide-top{display:flex;align-items:center;gap:8px;margin-bottom:15px}
+  .help-coach-back{border:0;background:none;padding:0;color:var(--ink-2);font-size:13px;font-weight:750;cursor:pointer}
+  .help-coach-guide-title{font-family:var(--display);font-size:22px;line-height:1.12;margin:0 0 4px;color:var(--ink)}
+  .help-coach-step-count{font-size:12px;color:var(--muted);font-weight:700}
+  .help-coach-progress{display:flex;gap:5px;margin:12px 0 18px}
+  .help-coach-progress i{height:5px;flex:1;border-radius:999px;background:var(--line);display:block}
+  .help-coach-progress i.done{background:var(--brand)}
+  .help-coach-step-card{border:1px solid var(--line);border-radius:var(--r-lg);padding:16px;background:var(--paper)}
+  .help-coach-step-card h4{font-family:var(--display);font-size:19px;line-height:1.15;margin:0 0 8px;color:var(--ink)}
+  .help-coach-step-card p{font-size:14px;line-height:1.55;color:var(--ink-2);margin:0;white-space:pre-line}
+  .help-coach-note{margin-top:12px;border-left:4px solid #4E87B2;background:#F2F7FB;padding:10px 11px;font-size:12.5px;line-height:1.45;color:var(--ink-2)}
+  .help-coach-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:16px}
+  .help-coach-actions-left,.help-coach-actions-right{display:flex;gap:8px;align-items:center}
+  .help-coach-btn{border:1px solid var(--line-strong);background:var(--paper);color:var(--ink);border-radius:999px;padding:9px 13px;font-size:12.5px;font-weight:800;cursor:pointer}
+  .help-coach-btn.primary{border-color:var(--brand);background:var(--brand);color:#fff}
+  .help-coach-btn:disabled{opacity:.45;cursor:default}
+  .help-coach-show{border-color:#9DBDD6;background:#F2F7FB;color:#254E6D}
+  .help-coach-highlight{position:relative;z-index:2;outline:4px solid rgba(202,31,42,.28)!important;outline-offset:5px!important;box-shadow:0 0 0 9px rgba(202,31,42,.09)!important;transition:outline-color .2s,box-shadow .2s}
+  @media(max-width:1023px),(pointer:coarse){.help-coach-fab,.help-coach-panel{display:none!important}}
+
   /* ---------- 18. Responsive ---------- */
   @media(max-width:980px){.home-stats{grid-template-columns:repeat(3,minmax(0,1fr))}.home-stats .hs:nth-child(4){border-left:0}.home-stats .hs:nth-child(n+4){border-top:1px solid var(--line)}}
   @media(max-width:900px){
@@ -1506,6 +1548,14 @@
       </footer>
     </main>
   </div>
+  <button class="help-coach-fab" id="helpCoachFab" type="button" aria-label="Open help" aria-haspopup="dialog" aria-expanded="false" aria-controls="helpCoachPanel">?</button>
+  <aside class="help-coach-panel" id="helpCoachPanel" role="dialog" aria-modal="false" aria-labelledby="helpCoachTitle" aria-hidden="true">
+    <div class="help-coach-head">
+      <div><div class="help-coach-eyebrow">RBH Safety Help</div><h3 id="helpCoachTitle">Help Coach</h3><div class="help-coach-role" id="helpCoachRole"></div></div>
+      <button class="help-coach-close" id="helpCoachClose" type="button" aria-label="Close help">×</button>
+    </div>
+    <div class="help-coach-scroll" id="helpCoachBody"></div>
+  </aside>
 </div>
 
 <!-- ============ MY PROFILE DRAWER ============ -->
@@ -2090,7 +2140,206 @@
   var reopenReport=null, reopenReturnView="records", restartReport=null, restartReturnView="records";
   var regFollowupReport=null, regFollowupDetail=null, reportOwnerModalReport=null;
   var NAV_VIEW_KEY="rbh_safety_active_view_v1", NAV_INCIDENT_KEY="rbh_safety_active_incident_v1";
-  var APP_VERSION="2026.10.06 · Build 49 Owner Reset on New Cycle";
+  var APP_VERSION="2026.10.06 · Build 50 Desktop Help Coach";
+
+  /* ---------- Build 50: desktop-only role/page-aware Help Coach ---------- */
+  var helpCoachState={guideId:null,step:0,returnStep:0};
+  var HELP_COACH_MIN_WIDTH=1024;
+  var HELP_GUIDES={
+    submit_report:{
+      title:"Submit a report",
+      roles:["admin","safety_manager","supervisor","read_only"],
+      steps:[
+        {title:"Open the reporting form",text:"From Home, choose Submit a safety report. The employee reporting form opens in a new tab so you do not lose your place in the dashboard.",view:"home",target:"#homeCreate"},
+        {title:"Describe what happened",text:"Complete the report using simple, factual information. Include where it happened, when it was noticed, what was seen, and what was done right away. Mark Injury or illness accurately when someone was actually hurt or became ill."},
+        {title:"Add supporting files when helpful",text:"Photos or other files are optional, but add them when they make the condition easier to understand. Do not delay an urgent report just to gather perfect documentation."},
+        {title:"Submit the report",text:"After submission, the new report is added to the Safety Inbox. Active Admins and Safety Managers for the company receive the new-report notification automatically."}
+      ]
+    },
+    review_incident:{
+      title:"Review an incident",
+      roles:["admin","safety_manager"],
+      steps:[
+        {title:"Open the new report",text:"Go to Safety Inbox and open the report that needs review. Read the original report and any attached photos before deciding what happens next.",view:"records",target:"#list"},
+        {title:"Choose the Report Owner",text:"In Step 1, confirm who will be responsible for moving the report through the workflow. The dropdown is only a proposed assignment until you start the investigation.",target:"#incidentBody .review-owner-select",note:"Changing the Step 1 dropdown does not send an email."},
+        {title:"Complete injury screening when needed",text:"If the report involves an injury, complete the regulatory screening before advancing. The app records the internal screening and follow-up; it does not submit a report to Cal/OSHA.",target:"#incidentBody [data-urgent-triage]"},
+        {title:"Start the investigation",text:"Choose Start investigation. The selected Report Owner is committed only after the report successfully advances. If you selected another person, that person receives the handoff email after Step 2 opens.",target:"#incidentBody [data-step-complete=\"1\"]"},
+        {title:"Document what happened and why",text:"In Investigation, answer both questions: What happened? and Why did it happen? Keep the answers factual. Investigation evidence is optional when it helps explain the finding.",target:"#incidentBody .inv-findings"},
+        {title:"Decide whether anything still needs correction",text:"Finish the investigation and use Step 3 to decide whether additional corrective action is required. If Yes, create and assign the action plan. If No, document the reason and explanation before continuing to Close.",target:"#incidentBody [data-ca-decision]"}
+      ]
+    },
+    complete_action:{
+      title:"Complete my corrective action",
+      roles:["admin","safety_manager","supervisor"],
+      steps:[
+        {title:"Open your assigned action",text:"Open My Work and select the corrective action assigned to you. The focused action screen shows only that task so you cannot accidentally update another action.",view:"mywork",target:"#view-mywork .mywork-panel"},
+        {title:"Review what is required",text:"Check the corrective-action description, due date, priority, and any instructions or returned-review note before starting work."},
+        {title:"Describe what was completed",text:"When the work is finished, enter a clear description of what was actually done. Be specific enough that the reviewer can understand the completed correction.",target:"#focusedCompletionNote"},
+        {title:"Add evidence when it helps",text:"Attach a photo or supporting file when evidence makes the completed work easier to verify. Evidence is tied to this specific corrective action.",target:"#focusedActionEvidence"},
+        {title:"Send the work for review",text:"Choose Send for review. The current Report Owner receives the review email. If changes are requested later, the action returns to you with the review note and you can send it again.",target:"#focusedSubmitAction"}
+      ]
+    },
+    review_completed:{
+      title:"Review completed work",
+      roles:["admin","safety_manager"],
+      steps:[
+        {title:"Open the submitted action",text:"Use the review email, My Work review queue, or Corrective Actions list to open the exact action that was submitted. Review the completion note and evidence before deciding.",view:"mywork",target:"#view-mywork .mywork-review"},
+        {title:"Verify the completed work",text:"If the work is complete and acceptable, choose Verify as complete. Verification records who made the decision and when.",target:"#focusedVerifyAction"},
+        {title:"Send it back when something is missing",text:"If more work or evidence is needed, choose Send back for changes and explain exactly what is needed. The corrective-action owner receives the changes-requested email.",target:"#focusedRequestChanges"},
+        {title:"Repeat for each corrective action",text:"Each action is reviewed separately. One completed action does not automatically verify the other actions on the same report."},
+        {title:"Continue to Close",text:"After every active corrective action is verified, return to the incident and choose Continue to Close. The report does not advance to final closure until this is deliberately selected.",target:"#incidentBody [data-all-actions-verified]"}
+      ]
+    },
+    close_report:{
+      title:"Close a report",
+      roles:["admin","safety_manager"],
+      steps:[
+        {title:"Confirm the workflow is ready",text:"Open the final Close step and review the readiness checks. Required investigation, corrective-action, verification, and regulatory follow-up items must be complete before closure.",target:"#incidentBody [data-wizard-step=\"6\"]"},
+        {title:"Close the report",text:"Choose Close report only when the record is complete. Closing is a deliberate final action; simply reaching the Close step does not close the report.",target:"#incidentBody [data-step-complete=\"6\"]"},
+        {title:"Use the Step 1 close option only when appropriate",text:"If a newly submitted report truly needs no investigation, Step 1 has a separate Close report — no investigation needed option. That path requires a documented reason and keeps the record in history."},
+        {title:"Know what is preserved",text:"Closed records remain available under Closed with their notes, evidence, activity history, ownership history, and PDF record. Restart or Reopen begins a new workflow cycle and clears the current Report Owner."}
+      ]
+    },
+    admin_users:{
+      title:"Admin & user management",
+      roles:["admin"],
+      steps:[
+        {title:"Open Admin",text:"Use the Admin section to manage dashboard access, roles, password-reset actions, activation status, and user history.",view:"users",target:"#view-users"},
+        {title:"Add a dashboard user",text:"Choose Add dashboard user. Enter the person's name and email, select the appropriate role, and send the setup email when access is ready.",target:"#addUserBtn"},
+        {title:"Choose the right role",text:"Admins manage users and the full workflow. Safety Managers can work the full incident workflow without Admin access. Supervisors work assigned items. Read Only users can review without changing records.",target:"#usersList"},
+        {title:"Deactivate or remove access carefully",text:"Deactivate temporarily blocks access. Delete user removes login access while preserving the person's profile and historical report/audit references."},
+        {title:"Review Admin activity",text:"Admin activity records role changes, access changes, password-reset actions, and removed-user events so important account changes remain traceable.",target:"#adminUserHistory"}
+      ]
+    },
+    home_screen:{title:"Using Home",roles:["admin","safety_manager","supervisor","read_only"],steps:[
+      {title:"Start with what needs attention",text:"Home is your starting point. The summary and Needs your attention area surface new, overdue, injury, assigned, and review work based on your role.",view:"home",target:"#homeStats"},
+      {title:"Open your work",text:"Choose Open My Work when you want to see items assigned directly to you. Managers can also see work waiting for review.",target:"#homeOpen"},
+      {title:"Submit a report",text:"Choose Submit a safety report to open the employee reporting form in a new tab.",target:"#homeCreate"}
+    ]},
+    inbox_screen:{title:"Using Safety Inbox",roles:["admin","safety_manager","supervisor","read_only"],steps:[
+      {title:"Find the right report",text:"Use the status chips, filters, and search box to narrow the Safety Inbox. Color and status indicators help draw attention to injuries, overdue work, active records, and closed records.",view:"records",target:"#chips"},
+      {title:"Open the report",text:"Select a report card to open its incident workspace. Your role determines whether you can edit the workflow or review it read-only.",target:"#list"}
+    ]},
+    mywork_screen:{title:"Using My Work",roles:["admin","safety_manager","supervisor"],steps:[
+      {title:"Use My Work as your personal queue",text:"My Work shows work tied to your account. Corrective-action owners see assigned actions; managers also see corrective actions waiting for a review decision.",view:"mywork",target:"#view-mywork .mywork-summary"},
+      {title:"Open the task you need",text:"Select an assignment to open the focused work area. Complete only the task you are responsible for, then send it to the next person when ready.",target:"#myWorkList"}
+    ]},
+    analytics_screen:{title:"Using Analytics",roles:["admin","safety_manager","read_only"],steps:[
+      {title:"Use Analytics for trends",text:"Analytics summarizes report volume, status, hazards, injuries, and response trends. It is a read-only view and does not change workflow records.",view:"metrics",target:"#view-metrics"},
+      {title:"Return to the record for action",text:"When a metric points to something that needs follow-up, use Safety Inbox or My Work to open the underlying operational record."}
+    ]},
+    viewing_screen:{title:"Viewing records",roles:["read_only"],steps:[
+      {title:"Review without changing the workflow",text:"Read Only access lets you open reports, review notes, evidence, activity history, and analytics without changing workflow data.",view:"records",target:"#view-records"},
+      {title:"Use the PDF when you need a record copy",text:"Open a report and use Download PDF when you need the preserved report summary and attachment appendix. Your access remains read-only."}
+    ]}
+  };
+  var HELP_TOPIC_ORDER=["submit_report","review_incident","complete_action","review_completed","close_report","admin_users"];
+
+  function helpCoachDesktop(){ return !!(window.matchMedia&&window.matchMedia("(min-width: "+HELP_COACH_MIN_WIDTH+"px) and (pointer: fine)").matches); }
+  function helpCoachViewName(){
+    var views=document.querySelectorAll(".view");
+    for(var i=0;i<views.length;i++){if(!views[i].hidden)return String(views[i].id||"").replace(/^view-/,"");}
+    return "home";
+  }
+  function helpGuideAllowed(id){
+    var g=HELP_GUIDES[id]; if(!g) return false;
+    if((g.roles||[]).indexOf(currentRole)>=0) return true;
+    if(id==="review_incident"&&currentRole==="supervisor"&&activeIncident&&isInvestigatorAssignedToMe(activeIncident)) return true;
+    return false;
+  }
+  function helpCoachContext(){
+    var view=helpCoachViewName();
+    if(view==="incident"&&activeIncident){
+      var detail=$("incidentBody"), step=parseInt(detail&&detail.dataset.wizardStep||"1",10)||1;
+      if(step===1&&helpGuideAllowed("review_incident")) return {label:"Help with this screen — Review",guideId:"review_incident",step:1};
+      if(step===2&&helpGuideAllowed("review_incident")) return {label:"Help with this screen — Investigation",guideId:"review_incident",step:4};
+      if(step===3&&helpGuideAllowed("review_incident")) return {label:"Help with this screen — Corrective Actions",guideId:"review_incident",step:5};
+      if(step===4&&helpGuideAllowed("complete_action")) return {label:"Help with this screen — Complete Work",guideId:"complete_action",step:2};
+      if(step===5&&helpGuideAllowed("review_completed")) return {label:"Help with this screen — Verify Work",guideId:"review_completed",step:1};
+      if(step===6&&helpGuideAllowed("close_report")) return {label:"Help with this screen — Close",guideId:"close_report",step:0};
+      if(currentRole==="read_only") return {label:"Help with this screen — Viewing this record",guideId:"viewing_screen",step:0};
+    }
+    if(view==="myaction"){
+      var status=String(activeFocusedAction&&activeFocusedAction.status||"");
+      if(status==="awaiting_verification"&&helpGuideAllowed("review_completed")) return {label:"Help with this screen — Review completed work",guideId:"review_completed",step:1};
+      if(helpGuideAllowed("complete_action")) return {label:"Help with this screen — Your corrective action",guideId:"complete_action",step:1};
+    }
+    if(view==="users"&&helpGuideAllowed("admin_users")) return {label:"Help with this screen — Admin",guideId:"admin_users",step:0};
+    if(view==="mywork"&&helpGuideAllowed("mywork_screen")) return {label:"Help with this screen — My Work",guideId:"mywork_screen",step:0};
+    if(view==="records") return {label:"Help with this screen — Safety Inbox",guideId:currentRole==="read_only"?"viewing_screen":"inbox_screen",step:0};
+    if(view==="metrics"&&helpGuideAllowed("analytics_screen")) return {label:"Help with this screen — Analytics",guideId:"analytics_screen",step:0};
+    if(view==="home"&&helpGuideAllowed("home_screen")) return {label:"Help with this screen — Home",guideId:"home_screen",step:0};
+    if(view==="actions"&&helpGuideAllowed("review_completed")) return {label:"Help with this screen — Corrective Actions",guideId:"review_completed",step:0};
+    return null;
+  }
+  function helpCoachOpen(){
+    if(!helpCoachDesktop()||!currentSession) return;
+    var panel=$("helpCoachPanel"), fab=$("helpCoachFab"); if(!panel||!fab)return;
+    panel.classList.add("open"); panel.setAttribute("aria-hidden","false"); fab.setAttribute("aria-expanded","true");
+    helpCoachState.guideId=null; helpCoachState.step=0; renderHelpCoachHome();
+  }
+  function helpCoachClose(){
+    var panel=$("helpCoachPanel"), fab=$("helpCoachFab"); if(panel){panel.classList.remove("open");panel.setAttribute("aria-hidden","true");} if(fab)fab.setAttribute("aria-expanded","false");
+    document.querySelectorAll(".help-coach-highlight").forEach(function(el){el.classList.remove("help-coach-highlight");});
+  }
+  function renderHelpCoachHome(){
+    var body=$("helpCoachBody"), role=$("helpCoachRole"); if(!body)return;
+    if(role) role.textContent="Showing help for "+roleLabel(currentRole);
+    var context=helpCoachContext();
+    var html='<h2 class="help-coach-question">What do you need help with?</h2><p class="help-coach-intro">Choose a task for short, step-by-step guidance without leaving the application.</p>';
+    if(context) html+='<button class="help-coach-context" type="button" data-help-context><span>Recommended</span><b>'+esc(context.label)+'</b></button>';
+    html+='<div class="help-coach-topic-list">';
+    var visible=0;
+    HELP_TOPIC_ORDER.forEach(function(id){var g=HELP_GUIDES[id];if(g&&helpGuideAllowed(id)){visible++;html+='<button class="help-coach-topic" type="button" data-help-topic="'+esc(id)+'">'+esc(g.title)+'</button>';}});
+    html+='</div>';
+    if(!visible) html+='<div class="help-coach-empty">No additional task guides are available for this role on the current screen.</div>';
+    body.innerHTML=html;
+    var c=body.querySelector("[data-help-context]"); if(c&&context)c.addEventListener("click",function(){openHelpGuide(context.guideId,context.step||0);});
+    body.querySelectorAll("[data-help-topic]").forEach(function(btn){btn.addEventListener("click",function(){openHelpGuide(btn.getAttribute("data-help-topic"),0);});});
+  }
+  function openHelpGuide(id,startStep){
+    if(!HELP_GUIDES[id]||!helpGuideAllowed(id)) return;
+    helpCoachState.guideId=id; helpCoachState.step=Math.max(0,Math.min(parseInt(startStep||0,10)||0,HELP_GUIDES[id].steps.length-1)); renderHelpGuide();
+  }
+  function helpStepCanShow(step){
+    if(!step||!step.target) return false;
+    if(step.view) return true;
+    var el=document.querySelector(step.target); return !!(el&&!el.hidden);
+  }
+  function renderHelpGuide(){
+    var body=$("helpCoachBody"), role=$("helpCoachRole"), g=HELP_GUIDES[helpCoachState.guideId]; if(!body||!g)return;
+    if(role) role.textContent="Showing help for "+roleLabel(currentRole);
+    var i=Math.max(0,Math.min(helpCoachState.step,g.steps.length-1)), step=g.steps[i]; helpCoachState.step=i;
+    var progress=""; for(var p=0;p<g.steps.length;p++)progress+='<i class="'+(p<=i?'done':'')+'"></i>';
+    var html='<div class="help-coach-guide-top"><button class="help-coach-back" type="button" data-help-home>← All help topics</button></div>'+
+      '<h2 class="help-coach-guide-title">'+esc(g.title)+'</h2><div class="help-coach-step-count">Step '+(i+1)+' of '+g.steps.length+'</div><div class="help-coach-progress">'+progress+'</div>'+
+      '<div class="help-coach-step-card"><h4>'+esc(step.title)+'</h4><p>'+esc(step.text)+'</p>'+(step.note?'<div class="help-coach-note">'+esc(step.note)+'</div>':'')+'</div>'+
+      '<div class="help-coach-actions"><div class="help-coach-actions-left">'+(helpStepCanShow(step)?'<button class="help-coach-btn help-coach-show" type="button" data-help-show>Show me</button>':'')+'</div><div class="help-coach-actions-right"><button class="help-coach-btn" type="button" data-help-prev '+(i===0?'disabled':'')+'>Back</button><button class="help-coach-btn primary" type="button" data-help-next>'+(i===g.steps.length-1?'Done':'Next →')+'</button></div></div>';
+    body.innerHTML=html;
+    body.querySelector("[data-help-home]").addEventListener("click",function(){helpCoachState.guideId=null;helpCoachState.step=0;renderHelpCoachHome();});
+    var prev=body.querySelector("[data-help-prev]"); if(prev)prev.addEventListener("click",function(){if(helpCoachState.step>0){helpCoachState.step--;renderHelpGuide();}});
+    body.querySelector("[data-help-next]").addEventListener("click",function(){if(helpCoachState.step>=g.steps.length-1){renderHelpCoachHome();return;}helpCoachState.step++;renderHelpGuide();});
+    var show=body.querySelector("[data-help-show]"); if(show)show.addEventListener("click",function(){helpCoachShowStep(step);});
+  }
+  function helpCoachShowStep(step){
+    if(!step||!step.target)return;
+    if(step.view&&helpCoachViewName()!==step.view) showView(step.view);
+    window.setTimeout(function(){
+      var el=document.querySelector(step.target);
+      if(!el||el.hidden||el.offsetParent===null){ toast("Open the related record or task first, then choose Show me again.","err"); return; }
+      document.querySelectorAll(".help-coach-highlight").forEach(function(x){x.classList.remove("help-coach-highlight");});
+      try{el.scrollIntoView({behavior:"smooth",block:"center",inline:"nearest"});}catch(_e){el.scrollIntoView();}
+      el.classList.add("help-coach-highlight");
+      window.setTimeout(function(){el.classList.remove("help-coach-highlight");},4200);
+    },120);
+  }
+  function refreshHelpCoachContext(){
+    var panel=$("helpCoachPanel"); if(panel&&panel.classList.contains("open")&&!helpCoachState.guideId) renderHelpCoachHome();
+  }
+  window.addEventListener("resize",function(){if(!helpCoachDesktop())helpCoachClose();});
+  var _helpFab=$("helpCoachFab"); if(_helpFab)_helpFab.addEventListener("click",function(){var panel=$("helpCoachPanel");if(panel&&panel.classList.contains("open"))helpCoachClose();else helpCoachOpen();});
+  var _helpClose=$("helpCoachClose"); if(_helpClose)_helpClose.addEventListener("click",helpCoachClose);
+  document.addEventListener("keydown",function(e){if(e.key==="Escape"&&$("helpCoachPanel")&&$("helpCoachPanel").classList.contains("open"))helpCoachClose();});
 
   /* ---------- Build 44: live dashboard sync + presence + stale-save protection ---------- */
   var LIVE_SYNC_FALLBACK_MS=60000, PRESENCE_HEARTBEAT_MS=20000, PRESENCE_ACTIVE_MS=55000, PRESENCE_EDITING_IDLE_MS=90000;
@@ -3657,6 +3906,7 @@
     }
     scrollAppToTop();
     focusActiveWizardHeading(detail,n);
+    refreshHelpCoachContext();
   }
   function initialWizardStep(r){ return recommendedWizardStep(r); }
   function renderCloseStep(r,el,detail,auditEl){
@@ -6808,6 +7058,7 @@
     if(name==="platform") loadPlatformDashboard();
     if(name==="users"){ loadUsers(); loadAdminUserEvents(); }
     if(name==="home") renderHomeSnapshot();
+    refreshHelpCoachContext();
     closeSidebar();
     scrollAppToTop();
   }
