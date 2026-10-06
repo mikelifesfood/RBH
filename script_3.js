@@ -3495,7 +3495,7 @@
     items.sort(function(a,b){ return reportAttentionRank(b)-reportAttentionRank(a) || new Date(b.created_at)-new Date(a.created_at); }); items=items.slice(0,5);
     if(!items.length){ el.innerHTML='<div class="notes-empty">Nothing needs attention right now.</div>'; return; }
     el.innerHTML=''; items.forEach(function(r){
-      var b=document.createElement('button'); b.className='attention-item'; b.type='button';
+      var b=document.createElement('button'); b.className='attention-item'+(r.involves_injury?' attention-injury':''); b.type='button';
       var tag=r.action_status==="awaiting_verification"?'Verify':(isOverdue(r)?'Overdue':(r.involves_injury?'Injury':(r.status==='new'?'New':'Open')));
       b.innerHTML='<span class="a-title">#'+esc(r.ref_no)+' · '+esc(r.report_type||'Report')+'</span><span class="a-meta">'+esc((r.job_site?r.job_site+' · ':'')+(assigneeName(r)?'Assigned: '+assigneeName(r)+' · ':'')+fmtDate(r.created_at))+'</span><span class="a-tag badge '+(tag==='Overdue'?'bg-overdue':tag==='Injury'?'bg-injury':tag==='Verify'?'as-awaiting_verification':'st-new')+'">'+tag+'</span>';
       b.addEventListener('click',function(){ openIncident(r,'home'); }); el.appendChild(b);
