@@ -1,0 +1,57 @@
+RBH BUILD 51 — INTAKE SAFETY & HARDENING
+Deployment checklist — 2026-10-06
+
+NO SQL MIGRATION IS REQUIRED.
+
+1) GITHUB / FRONTEND
+Replace or upload:
+- index.html
+- dashboard.html
+- platform/index.html
+- README.md
+- docs/RBH_BUILD51_INTAKE_SAFETY_HARDENING_2026-10-06.md
+- supabase/functions/notify-report/index.ts
+- supabase/functions/send-action-assignment-email/index.ts
+- supabase/functions/translate-report/index.ts
+
+DELETE these published historical HTML files from GitHub:
+- index_old.html
+- dashboard_old.html
+- dashboard_09182026_v1.html
+
+Do not merely leave them beside the new files. GitHub Pages will continue to publish them while they exist in the repository.
+
+2) SUPABASE EDGE FUNCTION
+Redeploy only:
+- notify-report
+
+Reason: Build 51 changes the injury / Cal/OSHA wording in the new-report email and pins its Supabase JS import.
+
+You do NOT need to redeploy send-action-assignment-email or translate-report for Build 51. Their source copies are pinned in GitHub for future deployments, but their runtime behavior is unchanged.
+
+3) HARD REFRESH
+After GitHub deploys, hard refresh both the public intake form and dashboard.
+
+4) FOCUSED SMOKE TEST
+A. Open the public intake form.
+B. Confirm neither injury answer is selected.
+C. Select Yes — someone got hurt or sick.
+   - Confirm the secondary report-type choices stay hidden.
+   - Submit a test injury report.
+   - Confirm dashboard title/type reads Injury / illness and Injury tag appears.
+   - Confirm injury notification email arrives with immediate/as-soon-as-practical wording.
+D. Submit a second test report with No.
+   - Confirm the normal report types appear.
+   - Select Near miss and submit.
+E. Confirm When did you notice it? starts with the current local date/time.
+F. On Android/iPhone if available:
+   - Take photo opens camera.
+   - Choose from phone opens the existing photo/file picker.
+G. Add a large JPEG/PNG/WebP photo and confirm the displayed attachment size is reduced before submission.
+H. Confirm normal PDF/file attachments under 10 MB still upload.
+I. Confirm the old /index_old.html and old dashboard URLs return 404 after deletion/deploy.
+
+5) DEFERRED BY DESIGN
+- No offline auto-submit was added.
+- No CAPTCHA was added.
+- True server-side anonymous rate limiting remains deferred until the public submit_report path is routed through a controlled server/Edge Function endpoint.

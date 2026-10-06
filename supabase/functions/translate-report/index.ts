@@ -2,7 +2,7 @@
 // Purpose: authenticated, server-side translation for report reading/PDF presentation.
 // Original incident data is never changed by this function.
 
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2.117.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

@@ -4,7 +4,7 @@ RBH is the current live blueprint for the TeamWorkt Safety product. The reposito
 
 ## Current build status
 
-Current dashboard baseline: **Step 11A - In-App Notification Center with red gradient alert button** (2026-09-27).
+Current production candidate: **Build 51 - Intake Safety & Hardening** (2026-10-06).
 
 The working management flow is:
 
@@ -31,7 +31,7 @@ The application also includes regulatory screening/timer behavior, hierarchy-of-
 - `platform/index.html` - platform/admin interface retained from the current RBH build
 - `logo.png` - RBH logo asset
 
-Historical copies such as `dashboard_old.html`, `dashboard_09182026_v1.html`, and `index_old.html` are retained only as prior references and are not the current source of truth.
+Executable historical HTML copies have been removed from the published repository. Git history remains the archive for prior versions.
 
 ## Supabase source control
 
@@ -89,3 +89,23 @@ Corrective-action cards opened from **My Work** or **Corrective Actions** now op
 - Completed workflow stages are read-only for every role, including Admin. Prior stages remain viewable, but their fields and workflow controls cannot be edited.
 - Completed-stage guidance directs users to add a note for a minor clarification or restart the workflow for a material correction.
 - No Supabase migration is required for this build.
+
+## Build 50 — Desktop Help Coach — 2026-10-06
+
+The authenticated dashboard now includes a desktop-only, role-aware and page-aware Help Coach opened from a fixed `?` button. It provides curated task walkthroughs and optional `Show me` highlighting of live controls. The feature is intentionally hidden on mobile/coarse-pointer layouts and requires no database or Edge Function changes. See `docs/RBH_BUILD50_DESKTOP_HELP_COACH_2026-10-06.md`.
+
+
+## Build 51 — Intake Safety & Hardening — 2026-10-06
+
+- Injury / illness is now an explicit required first question with no default answer.
+- Injury / illness reports are automatically classified as `Injury / illness`; non-injury users then choose the applicable concern type.
+- Emergency copy now directs workers to call 911 / their supervisor first, then report once safe.
+- Photo controls are split into `Take photo` and `Choose from phone`; large supported photos are resized in-browser and all attachments are capped at 10 MB each.
+- `When did you notice it?` starts with the device's current local date/time and tells the user to adjust it if needed.
+- Public intake includes a low-friction honeypot. A true server-side anonymous rate limit remains intentionally deferred until the public intake is routed through a controlled server/Edge Function path.
+- Executable historical `index` / `dashboard` pages were removed from the published source.
+- Supabase JS CDN imports are pinned to `2.117.2`.
+- New-report injury email language now says qualifying serious events must be reported immediately/as soon as practically possible, with the eight-hour outer limit stated as a limit rather than a waiting period.
+- Offline auto-submit was deliberately not added.
+
+See `docs/RBH_BUILD51_INTAKE_SAFETY_HARDENING_2026-10-06.md`.

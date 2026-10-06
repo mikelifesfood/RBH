@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Public+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"></script>
 <style>
   :root{
     --red:#b01e28;--red-dark:#8a141c;--ink:#161616;--ink-bar:#141414;
@@ -188,6 +188,7 @@
 
   form{margin-top:4px}
   fieldset[data-step]{display:block}
+  #typeFieldset[hidden]{display:none!important}
   fieldset{border-radius:14px;padding:20px 18px 22px}
   legend{font-size:16px}
   .step-note{font-size:13px;color:var(--muted);margin:2px 0 0}
@@ -211,9 +212,16 @@
   .review-row{display:grid;grid-template-columns:130px 1fr;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px}
   .review-row b{font-size:12px;color:var(--muted)}
   @media(max-width:520px){.review-row{grid-template-columns:1fr;gap:1px}}
-  .photo-cta{display:flex;align-items:center;justify-content:center;gap:10px;background:var(--red);color:#fff;border:none;border-radius:11px;padding:14px;font-family:var(--display);font-weight:700;font-size:15px;width:100%;cursor:pointer;margin-bottom:10px}
+  .photo-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+  .photo-cta{display:flex;align-items:center;justify-content:center;gap:10px;background:var(--red);color:#fff;border:none;border-radius:11px;padding:14px;font-family:var(--display);font-weight:700;font-size:15px;width:100%;cursor:pointer;margin:0}
+  .photo-cta.secondary{background:var(--paper);color:var(--ink);border:1.5px solid var(--line-strong)}
   .photo-cta:hover{background:var(--red-dark)}
+  .photo-cta.secondary:hover{background:var(--surface);border-color:var(--red)}
+  @media(max-width:520px){.photo-actions{grid-template-columns:1fr}}
   .drop{padding:16px;border-width:1.5px}
+  .file-note{font-size:12px;color:var(--muted);line-height:1.45;margin:8px 2px 0}
+  .file-note.warn{color:var(--red);font-weight:650}
+  .hp-field{position:absolute!important;left:-10000px!important;top:auto!important;width:1px!important;height:1px!important;overflow:hidden!important;opacity:0!important;pointer-events:none!important}
   .drop svg{display:none}
   .injury-warn{border-left:5px solid var(--red);color:var(--ink);background:color-mix(in srgb,var(--red) 7%,var(--paper))}
   .injury-warn b{color:var(--red);font-family:var(--display)}
@@ -258,19 +266,33 @@
   </section>
 
   <form id="reportForm" novalidate>
+    <div class="hp-field" aria-hidden="true"><label for="companyWebsite">Leave this field blank</label><input type="text" id="companyWebsite" name="companyWebsite" tabindex="-1" autocomplete="off"></div>
 
     <div class="emergency" role="note">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
     <div>
-      <strong data-i18n="emg_strong">Emergency or injury right now?</strong>
-      <small data-i18n="emg_small">Call 911 and your site supervisor immediately. This form is for reporting hazards and near misses — not active emergencies.</small>
+      <strong data-i18n="emg_strong">Emergency?</strong>
+      <small data-i18n="emg_small">Call 911 and your site supervisor first. Once everyone is safe, report what happened here.</small>
     </div>
     </div>
 
-    <fieldset data-step="1">
+    <fieldset data-step="1" id="injuryFieldset">
+      <legend data-i18n="inj_legend">Was anyone hurt or made sick?</legend>
+      <div class="field">
+        <label class="lab"><span data-i18n="inj_q">Choose Yes or No before continuing.</span></label>
+        <div class="yn" id="injuryGroup" role="radiogroup" aria-label="Injury or illness">
+          <label class="yn-opt"><input type="radio" name="injury" value="yes" required><span data-i18n="inj_yes">Yes — someone got hurt or sick</span></label>
+          <label class="yn-opt"><input type="radio" name="injury" value="no"><span data-i18n="inj_no">No — no one was hurt or sick</span></label>
+        </div>
+        <div class="errmsg" id="err-injury" data-i18n="err_injury">Please tell us whether anyone was hurt or made sick.</div>
+        <div class="injury-warn" id="injuryWarn" data-i18n="inj_warn">Someone was hurt or made sick. Tell your supervisor now, and call 911 for an emergency. Continue this report to document what happened.</div>
+      </div>
+    </fieldset>
+
+    <fieldset data-step="1" id="typeFieldset" hidden>
       <legend data-i18n="s1_legend">What are you reporting?</legend>
       <div class="types" id="typeGroup" role="radiogroup" aria-label="Report type">
-        <label class="type"><input type="radio" name="reportType" value="Near miss" required>
+        <label class="type"><input type="radio" name="reportType" value="Near miss">
           <span class="dot"></span><span class="t-name" data-i18n="t_near_n">Near miss</span>
           <span class="t-desc" data-i18n="t_near_d">Almost went wrong — no one hurt this time</span></label>
         <label class="type"><input type="radio" name="reportType" value="Unsafe condition">
@@ -287,18 +309,6 @@
           <span class="t-desc" data-i18n="t_oth_d">Anything else worth flagging</span></label>
       </div>
       <div class="errmsg" id="err-type" data-i18n="err_type">Please choose what you're reporting.</div>
-    </fieldset>
-
-    <fieldset data-step="1">
-      <legend data-i18n="inj_legend">Was anyone hurt?</legend>
-      <div class="field">
-        <label class="lab"><span data-i18n="inj_q">Did this involve an actual injury or illness (not just a close call)?</span></label>
-        <div class="yn" role="radiogroup" aria-label="Injury">
-          <label class="yn-opt"><input type="radio" name="injury" value="no" checked><span data-i18n="inj_no">No — near miss / hazard only</span></label>
-          <label class="yn-opt"><input type="radio" name="injury" value="yes"><span data-i18n="inj_yes">Yes — someone was hurt</span></label>
-        </div>
-        <div class="injury-warn" id="injuryWarn" data-i18n="inj_warn">Someone was hurt. Tell your supervisor now, and call 911 for an emergency. Continue this report to document what happened.</div>
-      </div>
     </fieldset>
 
     <!-- Incident address/location is captured as free text for fast field reporting. -->
@@ -326,6 +336,7 @@
           <span class="opt" data-i18n="opt">optional</span>
         </label>
         <input type="datetime-local" id="observed" name="observed">
+        <p class="hint" data-i18n="when_note">Current date and time are filled in. Change this if you noticed it earlier.</p>
       </div>
     </fieldset>
 
@@ -405,13 +416,18 @@
     <fieldset data-step="3">
       <legend><span data-i18n="s5_legend">Photos &amp; files</span> <span class="legend-note" data-i18n="dash_opt">— optional</span></legend>
       <p class="hint" style="margin-top:2px" data-i18n="hint_photo">A photo of the hazard helps the team act fast. On a phone you can snap one right here. Please don't photograph anyone's injuries.</p>
-      <button class="photo-cta" id="cameraBtn" type="button"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h4l2-3h6l2 3h4v13H3z"/><circle cx="12" cy="13" r="4"/></svg><span data-i18n="camera_btn">Take a photo or add a file</span></button>
+      <div class="photo-actions">
+        <button class="photo-cta" id="cameraBtn" type="button"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h4l2-3h6l2 3h4v13H3z"/><circle cx="12" cy="13" r="4"/></svg><span data-i18n="camera_btn">Take photo</span></button>
+        <button class="photo-cta secondary" id="chooseBtn" type="button"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><circle cx="9" cy="9" r="2"/><path d="m4 16 4-4 3 3 2-2 7 7"/></svg><span data-i18n="choose_btn">Choose from phone</span></button>
+      </div>
       <div class="drop" id="drop" tabindex="0" role="button" aria-label="Add photos or files">
         <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        <b data-i18n="drop_b">Choose additional photos or files</b>
-        <small data-i18n="drop_s">Images or PDFs, up to 10 files</small>
+        <b data-i18n="drop_b">Choose photos or files</b>
+        <small data-i18n="drop_s">Up to 10 files. Large photos are optimized before upload.</small>
       </div>
-      <input type="file" id="fileInput" multiple accept="image/*,application/pdf,.doc,.docx,.heic" capture="environment" style="display:none">
+      <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none">
+      <input type="file" id="fileInput" multiple accept="image/*,application/pdf,.doc,.docx,.heic,.heif" style="display:none">
+      <div class="file-note" id="fileStatus" aria-live="polite"></div>
       <ul class="files" id="fileList"></ul>
     </fieldset>
 
@@ -503,9 +519,9 @@
       title_p:"See a hazard, close call, injury, or unsafe work practice? Tell the safety team. Most reports take about a minute.",
       intro_eye:"RBH Safety", intro_h:"Speak up early. Help prevent the next incident.", intro_p:"Share what you saw. You can report anonymously, and you do not need to know every detail before sending a concern.",
       trust_fast_b:"Fast",trust_fast_s:"About 1 minute",trust_anon_b:"Anonymous",trust_anon_s:"Name is optional",trust_mobile_b:"Jobsite ready",trust_mobile_s:"Works on your phone",
-      where_note:"Enter the address where the incident or safety concern occurred. If you do not know the exact address, use the closest address or cross streets.", what_note:"Stick to the facts. A short, clear description is enough.", camera_btn:"Take a photo or add a file", review_h:"Quick review", review_p:"Make sure the main details look right. You can go back to change anything.", btn_back:"Back", btn_next:"Continue",
-      emg_strong:"Emergency or injury right now?",
-      emg_small:"Call 911 and your site supervisor immediately. This form is for reporting hazards and near misses — not active emergencies.",
+      where_note:"Enter the address where the incident or safety concern occurred. If you do not know the exact address, use the closest address or cross streets.", what_note:"Stick to the facts. A short, clear description is enough.", camera_btn:"Take photo", choose_btn:"Choose from phone", review_h:"Quick review", review_p:"Make sure the main details look right. You can go back to change anything.", btn_back:"Back", btn_next:"Continue",
+      emg_strong:"Emergency?",
+      emg_small:"Call 911 and your site supervisor first. Once everyone is safe, report what happened here.",
       s1_legend:"What are you reporting?",
       t_near_n:"Near miss", t_near_d:"Almost went wrong — no one hurt this time",
       t_cond_n:"Unsafe condition", t_cond_d:"A hazard in the site, materials, or setup",
@@ -520,7 +536,7 @@
       l_loc:"Specific spot on the site",
       tip_loc:"Where exactly? e.g. “attic above unit 3,” “north scaffold, 2nd level,” “equipment yard by the trucks.”",
       ph_loc:"e.g. attic above unit 3, north scaffold",
-      l_when:"When did you notice it?",
+      l_when:"When did you notice it?", when_note:"Current date and time are filled in. Change this if you noticed it earlier.",
       s3_legend:"What happened",
       l_desc:"Describe what you saw",
       tip_desc:"Stick to the facts: what happened, what or who was involved, and how. Don’t include anyone’s medical details, Social Security number, or other private data.",
@@ -549,8 +565,8 @@
       ph_imm:"e.g. roped off the area and told the foreman",
       l_fix:"What would fix it or prevent it?", ph_fix:"Your suggestion, if you have one",
       s5_legend:"Photos & files",
-      hint_photo:"A photo of the hazard helps the team act fast. On a phone you can snap one right here. Please don't photograph anyone's injuries.",
-      drop_b:"Choose additional photos or files", drop_s:"Images or PDFs, up to 10 files",
+      hint_photo:"A photo of the hazard helps the team act fast. Take a new photo or choose one already on your phone. Please don't photograph anyone's injuries.",
+      drop_b:"Choose photos or files", drop_s:"Up to 10 files. Large photos are optimized before upload.",
       s6_legend:"Your info",
       anon:"You can report anonymously — leave this blank. If you add your name or contact, the team can follow up or thank you. Reports are not used to get anyone in trouble.",
       l_name:"Your name", ph_name:"Optional",
@@ -566,7 +582,7 @@
       succ_p:"Thank you for speaking up. Your report has been sent to the RBH safety team. Please keep your reference number below.",
       btn_copy:"Copy report", btn_copied:"Copied ✓", btn_again:"Submit another report",
       footer_internal:"Internal safety reporting form",
-      sum_head:"RBH INSULATION — SAFETY / NEAR-MISS REPORT", sum_submitted:"Submitted",
+      sum_head:"RBH INSULATION — SAFETY REPORT", sum_submitted:"Submitted",
       s_type:"Report type", s_site:"Incident address", s_loc:"Specific location", s_when:"When observed",
       s_desc:"Description", s_haz:"Hazard type", s_sev:"Potential severity", s_inv:"Involved / witnesses",
       s_imm:"Immediate action", s_fix:"Suggested fix", s_att:"Attachments", s_by:"Reported by",
@@ -574,11 +590,15 @@
       btn_sending:"Sending…", succ_ref:"Your reference number",
       err_send:"Couldn't send your report. Please check your internet connection and try again.",
       att_failed:"Note: some photos couldn't be uploaded, but your report was saved.",
-      inj_legend:"Was anyone hurt?",
-      inj_q:"Did this involve an actual injury or illness (not just a close call)?",
-      inj_no:"No — near miss / hazard only",
-      inj_yes:"Yes — someone was hurt",
-      inj_warn:"Someone was hurt. Tell your supervisor now, and call 911 for an emergency. Continue this report to document what happened.",
+      inj_legend:"Was anyone hurt or made sick?",
+      inj_q:"Choose Yes or No before continuing.",
+      inj_no:"No — no one was hurt or sick",
+      inj_yes:"Yes — someone got hurt or sick",
+      err_injury:"Please tell us whether anyone was hurt or made sick.",
+      inj_warn:"Someone was hurt or made sick. Tell your supervisor now, and call 911 for an emergency. Continue this report to document what happened.",
+      file_too_large:"is too large. Keep each file under 10 MB.",
+      file_limit:"You can attach up to 10 files.",
+      photo_optimized:"Large photo optimized for a faster upload.",
       legal_note:"RBH does not retaliate against anyone who reports a safety concern in good faith (California Labor Code §6310). This information is used only to investigate and improve job-site safety."
     },
     es:{
@@ -587,9 +607,9 @@
       title_p:"¿Vio un peligro, casi accidente, lesión o práctica insegura? Avise al equipo de seguridad. La mayoría de los reportes toma alrededor de un minuto.",
       intro_eye:"Seguridad RBH", intro_h:"Hable pronto. Ayude a prevenir el próximo incidente.", intro_p:"Comparta lo que vio. Puede reportar de forma anónima y no necesita conocer todos los detalles antes de enviar una inquietud.",
       trust_fast_b:"Rápido",trust_fast_s:"Aproximadamente 1 minuto",trust_anon_b:"Anónimo",trust_anon_s:"El nombre es opcional",trust_mobile_b:"Listo para obra",trust_mobile_s:"Funciona en su teléfono",
-      where_note:"Ingrese la dirección donde ocurrió el incidente o problema de seguridad. Si no conoce la dirección exacta, use la dirección más cercana o las calles de cruce.", what_note:"Describa los hechos. Una explicación corta y clara es suficiente.", camera_btn:"Tomar foto o agregar archivo", review_h:"Revisión rápida", review_p:"Confirme que los datos principales estén correctos. Puede regresar para cambiar algo.", btn_back:"Atrás", btn_next:"Continuar",
-      emg_strong:"¿Emergencia o lesión en este momento?",
-      emg_small:"Llame al 911 y a su supervisor de inmediato. Este formulario es para reportar peligros y casi accidentes, no emergencias activas.",
+      where_note:"Ingrese la dirección donde ocurrió el incidente o problema de seguridad. Si no conoce la dirección exacta, use la dirección más cercana o las calles de cruce.", what_note:"Describa los hechos. Una explicación corta y clara es suficiente.", camera_btn:"Tomar foto", choose_btn:"Elegir del teléfono", review_h:"Revisión rápida", review_p:"Confirme que los datos principales estén correctos. Puede regresar para cambiar algo.", btn_back:"Atrás", btn_next:"Continuar",
+      emg_strong:"¿Emergencia?",
+      emg_small:"Llame primero al 911 y a su supervisor. Cuando todos estén seguros, reporte aquí lo ocurrido.",
       s1_legend:"¿Qué desea reportar?",
       t_near_n:"Casi accidente", t_near_d:"Estuvo cerca — esta vez nadie se lastimó",
       t_cond_n:"Condición insegura", t_cond_d:"Un peligro en la obra, los materiales o el montaje",
@@ -604,7 +624,7 @@
       l_loc:"Lugar específico en la obra",
       tip_loc:"¿Dónde exactamente? p. ej. «ático sobre la unidad 3», «andamio norte, nivel 2», «patio de equipos junto a los camiones».",
       ph_loc:"p. ej. ático sobre la unidad 3, andamio norte",
-      l_when:"¿Cuándo lo notó?",
+      l_when:"¿Cuándo lo notó?", when_note:"La fecha y hora actuales ya están ingresadas. Cámbielas si lo notó antes.",
       s3_legend:"Qué pasó",
       l_desc:"Describa lo que vio",
       tip_desc:"Apéguese a los hechos: qué pasó, qué o quién estuvo involucrado y cómo. No incluya datos médicos, número de Seguro Social ni información privada de nadie.",
@@ -633,8 +653,8 @@
       ph_imm:"p. ej. acordoné el área y avisé al capataz",
       l_fix:"¿Qué lo arreglaría o lo evitaría?", ph_fix:"Su sugerencia, si tiene una",
       s5_legend:"Fotos y archivos",
-      hint_photo:"Una foto del peligro ayuda al equipo a actuar rápido. Desde el teléfono puede tomar una aquí mismo. Por favor no fotografíe las lesiones de nadie.",
-      drop_b:"Elija fotos o archivos adicionales", drop_s:"Imágenes o PDF, hasta 10 archivos",
+      hint_photo:"Una foto del peligro ayuda al equipo a actuar rápido. Tome una foto nueva o elija una que ya esté en su teléfono. Por favor no fotografíe las lesiones de nadie.",
+      drop_b:"Elija fotos o archivos", drop_s:"Hasta 10 archivos. Las fotos grandes se optimizan antes de subirlas.",
       s6_legend:"Su información",
       anon:"Puede reportar de forma anónima — deje esto en blanco. Si agrega su nombre o contacto, el equipo puede dar seguimiento o agradecerle. Los reportes no se usan para meter a nadie en problemas.",
       l_name:"Su nombre", ph_name:"Opcional",
@@ -650,7 +670,7 @@
       succ_p:"Gracias por hablar. Su reporte se envió al equipo de seguridad de RBH. Por favor guarde su número de referencia.",
       btn_copy:"Copiar reporte", btn_copied:"Copiado ✓", btn_again:"Enviar otro reporte",
       footer_internal:"Formulario interno de reporte de seguridad",
-      sum_head:"RBH INSULATION — REPORTE DE SEGURIDAD / CASI ACCIDENTE", sum_submitted:"Enviado",
+      sum_head:"RBH INSULATION — REPORTE DE SEGURIDAD", sum_submitted:"Enviado",
       s_type:"Tipo de reporte", s_site:"Dirección del incidente", s_loc:"Lugar específico", s_when:"Cuándo se observó",
       s_desc:"Descripción", s_haz:"Tipo de peligro", s_sev:"Gravedad potencial", s_inv:"Involucrados / testigos",
       s_imm:"Acción inmediata", s_fix:"Solución sugerida", s_att:"Adjuntos", s_by:"Reportado por",
@@ -658,11 +678,15 @@
       btn_sending:"Enviando…", succ_ref:"Su número de referencia",
       err_send:"No se pudo enviar su reporte. Verifique su conexión a internet e intente de nuevo.",
       att_failed:"Nota: algunas fotos no se pudieron subir, pero su reporte se guardó.",
-      inj_legend:"¿Alguien se lastimó?",
-      inj_q:"¿Hubo una lesión o enfermedad real (no solo un casi accidente)?",
-      inj_no:"No — solo casi accidente / peligro",
-      inj_yes:"Sí — alguien se lastimó",
-      inj_warn:"Alguien se lastimó. Avise a su supervisor ahora y llame al 911 si es una emergencia. Continúe este reporte para documentar lo ocurrido.",
+      inj_legend:"¿Alguien se lastimó o se enfermó?",
+      inj_q:"Elija Sí o No antes de continuar.",
+      inj_no:"No — nadie se lastimó ni se enfermó",
+      inj_yes:"Sí — alguien se lastimó o se enfermó",
+      err_injury:"Indique si alguien se lastimó o se enfermó.",
+      inj_warn:"Alguien se lastimó o se enfermó. Avise a su supervisor ahora y llame al 911 si es una emergencia. Continúe este reporte para documentar lo ocurrido.",
+      file_too_large:"es demasiado grande. Mantenga cada archivo por debajo de 10 MB.",
+      file_limit:"Puede adjuntar hasta 10 archivos.",
+      photo_optimized:"La foto grande se optimizó para subirla más rápido.",
       legal_note:"RBH no toma represalias contra quien reporte un problema de seguridad de buena fe (Código Laboral de California §6310). Esta información se usa únicamente para investigar y mejorar la seguridad en la obra."
     }
   };
@@ -721,20 +745,33 @@
   /* ---------------- Incident address ---------------- */
   var site=document.getElementById('site');
 
-  /* ---------------- Injury guardrail ---------------- */
-  var injuryWarn=document.getElementById('injuryWarn');
-  Array.prototype.forEach.call(document.querySelectorAll('input[name="injury"]'), function(rb){
-    rb.addEventListener('change', function(){
-      var y=document.querySelector('input[name="injury"]:checked');
-      injuryWarn.classList.toggle('show', !!y && y.value==='yes');
-    });
-  });
+  /* ---------------- Injury / illness guardrail ---------------- */
+  var injuryWarn=document.getElementById('injuryWarn'), typeFieldset=document.getElementById('typeFieldset');
+  function syncInjuryState(){
+    var y=document.querySelector('input[name="injury"]:checked');
+    var needsType=!!y && y.value==='no';
+    injuryWarn.classList.toggle('show', !!y && y.value==='yes');
+    typeFieldset.hidden=!needsType;
+    var types=Array.prototype.slice.call(document.querySelectorAll('input[name="reportType"]'));
+    types.forEach(function(rb,i){ rb.required=needsType && i===0; if(!needsType) rb.checked=false; });
+    if(y) document.getElementById('err-injury').classList.remove('show');
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('input[name="injury"]'), function(rb){ rb.addEventListener('change',syncInjuryState); });
+  syncInjuryState();
 
+  function localNowForInput(){
+    var d=new Date(), local=new Date(d.getTime()-d.getTimezoneOffset()*60000);
+    return local.toISOString().slice(0,16);
+  }
+  function fillObservedNow(force){ var el=document.getElementById('observed'); if(el && (force||!el.value)) el.value=localNowForInput(); }
+  fillObservedNow(false);
 
   /* ---------------- File attachments ---------------- */
-  var drop=document.getElementById('drop'), input=document.getElementById('fileInput'),
-      list=document.getElementById('fileList'), files=[], MAX=10;
+  var drop=document.getElementById('drop'), input=document.getElementById('fileInput'), cameraInput=document.getElementById('cameraInput'),
+      list=document.getElementById('fileList'), fileStatus=document.getElementById('fileStatus'), files=[], MAX=10,
+      MAX_FILE_BYTES=10*1024*1024, MAX_SOURCE_IMAGE_BYTES=25*1024*1024, PHOTO_MAX_DIM=2200, PHOTO_OPTIMIZE_AT=1600*1024;
   function fmtSize(b){ if(b<1024) return b+' B'; if(b<1048576) return (b/1024).toFixed(0)+' KB'; return (b/1048576).toFixed(1)+' MB'; }
+  function setFileStatus(msg,warn){ if(!fileStatus) return; fileStatus.textContent=msg||''; fileStatus.classList.toggle('warn',!!warn); }
   function render(){
     list.innerHTML='';
     files.forEach(function(f,i){
@@ -750,22 +787,69 @@
       meta.innerHTML='<div class="fname"></div><div class="fsize">'+fmtSize(f.size)+'</div>';
       meta.querySelector('.fname').textContent=f.name;
       var rm=document.createElement('button'); rm.className='rm'; rm.type='button'; rm.setAttribute('aria-label','Remove '+f.name); rm.innerHTML='&times;';
-      rm.addEventListener('click',function(){ files.splice(i,1); render(); });
+      rm.addEventListener('click',function(){ files.splice(i,1); render(); setFileStatus(''); });
       li.appendChild(thumb); li.appendChild(meta); li.appendChild(rm); list.appendChild(li);
     });
   }
-  function addFiles(fl){ Array.prototype.forEach.call(fl,function(f){ if(files.length<MAX) files.push(f); }); render(); }
-  var cameraBtn=document.getElementById('cameraBtn'); if(cameraBtn) cameraBtn.addEventListener('click',function(){ input.click(); });
+  function canvasBlob(canvas,type,quality){ return new Promise(function(resolve){ canvas.toBlob(resolve,type,quality); }); }
+  async function decodePhoto(file){
+    if(window.createImageBitmap){
+      var bmp=await createImageBitmap(file,{imageOrientation:'from-image'});
+      return {source:bmp,width:bmp.width,height:bmp.height,close:function(){if(bmp.close) bmp.close();}};
+    }
+    return await new Promise(function(resolve,reject){
+      var url=URL.createObjectURL(file), img=new Image();
+      img.onload=function(){ resolve({source:img,width:img.naturalWidth,height:img.naturalHeight,close:function(){URL.revokeObjectURL(url);}}); };
+      img.onerror=function(){ URL.revokeObjectURL(url); reject(new Error('image-decode-failed')); };
+      img.src=url;
+    });
+  }
+  async function optimizePhoto(file){
+    if(!file || !/^image\/(jpeg|jpg|png|webp)$/i.test(file.type||'')) return file;
+    if(file.size>MAX_SOURCE_IMAGE_BYTES) return file;
+    try{
+      var decoded=await decodePhoto(file), w=decoded.width, h=decoded.height;
+      if(file.size<=PHOTO_OPTIMIZE_AT && Math.max(w,h)<=PHOTO_MAX_DIM){ decoded.close(); return file; }
+      var scale=Math.min(1,PHOTO_MAX_DIM/Math.max(w,h)), nw=Math.max(1,Math.round(w*scale)), nh=Math.max(1,Math.round(h*scale));
+      var canvas=document.createElement('canvas'); canvas.width=nw; canvas.height=nh;
+      var ctx=canvas.getContext('2d',{alpha:false}); ctx.fillStyle='#fff'; ctx.fillRect(0,0,nw,nh); ctx.drawImage(decoded.source,0,0,nw,nh); decoded.close();
+      var blob=await canvasBlob(canvas,'image/jpeg',0.82); canvas.width=1; canvas.height=1;
+      if(!blob) return file;
+      var base=(file.name||'photo').replace(/\.[^.]+$/,'');
+      var out=new File([blob],base+'.jpg',{type:'image/jpeg',lastModified:file.lastModified||Date.now()});
+      return out.size<file.size || Math.max(w,h)>PHOTO_MAX_DIM ? out : file;
+    }catch(_e){ return file; }
+  }
+  async function addFiles(fl){
+    var incoming=Array.prototype.slice.call(fl||[]), optimized=0, rejected=[], hitLimit=false;
+    for(var j=0;j<incoming.length;j++){
+      if(files.length>=MAX){ hitLimit=true; break; }
+      var original=incoming[j], f=await optimizePhoto(original);
+      if(f!==original) optimized++;
+      if(f.size>MAX_FILE_BYTES){ rejected.push(original.name||'File'); continue; }
+      files.push(f);
+    }
+    render();
+    if(rejected.length) setFileStatus(rejected[0]+' '+t('file_too_large'),true);
+    else if(hitLimit) setFileStatus(t('file_limit'),true);
+    else if(optimized) setFileStatus(t('photo_optimized'),false);
+    else setFileStatus('');
+  }
+  var cameraBtn=document.getElementById('cameraBtn'), chooseBtn=document.getElementById('chooseBtn');
+  if(cameraBtn) cameraBtn.addEventListener('click',function(){ cameraInput.click(); });
+  if(chooseBtn) chooseBtn.addEventListener('click',function(){ input.click(); });
   drop.addEventListener('click',function(){ input.click(); });
   drop.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); input.click(); }});
-  input.addEventListener('change',function(){ addFiles(input.files); input.value=''; });
+  cameraInput.addEventListener('change',async function(){ await addFiles(cameraInput.files); cameraInput.value=''; });
+  input.addEventListener('change',async function(){ await addFiles(input.files); input.value=''; });
   ['dragenter','dragover'].forEach(function(ev){ drop.addEventListener(ev,function(e){ e.preventDefault(); drop.classList.add('drag'); }); });
   ['dragleave','drop'].forEach(function(ev){ drop.addEventListener(ev,function(e){ e.preventDefault(); drop.classList.remove('drag'); }); });
-  drop.addEventListener('drop',function(e){ if(e.dataTransfer && e.dataTransfer.files) addFiles(e.dataTransfer.files); });
+  drop.addEventListener('drop',async function(e){ if(e.dataTransfer && e.dataTransfer.files) await addFiles(e.dataTransfer.files); });
 
   /* ---------------- Validation + submit ---------------- */
   var form=document.getElementById('reportForm');
   function clearErr(){
+    document.getElementById('err-injury').classList.remove('show');
     document.getElementById('err-type').classList.remove('show');
     document.getElementById('err-desc').classList.remove('show');
     document.getElementById('description').classList.remove('err');
@@ -776,13 +860,17 @@
 
   form.addEventListener('submit',function(e){
     e.preventDefault(); clearErr(); hideSendErr();
-    var ok=true, firstBad=null;
+    var ok=true, firstBad=null, injury=form.querySelector('input[name="injury"]:checked');
     var type=form.querySelector('input[name="reportType"]:checked');
     var desc=document.getElementById('description');
-    if(!type){ document.getElementById('err-type').classList.add('show'); ok=false; firstBad=document.getElementById('typeGroup'); }
+    if(!injury){ document.getElementById('err-injury').classList.add('show'); ok=false; firstBad=document.getElementById('injuryGroup'); }
+    if(injury && injury.value==='no' && !type){ document.getElementById('err-type').classList.add('show'); ok=false; if(!firstBad) firstBad=document.getElementById('typeGroup'); }
     if(!desc.value.trim()){ desc.classList.add('err'); document.getElementById('err-desc').classList.add('show'); ok=false; if(!firstBad) firstBad=desc; }
     if(!ok){ if(firstBad) firstBad.scrollIntoView({behavior:'smooth',block:'center'}); return; }
-    submitReport(type.value);
+    var reportType=injury.value==='yes'?'Injury / illness':type.value;
+    var hp=document.getElementById('companyWebsite');
+    if(hp && hp.value.trim()){ showSuccess(reportType,null,0); return; }
+    submitReport(reportType);
   });
   function val(id){ var el=document.getElementById(id); return el?el.value.trim():''; }
   function radio(name){ var el=form.querySelector('input[name="'+name+'"]:checked'); return el?el.value:''; }
@@ -877,8 +965,8 @@
     };
     document.getElementById('againBtn').onclick=function(){
       var b=form.querySelector('button.submit'); b.disabled=false; b.textContent=t('btn_submit');
-      form.reset(); files=[]; render(); clearErr(); hideSendErr();
-      if(injuryWarn) injuryWarn.classList.remove('show');
+      form.reset(); files=[]; render(); clearErr(); hideSendErr(); setFileStatus('');
+      if(injuryWarn) injuryWarn.classList.remove('show'); syncInjuryState(); fillObservedNow(true);
       s.classList.remove('show'); form.style.display='';
       window.scrollTo({top:0,behavior:'smooth'});
     };

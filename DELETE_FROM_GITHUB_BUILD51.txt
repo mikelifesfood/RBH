@@ -1,0 +1,5 @@
+Delete these files from the GitHub repository so GitHub Pages no longer publishes them:
+
+index_old.html
+dashboard_old.html
+dashboard_09182026_v1.html
