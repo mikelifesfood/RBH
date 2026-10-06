@@ -509,6 +509,15 @@
   .wizard-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line);margin-top:20px;padding-top:16px}
   .wizard-footer-copy{font-size:12.5px;color:var(--muted);max-width:520px;line-height:1.45}
   .wizard-footer-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-left:auto}
+  .wizard-footer.next-step-ready{border:1px solid #B9D7F0;background:#EEF6FC;border-radius:var(--r-lg);padding:14px 16px;margin-top:18px}
+  .wizard-footer.next-step-ready .wizard-footer-copy b{display:block;color:#245F8F;font-size:14px;margin-bottom:3px}
+  .wizard-footer.next-step-ready .wizard-footer-copy span{display:block;color:var(--ink-2);font-size:13px;line-height:1.45}
+  .wizard-footer.next-step-ready .wizard-footer-actions{margin-left:auto}
+  .wizard-shell.guidance-hidden .wizard-footer.next-step-ready .wizard-footer-copy{display:block!important}
+  [data-next-step-footer] .wizard-footer-copy b{display:block;color:var(--ink);font-size:13.5px;margin-bottom:2px}
+  [data-next-step-footer] .wizard-footer-copy span{display:block}
+  .next-step-ready-copy b{display:block;color:#245F8F;font-size:14px;margin-bottom:3px}
+  .next-step-ready-copy span{display:block;color:var(--ink-2);font-size:13px;line-height:1.45}
   .review-footer .wizard-footer-copy b{display:block;color:var(--ink);font-size:13.5px;margin-bottom:2px}
   .review-footer .wizard-footer-copy span{display:block}
   .wizard-context{background:var(--canvas);border-radius:var(--r);padding:12px 14px;margin:10px 0}
@@ -552,10 +561,13 @@
   .ca-no-action-panel{margin-top:14px;border:1px solid var(--line);border-left:4px solid var(--brand);border-radius:var(--r-lg);background:var(--canvas);padding:15px 16px}
   .ca-no-action-panel h4{margin:0 0 4px;font-size:15px}
   .ca-no-action-panel>p{margin:0 0 14px;color:var(--muted);font-size:13px;line-height:1.45}
-  .ca-no-action-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+  .ca-no-action-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+  .ca-no-action-actions .next-step-ready-copy{display:none;max-width:520px}
+  .ca-no-action-actions.next-step-ready{border:1px solid #B9D7F0;background:#EEF6FC;border-radius:var(--r-lg);padding:14px 16px;margin-top:16px}
+  .ca-no-action-actions.next-step-ready .next-step-ready-copy{display:block}
   .ca-no-action-summary{margin-top:12px;border:1px solid var(--ok-line);background:var(--ok-tint);color:var(--ok);border-radius:var(--r);padding:11px 13px;font-size:13px;line-height:1.45}
   .ca-no-action-summary b{display:block;margin-bottom:3px}
-  @media(max-width:760px){.ca-decision-grid{grid-template-columns:1fr}.ca-decision-choice{min-height:0}.ca-no-action-actions{justify-content:stretch}.ca-no-action-actions button{width:100%}}
+  @media(max-width:760px){.ca-decision-grid{grid-template-columns:1fr}.ca-decision-choice{min-height:0}.ca-no-action-actions{justify-content:stretch;flex-direction:column;align-items:stretch}.ca-no-action-actions button{width:100%}}
 
   /* corrective actions inside the workflow */
   .assignment-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -626,6 +638,10 @@
   .multi-action-verification-footer{margin-top:12px;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--canvas);padding:13px 14px;display:grid;gap:10px}
   .multi-action-verification-footer .mavf-status{font-size:12.5px;color:var(--muted);line-height:1.45}
   .multi-action-verification-footer .mavf-status b{color:var(--ink)}
+  .multi-action-verification-footer .mavf-status span{display:block;margin-top:3px}
+  .multi-action-verification-footer.next-step-ready{border-color:#B9D7F0;background:#EEF6FC;padding:15px 16px}
+  .multi-action-verification-footer.next-step-ready .mavf-status b{color:#245F8F;font-size:14px}
+  .multi-action-verification-footer.next-step-ready .mavf-status span{color:var(--ink-2);font-size:13px}
   .multi-action-verification-footer .wizard-primary{justify-self:end}
   .wizard-shell.guidance-hidden .multi-action-summary span,.wizard-shell.guidance-hidden .multi-action-card .field-guidance,.wizard-shell.guidance-hidden .multi-action-live-note,.wizard-shell.guidance-hidden .multi-action-overview-head span,.wizard-shell.guidance-hidden .multi-action-overview-note{display:none!important}
   .close-checklist{display:grid;gap:6px;margin:12px 0}
@@ -1015,6 +1031,7 @@
     .toolbar select,#sortBy{width:auto}
     .wizard-footer{display:block;margin-top:14px;padding-top:12px}
     .wizard-footer-copy{display:none}
+    .wizard-footer.next-step-ready .wizard-footer-copy{display:block;margin-bottom:10px;max-width:none}
     .wizard-footer-actions{display:grid;grid-template-columns:1fr;gap:7px;width:100%;margin:0}
     .wizard-footer-actions button,.wizard-save,.wizard-primary,.wizard-close,.wizard-high,.btn-changes,.btn-verify,.btn-complete{width:100%;min-height:48px;justify-content:center;text-align:center;white-space:normal}
     .section-saved{text-align:center;padding:2px 0}
@@ -2614,8 +2631,8 @@
         '<div class="d-rows">'+rows.join("")+'</div>'+
         '<div class="d-atts" data-atts></div>'+
         regulatoryReviewHtml(r)+
-        '<div class="wizard-footer review-footer">'+
-          '<div class="wizard-footer-copy"><b>Choose what happens next.</b><span>Start an investigation if this report needs follow-up, or close it now when no investigation is needed.</span></div>'+
+        '<div class="wizard-footer review-footer" data-next-step-footer="review">'+
+          '<div class="wizard-footer-copy"><b>Ready for a decision</b><span>Start an investigation if this report needs follow-up, or close it now when no investigation is needed.</span></div>'+
           '<div class="wizard-footer-actions review-footer-actions">'+
             '<button class="wizard-save noaction-btn" type="button" data-noaction-btn>Close report — no investigation needed</button>'+
             '<button class="wizard-primary" data-step-complete="1" type="button">Start investigation →</button>'+
@@ -2631,7 +2648,7 @@
         '<label class="inv-l">Why did it happen?<textarea class="inv-root" placeholder="What caused or allowed this issue to happen?"></textarea><span class="field-guidance">Describe the underlying condition, process, equipment issue, training gap, or other reason that allowed it to happen.</span></label><div class="translation-preview" data-translation-field="root_cause" hidden></div>'+
         '<div class="evidence-panel investigation-evidence-panel" data-investigation-evidence></div>'+
         '<div class="wizard-required" data-required="2">Answer both investigation questions before continuing.</div>'+
-        '<div class="wizard-footer"><div class="wizard-footer-copy">Save a draft and return home, or finish the investigation when both questions are complete.</div><div class="wizard-footer-actions"><button class="wizard-save root-save" data-step-save="2" type="button">Save draft &amp; return home</button><span class="root-saved section-saved" hidden>Saved ✓</span><button class="wizard-primary" data-step-complete="2" type="button">Finish investigation →</button></div></div>'+
+        '<div class="wizard-footer" data-next-step-footer="investigation"><div class="wizard-footer-copy"><b data-next-step-title>Finish the investigation when ready</b><span data-next-step-message>Answer both questions. You can save a draft and return home at any time.</span></div><div class="wizard-footer-actions"><button class="wizard-save root-save" data-step-save="2" type="button">Save draft &amp; return home</button><span class="root-saved section-saved" hidden>Saved ✓</span><button class="wizard-primary" data-step-complete="2" type="button">Finish investigation →</button></div></div>'+
       '</section>'+
 
       '<section class="wizard-panel ca-unified-stage" data-wizard-step="3" data-ca-stage="plan" hidden>'+
@@ -2647,7 +2664,7 @@
             '<label class="inv-l">Reason<select data-ca-no-action-reason><option value="">— Choose a reason —</option><option value="corrected_immediately">Corrected immediately — nothing remains to fix</option><option value="no_unsafe_condition">Investigation found no unsafe condition requiring correction</option><option value="existing_action">Already covered by another active corrective action</option><option value="duplicate_or_previously_addressed">Duplicate / previously addressed</option><option value="other">Other</option></select></label>'+
             '<label class="inv-l">Brief explanation<textarea data-ca-no-action-note placeholder="Explain why nothing else needs to be fixed."></textarea><span class="field-guidance compact">Example: “Cone was repositioned outside the equipment path during the initial response. Investigation found no remaining hazard or recurring condition.”</span></label>'+
             '<div class="wizard-required" data-ca-no-action-error></div>'+
-            '<div class="ca-no-action-actions"><button class="wizard-primary" type="button" data-ca-no-action-continue>Continue to Close →</button></div>'+
+            '<div class="ca-no-action-actions" data-ca-no-action-next><div class="next-step-ready-copy"><b>Ready for the next step</b><span>Your decision is documented. Continue to the final Close step.</span></div><button class="wizard-primary" type="button" data-ca-no-action-continue>Continue to Close →</button></div>'+
           '</div>'+
         '</div>'+
         '<div data-ca-plan-workspace hidden>'+
@@ -2662,7 +2679,7 @@
           '<div class="multi-action-list" data-corrective-action-plan><div class="multi-action-loading">Loading corrective-action plan…</div></div>'+
           '<div class="multi-action-add-wrap"><button class="multi-action-add" type="button" data-add-corrective-action>+ Add another corrective action</button></div>'+
           '<div class="wizard-required" data-required="3"></div>'+
-          '<div class="wizard-footer"><div class="wizard-footer-copy">Save a draft and return home, or assign the actions when every required field is complete.</div><div class="wizard-footer-actions"><button class="wizard-save action-plan-save" data-step-save="3" type="button">Save draft &amp; return home</button><span class="action-plan-saved section-saved" hidden>Saved ✓</span><button class="wizard-primary" data-step-complete="3" type="button">Assign actions →</button></div></div>'+
+          '<div class="wizard-footer" data-next-step-footer="action-plan"><div class="wizard-footer-copy"><b data-next-step-title>Complete the action plan</b><span data-next-step-message>Fill in every required field. You can save a draft and return home at any time.</span></div><div class="wizard-footer-actions"><button class="wizard-save action-plan-save" data-step-save="3" type="button">Save draft &amp; return home</button><span class="action-plan-saved section-saved" hidden>Saved ✓</span><button class="wizard-primary" data-step-complete="3" type="button">Assign actions →</button></div></div>'+
         '</div>'+
       '</section>'+
 
@@ -3244,7 +3261,7 @@
     var list=checks.map(function(x){return '<div class="close-check '+(x[0]?'ok':'missing')+'"><b>'+(x[0]?'✓':'!')+'</b><span>'+esc(x[1])+'</span></div>';}).join("");
     if(closed){ el.innerHTML='<div class="ops-alert"><b>Report complete</b>This incident is closed. The full history remains available below.</div><div class="close-checklist">'+list+'</div>'; return; }
     var ready=canClose(r), button=ready&&canEditStep(r,6)?'<button class="wizard-close" type="button" data-step-complete="6">Close report</button>':'';
-    el.innerHTML='<div class="close-checklist">'+list+'</div>'+(ready?'<div class="wizard-context"><b>Ready to close</b><p>All required workflow steps are complete. Closing the report will preserve the full history and mark it resolved.</p></div>':'<div class="wizard-required show">Complete the missing checklist items before this record can be closed.</div>')+'<div class="wizard-footer"><div class="wizard-footer-copy">Closing the report is a deliberate final action. It will not close automatically.</div><div class="wizard-footer-actions">'+button+'</div></div>';
+    el.innerHTML='<div class="close-checklist">'+list+'</div>'+(ready?'<div class="wizard-footer next-step-ready"><div class="wizard-footer-copy"><b>Ready to close</b><span>All required steps are complete. Close the report to finish the workflow and preserve the full history.</span></div><div class="wizard-footer-actions">'+button+'</div></div>':'<div class="wizard-required show">Complete the missing checklist items before this record can be closed.</div><div class="wizard-footer"><div class="wizard-footer-copy">The Close button will appear when every required item above is complete.</div><div class="wizard-footer-actions"></div></div>');
     var btn=el.querySelector('[data-step-complete="6"]');
     if(btn) btn.addEventListener("click",async function(){
       if(!canEditStep(r,6)){ toast("Only an Admin or Safety Manager can close the record.","err"); return; }
@@ -3441,6 +3458,7 @@
       refreshUrgentTriage(detail,r);
       if(regSaved){regSaved.hidden=false;setTimeout(function(){regSaved.hidden=true;},2200);}
       if(changed) loadAudit(r.id,auditEl);
+      if(reviewNextFooter) reviewNextFooter.classList.toggle("next-step-ready",canEditStep(r,1)&&caloshaScreenComplete(r));
       if(showToast) toast("Regulatory follow-up saved","ok");
       return true;
     }
@@ -3460,12 +3478,15 @@
     var invFindings=detail.querySelector(".inv-findings"), invRoot=detail.querySelector(".inv-root");
     var rootSave=detail.querySelector(".root-save"), rootSaved=detail.querySelector(".root-saved"), actionPlanSave=detail.querySelector(".action-plan-save"), actionPlanSaved=detail.querySelector(".action-plan-saved");
     var actionPlanList=detail.querySelector("[data-corrective-action-plan]"), actionPlanAdd=detail.querySelector("[data-add-corrective-action]"), actionPlanOverviews=detail.querySelectorAll("[data-corrective-action-overview]"), multiActionCompletionEl=detail.querySelector("[data-multi-action-completion]"), multiActionVerificationStage=detail.querySelector("[data-multi-action-verification-stage]");
-    var caDecisionRoot=detail.querySelector("[data-ca-decision]"), caPlanWorkspace=detail.querySelector("[data-ca-plan-workspace]"), caDecisionChoices=detail.querySelectorAll("[data-ca-decision-choice]"), caNoActionPanel=detail.querySelector("[data-ca-no-action-panel]"), caNoActionReason=detail.querySelector("[data-ca-no-action-reason]"), caNoActionNote=detail.querySelector("[data-ca-no-action-note]"), caNoActionError=detail.querySelector("[data-ca-no-action-error]"), caNoActionContinue=detail.querySelector("[data-ca-no-action-continue]");
+    var caDecisionRoot=detail.querySelector("[data-ca-decision]"), caPlanWorkspace=detail.querySelector("[data-ca-plan-workspace]"), caDecisionChoices=detail.querySelectorAll("[data-ca-decision-choice]"), caNoActionPanel=detail.querySelector("[data-ca-no-action-panel]"), caNoActionReason=detail.querySelector("[data-ca-no-action-reason]"), caNoActionNote=detail.querySelector("[data-ca-no-action-note]"), caNoActionError=detail.querySelector("[data-ca-no-action-error]"), caNoActionContinue=detail.querySelector("[data-ca-no-action-continue]"), caNoActionNext=detail.querySelector("[data-ca-no-action-next]");
+    var reviewNextFooter=detail.querySelector('[data-next-step-footer="review"]'), investigationNextFooter=detail.querySelector('[data-next-step-footer="investigation"]'), actionPlanNextFooter=detail.querySelector('[data-next-step-footer="action-plan"]');
+    if(reviewNextFooter) reviewNextFooter.classList.toggle("next-step-ready",canEditStep(r,1)&&caloshaScreenComplete(r));
     var actionDecisionState={choice:correctiveActionDecisionValue(r)};
     var actionPlanState={actions:[],loading:true,loaded:false,translationToken:0};
     detail._correctivePlanState=actionPlanState;
     invFindings.value=r.investigation_findings||"";
     invRoot.value=r.root_cause||"";
+    syncInvestigationNextStepState();
     if(!canEditStep(r,2)){ [invFindings,invRoot,rootSave].forEach(function(x){if(x)x.disabled=true;}); }
     if(!canEditStep(r,3)){ [actionPlanSave,actionPlanAdd].forEach(function(x){if(x)x.disabled=true;}); }
 
@@ -3479,6 +3500,31 @@
       investigation:canEditStep(r,2),
       actionPlan:canEditStep(r,3)
     };
+
+    function setNextStepFooterState(footer,ready,readyTitle,readyMessage,defaultTitle,defaultMessage){
+      if(!footer) return;
+      footer.classList.toggle("next-step-ready",!!ready);
+      var title=footer.querySelector("[data-next-step-title]"), message=footer.querySelector("[data-next-step-message]");
+      if(title) title.textContent=ready?readyTitle:defaultTitle;
+      if(message) message.textContent=ready?readyMessage:defaultMessage;
+    }
+    function syncInvestigationNextStepState(){
+      var ready=!!(canEditStep(r,2)&&invFindings&&invRoot&&invFindings.value.trim()&&invRoot.value.trim());
+      setNextStepFooterState(investigationNextFooter,ready,"Ready for the next step","Both investigation questions are complete. Finish the investigation to continue.","Finish the investigation when ready","Answer both questions. You can save a draft and return home at any time.");
+    }
+    function syncNoActionNextStepState(){
+      if(!caNoActionNext) return;
+      var ready=!!(canEditStep(r,3)&&actionDecisionState.choice==="not_required"&&caNoActionReason&&caNoActionReason.value&&caNoActionNote&&caNoActionNote.value.trim());
+      caNoActionNext.classList.toggle("next-step-ready",ready);
+    }
+    function syncPlanNextStepState(){
+      if(!actionPlanNextFooter) return;
+      var ready=false;
+      if(canEditStep(r,3)&&actionDecisionState.choice==="required"&&!actionPlanState.loading){
+        ready=validateCorrectiveActionPlan(true).length===0;
+      }
+      setNextStepFooterState(actionPlanNextFooter,ready,"Ready for the next step","Every corrective action has the required details. Assign the actions to open Complete Work.","Complete the action plan","Fill in every required field. You can save a draft and return home at any time.");
+    }
 
     async function persistInvestigation(showToast,advanceReopen){
       if(!canEditStep(r,2)) throw new Error("NOT_AUTHORIZED");
@@ -3517,8 +3563,10 @@
         if(caNoActionNote && !caNoActionNote.value) caNoActionNote.value=r.corrective_action_no_action_note||"";
         [caNoActionReason,caNoActionNote].forEach(function(x){if(x)x.disabled=!editable;});
         if(caNoActionContinue) caNoActionContinue.hidden=!editable || correctiveActionDecisionValue(r)==="not_required";
+        syncNoActionNextStepState();
       }
       if(caNoActionError) caNoActionError.classList.remove("show");
+      syncPlanNextStepState();
       renderRecordProgress(r,detail.querySelector("[data-record-progress]"));
       /* A local No choice should immediately hide Plan/Assign header actions even
          before the documented decision is saved to the database. */
@@ -3690,14 +3738,16 @@
       var reviewStatusHtml=!isResolvedReport(r)&&returnedCount>0&&awaitingCount>0?
         '<div class="multi-action-review-status"><b>'+returnedCount+' action'+(returnedCount===1?' has':'s have')+' been sent back.</b><span>Finish reviewing the '+awaitingCount+' action'+(awaitingCount===1?'':'s')+' still waiting. Returned actions will then appear by themselves in Complete Work.</span></div>':'';
 
-      var footerHtml=
+      var footerHtml=allVerified?
+        '<div class="multi-action-verification-footer next-step-ready">'+
+          '<div class="mavf-status"><b>Ready for the next step</b><span>All corrective actions are verified. You can now close the report.</span></div>'+
+          (!isResolvedReport(r)?'<button class="wizard-primary" type="button" data-all-actions-verified>Continue to Close →</button>':'')+
+        '</div>':
         '<div class="multi-action-verification-footer">'+
-          '<div class="mavf-status"><b>'+verifiedCount+' of '+allRows.length+' corrective action'+(allRows.length===1?'':'s')+' verified.</b>'+
-          (allVerified?' All corrective actions are complete. Continue to the final Close step.':
-            (returnedCount>0&&awaitingCount===0?' Returned work must be updated before verification can finish.':
-              (' '+awaitingCount+' action'+(awaitingCount===1?' is':'s are')+' still waiting for a decision.')))+
-          '</div>'+
-          (allVerified&&!isResolvedReport(r)?'<button class="wizard-primary" type="button" data-all-actions-verified>All actions verified — Continue to Close</button>':'')+
+          '<div class="mavf-status"><b>'+verifiedCount+' of '+allRows.length+' corrective action'+(allRows.length===1?'':'s')+' verified.</b><span>'+
+          (returnedCount>0&&awaitingCount===0?'Returned work must be updated before verification can finish.':
+            (awaitingCount+' action'+(awaitingCount===1?' is':'s are')+' still waiting for a decision.'))+
+          '</span></div>'+
         '</div>';
 
       // Build the complete DOM once. Do not mutate innerHTML after evidence
@@ -3834,6 +3884,7 @@
       renderMultiActionCompletion();
       renderMultiActionVerification();
       Array.prototype.slice.call(actionPlanList.querySelectorAll("[data-action-card]")).forEach(refreshPlanCardFieldProgress);
+      syncPlanNextStepState();
     }
     function syncCorrectiveActionStateFromUi(){
       if(!actionPlanList) return;
@@ -3947,8 +3998,8 @@
         if(caNoActionError){caNoActionError.textContent=msg;caNoActionError.classList.add("show");} toast(msg,"err");
       }finally{if(caNoActionContinue.isConnected){caNoActionContinue.disabled=false;caNoActionContinue.textContent=old;}}
     });
-    if(caNoActionReason) caNoActionReason.addEventListener("change",function(){if(caNoActionError)caNoActionError.classList.remove("show");});
-    if(caNoActionNote) caNoActionNote.addEventListener("input",function(){if(caNoActionError)caNoActionError.classList.remove("show");});
+    if(caNoActionReason) caNoActionReason.addEventListener("change",function(){if(caNoActionError)caNoActionError.classList.remove("show");syncNoActionNextStepState();});
+    if(caNoActionNote) caNoActionNote.addEventListener("input",function(){if(caNoActionError)caNoActionError.classList.remove("show");syncNoActionNextStepState();});
     renderCorrectiveActionDecision();
 
     if(actionPlanAdd) actionPlanAdd.addEventListener("click",function(){
@@ -3995,11 +4046,17 @@
         renderCorrectiveActionPlan();
       }
       renderCorrectiveActionDecision();
+      if(reviewNextFooter) reviewNextFooter.classList.toggle("next-step-ready",canEditStep(r,1)&&caloshaScreenComplete(r));
+      syncInvestigationNextStepState();
+      syncPlanNextStepState();
+      syncNoActionNextStepState();
     }
     detail._syncStepEditability=syncStepEditability;
 
-    if(actionPlanList) actionPlanList.addEventListener("input",function(e){ var req=detail.querySelector('[data-required="3"]'); if(req)req.classList.remove("show"); refreshPlanCardFieldProgress(e.target.closest("[data-action-card]")); });
-    if(actionPlanList) actionPlanList.addEventListener("change",function(e){ var req=detail.querySelector('[data-required="3"]'); if(req)req.classList.remove("show"); refreshPlanCardFieldProgress(e.target.closest("[data-action-card]")); });
+    if(invFindings) invFindings.addEventListener("input",syncInvestigationNextStepState);
+    if(invRoot) invRoot.addEventListener("input",syncInvestigationNextStepState);
+    if(actionPlanList) actionPlanList.addEventListener("input",function(e){ var req=detail.querySelector('[data-required="3"]'); if(req)req.classList.remove("show"); refreshPlanCardFieldProgress(e.target.closest("[data-action-card]")); syncPlanNextStepState(); });
+    if(actionPlanList) actionPlanList.addEventListener("change",function(e){ var req=detail.querySelector('[data-required="3"]'); if(req)req.classList.remove("show"); refreshPlanCardFieldProgress(e.target.closest("[data-action-card]")); syncPlanNextStepState(); });
     if(multiActionCompletionEl) multiActionCompletionEl.addEventListener("click",async function(e){
       var btn=e.target.closest("[data-submit-child-completion]"); if(!btn||btn.disabled) return;
       var actionId=btn.getAttribute("data-submit-child-completion"), a=actionPlanState.actions.find(function(x){return String(x.id||"")===String(actionId||"");});
