@@ -1329,7 +1329,7 @@
           <div class="mywork-summary" id="myWorkSummary"></div>
           <div class="mywork-grid">
             <div class="mywork-panel"><h3>My assignments</h3><p class="panel-sub">Investigations and corrective actions assigned directly to you. Corrective actions open as one focused task so you cannot accidentally update the wrong action.</p><div id="myWorkList" class="task-list"></div></div>
-            <div class="mywork-panel mywork-review" id="myWorkReviewPanel"><h3>Verification queue</h3><p class="panel-sub">Corrective actions waiting for a verification decision. No verifier assignment is required.</p><div id="myWorkReviewList" class="task-list"></div></div>
+            <div class="mywork-panel mywork-review" id="myWorkReviewPanel"><h3>Review queue</h3><p class="panel-sub">Corrective actions waiting for a review decision. No reviewer assignment is required.</p><div id="myWorkReviewList" class="task-list"></div></div>
           </div>
         </section>
 
@@ -1360,7 +1360,7 @@
 
 
         <section class="view" id="view-actions" hidden>
-          <div class="section-head"><div><h2>Corrective Actions</h2><p>Track assigned fixes from action through verification and closure.</p></div><span class="muted small" id="actionCount"></span></div>
+          <div class="section-head"><div><h2>Corrective Actions</h2><p>Track assigned fixes from assignment through review and closure.</p></div><span class="muted small" id="actionCount"></span></div>
           <div id="actionSummary" class="action-summary"></div>
           <div id="actionList" class="task-list"></div>
         </section>
@@ -1583,8 +1583,8 @@
 <!-- ============ CLOSE WITHOUT CORRECTIVE ACTION MODAL ============ -->
 <div class="modal-backdrop" id="dispositionBackdrop">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="dHeading">
-    <h3 id="dHeading">Close without corrective action</h3>
-    <p class="msub">Use this when the report was reviewed and no corrective action is needed.</p>
+    <h3 id="dHeading">Close report without investigation</h3>
+    <p class="msub">Use this only when the report can be resolved during the initial review and no investigation is needed.</p>
     <div class="disposition-warning"><b>This report will leave the open work queues but remain in history.</b> The closure reason and your account will be saved with the report.</div>
     <div class="login-err" id="dErr"></div>
     <div class="field"><label for="dReason">Closure reason</label><select id="dReason">
@@ -1594,7 +1594,7 @@
       <option value="duplicate">Duplicate report</option>
       <option value="other">Other</option>
     </select></div>
-    <div class="field"><label for="dNote">Closure note <span style="font-weight:400;color:var(--muted)">(optional unless Other)</span></label><textarea id="dNote" placeholder="Briefly explain why no corrective action is needed."></textarea></div>
+    <div class="field"><label for="dNote">Closure note <span style="font-weight:400;color:var(--muted)">(optional unless Other)</span></label><textarea id="dNote" placeholder="Briefly explain why no investigation is needed."></textarea></div>
     <div class="modal-actions">
       <button class="btn-secondary" id="dCancel" type="button">Cancel</button>
       <button class="btn-primary" id="dSave" type="button">Close report</button>
@@ -1605,8 +1605,8 @@
 <!-- ============ REOPEN RECORD MODAL ============ -->
 <div class="modal-backdrop" id="reopenBackdrop">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="reopenHeading">
-    <h3 id="reopenHeading">Reopen record</h3>
-    <p class="msub">Return a resolved safety record to Step 1 — Review Report while preserving its complete history.</p>
+    <h3 id="reopenHeading">Reopen report</h3>
+    <p class="msub">Return a resolved safety report to Step 1 — Review Report while preserving its complete history.</p>
     <div class="restart-warning"><b>The prior closure and completed workflow stay in the permanent history.</b> Reopening starts a fresh active workflow at Step 1 so new information is reviewed before a new investigation or corrective action is chosen.</div>
     <ul class="restart-preserve">
       <li>Original report, notes, original attachments, Cal/OSHA screening, and prior corrective-action evidence are preserved.</li>
@@ -1626,7 +1626,7 @@
     <div class="field"><label for="reopenNote">Explanation <span style="font-weight:400;color:var(--muted)">(required)</span></label><textarea id="reopenNote" maxlength="1200" placeholder="Briefly explain why this record is being reopened."></textarea></div>
     <div class="modal-actions">
       <button class="btn-secondary" id="reopenCancel" type="button">Cancel</button>
-      <button class="btn-primary" id="reopenSave" type="button">Reopen record</button>
+      <button class="btn-primary" id="reopenSave" type="button">Reopen report</button>
     </div>
   </div>
 </div>
@@ -2562,6 +2562,21 @@
     ["calosha_screening_status","calosha_awareness_at","calosha_notified_at","calosha_notified_by"].forEach(function(k){ if(Object.prototype.hasOwnProperty.call(d,k)) r[k]=d[k]; });
     return d;
   }
+  // RBH does not currently use a separate investigator-assignment control.
+  // Keep the full assignment/permission/notification capability available for future deployments.
+  // Set this to true to restore the Step 1 assignment card without changing database logic.
+  var ENABLE_INVESTIGATOR_ASSIGNMENT_UI=false;
+  function investigatorAssignmentCardHtml(r){
+    if(!ENABLE_INVESTIGATOR_ASSIGNMENT_UI) return "";
+    return '<div class="investigator-card" data-investigator-card>'+
+      '<div class="investigator-head"><div><b>Investigator assignment</b><p>Optional for deployments that use a separate investigator. Assign an active dashboard user to own Review, Investigation, and the corrective-action decision.</p></div><span class="investigator-chip" data-investigator-chip>Unassigned</span></div>'+
+      '<div class="investigator-controls"><label class="inv-l">Assigned investigator<select class="inv-investigator">'+investigatorOptions(r.investigator_user_id||"")+'</select></label><button class="wizard-save investigator-self" type="button">Assign to me</button><button class="wizard-primary investigator-save" type="button">Save assignment</button></div>'+
+      '<span class="investigator-saved section-saved" hidden>Saved ✓</span>'+
+      '<div class="investigator-permission" data-investigator-permission hidden>Only an Admin or Safety Manager can change the investigator assignment.</div>'+
+      '<span class="field-guidance">This control is hidden in the RBH configuration but can be enabled for customers that use investigator ownership.</span>'+
+    '</div>';
+  }
+
   function workflowGuidanceEnabled(){
     return !(currentProfile && currentProfile.show_workflow_guidance === false);
   }
@@ -2590,16 +2605,17 @@
 
       '<section class="wizard-panel" data-wizard-step="1" hidden>'+
         '<div class="wizard-step-head"><span class="wizard-step-badge">1</span><div class="wizard-step-copy"><h3>Review the report</h3><p>Confirm what was submitted, then choose what happens next.</p></div></div>'+
-        '<div class="wizard-task"><b>Start here</b><span>Review the report and attachments. If an injury is involved, complete the serious-event screen. Then either continue to Investigation or close the report with a documented reason.</span></div>'+
+        '<div class="wizard-task"><b>Start here</b><span>Review the report and attachments. If an injury is involved, complete the serious-event screen. Then either start an investigation or close the report with a documented reason.</span></div>'+
         '<span class="field-guidance">This step is intentionally simple: review what was submitted, then choose what happens next.</span>'+
+        investigatorAssignmentCardHtml(r)+
         '<div class="d-rows">'+rows.join("")+'</div>'+
         '<div class="d-atts" data-atts></div>'+
         regulatoryReviewHtml(r)+
         '<div class="wizard-footer review-footer">'+
-          '<div class="wizard-footer-copy"><b>Choose what happens next.</b><span>Continue to Investigation if this report needs follow-up, or close it now when no further action is needed.</span></div>'+
+          '<div class="wizard-footer-copy"><b>Choose what happens next.</b><span>Start an investigation if this report needs follow-up, or close it now when no investigation is needed.</span></div>'+
           '<div class="wizard-footer-actions review-footer-actions">'+
-            '<button class="wizard-save noaction-btn" type="button" data-noaction-btn>Close — no action needed</button>'+
-            '<button class="wizard-primary" data-step-complete="1" type="button">Continue to investigation →</button>'+
+            '<button class="wizard-save noaction-btn" type="button" data-noaction-btn>Close report — no investigation needed</button>'+
+            '<button class="wizard-primary" data-step-complete="1" type="button">Start investigation →</button>'+
           '</div>'+
         '</div>'+
         '<div class="gate-msg" data-role-gate>This account can view this incident but does not have permission to update it.</div>'+
@@ -2612,7 +2628,7 @@
         '<label class="inv-l">Why did it happen?<textarea class="inv-root" placeholder="What caused or allowed this issue to happen?"></textarea><span class="field-guidance">Describe the underlying condition, process, equipment issue, training gap, or other reason that allowed it to happen.</span></label><div class="translation-preview" data-translation-field="root_cause" hidden></div>'+
         '<div class="evidence-panel investigation-evidence-panel" data-investigation-evidence></div>'+
         '<div class="wizard-required" data-required="2">Answer both investigation questions before continuing.</div>'+
-        '<div class="wizard-footer"><div class="wizard-footer-copy">Save and close keeps a draft. Continue when the investigation is documented.</div><div class="wizard-footer-actions"><button class="wizard-save root-save" data-step-save="2" type="button">Save and close</button><span class="root-saved section-saved" hidden>Saved ✓</span><button class="wizard-primary" data-step-complete="2" type="button">Continue to corrective actions →</button></div></div>'+
+        '<div class="wizard-footer"><div class="wizard-footer-copy">Save a draft and return home, or finish the investigation when both questions are complete.</div><div class="wizard-footer-actions"><button class="wizard-save root-save" data-step-save="2" type="button">Save draft &amp; return home</button><span class="root-saved section-saved" hidden>Saved ✓</span><button class="wizard-primary" data-step-complete="2" type="button">Finish investigation →</button></div></div>'+
       '</section>'+
 
       '<section class="wizard-panel ca-unified-stage" data-wizard-step="3" data-ca-stage="plan" hidden>'+
@@ -2620,15 +2636,15 @@
         '<div class="ca-decision" data-ca-decision>'+
           '<div class="ca-decision-head"><b>Does anything still need to be corrected?</b><span>Choose the option that matches what the investigation found. Do not choose “No” just because the immediate issue was handled if an underlying hazard, process, equipment, training, or work-practice issue still remains.</span></div>'+
           '<div class="ca-decision-grid">'+
-            '<button class="ca-decision-choice yes" type="button" data-ca-decision-choice="required"><b>Yes — corrective action is needed</b><span>Choose this when something still needs to be fixed, changed, repaired, trained, communicated, or assigned.</span><small>Examples: replace damaged equipment; change a work practice; provide training; install a guard or barrier.</small></button>'+
-            '<button class="ca-decision-choice no" type="button" data-ca-decision-choice="not_required"><b>No — no additional corrective action needed</b><span>Choose this only when nothing remains to correct after the investigation.</span><small>Examples: the issue was fully corrected immediately and no underlying problem remains; the same issue is already covered by an existing active corrective action.</small></button>'+
+            '<button class="ca-decision-choice yes" type="button" data-ca-decision-choice="required"><b>Yes — something still needs to be fixed</b><span>Choose this when something still needs to be fixed, changed, repaired, trained, communicated, or assigned.</span><small>Examples: replace damaged equipment; change a work practice; provide training; install a guard or barrier.</small></button>'+
+            '<button class="ca-decision-choice no" type="button" data-ca-decision-choice="not_required"><b>No — nothing else needs to be fixed</b><span>Choose this only when nothing remains to correct after the investigation.</span><small>Examples: the issue was fully corrected immediately and no underlying problem remains; the same issue is already covered by an existing active corrective action.</small></button>'+
           '</div>'+
           '<div class="ca-no-action-panel" data-ca-no-action-panel hidden>'+
-            '<h4>Document why no additional corrective action is needed</h4><p>This is a documented safety decision, not a skip. The final Close step will still require a deliberate closure.</p>'+
+            '<h4>Explain why nothing else needs to be fixed</h4><p>This is a documented safety decision, not a skip. The final Close step will still require a deliberate closure.</p>'+
             '<label class="inv-l">Reason<select data-ca-no-action-reason><option value="">— Choose a reason —</option><option value="corrected_immediately">Corrected immediately — nothing remains to fix</option><option value="no_unsafe_condition">Investigation found no unsafe condition requiring correction</option><option value="existing_action">Already covered by another active corrective action</option><option value="duplicate_or_previously_addressed">Duplicate / previously addressed</option><option value="other">Other</option></select></label>'+
-            '<label class="inv-l">Brief explanation<textarea data-ca-no-action-note placeholder="Explain why no additional corrective action is needed."></textarea><span class="field-guidance compact">Example: “Cone was repositioned outside the equipment path during the initial response. Investigation found no remaining hazard or recurring condition.”</span></label>'+
+            '<label class="inv-l">Brief explanation<textarea data-ca-no-action-note placeholder="Explain why nothing else needs to be fixed."></textarea><span class="field-guidance compact">Example: “Cone was repositioned outside the equipment path during the initial response. Investigation found no remaining hazard or recurring condition.”</span></label>'+
             '<div class="wizard-required" data-ca-no-action-error></div>'+
-            '<div class="ca-no-action-actions"><button class="wizard-primary" type="button" data-ca-no-action-continue>No additional action needed — Continue to Close →</button></div>'+
+            '<div class="ca-no-action-actions"><button class="wizard-primary" type="button" data-ca-no-action-continue>Continue to Close →</button></div>'+
           '</div>'+
         '</div>'+
         '<div data-ca-plan-workspace hidden>'+
@@ -2643,7 +2659,7 @@
           '<div class="multi-action-list" data-corrective-action-plan><div class="multi-action-loading">Loading corrective-action plan…</div></div>'+
           '<div class="multi-action-add-wrap"><button class="multi-action-add" type="button" data-add-corrective-action>+ Add another corrective action</button></div>'+
           '<div class="wizard-required" data-required="3"></div>'+
-          '<div class="wizard-footer"><div class="wizard-footer-copy">Save and close keeps a draft. Assign actions when every required field is complete.</div><div class="wizard-footer-actions"><button class="wizard-save action-plan-save" data-step-save="3" type="button">Save and close</button><span class="action-plan-saved section-saved" hidden>Saved ✓</span><button class="wizard-primary" data-step-complete="3" type="button">Assign actions →</button></div></div>'+
+          '<div class="wizard-footer"><div class="wizard-footer-copy">Save a draft and return home, or assign the actions when every required field is complete.</div><div class="wizard-footer-actions"><button class="wizard-save action-plan-save" data-step-save="3" type="button">Save draft &amp; return home</button><span class="action-plan-saved section-saved" hidden>Saved ✓</span><button class="wizard-primary" data-step-complete="3" type="button">Assign actions →</button></div></div>'+
         '</div>'+
       '</section>'+
 
@@ -2655,7 +2671,7 @@
           '<div class="ca-life-item next" data-ca-life="5"><span class="ca-life-dot">3</span><div class="ca-life-copy"><b>Verify</b><span>Approve or request changes</span></div></div>'+
         '</div>'+
         '<div class="ca-stage-heading"><span class="ca-stage-num">2</span><div><b>Complete work</b><p>Record what was completed for each action that still needs attention.</p></div><span class="ca-stage-state" data-ca-stage-state>Next</span></div>'+
-        '<div class="ca-focus-note"><b>Only unfinished or returned actions are shown</b>Submit each action when its work is complete. Verification opens only after every action is ready for review. If a reviewer sends an action back later, only that returned action comes back here.</div>'+
+        '<div class="ca-focus-note"><b>Only unfinished or returned actions are shown</b>Send each action for review when its work is complete. The review step opens after every action is ready. If a reviewer sends an action back later, only that returned action comes back here.</div>'+
         '<div class="multi-action-completion-list" data-multi-action-completion></div>'+
         '<div class="action-workflow" data-action-completion></div>'+
       '</section>'+
@@ -2668,21 +2684,21 @@
           '<div class="ca-life-item next" data-ca-life="5"><span class="ca-life-dot">3</span><div class="ca-life-copy"><b>Verify</b><span>Approve or request changes</span></div></div>'+
         '</div>'+
         '<div class="ca-stage-heading"><span class="ca-stage-num">3</span><div><b>Verify work</b><p>Approve each completed action or return only the action that needs more work.</p></div><span class="ca-stage-state" data-ca-stage-state>Next</span></div>'+
-        '<div class="ca-focus-note"><b>Review and decide — no verification assignment needed</b>Each submitted action is ready for an authorized reviewer. Verify the actions that are complete, or send back only the action that needs more work. Returned actions go back to their assigned corrective-action owner.</div>'+
+        '<div class="ca-focus-note"><b>Review and decide</b>Each submitted action is ready for an authorized reviewer. Verify complete actions, or send back only the action that needs more work. Returned actions go back to their assigned corrective-action owner.</div>'+
         '<div class="multi-action-verification-list" data-multi-action-verification-stage hidden></div>'+
         '<div class="action-workflow" data-action-verification></div>'+
       '</section>'+
 
       '<section class="wizard-panel" data-wizard-step="6" hidden>'+
-        '<div class="wizard-step-head"><span class="wizard-step-badge">4</span><div class="wizard-step-copy"><h3>Close record</h3><p>Perform one final check and close the incident when every required step is complete.</p></div></div>'+
+        '<div class="wizard-step-head"><span class="wizard-step-badge">4</span><div class="wizard-step-copy"><h3>Close report</h3><p>Perform one final check and close the incident when every required step is complete.</p></div></div>'+
         '<div data-close-step></div>'+
       '</section>'+
 
-      '<details class="record-support" open><summary>Notes &amp; activity history</summary><div class="record-support-body"><div class="support-grid">'+
+      '<details class="record-support"><summary>Notes &amp; activity history</summary><div class="record-support-body"><div class="support-grid">'+
         '<div class="d-section"><div class="d-sec-title-row"><span class="d-sec-title">Notes</span><button class="add-note" type="button">+ Add Note</button></div><div class="notes" data-notes></div></div>'+
         '<div class="d-section"><div class="d-sec-title">Activity timeline</div><p class="step-section-note">A readable history of submissions, updates, evidence, verification, and closure.</p><div class="audit" data-audit></div></div>'+
       '</div></div></details>'+
-      '<div class="detail-actions"><button class="reopen-record-btn" type="button" hidden>Reopen record</button><button class="restart-workflow-btn" type="button" hidden>Restart workflow</button><span class="pdf-language-wrap">PDF language <select class="pdf-language-select"><option value="viewer">My reading language</option><option value="original">Original record</option><option value="en">English</option><option value="es">Español</option></select></span><button class="pdf-btn" type="button">Download PDF</button></div>'+
+      '<div class="detail-actions"><details class="more-menu"><summary>More actions</summary><div class="more-menu-list"><button class="reopen-record-btn" type="button" hidden>Reopen report</button><button class="restart-workflow-btn" type="button" hidden>Restart workflow</button></div></details><span class="pdf-language-wrap">PDF language <select class="pdf-language-select"><option value="viewer">My reading language</option><option value="original">Original record</option><option value="en">English</option><option value="es">Español</option></select></span><button class="pdf-btn" type="button">Download PDF</button></div>'+
     '</div>';
   }
 
@@ -2787,18 +2803,18 @@
         {n:2,title:"Document root cause",state:"na",detail:"Not required for this closure."},
         {n:3,title:"Plan corrective action",state:"na",detail:"Not required for this closure."},
         {n:4,title:"Complete action",state:"na",detail:"Not required for this closure."},
-        {n:5,title:"Verify action",state:"na",detail:"Not required for this closure."},
-        {n:6,title:"Close record",state:"done",detail:"Record closed without corrective action."}
+        {n:5,title:"Verify as complete",state:"na",detail:"Not required for this closure."},
+        {n:6,title:"Close report",state:"done",detail:"Record closed without corrective action."}
       ]};
     }
     var reopenStep=activeReopenStep(r);
     if(reopenStep){
-      var reopenTitles=["Review report","Document investigation","Plan corrective action","Complete action","Verify action","Close record"];
+      var reopenTitles=["Review report","Document investigation","Plan corrective action","Complete action","Verify as complete","Close report"];
       var reopenDetails=[
         "Review the reopened report and confirm the carried-forward information still applies.",
         (hasWorkflowValue(r.investigation_findings)&&hasWorkflowValue(r.root_cause))?"Previous investigation carried forward — confirm or update what happened and why.":"Document what happened and why it happened.",
         (hasWorkflowValue(r.corrective_action)&&hasWorkflowValue(r.assigned_user_id))?"Previous action plan carried forward — confirm or update the action, control type, owner, due date, and priority.":"Complete the corrective-action plan.",
-        hasWorkflowValue(r.action_completion_note)?"Previous completion note carried forward — update it as needed and submit the current work for verification.":"Document what was completed and submit it for verification.",
+        hasWorkflowValue(r.action_completion_note)?"Previous completion note carried forward — update it as needed and send the current work for review.":"Document what was completed and send it for review.",
         r.action_status==="awaiting_verification"?"Admin or Safety Manager must verify the current reopened-cycle work.":"Verification is required again for the reopened record.",
         "After the reopened cycle is verified, close the record again."
       ];
@@ -2835,19 +2851,19 @@
     var step6=r.status==="closed";
     var done=[step1,step2,step3,step4,step5,step6];
     var current=-1; for(var i=0;i<done.length;i++){ if(!done[i]){ current=i; break; } }
-    var changeMsg=r.action_status==="changes_requested"?"Reviewer requested changes. Update the completed work and resubmit.":"Document what was completed and submit it for verification.";
+    var changeMsg=r.action_status==="changes_requested"?"Reviewer requested changes. Update the completed work and resubmit.":"Document what was completed and send it for review.";
     var step3Detail=noAdditionalAction?("No additional corrective action needed — "+correctiveNoActionReasonLabel(r.corrective_action_no_action_reason)+"."):(childSummary?(childSummary.total+" corrective action"+(childSummary.total===1?"":"s")+" assigned."): (step3?"Action, assigned user, due date, and priority are set.":(correctiveDecision?"Complete the corrective-action plan.":"Decide whether anything still needs to be corrected.")));
     var step4Detail=childSummary?(step4?
       (childSummary.changes_requested>0&&childSummary.awaiting>0?
         (childSummary.changes_requested+" action"+(childSummary.changes_requested===1?" has":"s have")+" been returned; finish the "+childSummary.awaiting+" review"+(childSummary.awaiting===1?"":"s")+" still waiting."):
-        ("All actions are ready for verification.")):
+        ("All actions are ready for review.")):
       (childSummary.changes_requested>0&&childSummary.work_open===0?
         (childSummary.changes_requested+" returned action"+(childSummary.changes_requested===1?" needs":"s need")+" updates before verification can finish."):
         (childSummary.submitted+" of "+childSummary.total+" corrective actions submitted; "+childSummary.work_open+" still need completion."))):
       (step4?"Completed work was submitted for review.":changeMsg);
     var step5Detail=childSummary?(step5?("All "+childSummary.total+" corrective actions are verified."):
       (childSummary.awaiting>0?
-        (childSummary.awaiting+" action"+(childSummary.awaiting===1?" is":"s are")+" waiting for a verification decision; "+childSummary.verified+" already verified."):
+        (childSummary.awaiting+" action"+(childSummary.awaiting===1?" is":"s are")+" waiting for a review decision; "+childSummary.verified+" already verified."):
         (childSummary.verified+" of "+childSummary.total+" corrective actions verified."))):
       (step5?"Corrective action was verified.":"An authorized reviewer must verify the completed work.");
     var details=[
@@ -2858,12 +2874,12 @@
       step5Detail,
       step6?"Record is closed.":"After verification, set Report Status to Closed."
     ];
-    var titles=["Review report","Document investigation","Plan corrective action","Complete action","Verify action","Close record"];
+    var titles=["Review report","Document investigation","Plan corrective action","Complete action","Verify as complete","Close report"];
     var steps=titles.map(function(title,i){ return {n:i+1,title:title,state:done[i]?"done":(i===current?"current":"needed"),detail:details[i]}; });
     if(noAdditionalAction){
       steps[2].detail="No additional corrective action needed — "+correctiveNoActionReasonLabel(r.corrective_action_no_action_reason)+".";
       steps[3].state="na"; steps[3].detail="Not required because no additional corrective action was needed.";
-      steps[4].state="na"; steps[4].detail="Not required because no corrective action required verification.";
+      steps[4].state="na"; steps[4].detail="No review is needed because no corrective action was required.";
     }
     return {complete:current===-1,steps:steps,current:current};
   }
@@ -2945,7 +2961,7 @@
     var topSave=labels.save?'<button class="wizard-save" type="button" data-wizard-top-save>'+esc(labels.save)+'</button>':'';
     var topPrimary=labels.complete?'<button class="wizard-primary" type="button" data-wizard-top-complete>'+esc(labels.complete)+'</button>':'';
     var resolved=isResolvedReport(r);
-    var currentText=resolved?'Closed record review':((activeState&&activeState.state==="done")?'Reviewing a completed step':('Step '+activeVisible+' of 4'));
+    var currentText=resolved?'Closed report review':((activeState&&activeState.state==="done")?'Reviewing a completed step':('Step '+activeVisible+' of 4'));
     var helpText=resolved?'Read-only record. Completed information is grouped by stage below. Click a green step to jump to it. Notes can still be added.':((activeState&&activeState.state==="done"&&active<6)?'Completed step — read only. Add a note for a clarification, or restart the workflow if a material correction is required.':wizardHelp(active,r));
     el.className="wizard-process";
     el.innerHTML='<div class="wizard-process-head"><div class="wizard-process-copy"><b>'+esc(currentText)+(resolved?'':' · '+esc(wizardLongTitle(active)))+'</b><span>'+esc(helpText)+'</span></div><div class="wizard-top-actions">'+topSave+topPrimary+'</div></div><div class="process-flow">'+arrows+'</div><div class="reg-persistent-host" data-reg-persistent-host>'+persistentRegulatoryBannerHtml(r,active)+'</div>';
@@ -2953,25 +2969,25 @@
   }
 
   function wizardShortTitle(n){ return ({1:"Review",2:"Investigation",3:"Corrective Actions",4:"Corrective Actions",5:"Corrective Actions",6:"Close"})[n]||"Step"; }
-  function wizardLongTitle(n){ return ({1:"Review Report",2:"Investigation",3:"Corrective Actions · Plan & Assign",4:"Corrective Actions · Complete Work",5:"Corrective Actions · Verify Work",6:"Close Record"})[n]||"Record"; }
+  function wizardLongTitle(n){ return ({1:"Review Report",2:"Investigation",3:"Corrective Actions · Plan & Assign",4:"Corrective Actions · Complete Work",5:"Corrective Actions · Verify Work",6:"Close Report"})[n]||"Record"; }
   function wizardHelp(n,r){
-    var map={1:"Review the submission, then acknowledge it for investigation or close it with a documented reason.",2:"Document what happened and why it happened.",3:"Decide whether anything still needs to be corrected. If yes, create and assign the actions. If no, document why.",4:"Record what was completed for each action and submit it for review.",5:"Review each submitted action and either verify it or clearly request changes.",6:"Confirm everything is complete and close the record."};
+    var map={1:"Review the submission, then acknowledge it for investigation or close it with a documented reason.",2:"Document what happened and why it happened.",3:"Decide whether anything still needs to be corrected. If yes, create and assign the actions. If no, document why.",4:"Record what was completed for each action and submit it for review.",5:"Review each submitted action and either verify it or clearly request changes.",6:"Confirm everything is complete and close the report."};
     var childSummary=correctiveActionSummary(r);
     if(childSummary&&n===4){
       if(childSummary.changes_requested>0&&childSummary.work_open===0) return childSummary.changes_requested+" returned action"+(childSummary.changes_requested===1?" needs":"s need")+" an update. Only returned work is shown here.";
-      return childSummary.work_open>0?(childSummary.work_open+" corrective action"+(childSummary.work_open===1?" still needs":"s still need")+" completion. Submitted actions stay hidden until every action is ready for review."):"All corrective actions are ready for verification.";
+      return childSummary.work_open>0?(childSummary.work_open+" corrective action"+(childSummary.work_open===1?" still needs":"s still need")+" completion. Submitted actions stay hidden until every action is ready for review."):"All corrective actions are ready for review.";
     }
     if(childSummary&&n===5){
       if(childSummary.awaiting>0&&childSummary.changes_requested>0) return childSummary.awaiting+" action"+(childSummary.awaiting===1?" still needs":"s still need")+" a review decision. "+childSummary.changes_requested+" action"+(childSummary.changes_requested===1?" has":"s have")+" already been sent back.";
       return childSummary.awaiting>0?(childSummary.awaiting+" action"+(childSummary.awaiting===1?" is":"s are")+" waiting for review; "+childSummary.verified+" already verified."):(childSummary.verified+" of "+childSummary.total+" corrective actions verified.");
     }
-    if(n===4 && r.action_status==="changes_requested" && canEditStep(r,4)) return "Changes were requested. Update the work and resubmit it for verification.";
+    if(n===4 && r.action_status==="changes_requested" && canEditStep(r,4)) return "Changes were requested. Update the work and send it again for review.";
     if(currentRole==="supervisor" && n===1 && isInvestigatorAssignedToMe(r) && r.involves_injury && ["yes","no","pending"].indexOf(String(r.calosha_screening_status||""))<0) return "You own this investigation, but an Admin or Safety Manager must complete the regulatory screening before Review can advance.";
     if(currentRole==="supervisor" && n<=3 && !isInvestigatorAssignedToMe(r)) return "This investigation is owned by "+(investigatorName(r)||"another dashboard user")+". You can review this step, but only the assigned investigator can change it.";
     if(currentRole==="supervisor" && n===4 && !isActionAssignedToMe(r)) return "This corrective action is owned by "+(assigneeName(r)||"another dashboard user")+". You can review it, but only the assigned action owner can change it.";
     if(n===5 && !canVerify()) return "This step is waiting for an Admin or Safety Manager to verify the work.";
     if(n===5 && isManager()) return "Review the completed work and evidence, then verify it or request changes.";
-    if(n===6 && !canVerify()) return "An Admin or Safety Manager closes the record after verification.";
+    if(n===6 && !canVerify()) return "An Admin or Safety Manager closes the report after verification.";
     return map[n]||"Follow the guided steps.";
   }
   function recommendedWizardStep(r){
@@ -2995,24 +3011,24 @@
     if(childSummary && (n===4||n===5)) return {save:null,complete:null};
     var canEdit=canEditStep(r,n);
     if(!canEdit) return {save:null,complete:null};
-    if(st&&st.state==="done" && n!==6) return {save:(n===2||n===3?"Save and close":null),complete:null};
+    if(st&&st.state==="done" && n!==6) return {save:(n===2||n===3?"Save draft & return home":null),complete:null};
     if(!isCurrent && n!==6) return {save:null,complete:null};
-    if(n===1) return {save:null,complete:"Continue to investigation →"};
-    if(n===2) return {save:"Save and close",complete:"Continue to corrective actions →"};
+    if(n===1) return {save:null,complete:"Start investigation →"};
+    if(n===2) return {save:"Save draft & return home",complete:"Finish investigation →"};
     if(n===3){
-      if(correctiveActionDecisionValue(r)==="required") return {save:"Save and close",complete:"Assign actions →"};
+      if(correctiveActionDecisionValue(r)==="required") return {save:"Save draft & return home",complete:"Assign actions →"};
       return {save:null,complete:null};
     }
-    if(n===4){ if(r.action_status==="awaiting_verification"||r.action_status==="verified") return {save:null,complete:null}; return {save:"Save and close",complete:r.action_status==="changes_requested"?"Resubmit for verification →":"Submit for verification →"}; }
+    if(n===4){ if(r.action_status==="awaiting_verification"||r.action_status==="verified") return {save:null,complete:null}; return {save:"Save draft & return home",complete:r.action_status==="changes_requested"?"Send again for review →":"Send for review →"}; }
     if(n===5){
       /* Multi-action verification is intentionally decision-based, not assigned.
          Each submitted corrective action has its own Verify / Send back controls,
          and the workflow advances only after every action is verified. */
       if(correctiveActionSummary(r)) return {save:null,complete:null};
       if(!canPerformVerification(r)||r.action_status!=="awaiting_verification") return {save:null,complete:null};
-      return {save:"Save and close",complete:"Verify & continue →"};
+      return {save:"Save draft & return home",complete:"Verify as complete →"};
     }
-    if(n===6){ if(r.status==="closed"||r.status==="no_action"||r.status==="duplicate") return {save:null,complete:null}; return {save:null,complete:canClose(r)?"Close record":null}; }
+    if(n===6){ if(r.status==="closed"||r.status==="no_action"||r.status==="duplicate") return {save:null,complete:null}; return {save:null,complete:canClose(r)?"Close report":null}; }
     return {save:null,complete:null};
   }
   function scrollAppToTop(){
@@ -3138,7 +3154,7 @@
       [!!(r.status&&r.status!=="new"),"Report reviewed"],
       [hasWorkflowValue(r.root_cause),"Investigation completed"],
       [childSummary.total>0,childSummary.total+" corrective action"+(childSummary.total===1?"":"s")+" assigned"],
-      [childSummary.open===0,"All corrective actions submitted for verification"],
+      [childSummary.open===0,"All corrective actions sent for review"],
       [childSummary.verified===childSummary.total,"All corrective actions verified"]
     ]:[
       [!!(r.status&&r.status!=="new"),"Report reviewed"],
@@ -3151,16 +3167,16 @@
     ]);
     if(r.involves_injury) checks.push([regulatoryFollowupResolved(r),"Injury regulatory follow-up resolved"]);
     var list=checks.map(function(x){return '<div class="close-check '+(x[0]?'ok':'missing')+'"><b>'+(x[0]?'✓':'!')+'</b><span>'+esc(x[1])+'</span></div>';}).join("");
-    if(closed){ el.innerHTML='<div class="ops-alert"><b>Record complete</b>This incident is closed. The full history remains available below.</div><div class="close-checklist">'+list+'</div>'; return; }
-    var ready=canClose(r), button=ready&&canEditStep(r,6)?'<button class="wizard-close" type="button" data-step-complete="6">Close record</button>':'';
-    el.innerHTML='<div class="close-checklist">'+list+'</div>'+(ready?'<div class="wizard-context"><b>Ready to close</b><p>All required workflow steps are complete. Closing the record will preserve the full history and mark it resolved.</p></div>':'<div class="wizard-required show">Complete the missing checklist items before this record can be closed.</div>')+'<div class="wizard-footer"><div class="wizard-footer-copy">Closing is a deliberate final action. There is no autosave or automatic closure.</div><div class="wizard-footer-actions">'+button+'</div></div>';
+    if(closed){ el.innerHTML='<div class="ops-alert"><b>Report complete</b>This incident is closed. The full history remains available below.</div><div class="close-checklist">'+list+'</div>'; return; }
+    var ready=canClose(r), button=ready&&canEditStep(r,6)?'<button class="wizard-close" type="button" data-step-complete="6">Close report</button>':'';
+    el.innerHTML='<div class="close-checklist">'+list+'</div>'+(ready?'<div class="wizard-context"><b>Ready to close</b><p>All required workflow steps are complete. Closing the report will preserve the full history and mark it resolved.</p></div>':'<div class="wizard-required show">Complete the missing checklist items before this record can be closed.</div>')+'<div class="wizard-footer"><div class="wizard-footer-copy">Closing the report is a deliberate final action. It will not close automatically.</div><div class="wizard-footer-actions">'+button+'</div></div>';
     var btn=el.querySelector('[data-step-complete="6"]');
     if(btn) btn.addEventListener("click",async function(){
       if(!canEditStep(r,6)){ toast("Only an Admin or Safety Manager can close the record.","err"); return; }
       if(!canClose(r)){ toast(correctiveNoActionDocumented(r)?"Complete the required close checks before closing the record.":"Finish and verify every corrective action before closing the record.","err"); return; }
-      if(!window.confirm("Close this record? This is the final workflow action. The record will become read-only unless it is reopened.")) return;
+      if(!window.confirm("Close this report? This is the final workflow action. The report will become read-only unless it is reopened.")) return;
       btn.disabled=true; var old=btn.textContent; btn.textContent="Closing…";
-      try{ await updateStatus(r.id,"closed",null); $("incidentSummary").innerHTML='<div class="is-badges">'+incidentBadgeHtml(r)+'</div><div class="is-desc">'+esc(r.description||"No description provided.")+'</div>'; refreshRecordWorkflow(r,detail); loadAudit(r.id,auditEl); renderMyWork(); renderActions(); applyFilters(); toast("Record closed","ok"); }
+      try{ await updateStatus(r.id,"closed",null); $("incidentSummary").innerHTML='<div class="is-badges">'+incidentBadgeHtml(r)+'</div><div class="is-desc">'+esc(r.description||"No description provided.")+'</div>'; refreshRecordWorkflow(r,detail); loadAudit(r.id,auditEl); renderMyWork(); renderActions(); applyFilters(); toast("Report closed","ok"); }
       catch(ex){ console.error(ex); toast("Could not close the record.","err"); }
       finally{ if(btn.isConnected){btn.disabled=false;btn.textContent=old;} }
     });
@@ -3182,7 +3198,7 @@
       var disposition=(r.status==="no_action"||r.status==="duplicate")?"This report was closed without corrective action.":"This incident is closed and the workflow is locked.";
       var canReopen=canReopenReport(r);
       var reopenHelp=canReopen?" Admins and Safety Managers can reopen this record if new information arises or it was closed in error.":"";
-      var reopenAction=canReopen?'<button class="banner-action" type="button" data-reopen-inline>Reopen record</button>':'';
+      var reopenAction=canReopen?'<button class="banner-action" type="button" data-reopen-inline>Reopen report</button>':'';
       banner.innerHTML='<div class="resolved-review-banner"><b>Closed record · read only</b><span>'+esc(disposition)+' Review the preserved information below. Authorized users can still add a note in Notes &amp; activity history.'+esc(reopenHelp)+'</span>'+reopenAction+'</div>';
       var inlineReopen=banner.querySelector("[data-reopen-inline]"); if(inlineReopen) inlineReopen.addEventListener("click",function(){ openReopenModal(r,lastOperationalView); });
     }
@@ -3459,7 +3475,7 @@
     }
 
     function actionStatusLabel(status){
-      return ({not_started:"Not started",in_progress:"In progress",awaiting_verification:"Awaiting verification",verified:"Verified",changes_requested:"Changes requested"})[status]||"Draft";
+      return ({not_started:"Not started",in_progress:"In progress",awaiting_verification:"Ready for review",verified:"Verified",changes_requested:"Changes requested"})[status]||"Draft";
     }
     function renderCorrectiveActionOverview(){
       if(!actionPlanOverviews||!actionPlanOverviews.length) return;
@@ -3538,7 +3554,7 @@
       multiActionVerificationStage.hidden=false;
       var allRows=actionPlanState.actions.filter(function(a){return !!a.id&&correctiveActionInCurrentCycle(a,r);});
       if(!allRows.length){
-        multiActionVerificationStage.innerHTML='<div class="multi-action-stage-note">No active corrective actions are available for verification.</div>';
+        multiActionVerificationStage.innerHTML='<div class="multi-action-stage-note">No active corrective actions are available for review.</div>';
         return;
       }
       // Verify is also the final Step 3 review surface. Keep every current-cycle
@@ -3564,7 +3580,7 @@
         } else if(status==="awaiting_verification"){
           var canReview=canVerifyCorrectiveAction(a);
           if(canReview){
-            review='<div class="multi-action-verifier-note"><b>Ready for verification</b>Review the completed work and evidence below. No verifier needs to be assigned. Verify it if the fix is complete, or send this action back for changes.</div>'+
+            review='<div class="multi-action-verifier-note"><b>Ready for review</b>Review the completed work and evidence below. No reviewer needs to be assigned. Verify it as complete, or send this action back for changes.</div>'+
               '<div class="mav-review">'+
                 '<label class="inv-l">Verification notes <span style="font-weight:400;color:var(--muted)">(optional when approving)</span>'+
                   '<textarea data-child-verification-note="'+esc(a.id)+'" placeholder="What did you verify? If requesting changes, explain exactly what still needs to be done.">'+esc(a.verification_note||"")+'</textarea>'+
@@ -3572,17 +3588,17 @@
                 '<div class="wizard-required" data-child-verification-required="'+esc(a.id)+'">Add a reviewer note explaining the requested changes.</div>'+
                 '<div class="multi-action-verification-actions">'+
                   '<button class="multi-action-request-changes" type="button" data-child-request-changes="'+esc(a.id)+'">Send back for changes</button>'+
-                  '<button class="wizard-primary" type="button" data-child-verify-action="'+esc(a.id)+'">Verify action</button>'+
+                  '<button class="wizard-primary" type="button" data-child-verify-action="'+esc(a.id)+'">Verify as complete</button>'+
                 '</div>'+
               '</div>';
           } else {
-            review='<div class="multi-action-verifier-note"><b>Verification required</b>An authorized reviewer must review the completed work and either verify it or send it back for changes.</div>';
+            review='<div class="multi-action-verifier-note"><b>Review required</b>An authorized reviewer must review the completed work and either verify it or send it back for changes.</div>';
           }
         } else if(status==="changes_requested"){
           review='<div class="ops-alert critical"><b>Changes requested</b>'+esc(a.verification_note||"The reviewer requested additional work.")+'</div>'+
             '<div class="multi-action-verifier-note"><b>Waiting for owner</b>'+esc(owner)+' must update and resubmit this corrective action.</div>';
         } else {
-          review='<div class="multi-action-verifier-note"><b>Not ready for verification</b>This action must be completed and submitted by '+esc(owner)+' before a reviewer can verify it.</div>';
+          review='<div class="multi-action-verifier-note"><b>Not ready for review</b>This action must be completed and submitted by '+esc(owner)+' before a reviewer can verify it.</div>';
         }
 
         return '<div class="multi-action-verification-card ca-status-'+esc(status)+'" data-child-verification-card="'+esc(a.id)+'">'+
@@ -3653,12 +3669,12 @@
         if(status==="verified"){
           work='<div class="multi-action-completion-note"><b>Verified</b>'+(a.completion_note?esc(a.completion_note):"Completion recorded.")+(a.completed_at?'<div class="action-meta">Submitted '+esc(fmtDate(a.completed_at))+(completedBy?' by '+esc(completedBy):'')+'</div>':'')+'</div>';
         } else if(status==="awaiting_verification"){
-          work='<div class="multi-action-completion-note"><b>Awaiting verification</b>'+esc(a.completion_note||"Completion submitted.")+(a.completed_at?'<div class="action-meta">Submitted '+esc(fmtDate(a.completed_at))+(completedBy?' by '+esc(completedBy):'')+'</div>':'')+'</div>';
+          work='<div class="multi-action-completion-note"><b>Ready for review</b>'+esc(a.completion_note||"Completion submitted.")+(a.completed_at?'<div class="action-meta">Submitted '+esc(fmtDate(a.completed_at))+(completedBy?' by '+esc(completedBy):'')+'</div>':'')+'</div>';
         } else if(editable){
           work=(status==="changes_requested"&&a.verification_note?'<div class="ops-alert"><b>Changes requested</b>'+esc(a.verification_note)+'</div>':'')+
             '<div class="mac-work"><div class="action-missing-list"><b>Required:</b> Describe what was completed. Add any supporting evidence below before submitting. Evidence is optional unless your company requires it.</div><label class="inv-l">What was completed?<textarea data-child-completion-note="'+esc(a.id)+'" placeholder="Describe what was completed and anything the reviewer should know.">'+esc(a.completion_note||"")+'</textarea></label></div>';
         } else {
-          work='<div class="multi-action-completion-note"><b>Assigned owner</b>'+esc(owner)+' must complete this corrective action before it can move to verification.</div>';
+          work='<div class="multi-action-completion-note"><b>Assigned owner</b>'+esc(owner)+' must complete this corrective action before it can move to review.</div>';
         }
         return '<div class="multi-action-completion-card ca-status-'+esc(status)+'" data-child-completion-card="'+esc(a.id)+'">'+
           '<div class="mac-head"><div class="mac-title"><b>Corrective Action #'+esc(a.action_number||"")+'</b><span>'+esc(owner)+'</span></div><span class="multi-action-status mas-status-'+esc(status)+'">'+esc(actionStatusLabel(status))+'</span></div>'+
@@ -3666,7 +3682,7 @@
           '<div class="mac-meta"><span><b>Due:</b> '+esc(due)+'</span><span><b>Priority:</b> '+esc(priority)+'</span><span><b>Control:</b> '+esc(control)+'</span></div>'+
           work+
           '<div class="evidence-panel" data-action-evidence data-corrective-action-id="'+esc(a.id)+'"></div>'+
-          (editable?'<div class="multi-action-completion-actions multi-action-submit-after-evidence"><button class="wizard-primary" type="button" data-submit-child-completion="'+esc(a.id)+'">'+(status==="changes_requested"?'Resubmit for verification →':'Submit for verification →')+'</button></div>':'')+
+          (editable?'<div class="multi-action-completion-actions multi-action-submit-after-evidence"><button class="wizard-primary" type="button" data-submit-child-completion="'+esc(a.id)+'">'+(status==="changes_requested"?'Send again for review →':'Send for review →')+'</button></div>':'')+
         '</div>';
       }).join("");
       Array.prototype.slice.call(multiActionCompletionEl.querySelectorAll("[data-action-evidence][data-corrective-action-id]")).forEach(function(panel){
@@ -3678,7 +3694,7 @@
     function correctiveActionMissingFields(a){
       var missing=[];
       if(!String(a.description||"").trim()) missing.push("what needs to be fixed");
-      if(!a.control_type) missing.push("control type");
+      if(!a.control_type) missing.push("type of fix");
       if(!a.owner_user_id) missing.push("owner");
       if(!a.due_date) missing.push("due date");
       if(!a.priority) missing.push("priority");
@@ -3686,7 +3702,7 @@
     }
     function refreshPlanCardFieldProgress(card){
       if(!card) return;
-      var labels={description:"what needs to be fixed",control_type:"control type",owner_user_id:"owner",due_date:"due date",priority:"priority"};
+      var labels={description:"what needs to be fixed",control_type:"type of fix",owner_user_id:"owner",due_date:"due date",priority:"priority"};
       var missing=[];
       Object.keys(labels).forEach(function(key){
         var field=card.querySelector('[data-action-field="'+key+'"]');
@@ -3724,12 +3740,12 @@
         var missingHtml='<div class="action-missing-list" data-action-missing'+(missing.length?'':' hidden')+'>'+(missing.length?'<b>Still needed:</b> '+esc(missing.join(", "))+'.':'')+'</div>';
         var fields='<div class="multi-action-fields">'+
             '<label class="inv-l">What needs to be fixed?<textarea data-action-field="description" placeholder="Describe the specific fix or change needed."'+disabled+'>'+esc(a.description||"")+'</textarea><span class="field-guidance compact">Be specific enough that the assigned person knows exactly what to do.</span><div class="multi-action-translation" data-action-translation hidden></div></label>'+ 
-            '<label class="inv-l">Control type<select data-action-field="control_type"'+disabled+'><option value="">— Select control type —</option><option value="elimination"'+(a.control_type==="elimination"?' selected':'')+'>Elimination — remove the hazard</option><option value="substitution"'+(a.control_type==="substitution"?' selected':'')+'>Substitution — replace the hazard</option><option value="engineering"'+(a.control_type==="engineering"?' selected':'')+'>Engineering control — isolate people from the hazard</option><option value="administrative"'+(a.control_type==="administrative"?' selected':'')+'>Administrative / work practice — change how work is performed</option><option value="ppe"'+(a.control_type==="ppe"?' selected':'')+'>PPE — protect the worker</option><option value="other"'+(a.control_type==="other"?' selected':'')+'>Other</option></select><span class="field-guidance compact">Choose the highest practical level in the hierarchy of controls.</span></label>'+ 
+            '<label class="inv-l">Type of fix<select data-action-field="control_type"'+disabled+'><option value="">— Select type of fix —</option><option value="elimination"'+(a.control_type==="elimination"?' selected':'')+'>Elimination — remove the hazard</option><option value="substitution"'+(a.control_type==="substitution"?' selected':'')+'>Substitution — replace the hazard</option><option value="engineering"'+(a.control_type==="engineering"?' selected':'')+'>Engineering control — isolate people from the hazard</option><option value="administrative"'+(a.control_type==="administrative"?' selected':'')+'>Administrative / work practice — change how work is performed</option><option value="ppe"'+(a.control_type==="ppe"?' selected':'')+'>PPE — protect the worker</option><option value="other"'+(a.control_type==="other"?' selected':'')+'>Other</option></select><span class="field-guidance compact">Choose the option that best describes how this fix reduces the hazard.</span></label>'+ 
             '<label class="inv-l">Who will complete this?<select data-action-field="owner_user_id"'+disabled+'>'+assignmentOptions(a.owner_user_id||"")+'</select><span class="field-guidance compact">Choose the person responsible for this specific action.</span></label>'+ 
             '<div class="inv-row"><label class="inv-l">Due date<input type="date" data-action-field="due_date" value="'+esc(a.due_date||"")+'"'+disabled+'><span class="field-guidance compact">When should this work be finished?</span></label><label class="inv-l">Priority<select data-action-field="priority"'+disabled+'><option value="">— Choose priority —</option><option value="low"'+(a.priority==="low"?' selected':'')+'>Low</option><option value="medium"'+(a.priority==="medium"?' selected':'')+'>Medium</option><option value="high"'+(a.priority==="high"?' selected':'')+'>High</option></select><span class="field-guidance compact">How urgent is this action?</span></label></div>'+ 
           '</div>';
         var planBody=live?('<details class="action-plan-details"><summary>'+((!editable||locked)?'View plan details':'View / edit plan details')+' · '+esc(owner)+' · '+esc(due)+'</summary>'+fields+'</details>'):fields;
-        var liveMessage=status==="verified"?"Work completed and verified.":(status==="awaiting_verification"?"Work submitted and waiting for verification.":(status==="changes_requested"?"The reviewer requested changes. Continue in Complete work below.":"Continue below to Complete work."));
+        var liveMessage=status==="verified"?"Work completed and verified.":(status==="awaiting_verification"?"Work sent and ready for review.":(status==="changes_requested"?"The reviewer requested changes. Continue in Complete work below.":"Continue below to Complete work."));
         var liveNote=live?'<div class="multi-action-live-note"><b>Plan assigned</b>'+esc(control)+' · '+esc(priority)+' priority. '+esc(liveMessage)+' Open the plan details only if the plan itself needs attention.</div>':'';
         return '<div class="multi-action-card ca-status-'+esc(status)+(live?' is-activated':'')+(locked?' is-locked':'')+'" data-action-card data-action-index="'+idx+'">'+
           '<div class="multi-action-head"><div class="multi-action-title"><b>'+esc(title)+'</b><span>'+(live?'Assigned action':'Draft action')+(locked?' · plan locked while this action is in review':'')+'</span></div><div class="multi-action-head-actions">'+progress+'<span class="multi-action-status mas-status-'+esc(status)+'">'+esc(actionStatusLabel(status))+'</span><button class="multi-action-remove" type="button" data-remove-corrective-action="'+idx+'"'+((!editable||locked)?' disabled':'')+'>Remove</button></div></div>'+ 
@@ -3911,7 +3927,7 @@
       var actionId=btn.getAttribute("data-submit-child-completion"), a=actionPlanState.actions.find(function(x){return String(x.id||"")===String(actionId||"");});
       if(!a||!canCompleteCorrectiveAction(a)){toast("Only this corrective-action owner or an Admin/Safety Manager can submit the work.","err");return;}
       var card=btn.closest("[data-child-completion-card]"), ta=card&&card.querySelector("[data-child-completion-note]"), note=ta?ta.value.trim():"";
-      if(!note){toast("Describe what was completed before submitting this action for verification.","err");if(ta)ta.focus();return;}
+      if(!note){toast("Describe what was completed before sending this action for review.","err");if(ta)ta.focus();return;}
       btn.disabled=true;
       try{
         await waitForActionEvidenceUpload(r.id,a.id);
@@ -3925,9 +3941,9 @@
         if(summary&&summary.open===0) setWizardStep(detail,r,5,true); else setWizardStep(detail,r,4,true);
         if(!verificationEmail || (!verificationEmail.sent&&!verificationEmail.skipped&&verificationEmail.ok===false)){
           console.error("action verification-request email failed",verificationEmail);
-          toast("Corrective Action #"+a.action_number+" was submitted, but the verification email could not be sent.","err");
+          toast("Corrective Action #"+a.action_number+" was sent for review, but the review email could not be sent.","err");
         } else {
-          toast("Corrective Action #"+a.action_number+" submitted for verification","ok");
+          toast("Corrective Action #"+a.action_number+" sent for review","ok");
         }
       }catch(ex){console.error(ex);toast("Could not submit this corrective action.","err");}
       finally{if(btn.isConnected)btn.disabled=false;}
@@ -4183,7 +4199,7 @@
     if(!r || !canVerify()){ toast("Only an Admin or Safety Manager can close a report without corrective action.","err"); return; }
     if(r.involves_injury && !regulatoryFollowupResolved(r)){ toast("Resolve the injury regulatory follow-up before closing this report.","err"); return; }
     dispositionReport=r; dispositionWrap=wrap; dispositionNotesEl=notesEl;
-    $("dHeading").textContent="Close report #"+r.ref_no+" — no corrective action";
+    $("dHeading").textContent="Close report #"+r.ref_no+" — no investigation needed";
     $("dReason").value=(presetStatus==="duplicate"?"duplicate":"no_issue");
     $("dNote").value=""; $("dErr").classList.remove("show");
     $("dispositionBackdrop").classList.add("open");
@@ -4225,7 +4241,7 @@
   function openReopenModal(r, returnView){
     if(!r || !canReopenReport(r)){ toast("Only an Admin or Safety Manager can reopen a resolved record.","err"); return; }
     reopenReport=r; reopenReturnView=returnView||lastOperationalView||"records";
-    $("reopenHeading").textContent="Reopen record — Report #"+r.ref_no;
+    $("reopenHeading").textContent="Reopen report — Report #"+r.ref_no;
     $("reopenReason").value=""; $("reopenNote").value=""; $("reopenErr").classList.remove("show");
     $("reopenBackdrop").classList.add("open");
     setTimeout(function(){ $("reopenReason").focus(); },40);
@@ -4341,7 +4357,7 @@
         else if(a.event_type==="retired") title="Corrective Action #"+String(a.action_number||"")+" retired";
         else if(a.event_type==="restored") title="Corrective Action #"+String(a.action_number||"")+" restored";
         else if(oldStatus!==newStatus){
-          if(newStatus==="awaiting_verification") title="Corrective Action #"+String(a.action_number||"")+" submitted for verification";
+          if(newStatus==="awaiting_verification") title="Corrective Action #"+String(a.action_number||"")+" sent for review";
           else if(newStatus==="verified") title="Corrective Action #"+String(a.action_number||"")+" verified";
           else if(newStatus==="changes_requested") title="Changes requested for Corrective Action #"+String(a.action_number||"");
           else if(newStatus==="not_started"&&oldStatus) title="Corrective Action #"+String(a.action_number||"")+" reset for current workflow";
@@ -4568,7 +4584,7 @@
 
       var pdfMode=languageMode||"viewer", pdfLang=(pdfMode==="original"?normalizeLanguageCode(r.language||"en"):(pdfMode==="viewer"?(activeIncident===r?activeIncidentLanguage:preferredReadingLanguage()):normalizeLanguageCode(pdfMode)));
       var pdfLabels={
-        en:{notRecorded:"Not recorded",dashboardUser:"Dashboard user",reportWord:"Report",step:"STEP",workflow:["Review","Investigation","Corrective Actions","Close"],headerSubtitle:"Incident record - after-action summary",submitted:"Submitted",generated:"Generated",section1:"Report and review",section1Sub:"What was submitted and how the report entered the safety workflow.",reportType:"Report type",actualInjury:"Actual injury or illness",address:"Address of incident",specificSpot:"Specific spot on the site",whenNoticed:"When noticed",potentialSeverity:"Potential severity",hazardType:"Type of hazard",formLanguage:"Form language",describe:"Describe what you saw",noDescription:"No description recorded",involved:"Who or what was involved / any witnesses",immediate:"What was done right away",suggested:"What would fix it or prevent it",reporter:"Reporter",reportedBy:"Reported by",reporterRole:"Reporter role",reporterContact:"Reporter contact",reviewCompleted:"Review completed",reviewedBy:"Reviewed by",investigator:"Case owner / investigator",verifier:"Verification owner",workflowRestarts:"Workflow restarts",lastRestart:"Last restart",none:"None",originalFiles:"Original report photos and files",noOriginalFiles:"No original files attached",calosha:"Cal/OSHA serious-event screening",screeningResult:"Screening result",awareness:"Company awareness time",notifiedAt:"Cal/OSHA notified at",notifiedBy:"Notification recorded by",screeningNote:"Screening note",screeningDisclaimer:"Management screening only. This application does not submit a report to Cal/OSHA and the screening does not replace required regulatory reporting.",section2:"Investigation",section2Sub:"Document what the investigation found and why it happened.",whatHappened:"What happened?",rootCause:"Why did it happen?",investigationEvidence:"Investigation evidence",noInvestigationEvidence:"No investigation evidence attached",notYetRecorded:"Not yet recorded",section3:"Corrective actions",section3Sub:"Document whether additional corrective work was required and, when needed, the action plan.",correctiveDecision:"Corrective-action decision",noAdditionalAction:"No additional corrective action needed",noActionReason:"Reason",noActionExplanation:"Explanation",correctiveRequired:"Corrective action required",actionNumber:"Corrective Action",actionStatus:"Action status",controlType:"Control type",assignedUser:"Assigned dashboard user",notAssigned:"Not assigned",responsible:"Responsible person / crew",dueDate:"Due date",priority:"Priority",section4:"Corrective actions - Complete work",section4Sub:"Record what was actually completed and the supporting evidence.",completedWork:"Completed work submitted",notYetSubmitted:"Not yet submitted",completedOn:"Completed on",completedBy:"Completed by",currentEvidence:"Current-workflow corrective-action evidence",noCurrentEvidence:"No corrective-action evidence attached in the current workflow",priorEvidence:"Preserved evidence from earlier workflow",section5:"Corrective actions - Verify work",section5Sub:"Show the review decision and any verification or change-request note.",verificationOutcome:"Verification outcome",verifiedOn:"Verified on",verifiedBy:"Verified by",requestedChanges:"Requested changes",reviewerNote:"Reviewer verification note",noVerificationNote:"No verification note recorded",section6:"Close record",section6Sub:"Final disposition and closure information for the incident.",recordStatus:"Record status",closedOn:"Closed on",notYetClosed:"Not yet closed",closedBy:"Closed by",closurePath:"Closure path",closureReason:"Closure reason",closureNote:"Closure note",additionalNotes:"Additional notes",activityHistory:"Activity history",reportSubmitted:"Report submitted",anonymousReporter:"Anonymous reporter",note:"Note",system:"System",footer:"RBH Insulation, Inc. | Confidential safety document | License #558799",page:"Page",yes:"Yes",no:"No",originalRecord:"Original record",appendixTitle:"Attachment Appendix",appendixSub:"Files preserved with this record at the time the PDF was generated.",attachment:"Attachment",source:"Source",uploaded:"Uploaded",fileType:"File type",fileSize:"File size",sha256:"SHA-256",sourceOriginal:"Original report attachment",sourceInvestigationEvidence:"Investigation evidence",sourceCurrentEvidence:"Corrective-action evidence",sourcePriorEvidence:"Earlier-workflow corrective-action evidence",embeddedOnly:"Source file embedded in PDF",embeddedOnlyBody:"This file type cannot be rendered reliably as visible PDF pages in the browser. The original source file is embedded inside this PDF package so it remains with the exported record.",pdfPages:"Source PDF pages follow",appendixCount:"Attachments included",appendixNote:"Removed attachments are not included; their removal remains documented in the activity history.",attachmentUnavailable:"Attachment could not be loaded",attachmentUnavailableBody:"This attachment could not be retrieved when the PDF was generated. Its metadata remains listed in the appendix.",summaryPage:"Summary page"},
+        en:{notRecorded:"Not recorded",dashboardUser:"Dashboard user",reportWord:"Report",step:"STEP",workflow:["Review","Investigation","Corrective Actions","Close"],headerSubtitle:"Incident record - after-action summary",submitted:"Submitted",generated:"Generated",section1:"Report and review",section1Sub:"What was submitted and how the report entered the safety workflow.",reportType:"Report type",actualInjury:"Actual injury or illness",address:"Address of incident",specificSpot:"Specific spot on the site",whenNoticed:"When noticed",potentialSeverity:"Potential severity",hazardType:"Type of hazard",formLanguage:"Form language",describe:"Describe what you saw",noDescription:"No description recorded",involved:"Who or what was involved / any witnesses",immediate:"What was done right away",suggested:"What would fix it or prevent it",reporter:"Reporter",reportedBy:"Reported by",reporterRole:"Reporter role",reporterContact:"Reporter contact",reviewCompleted:"Review completed",reviewedBy:"Reviewed by",investigator:"Case owner / investigator",verifier:"Verification owner",workflowRestarts:"Workflow restarts",lastRestart:"Last restart",none:"None",originalFiles:"Original report photos and files",noOriginalFiles:"No original files attached",calosha:"Cal/OSHA serious-event screening",screeningResult:"Screening result",awareness:"Company awareness time",notifiedAt:"Cal/OSHA notified at",notifiedBy:"Notification recorded by",screeningNote:"Screening note",screeningDisclaimer:"Management screening only. This application does not submit a report to Cal/OSHA and the screening does not replace required regulatory reporting.",section2:"Investigation",section2Sub:"Document what the investigation found and why it happened.",whatHappened:"What happened?",rootCause:"Why did it happen?",investigationEvidence:"Investigation evidence",noInvestigationEvidence:"No investigation evidence attached",notYetRecorded:"Not yet recorded",section3:"Corrective actions",section3Sub:"Document whether additional corrective work was required and, when needed, the action plan.",correctiveDecision:"Corrective-action decision",noAdditionalAction:"No additional corrective action needed",noActionReason:"Reason",noActionExplanation:"Explanation",correctiveRequired:"Corrective action required",actionNumber:"Corrective Action",actionStatus:"Action status",controlType:"Control type",assignedUser:"Assigned dashboard user",notAssigned:"Not assigned",responsible:"Responsible person / crew",dueDate:"Due date",priority:"Priority",section4:"Corrective actions - Complete work",section4Sub:"Record what was actually completed and the supporting evidence.",completedWork:"Completed work submitted",notYetSubmitted:"Not yet submitted",completedOn:"Completed on",completedBy:"Completed by",currentEvidence:"Current-workflow corrective-action evidence",noCurrentEvidence:"No corrective-action evidence attached in the current workflow",priorEvidence:"Preserved evidence from earlier workflow",section5:"Corrective actions - Verify work",section5Sub:"Show the review decision and any verification or change-request note.",verificationOutcome:"Verification outcome",verifiedOn:"Verified on",verifiedBy:"Verified by",requestedChanges:"Requested changes",reviewerNote:"Reviewer verification note",noVerificationNote:"No verification note recorded",section6:"Close report",section6Sub:"Final disposition and closure information for the incident.",recordStatus:"Record status",closedOn:"Closed on",notYetClosed:"Not yet closed",closedBy:"Closed by",closurePath:"Closure path",closureReason:"Closure reason",closureNote:"Closure note",additionalNotes:"Additional notes",activityHistory:"Activity history",reportSubmitted:"Report submitted",anonymousReporter:"Anonymous reporter",note:"Note",system:"System",footer:"RBH Insulation, Inc. | Confidential safety document | License #558799",page:"Page",yes:"Yes",no:"No",originalRecord:"Original record",appendixTitle:"Attachment Appendix",appendixSub:"Files preserved with this record at the time the PDF was generated.",attachment:"Attachment",source:"Source",uploaded:"Uploaded",fileType:"File type",fileSize:"File size",sha256:"SHA-256",sourceOriginal:"Original report attachment",sourceInvestigationEvidence:"Investigation evidence",sourceCurrentEvidence:"Corrective-action evidence",sourcePriorEvidence:"Earlier-workflow corrective-action evidence",embeddedOnly:"Source file embedded in PDF",embeddedOnlyBody:"This file type cannot be rendered reliably as visible PDF pages in the browser. The original source file is embedded inside this PDF package so it remains with the exported record.",pdfPages:"Source PDF pages follow",appendixCount:"Attachments included",appendixNote:"Removed attachments are not included; their removal remains documented in the activity history.",attachmentUnavailable:"Attachment could not be loaded",attachmentUnavailableBody:"This attachment could not be retrieved when the PDF was generated. Its metadata remains listed in the appendix.",summaryPage:"Summary page"},
         es:{notRecorded:"No registrado",dashboardUser:"Usuario del panel",reportWord:"Reporte",step:"PASO",workflow:["Revisión","Investigación","Acciones correctivas","Cerrar"],headerSubtitle:"Registro del incidente - resumen posterior a la acción",submitted:"Enviado",generated:"Generado",section1:"Reporte y revisión",section1Sub:"Lo que se envió y cómo el reporte ingresó al flujo de seguridad.",reportType:"Tipo de reporte",actualInjury:"Lesión o enfermedad real",address:"Dirección del incidente",specificSpot:"Lugar específico en la obra",whenNoticed:"Cuándo se observó",potentialSeverity:"Gravedad potencial",hazardType:"Tipo de peligro",formLanguage:"Idioma del formulario",describe:"Describa lo que vio",noDescription:"No se registró descripción",involved:"Quién o qué estuvo involucrado / testigos",immediate:"Qué se hizo de inmediato",suggested:"Qué lo corregiría o evitaría",reporter:"Reportante",reportedBy:"Reportado por",reporterRole:"Función del reportante",reporterContact:"Contacto del reportante",reviewCompleted:"Revisión completada",reviewedBy:"Revisado por",investigator:"Responsable / investigador",verifier:"Responsable de verificación",workflowRestarts:"Reinicios del flujo",lastRestart:"Último reinicio",none:"Ninguno",originalFiles:"Fotos y archivos del reporte original",noOriginalFiles:"No hay archivos originales adjuntos",calosha:"Evaluación de evento grave de Cal/OSHA",screeningResult:"Resultado de la evaluación",awareness:"Hora en que la empresa tuvo conocimiento",notifiedAt:"Cal/OSHA notificado a las",notifiedBy:"Notificación registrada por",screeningNote:"Nota de evaluación",screeningDisclaimer:"Solo evaluación de la gerencia. Esta aplicación no presenta un reporte a Cal/OSHA y la evaluación no reemplaza los reportes regulatorios requeridos.",section2:"Investigación",section2Sub:"Documente lo que determinó la investigación y por qué ocurrió.",whatHappened:"¿Qué pasó?",rootCause:"¿Por qué pasó?",investigationEvidence:"Evidencia de la investigación",noInvestigationEvidence:"No hay evidencia de investigación adjunta",notYetRecorded:"Aún no registrado",section3:"Acciones correctivas",section3Sub:"Documente si se requirió trabajo correctivo adicional y, cuando corresponda, el plan de acción.",correctiveDecision:"Decisión de acción correctiva",noAdditionalAction:"No se necesita acción correctiva adicional",noActionReason:"Motivo",noActionExplanation:"Explicación",correctiveRequired:"Acción correctiva requerida",actionNumber:"Acción correctiva",actionStatus:"Estado de la acción",controlType:"Tipo de control",assignedUser:"Usuario asignado del panel",notAssigned:"No asignado",responsible:"Persona / equipo responsable",dueDate:"Fecha límite",priority:"Prioridad",section4:"Acciones correctivas - Completar trabajo",section4Sub:"Registre lo que realmente se completó y la evidencia de respaldo.",completedWork:"Trabajo completado enviado",notYetSubmitted:"Aún no enviado",completedOn:"Completado el",completedBy:"Completado por",currentEvidence:"Evidencia de acción correctiva del flujo actual",noCurrentEvidence:"No hay evidencia de acción correctiva adjunta en el flujo actual",priorEvidence:"Evidencia preservada de un flujo anterior",section5:"Acciones correctivas - Verificar trabajo",section5Sub:"Muestre la decisión de revisión y cualquier nota de verificación o solicitud de cambios.",verificationOutcome:"Resultado de la verificación",verifiedOn:"Verificado el",verifiedBy:"Verificado por",requestedChanges:"Cambios solicitados",reviewerNote:"Nota de verificación del revisor",noVerificationNote:"No se registró una nota de verificación",section6:"Cerrar registro",section6Sub:"Disposición final e información de cierre del incidente.",recordStatus:"Estado del registro",closedOn:"Cerrado el",notYetClosed:"Aún no cerrado",closedBy:"Cerrado por",closurePath:"Ruta de cierre",closureReason:"Motivo de cierre",closureNote:"Nota de cierre",additionalNotes:"Notas adicionales",activityHistory:"Historial de actividad",reportSubmitted:"Reporte enviado",anonymousReporter:"Reportante anónimo",note:"Nota",system:"Sistema",footer:"RBH Insulation, Inc. | Documento confidencial de seguridad | Licencia #558799",page:"Página",yes:"Sí",no:"No",originalRecord:"Registro original",appendixTitle:"Apéndice de archivos adjuntos",appendixSub:"Archivos preservados con este registro al momento de generar el PDF.",attachment:"Adjunto",source:"Origen",uploaded:"Cargado",fileType:"Tipo de archivo",fileSize:"Tamaño",sha256:"SHA-256",sourceOriginal:"Adjunto del reporte original",sourceInvestigationEvidence:"Evidencia de la investigación",sourceCurrentEvidence:"Evidencia de acción correctiva",sourcePriorEvidence:"Evidencia de acción correctiva de un flujo anterior",embeddedOnly:"Archivo fuente incorporado en el PDF",embeddedOnlyBody:"Este tipo de archivo no se puede representar de forma confiable como páginas PDF visibles en el navegador. El archivo fuente original está incorporado dentro de este paquete PDF para que permanezca con el registro exportado.",pdfPages:"Las páginas del PDF fuente siguen",appendixCount:"Adjuntos incluidos",appendixNote:"Los adjuntos eliminados no se incluyen; su eliminación permanece documentada en el historial de actividad.",attachmentUnavailable:"No se pudo cargar el adjunto",attachmentUnavailableBody:"No se pudo recuperar este adjunto cuando se generó el PDF. Sus metadatos permanecen listados en el apéndice.",summaryPage:"Página de resumen"}
       };
       var L=pdfLabels[pdfLang]||pdfLabels.en;
@@ -4585,7 +4601,7 @@
         else if(String(oldS.status||"")!==String(newS.status||"")){
           var ns=String(newS.status||"");
           title=ns==="verified"?"Corrective Action #"+String(a.action_number||"")+" verified":
-            (ns==="awaiting_verification"?"Corrective Action #"+String(a.action_number||"")+" submitted for verification":
+            (ns==="awaiting_verification"?"Corrective Action #"+String(a.action_number||"")+" sent for review":
             (ns==="changes_requested"?"Changes requested for Corrective Action #"+String(a.action_number||""):
             "Corrective Action #"+String(a.action_number||"")+" status updated"));
         }
@@ -5495,7 +5511,7 @@
   var lastOperationalView="records";
   var activeFocusedAction=null, focusedActionOrigin="mywork";
   var ROLE_LABELS={admin:"Admin",safety_manager:"Safety Manager",supervisor:"Supervisor",read_only:"Read Only"};
-  var ACTION_LABELS={not_started:"Not started",in_progress:"In progress",awaiting_verification:"Awaiting verification",verified:"Verified",changes_requested:"Changes requested"};
+  var ACTION_LABELS={not_started:"Not started",in_progress:"In progress",awaiting_verification:"Ready for review",verified:"Verified",changes_requested:"Changes requested"};
 
   function roleLabel(v){ return ROLE_LABELS[v]||"Read Only"; }
   function actionLabel(v){ return ACTION_LABELS[v]||"Not started"; }
@@ -5572,7 +5588,7 @@
     if(myWorkNav) myWorkNav.style.display=(canOwnWork?"":"none");
     var hot=$("homeOpenTitle"), hod=$("homeOpenDesc");
     if(hot) hot.textContent=canOwnWork?"Open My Work":"Open Safety Inbox";
-    if(hod) hod.textContent=canOwnWork?"See investigations, corrective actions, and verification reviews that need your attention.":"Review reports and safety activity.";
+    if(hod) hod.textContent=canOwnWork?"See investigations, corrective actions, and reviews that need your attention.":"Review reports and safety activity.";
     var note=$("adminPermissionNote");
     var afs=$("adminFeedbackSection"); if(afs) afs.hidden=true;
     var hc=$("platformContextLabel"); if(hc) hc.textContent=currentOrgName?("Current company: "+currentOrgName):"Platform overview";
@@ -5708,7 +5724,7 @@
     var owner=a.owner_user_id&&profileById[String(a.owner_user_id)]?profileName(profileById[String(a.owner_user_id)]):"Not assigned";
     var info=escalationInfo(a), status=String(a.status||"not_started");
     var label=mode==="verify"
-      ? "Ready for verification"
+      ? "Ready for review"
       : (status==="changes_requested"?"Changes requested":actionLabel(status));
     var meta=mode==="verify"
       ? "Action owner: "+owner
@@ -5722,7 +5738,7 @@
       '<div class="task-action">'+esc(a.description||"Corrective action")+'</div>'+
       '<div class="task-meta">'+esc(meta)+'</div>'+
       '<div class="task-due"><b class="due-signal '+(mode==="verify"?"":esc(info.cls))+'">'+
-        esc(mode==="verify"?"Ready for verification":info.label)+'</b><span>'+esc(due)+'</span></div>';
+        esc(mode==="verify"?"Ready for review":info.label)+'</b><span>'+esc(due)+'</span></div>';
     b.addEventListener("click",function(){ if(r) openFocusedCorrectiveAction(a,"mywork"); });
     return b;
   }
@@ -5757,10 +5773,10 @@
     var nm=currentProfile?profileName(currentProfile):((user&&user.email)||'');
     if(ng) ng.textContent=nm?('Work for '+nm):'Your work queue';
     if(br){
-      if(reviewCount) br.textContent=reviewCount+' corrective action'+(reviewCount===1?' is':'s are')+' ready for verification.';
+      if(reviewCount) br.textContent=reviewCount+' corrective action'+(reviewCount===1?' is':'s are')+' ready for review.';
       else if(investigations.length) br.textContent=investigations.length+' investigation'+(investigations.length===1?'':'s')+' currently need'+(investigations.length===1?'s':'')+' your attention.';
       else if(actions.length) br.textContent='Start with overdue, changes-requested, or due-soon corrective actions first.';
-      else br.textContent='Your assigned investigations, corrective actions, and verification reviews will appear here.';
+      else br.textContent='Your assigned investigations, corrective actions, and reviews will appear here.';
     }
     if(role) role.textContent=roleLabel(currentRole);
 
@@ -5773,7 +5789,7 @@
     if(panel) panel.classList.toggle('show',isManager());
     if(reviewList&&isManager()){
       reviewList.innerHTML='';
-      if(!reviews.length) reviewList.innerHTML='<div class="state">Nothing is waiting for verification.</div>';
+      if(!reviews.length) reviewList.innerHTML='<div class="state">Nothing is waiting for review.</div>';
       else reviews.forEach(function(a){reviewList.appendChild(childWorkCard(a,'verify'));});
     }
 
@@ -5821,7 +5837,7 @@
       if(currentUserId()&&String(a.owner_user_id||"")===currentUserId()) mine++;
     });
     function s(n,l){ return '<div class="action-stat"><b>'+n+'</b><span>'+l+'</span></div>'; }
-    el.innerHTML=s(overdue,"Overdue")+s(soon,"Due in 3 days")+s(verify,"Awaiting verification")+s(mine,"Assigned to me");
+    el.innerHTML=s(overdue,"Overdue")+s(soon,"Due in 3 days")+s(verify,"Ready for review")+s(mine,"Assigned to me");
   }
   function renderActions(){
     var el=$("actionList"), count=$("actionCount"); if(!el) return;
@@ -5974,7 +5990,7 @@
     if(status==="changes_requested"){
       html+='<div class="focused-action-callout returned"><b>Changes requested</b>'+esc(a.verification_note||"The reviewer requested an update to this corrective action.")+'</div>';
     } else if(status==="awaiting_verification"){
-      html+='<div class="focused-action-callout waiting"><b>Submitted for verification</b>'+(canVerify?'Review the completed work and evidence below. No verifier assignment is required.':'Your work is waiting for an authorized reviewer. You do not need to do anything unless it is sent back.')+'</div>';
+      html+='<div class="focused-action-callout waiting"><b>Ready for review</b>'+(canVerify?'Review the completed work and evidence below. No reviewer assignment is required.':'Your work is ready for an authorized reviewer. You do not need to do anything unless it is sent back.')+'</div>';
     } else if(status==="verified"){
       html+='<div class="focused-action-complete"><b>Verified</b>This corrective action is complete and no longer needs work.</div>';
     } else if(isMine){
@@ -5984,15 +6000,15 @@
     }
 
     html+='<section class="focused-action-section"><h3>Assigned work</h3><p class="focused-action-description">'+esc(a.description||"No corrective-action description recorded.")+'</p><div class="focused-action-meta">'+
-      focusedMeta("Assigned to",owner)+focusedMeta("Due date",due)+focusedMeta("Priority",priority)+focusedMeta("Control type",control)+
+      focusedMeta("Assigned to",owner)+focusedMeta("Due date",due)+focusedMeta("Priority",priority)+focusedMeta("Type of fix",control)+
       '</div></section>';
 
     if(["not_started","in_progress","changes_requested"].indexOf(status)>=0){
       html+='<section class="focused-action-section focused-action-work"><h3>'+(status==="changes_requested"?'Update completed work':'Complete this action')+'</h3>'+
         '<label for="focusedCompletionNote">What was completed?</label><textarea id="focusedCompletionNote" '+(canComplete?'':'disabled')+' placeholder="Describe exactly what was done to complete this corrective action.">'+esc(a.completion_note||"")+'</textarea>'+
-        '<p class="focused-action-help">Required before submitting for verification. Be specific enough that a reviewer can understand what changed.</p>'+
+        '<p class="focused-action-help">Required before sending for review. Be specific enough that a reviewer can understand what changed.</p>'+
         '<div class="evidence-panel" id="focusedActionEvidence"></div>'+
-        (canComplete?'<div class="focused-action-actions"><button class="wizard-primary" id="focusedSubmitAction" type="button">'+(status==="changes_requested"?'Resubmit for verification →':'Submit for verification →')+'</button></div>':'<div class="focused-action-readonly">This action is assigned to '+esc(owner)+'. You can review it here, but you cannot submit work for this owner.</div>')+
+        (canComplete?'<div class="focused-action-actions"><button class="wizard-primary" id="focusedSubmitAction" type="button">'+(status==="changes_requested"?'Send again for review →':'Send for review →')+'</button></div>':'<div class="focused-action-readonly">This action is assigned to '+esc(owner)+'. You can review it here, but you cannot submit work for this owner.</div>')+
         '</section>';
     } else {
       html+='<section class="focused-action-section"><h3>Completed work</h3>'+
@@ -6007,9 +6023,9 @@
         html+='<label for="focusedVerificationNote">Verification notes <span style="font-weight:400;color:var(--muted)">(optional when approving)</span></label>'+
           '<textarea id="focusedVerificationNote" placeholder="What did you verify? If sending this back, explain exactly what still needs to be done.">'+esc(a.verification_note||"")+'</textarea>'+
           '<div class="wizard-required" id="focusedVerificationRequired">Add a reviewer note explaining the requested changes.</div>'+
-          '<div class="focused-action-actions"><button class="multi-action-request-changes" id="focusedRequestChanges" type="button">Send back for changes</button><button class="wizard-primary" id="focusedVerifyAction" type="button">Verify action</button></div>';
+          '<div class="focused-action-actions"><button class="multi-action-request-changes" id="focusedRequestChanges" type="button">Send back for changes</button><button class="wizard-primary" id="focusedVerifyAction" type="button">Verify as complete</button></div>';
       } else {
-        html+='<div class="focused-action-readonly">An authorized reviewer will verify this action or send it back with a specific note. No verification owner needs to be assigned.</div>';
+        html+='<div class="focused-action-readonly">An authorized reviewer will verify this action or send it back with a specific note. No reviewer needs to be assigned.</div>';
       }
       html+='</section>';
     } else if(status==="verified"){
@@ -6025,7 +6041,7 @@
     var submit=$("focusedSubmitAction");
     if(submit) submit.addEventListener("click",async function(){
       var ta=$("focusedCompletionNote"), note=(ta&&ta.value.trim())||"";
-      if(!note){toast("Describe what was completed before submitting this action for verification.","err");if(ta)ta.focus();return;}
+      if(!note){toast("Describe what was completed before sending this action for review.","err");if(ta)ta.focus();return;}
       submit.disabled=true; var old=submit.textContent; submit.textContent="Submitting…";
       try{
         await waitForActionEvidenceUpload(r.id,a.id);
@@ -6036,7 +6052,7 @@
         var emailResult=await sendCorrectiveActionVerificationRequestedEmail(r,fresh);
         if(!emailResult||(!emailResult.sent&&!emailResult.skipped&&emailResult.ok===false)) console.error("focused verification-request email failed",emailResult);
         renderFocusedCorrectiveAction();
-        toast("Corrective Action #"+String(a.action_number||"")+" submitted for verification","ok");
+        toast("Corrective Action #"+String(a.action_number||"")+" sent for review","ok");
       }catch(ex){console.error(ex);toast("Could not submit this corrective action.","err");}
       finally{if(submit.isConnected){submit.disabled=false;submit.textContent=old;}}
     });
@@ -6530,23 +6546,23 @@
     var status=r.action_status||"not_started", assignee=assigneeName(r)||"Not assigned", due=escalationInfo(r);
     var completed=r.action_completed_at?("Completed "+fmtDate(r.action_completed_at)):"", verified=r.action_verified_at?("Verified "+fmtDate(r.action_verified_at)):"";
     var h='<div class="action-head"><div><h4>'+(mode==="verify"?'Verification review':'Assigned corrective action')+'</h4><p>'+esc(assignee)+(r.due_date?' · '+esc(due.label):' · no due date')+'</p></div><span class="action-state as-'+esc(status)+'">'+esc(actionLabel(status))+'</span></div>';
-    if(r.corrective_action&&String(r.corrective_action).trim()) h+='<div class="action-context"><b>Corrective action required</b><p>'+esc(r.corrective_action)+'</p>'+(r.corrective_control_type?'<div class="action-meta">Control type: '+esc(controlTypeLabel(r.corrective_control_type)||r.corrective_control_type)+'</div>':'')+'</div>';
+    if(r.corrective_action&&String(r.corrective_action).trim()) h+='<div class="action-context"><b>Corrective action required</b><p>'+esc(r.corrective_action)+'</p>'+(r.corrective_control_type?'<div class="action-meta">Type of fix: '+esc(controlTypeLabel(r.corrective_control_type)||r.corrective_control_type)+'</div>':'')+'</div>';
     else h+='<div class="wizard-required show">The corrective action plan has not been completed yet.</div>';
 
     if(mode==="complete"){
       if(status==="changes_requested"&&r.action_verification_note) h+='<div class="ops-alert critical"><b>Changes requested by reviewer</b>'+esc(r.action_verification_note)+'</div>';
-      if(status==="awaiting_verification"){ h+='<div class="ops-alert"><b>Waiting for verification</b>Your completed work has been submitted. An Admin or Safety Manager must review it before the record can move forward.</div>'; }
+      if(status==="awaiting_verification"){ h+='<div class="ops-alert"><b>Waiting for review</b>Your completed work has been submitted. An Admin or Safety Manager must review it before the report can move forward.</div>'; }
       if(status==="verified"){ h+='<div class="ops-alert"><b>Corrective action verified</b>This step is complete.</div>'; }
       if(canEditStep(r,4)&&status!=="verified"){
         var label=status==="changes_requested"?'Update completed work':(status==="awaiting_verification"?'Completed work submitted':'What did you complete?');
-        var help=status==="changes_requested"?'Update the note to explain the corrected work, then resubmit it.':(status==="awaiting_verification"?'The submitted completion note is shown below. You can correct the wording while it is waiting for verification.':'Describe exactly what was done. This note is required before submission.');
+        var help=status==="changes_requested"?'Update the note to explain the corrected work, then resubmit it.':(status==="awaiting_verification"?'The submitted completion note is shown below. You can correct the wording while it is waiting for review.':'Describe exactly what was done. This note is required before submission.');
         h+='<label class="inv-l">'+label+'<textarea class="action-note" placeholder="Describe what was completed or changed.">'+esc(r.action_completion_note||'')+'</textarea></label><div class="translation-preview" data-translation-field="action_completion_note" hidden></div><p class="action-help">'+help+'</p>';
       } else if(r.action_completion_note){ h+='<div class="action-context"><b>Completed work submitted</b><p>'+esc(r.action_completion_note)+'</p></div><div class="translation-preview" data-translation-field="action_completion_note" hidden></div>'; }
       if(completed){var cb=r.action_completed_by&&profileById[String(r.action_completed_by)]?profileName(profileById[String(r.action_completed_by)]):'';h+='<div class="action-meta">'+esc(completed)+(cb?' by '+esc(cb):'')+'</div>';}
       h+='<div class="evidence-panel" data-action-evidence></div>';
       if(canEditStep(r,4)&&status!=="verified"){
-        var primary=(status==="awaiting_verification")?'':(status==="changes_requested"?'Resubmit for verification →':'Submit for verification →');
-        h+='<div class="wizard-footer"><div class="wizard-footer-copy">Save and close keeps a draft. Submit for verification hands the completed work to the reviewer.</div><div class="wizard-footer-actions"><button class="wizard-save btn-save-completion" data-step-save="4" type="button">Save and close</button><span class="completion-saved section-saved" hidden>Saved ✓</span>'+(primary?'<button class="wizard-primary btn-complete" data-step-complete="4" type="button">'+primary+'</button>':'')+'</div></div>';
+        var primary=(status==="awaiting_verification")?'':(status==="changes_requested"?'Send again for review →':'Send for review →');
+        h+='<div class="wizard-footer"><div class="wizard-footer-copy">Save a draft and return home, or send the completed work to a reviewer.</div><div class="wizard-footer-actions"><button class="wizard-save btn-save-completion" data-step-save="4" type="button">Save draft &amp; return home</button><span class="completion-saved section-saved" hidden>Saved ✓</span>'+(primary?'<button class="wizard-primary btn-complete" data-step-complete="4" type="button">'+primary+'</button>':'')+'</div></div>';
       }
     } else {
       if(r.action_completion_note) h+='<div class="action-context"><b>Completed work submitted</b><p>'+esc(r.action_completion_note)+'</p></div><div class="translation-preview" data-translation-field="action_completion_note" hidden></div>';
@@ -6554,16 +6570,16 @@
       h+='<div class="evidence-panel" data-action-evidence></div>';
       if(status==="awaiting_verification"){
         if(canPerformVerification(r)){
-          h+='<div class="multi-action-verifier-note"><b>Ready for verification</b>Review the completed work and evidence. Verify it if the fix is complete, or request changes if more work is needed.</div>'+
+          h+='<div class="multi-action-verifier-note"><b>Ready for review</b>Review the completed work and evidence. Verify it as complete, or request changes if more work is needed.</div>'+
             '<label class="inv-l">Reviewer verification note <span style="font-weight:400;color:var(--muted)">(optional when approving)</span><textarea class="verify-note" placeholder="What did you verify? If requesting changes, explain exactly what still needs to be done.">'+esc(r.action_verification_note||'')+'</textarea></label><div class="wizard-required" data-verify-required>Add a verification note explaining the requested changes.</div>'+
-            '<div class="translation-preview" data-translation-field="action_verification_note" hidden></div><div class="wizard-footer"><div class="wizard-footer-copy">Save and close keeps a draft. Verify advances the record; Request changes sends it back to Complete work.</div><div class="wizard-footer-actions"><button class="wizard-save btn-save-verification" data-step-save="5" type="button">Save and close</button><span class="verification-saved section-saved" hidden>Saved ✓</span><button class="btn-changes" type="button">Request changes</button><button class="wizard-primary btn-verify" data-step-complete="5" type="button">Verify &amp; continue →</button></div></div>';
+            '<div class="translation-preview" data-translation-field="action_verification_note" hidden></div><div class="wizard-footer"><div class="wizard-footer-copy">Save a draft and return home. Verify as complete finishes the review; Request changes sends it back to Complete Work.</div><div class="wizard-footer-actions"><button class="wizard-save btn-save-verification" data-step-save="5" type="button">Save draft &amp; return home</button><span class="verification-saved section-saved" hidden>Saved ✓</span><button class="btn-changes" type="button">Request changes</button><button class="wizard-primary btn-verify" data-step-complete="5" type="button">Verify as complete →</button></div></div>';
         } else {
           h+='<div class="readonly-step-note">An Admin or Safety Manager reviews completed corrective actions and either verifies them or requests changes.</div>';
         }
       } else if(status==="verified"){
         if(r.action_verification_note) h+='<div class="action-context"><b>Verification note</b><p>'+esc(r.action_verification_note)+'</p></div><div class="translation-preview" data-translation-field="action_verification_note" hidden></div>';
         if(verified){var vb=r.action_verified_by&&profileById[String(r.action_verified_by)]?profileName(profileById[String(r.action_verified_by)]):'';h+='<div class="action-meta">'+esc(verified)+(vb?' by '+esc(vb):'')+'</div>';}
-        h+='<div class="ops-alert"><b>Verification complete</b>The corrective action was approved. Continue to Close Record.</div>';
+        h+='<div class="ops-alert"><b>Verification complete</b>The corrective action was approved. Continue to Close Report.</div>';
       } else if(status==="changes_requested") h+='<div class="readonly-step-note">Changes were requested. Complete work is active again so the assigned owner can update and resubmit the work.</div>';
       else h+='<div class="readonly-step-note">Verification becomes available after the assigned owner submits the completed work.</div>';
     }
@@ -6582,7 +6598,7 @@
       if(!canEditStep(r,4)){toast("Only the assigned corrective-action owner or an Admin/Safety Manager can submit this work.","err");return;}
       await waitForActionEvidenceUpload(r.id);
       var note=(el.querySelector(".action-note")&&el.querySelector(".action-note").value.trim())||"";
-      if(!note){toast("Describe what was completed before submitting for verification.","err");return;}
+      if(!note){toast("Describe what was completed before sending for review.","err");return;}
       completeBtn.disabled=true;
       try{
         var uid=currentSession&&currentSession.user?currentSession.user.id:null;
@@ -6604,7 +6620,7 @@
         } else if(notify&&notify.ok&&sentCount>0&&failedCount>0){
           toast("Corrective action submitted — some reviewer emails could not be sent.","err");
         } else if(notify&&notify.skipped&&(notify.reason==="NO_VERIFIER_EMAILS"||notify.reason==="NO_VERIFIER_EMAIL")){
-          toast(notify.reason==="NO_VERIFIER_EMAIL"?"Corrective action submitted — the assigned verification owner has no email available.":"Corrective action submitted — no Admin or Safety Manager email was available.","ok");
+          toast(notify.reason==="NO_VERIFIER_EMAIL"?"Corrective action sent for review — the assigned reviewer has no email available.":"Corrective action sent for review — no Admin or Safety Manager email was available.","ok");
         } else {
           console.error("verification-request notification failed",notify);
           toast("Corrective action submitted, but the reviewer email notification could not be sent.","err");
@@ -6874,7 +6890,7 @@
       : "No corrective-action evidence uploaded in the current workflow.";
 
     el.innerHTML=
-      '<div class="evidence-head"><div><b>'+esc(heading)+'</b><span>Photos or files that show what was fixed. Evidence stays with this corrective action throughout completion and verification.</span></div><span class="evidence-count">'+countLabel+'</span></div>'+
+      '<div class="evidence-head"><div><b>'+esc(heading)+'</b><span>Photos or files that show what was fixed. Evidence stays with this corrective action throughout completion and review.</span></div><span class="evidence-count">'+countLabel+'</span></div>'+
       '<div class="evidence-files" data-evidence-files>'+(arr.length?'<span class="evidence-empty">Loading evidence…</span>':'<span class="evidence-empty">'+esc(emptyLabel)+'</span>')+'</div>'+
       (priorEvidence.length?'<details class="evidence-history"><summary>Earlier workflow evidence ('+priorEvidence.length+')</summary><div class="evidence-files" data-prior-evidence-files><span class="evidence-empty">Loading preserved evidence…</span></div></details>':'')+
       (canManage?'<div class="evidence-upload"><input class="evidence-file-input" type="file" multiple accept="image/*,.pdf,.doc,.docx"><button class="evidence-pick" type="button">Add evidence</button><span class="evidence-selected">Files save automatically after selection.</span><div class="evidence-help">Up to 5 files at a time, 10 MB each. Remove is available for mistakes; every removal is recorded in Activity.</div></div>':'');
@@ -7089,7 +7105,7 @@
     var fields=rows.map(function(a){return a.field;});
     var actionRow=rows.find(function(a){return a.field==="action_status";});
     if(actionRow){
-      if(actionRow.new_value==="awaiting_verification") return "Corrective action submitted for verification";
+      if(actionRow.new_value==="awaiting_verification") return "Corrective action sent for review";
       if(actionRow.new_value==="verified") return "Corrective action verified";
       if(actionRow.new_value==="changes_requested") return "Changes requested on corrective action";
       if(actionRow.new_value==="in_progress") return "Corrective action moved into progress";
@@ -7224,7 +7240,7 @@
     var open=0,nw=0,inj=0,ov=0,verify=0;
     allReports.forEach(function(r){ if(r.status!=="closed"&&r.status!=="no_action"&&r.status!=="duplicate") open++; if(r.status==="new") nw++; if(r.involves_injury) inj++; if(isOverdue(r)) ov++; if(reportActionStatus(r)==="awaiting_verification") verify++; });
     function tile(n,k,f,al){ return '<button class="hs'+(al&&n>0?" alert":"")+'" data-filter="'+f+'" type="button"><div class="hs-n">'+n+'</div><div class="hs-k">'+k+'</div></button>'; }
-    el.innerHTML=tile(open,"Open","open")+tile(nw,"New","new")+tile(ov,"Overdue","overdue",true)+tile(verify,"To verify","actions",true)+tile(inj,"Injuries","injuries",true);
+    el.innerHTML=tile(open,"Open","open")+tile(nw,"New","new")+tile(ov,"Overdue","overdue",true)+tile(verify,"To review","actions",true)+tile(inj,"Injuries","injuries",true);
     el.querySelectorAll(".hs").forEach(function(b){ b.addEventListener("click", function(){ var f=b.getAttribute("data-filter"); if(f==="actions") showView("actions"); else goToRecords(f); }); });
   }
 
