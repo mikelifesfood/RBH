@@ -75,3 +75,8 @@ Step 3 Verify was simplified for small-company use. The visible Verification own
 ## Build 26 — focused personal corrective-action work — 2026-10-05
 
 Corrective-action cards opened from **My Work** or **Corrective Actions** now open a single-action workspace instead of the full incident workflow. The focused page writes to the same `report_corrective_actions` row and corrective-action evidence records used by the incident workflow. Returned actions remain visible to their assigned owner even while other actions on the same incident are still in verification. No database migration is required. See `docs/RBH_BUILD26_FOCUSED_PERSONAL_ACTION_WORKSPACE_2026-10-05.md`.
+
+
+## Build 27 UI refinement
+- Step 4 Close stays gray while the reviewer remains in Step 3 after all corrective actions are verified.
+- Close becomes active only after **All actions verified - Continue to Close** is selected.

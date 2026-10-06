@@ -2709,9 +2709,16 @@
       var state=states.every(function(x){return x==="done"||x==="na";})?(states.every(function(x){return x==="na";})?"na":"done"):(states.indexOf("current")>=0?"current":"needed");
       var caSummary=correctiveActionSummary(r);
       var blocked=def.visible===3 && ((caSummary&&caSummary.changes_requested>0)||r.action_status==="changes_requested") && p.steps[3] && p.steps[3].state==="current";
+      // Keep Close visually pending until the reviewer explicitly leaves the
+      // Corrective Actions stage with the final Continue to Close button.
+      // workflowProgress can already consider Close current once every child
+      // action is verified, but the user has not advanced the UI yet.
+      var closePending=def.visible===4 && activeVisible===3 && state==="current" && !isResolvedReport(r);
+      if(closePending) state="needed";
       var cls=state==="done"?"ps-done":(state==="current"?(blocked?"ps-blocked":"ps-current"):(state==="na"?"ps-na":"ps-future"));
       if(def.visible===activeVisible && state!=="current") cls+=" ps-viewing";
       var accessible=def.visible===3?def.steps.some(function(n){return wizardStepAccessible(r,n);}):wizardStepAccessible(r,def.internal);
+      if(closePending) accessible=false;
       var icon=state==="done"?'<span class="ps-check">✓</span>':'';
       return '<button type="button" class="process-step '+cls+'" data-wizard-nav="'+def.internal+'"'+(accessible?'':' disabled')+'><span class="ps-num">STEP '+def.visible+'</span>'+icon+esc(def.title)+'</button>';
     }).join("");
