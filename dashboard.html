@@ -1102,6 +1102,7 @@
   .ca-unified-stage .multi-action-overview{margin-bottom:12px}
   .resolved-review .ca-unified-stage{border-left-color:var(--ok)}
   .multi-action-review-status{display:grid;gap:3px;margin:0 0 12px;padding:11px 13px;border:1px solid var(--brand-line);border-radius:var(--r);background:var(--brand-tint);color:var(--brand)}
+  .multi-action-review-status.ready-to-close{border-color:#B9D7F0;background:#EEF6FC;color:#245F8F}
   .multi-action-review-status b{font-size:13px}
   .multi-action-review-status span{font-size:12.5px;line-height:1.45;color:var(--ink-2)}
 
@@ -3685,7 +3686,7 @@
       }).join("");
 
       var finalReviewHtml=allVerified?
-        '<div class="multi-action-review-status"><b>All corrective actions are verified.</b><span>Review the completed actions below for visibility, then continue to the final Close step when you are ready.</span></div>':'';
+        '<div class="multi-action-review-status ready-to-close"><b>All corrective actions are verified.</b><span>Review the completed actions below for visibility, then continue to the final Close step when you are ready.</span></div>':'';
       var reviewStatusHtml=!isResolvedReport(r)&&returnedCount>0&&awaitingCount>0?
         '<div class="multi-action-review-status"><b>'+returnedCount+' action'+(returnedCount===1?' has':'s have')+' been sent back.</b><span>Finish reviewing the '+awaitingCount+' action'+(awaitingCount===1?'':'s')+' still waiting. Returned actions will then appear by themselves in Complete Work.</span></div>':'';
 
