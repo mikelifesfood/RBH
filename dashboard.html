@@ -119,6 +119,7 @@
   .st-closed,.reg-chip-no{background:var(--ok-tint);color:var(--ok)}
   .bg-injury{background:var(--brand);color:#fff}
   .bg-overdue{background:var(--warn);color:#fff}
+  .bg-due-today{background:var(--warn-tint);color:var(--warn)}
   .reg-chip{font-weight:700;font-size:12px;border-radius:999px;padding:5px 10px;white-space:nowrap}
   .role-pill{display:inline-flex;align-items:center;width:max-content;margin-top:5px;padding:3px 8px;border-radius:999px;font-size:11.5px;font-weight:700;border:1px solid var(--line-strong);color:var(--muted)}
   .role-pill.r-admin{background:var(--brand-tint);color:var(--brand);border-color:var(--brand-line)}
@@ -2323,8 +2324,8 @@
     var sv=$("sortBy")?$("sortBy").value:"newest";
     filtered.sort(function(a,b){
       if(sv==="oldest") return new Date(a.created_at)-new Date(b.created_at);
-      if(sv==="priority"){ var pv={high:3,medium:2,low:1}; return (pv[b.priority]||0)-(pv[a.priority]||0) || (new Date(b.created_at)-new Date(a.created_at)); }
-      if(sv==="due"){ var ad=a.due_date?new Date(a.due_date).getTime():8640000000000000, bd=b.due_date?new Date(b.due_date).getTime():8640000000000000; return ad-bd; }
+      if(sv==="priority"){ var pv={high:3,medium:2,low:1}; return (pv[reportPriorityValue(b)]||0)-(pv[reportPriorityValue(a)]||0) || (new Date(b.created_at)-new Date(a.created_at)); }
+      if(sv==="due"){ return reportDueSortValue(a)-reportDueSortValue(b); }
       return new Date(b.created_at)-new Date(a.created_at);
     });
     renderList();
@@ -2347,12 +2348,13 @@
     var wrap=document.createElement("div");
     wrap.className="card"+(resolved?" resolved":"")+inboxStateClass;
     wrap.setAttribute('data-report-id',r.id);
-    var meta=[fmtDate(r.created_at),(r.reporter_name||"Anonymous")]; if(r.hazard_category) meta.push(r.hazard_category); if(investigatorName(r)) meta.push("Investigator: "+investigatorName(r)); if(assigneeName(r)) meta.push("Action owner: "+assigneeName(r)); if(r.due_date) meta.push((isOverdue(r)?"Overdue \u2014 due ":"Due ")+shortDate(r.due_date));
-    var pri=r.priority?('<span class="badge pr-'+r.priority+'" title="Priority">'+({low:"Low priority",medium:"Medium priority",high:"High priority"}[r.priority]||r.priority)+'</span>'):"";
+    var meta=[fmtDate(r.created_at),(r.reporter_name||"Anonymous")]; if(r.hazard_category) meta.push(r.hazard_category); if(investigatorName(r)) meta.push("Investigator: "+investigatorName(r)); if(assigneeName(r)) meta.push("Action owner: "+assigneeName(r));
+    var dueInfo=reportDueInfo(r); if(dueInfo.date) meta.push(dueInfo.state==="overdue"?("Overdue — due "+shortDate(dueInfo.date)):(dueInfo.state==="today"?"Due today":("Due "+shortDate(dueInfo.date))));
+    var pri=reportPriorityBadgeHtml(r), statusBadge=suppressParentStatusBadge(r)?"":('<span class="badge '+st.c+'" data-status-badge title="Status">'+esc(st.l)+'</span>');
     wrap.innerHTML=
       '<button class="card-head" type="button">'+
         '<div class="ch-top"><span class="ref">#'+esc(r.ref_no)+'</span><span class="ch-type">'+esc(r.report_type||"Report")+'</span>'+sev+'</div>'+
-        '<div class="ch-badges">'+(isOverdue(r)?'<span class="badge bg-overdue" data-overdue-badge>Overdue</span>':"")+(r.involves_injury?'<span class="badge bg-injury">Injury</span>':"")+pri+actionBadgeHtml(r)+'<span class="badge '+st.c+'" data-status-badge title="Status">'+esc(st.l)+'</span></div>'+
+        '<div class="ch-badges">'+reportDueBadgeHtml(r)+(r.involves_injury?'<span class="badge bg-injury">Injury</span>':"")+pri+actionBadgeHtml(r)+statusBadge+'</div>'+
         '<div class="ch-meta">'+esc(meta.join("  \u00b7  "))+'</div>'+
         '<div class="ch-desc">'+esc(r.description||"")+'</div>'+
         '<span class="open-report">Open →</span>'+
@@ -2704,6 +2706,78 @@
 
   function hasWorkflowValue(v){ return v!=null && String(v).trim()!==""; }
   function isResolvedReport(r){ return !!(r && (r.status==="closed" || r.status==="no_action" || r.status==="duplicate")); }
+  function dateOnlyKey(v){
+    if(!v) return "";
+    var text=String(v), match=text.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if(match) return match[1]+"-"+match[2]+"-"+match[3];
+    var d=new Date(v); if(!Number.isFinite(d.getTime())) return "";
+    return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  }
+  function todayDateKey(){
+    var d=new Date();
+    return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  }
+  function calendarDayDiff(v){
+    var key=dateOnlyKey(v); if(!key) return null;
+    var a=key.split("-").map(Number), t=todayDateKey().split("-").map(Number);
+    return Math.round((Date.UTC(a[0],a[1]-1,a[2])-Date.UTC(t[0],t[1]-1,t[2]))/86400000);
+  }
+  function isCorrectiveActionItem(x){ return !!(x && x.report_id!=null && Object.prototype.hasOwnProperty.call(x,"action_number")); }
+  function currentCorrectiveActionRows(r){
+    if(!r) return [];
+    return (allCorrectiveActions||[]).filter(function(a){
+      return String(a.report_id||"")===String(r.id||"") && correctiveActionInCurrentCycle(a,r);
+    });
+  }
+  function unresolvedCorrectiveActionRows(r){
+    return currentCorrectiveActionRows(r).filter(function(a){ return String(a.status||"not_started")!=="verified"; });
+  }
+  function reportPriorityValue(r){
+    if(!r||isResolvedReport(r)||correctiveNoActionDocumented(r)) return "";
+    var rows=currentCorrectiveActionRows(r);
+    if(rows.length){
+      var rank={low:1,medium:2,high:3}, best="";
+      rows.forEach(function(a){
+        if(String(a.status||"not_started")==="verified") return;
+        var p=String(a.priority||"").toLowerCase();
+        if((rank[p]||0)>(rank[best]||0)) best=p;
+      });
+      return best;
+    }
+    return reportActionStatus(r)==="verified"?"":String(r.priority||"").toLowerCase();
+  }
+  function reportDueInfo(r){
+    if(!r||isResolvedReport(r)||correctiveNoActionDocumented(r)) return {state:"none",date:"",label:""};
+    var rows=currentCorrectiveActionRows(r), dates=[];
+    if(rows.length){
+      unresolvedCorrectiveActionRows(r).forEach(function(a){ if(a.due_date) dates.push(dateOnlyKey(a.due_date)); });
+    }else if(reportActionStatus(r)!=="verified" && r.due_date){
+      dates.push(dateOnlyKey(r.due_date));
+    }
+    dates=dates.filter(Boolean).sort();
+    if(!dates.length) return {state:"none",date:"",label:""};
+    var today=todayDateKey(), overdue=dates.filter(function(d){return d<today;}), dueToday=dates.filter(function(d){return d===today;});
+    if(overdue.length) return {state:"overdue",date:overdue[0],label:"Overdue"};
+    if(dueToday.length) return {state:"today",date:today,label:"Due today"};
+    return {state:"future",date:dates[0],label:"Due "+shortDate(dates[0])};
+  }
+  function reportDueSortValue(r){
+    var info=reportDueInfo(r); return info.date?Date.parse(info.date+"T12:00:00"):8640000000000000;
+  }
+  function reportDueBadgeHtml(r){
+    var info=reportDueInfo(r);
+    if(info.state==="overdue") return '<span class="badge bg-overdue" data-due-badge>Overdue</span>';
+    if(info.state==="today") return '<span class="badge bg-due-today" data-due-badge>Due today</span>';
+    return "";
+  }
+  function reportPriorityBadgeHtml(r){
+    var p=reportPriorityValue(r);
+    if(p!=="high" && p!=="medium") return "";
+    return '<span class="badge pr-'+esc(p)+'" title="Highest priority among open corrective actions">'+esc(p.charAt(0).toUpperCase()+p.slice(1))+' priority</span>';
+  }
+  function suppressParentStatusBadge(r){
+    return !!(r && r.status==="assigned" && currentCorrectiveActionRows(r).length);
+  }
   var CORRECTIVE_NO_ACTION_REASONS={
     corrected_immediately:"Corrected immediately — nothing remains to fix",
     no_unsafe_condition:"Investigation found no unsafe condition requiring correction",
@@ -3799,6 +3873,8 @@
       actionPlanState.loading=false; actionPlanState.loaded=true; renderCorrectiveActionPlan();
       if(!actionDecisionState.choice) actionDecisionState.choice=correctiveActionDecisionValue(r);
       renderCorrectiveActionDecision();
+      if(activeIncident && String(activeIncident.id)===String(r.id)) $("incidentSummary").innerHTML='<div class="is-badges">'+incidentBadgeHtml(r)+'</div><div class="is-desc">'+esc(r.description||"No description provided.")+'</div>';
+      applyFilters(); renderMetrics();
       refreshRecordWorkflow(r,detail);
       var current=parseInt(detail.dataset.wizardStep||"0",10)||recommendedWizardStep(r), rec=recommendedWizardStep(r);
       if(!wizardStepAccessible(r,current) || (current===6 && rec<6)) setWizardStep(detail,r,rec,true);
@@ -3836,6 +3912,7 @@
         if(activation.error) throw activation.error;
         await refreshReportAfterPlanActivation();
         await loadCorrectiveActionPlan();
+        $("incidentSummary").innerHTML='<div class="is-badges">'+incidentBadgeHtml(r)+'</div><div class="is-desc">'+esc(r.description||"No description provided.")+'</div>';
         emailResults=await emailActivatedCorrectiveActions((activation.data&&activation.data.actions)||actionPlanState.actions);
       }
       loadAudit(r.id,auditEl); refreshOverdue(r,wrap); refreshRecordWorkflow(r,detail); renderMetrics(); renderHomeSnapshot(); renderMyWork(); renderActions();
@@ -4139,7 +4216,8 @@
     if(wrap){
       var st=STATUS[status]||{l:status,c:"st-muted"};
       var badge=wrap.querySelector("[data-status-badge]");
-      if(badge){ badge.className="badge "+st.c; badge.setAttribute("data-status-badge",""); badge.textContent=st.l; }
+      if(badge && suppressParentStatusBadge(r)){ badge.remove(); }
+      else if(badge){ badge.className="badge "+st.c; badge.setAttribute("data-status-badge",""); badge.textContent=st.l; }
       var selx=wrap.querySelector(".status-select"); if(selx) selx.value=status;
       refreshOverdue(r, wrap);
     }
@@ -4443,14 +4521,11 @@
     m.style.display="block";
     var total=allReports.length, cNew=0, cProg=0, cClosed=0, cOverdue=0, cInjury=0;
     var byType={}, bySev={Critical:0,Serious:0,Moderate:0,Minor:0,Unspecified:0};
-    var now=Date.now();
     allReports.forEach(function(r){
       if(r.status==="new") cNew++;
       if(r.status==="under_review"||r.status==="assigned"||r.status==="corrective_action") cProg++;
       if(r.status==="closed"||r.status==="no_action"||r.status==="duplicate") cClosed++;
-      if(r.due_date && r.status!=="closed" && r.status!=="no_action" && r.status!=="duplicate"){
-        var d=new Date(r.due_date).getTime(); if(!isNaN(d) && d<now) cOverdue++;
-      }
+      if(isOverdue(r)) cOverdue++;
       if(r.involves_injury) cInjury++;
       var t=r.report_type||"Other"; byType[t]=(byType[t]||0)+1;
       var s=sevShort(r.potential_severity);
@@ -5602,9 +5677,9 @@
 
   function findReport(id){ for(var i=0;i<allReports.length;i++) if(String(allReports[i].id)===String(id)) return allReports[i]; return null; }
   function daysUntilDue(r){
-    if(!r||!r.due_date) return null;
-    var d=new Date(r.due_date+"T23:59:59"), now=new Date();
-    return Math.ceil((d.getTime()-now.getTime())/86400000);
+    if(!r) return null;
+    var due=isCorrectiveActionItem(r)?r.due_date:reportDueInfo(r).date;
+    return calendarDayDiff(due);
   }
   function escalationInfo(r){
     var d=daysUntilDue(r);
@@ -5617,7 +5692,8 @@
     }
     if(d===0) return {level:1,label:"Due today",cls:"soon"};
     if(d<=3) return {level:1,label:"Due in "+d+" day"+(d===1?"":"s"),cls:"soon"};
-    return {level:0,label:"Due "+shortDate(r.due_date),cls:""};
+    var dueValue=isCorrectiveActionItem(r)?r.due_date:reportDueInfo(r).date;
+    return {level:0,label:"Due "+shortDate(dueValue),cls:""};
   }
   function isHighPotential(r){
     var s=(r&&r.potential_severity||"").toLowerCase();
@@ -5643,7 +5719,7 @@
     if(aggregateActionStatus==="changes_requested") n+=55;
     if(r.status==="new") n+=40;
     var s=(r.potential_severity||"").toLowerCase(); if(s.indexOf("critical")===0)n+=35; else if(s.indexOf("serious")===0)n+=25;
-    if(r.priority==="high")n+=20; n+=Math.min(escalationInfo(r).level*8,24); return n;
+    if(reportPriorityValue(r)==="high")n+=20; n+=Math.min(escalationInfo(r).level*8,24); return n;
   }
   function actionBadgeHtml(r){
     var a=reportActionStatus(r);
@@ -5652,11 +5728,11 @@
   }
   function incidentBadgeHtml(r){
     var st=STATUS[r.status]||{l:r.status||"",c:"st-muted"}; var out='';
-    if(isOverdue(r)) out+='<span class="badge bg-overdue">Overdue</span>'; if(r.involves_injury) out+='<span class="badge bg-injury">Injury</span>';
+    out+=reportDueBadgeHtml(r); if(r.involves_injury) out+='<span class="badge bg-injury">Injury</span>';
     if(r.potential_severity) out+='<span class="badge '+sevClass(r.potential_severity)+'">'+esc(sevShort(r.potential_severity))+'</span>';
-    if(r.priority) out+='<span class="badge pr-'+esc(r.priority)+'">'+esc(r.priority.charAt(0).toUpperCase()+r.priority.slice(1))+' priority</span>';
+    out+=reportPriorityBadgeHtml(r);
     out+=actionBadgeHtml(r);
-    out+='<span class="badge '+st.c+'">'+esc(st.l)+'</span>'; return out;
+    if(!suppressParentStatusBadge(r)) out+='<span class="badge '+st.c+'">'+esc(st.l)+'</span>'; return out;
   }
   function openIncident(r, from){
     if(!r) return; activeIncident=r; activeIncidentLanguage=preferredReadingLanguage(); lastOperationalView=from||((document.getElementById('view-mywork')&&!document.getElementById('view-mywork').hidden)?'mywork':((document.getElementById('view-actions')&&!document.getElementById('view-actions').hidden)?'actions':'records'));
@@ -6525,12 +6601,19 @@
 
 
   /* ================= Corrective action / overdue / audit ================= */
-  function isOverdue(r){ return !!(r.due_date && r.status!=="closed" && r.status!=="no_action" && r.status!=="duplicate" && (new Date(r.due_date).getTime() < Date.now())); }
+  function isOverdue(r){
+    if(!r) return false;
+    if(isCorrectiveActionItem(r)){
+      if(String(r.status||"not_started")==="verified" || !r.due_date) return false;
+      return calendarDayDiff(r.due_date)<0;
+    }
+    return reportDueInfo(r).state==="overdue";
+  }
   function refreshOverdue(r, wrap){
     if(!wrap||!r) return; var badges=wrap.querySelector(".ch-badges"); if(!badges) return;
-    var ex=badges.querySelector("[data-overdue-badge]");
-    if(isOverdue(r)){ if(!ex){ var b=document.createElement("span"); b.className="badge bg-overdue"; b.setAttribute("data-overdue-badge",""); b.textContent="Overdue"; badges.insertBefore(b, badges.firstChild); } }
-    else if(ex){ ex.remove(); }
+    badges.querySelectorAll("[data-overdue-badge],[data-due-badge]").forEach(function(el){el.remove();});
+    var html=reportDueBadgeHtml(r);
+    if(html){ var holder=document.createElement("div"); holder.innerHTML=html; if(holder.firstChild) badges.insertBefore(holder.firstChild,badges.firstChild); }
   }
   function canClose(r){
     if(r&&r.involves_injury&&!regulatoryFollowupResolved(r)) return false;
