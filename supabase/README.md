@@ -34,3 +34,6 @@ Secrets are configured in Supabase and are intentionally not stored in GitHub.
 ## Current next build
 
 Step 12: notification acknowledgment and acknowledgment history.
+
+## Build 37 — Step 3 corrective-action decision
+Run `RBH_BUILD37_CORRECTIVE_ACTION_DECISION_V1.sql` after the Build 36 regulatory-follow-up migration and before deploying the Build 37 dashboard. It adds the documented `required` / `not_required` Step 3 decision and updates the server-side close guard.
