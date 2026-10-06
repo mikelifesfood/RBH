@@ -1307,7 +1307,7 @@
         <section class="view" id="view-records" hidden>
           <div class="section-head"><div><h2>Safety Inbox</h2><p>Review incoming reports, identify priority items, and move each report to the next action.</p></div></div>
           <div class="toolbar">
-            <div class="chips" id="chips"><button class="chip active" data-chip="all" type="button">All</button><button class="chip" data-chip="open" type="button">Open</button><button class="chip" data-chip="overdue" type="button">Overdue</button><button class="chip" data-chip="injuries" type="button">Injuries</button><button class="chip" data-chip="new" type="button">New</button></div>
+            <div class="chips" id="chips"><button class="chip active" data-chip="all" type="button">All</button><button class="chip" data-chip="open" type="button">Open</button><button class="chip" data-chip="overdue" type="button">Overdue</button><button class="chip" data-chip="injuries" type="button">Injuries</button><button class="chip" data-chip="new" type="button">New</button><button class="chip" data-chip="closed" type="button">Closed</button></div>
             <input type="text" class="search" id="search" placeholder="Search reports…">
             <select id="statusFilter">
               <option value="all">All statuses</option>
@@ -1904,7 +1904,10 @@
   var dispositionReport=null, dispositionWrap=null, dispositionNotesEl=null;
   var reopenReport=null, reopenReturnView="records", restartReport=null, restartReturnView="records";
   var NAV_VIEW_KEY="rbh_safety_active_view_v1", NAV_INCIDENT_KEY="rbh_safety_active_incident_v1";
-  var APP_VERSION="2026.09.28 · Corrective Action Status Pills V1";
+  var APP_VERSION="2026.10.05 · Auto Scroll To Top V1";
+
+  /* Keep browser back/refresh restoration from reopening a workspace halfway down the page. */
+  try{ if("scrollRestoration" in window.history) window.history.scrollRestoration="manual"; }catch(_scrollRestoreErr){}
 
   function storedView(){
     try{ var v=localStorage.getItem(NAV_VIEW_KEY); return v||(currentRole==="supervisor"?"mywork":"home"); }catch(_e){ return currentRole==="supervisor"?"mywork":"home"; }
@@ -2036,7 +2039,7 @@
   }
   $("refresh").addEventListener("click", async function(){ await loadReports(); await loadNotifications(true); });
   $("search").addEventListener("input", applyFilters);
-  $("statusFilter").addEventListener("change", function(){ overdueOnly=false; injuryOnly=false; var v=$("statusFilter").value; setActiveChip(v==="all"||v==="open"||v==="new"?v:""); applyFilters(); });
+  $("statusFilter").addEventListener("change", function(){ overdueOnly=false; injuryOnly=false; closedOnly=false; var v=$("statusFilter").value; var chip=(v==="all"||v==="open"||v==="new")?v:(["closed","no_action","duplicate"].indexOf(v)>=0?"closed":""); setActiveChip(chip); applyFilters(); });
 
   /* ---------- Step 12B: attention-only notification panel ---------- */
   function notificationTime(v){
@@ -2246,10 +2249,17 @@
 
   function applyFilters(){
     var q=($("search").value||"").toLowerCase().trim(), st=$("statusFilter").value;
+    var explicitResolvedStatus=["closed","no_action","duplicate"].indexOf(st)>=0;
     filtered=allReports.filter(function(r){
+      var resolved=isResolvedReport(r);
+      // Keep resolved records out of the working Safety Inbox by default.
+      // The Closed chip intentionally groups every resolved disposition
+      // (Closed, No action, and Duplicate) so the active inbox stays focused.
+      if(closedOnly){ if(!resolved) return false; }
+      else if(!explicitResolvedStatus && resolved) return false;
       if(overdueOnly && !isOverdue(r)) return false;
       if(injuryOnly && !r.involves_injury) return false;
-      if(st==="open"){ if(r.status==="closed"||r.status==="no_action"||r.status==="duplicate") return false; }
+      if(st==="open"){ if(resolved) return false; }
       else if(st!=="all" && r.status!==st) return false;
       if(q){ var hay=[r.ref_no,r.report_type,r.description,r.hazard_category,r.reporter_name,r.people_involved,r.potential_severity,r.reporter_role,r.responsible_person,assigneeName(r),r.action_status,r.job_site]
         .map(function(x){return String(x==null?"":x).toLowerCase();}).join(" "); if(hay.indexOf(q)<0) return false; }
@@ -2827,6 +2837,35 @@
     if(n===6){ if(r.status==="closed"||r.status==="no_action"||r.status==="duplicate") return {save:null,complete:null}; return {save:null,complete:canClose(r)?"Close record":null}; }
     return {save:null,complete:null};
   }
+  function scrollAppToTop(){
+    /*
+      Workflow navigation should always begin at the top of the workspace.
+      Set all common scroll roots immediately, then repeat after layout so
+      late rendering cannot leave the user at the bottom of the prior step.
+    */
+    function reset(){
+      try{ window.scrollTo({top:0,left:0,behavior:"auto"}); }catch(_e){ try{window.scrollTo(0,0);}catch(_e2){} }
+      if(document.documentElement) document.documentElement.scrollTop=0;
+      if(document.body) document.body.scrollTop=0;
+    }
+    reset();
+    if(window.requestAnimationFrame) requestAnimationFrame(reset);
+    window.setTimeout(reset,40);
+  }
+
+  function focusActiveWizardHeading(detail,n){
+    if(!detail) return;
+    var panel=detail.querySelector('[data-wizard-step="'+n+'"]');
+    window.setTimeout(function(){
+      var heading=panel?panel.querySelector(".wizard-step-copy h3"):null;
+      var mobileHeading=detail.querySelector(".wizard-process-copy b");
+      var focusTarget=(heading&&heading.offsetParent!==null)?heading:mobileHeading;
+      if(!focusTarget) return;
+      focusTarget.setAttribute("tabindex","-1");
+      try{ focusTarget.focus({preventScroll:true}); }catch(_e){ focusTarget.focus(); scrollAppToTop(); }
+    },0);
+  }
+
   function syncWorkflowStickyOffset(){
     var topbar=document.querySelector(".topbar");
     var height=topbar?Math.ceil(topbar.getBoundingClientRect().height):56;
@@ -2893,7 +2932,17 @@
     updateCorrectiveLifecycle(detail,r);
     updateCompletedStepLock(detail,r,n);
     renderRecordProgress(r,detail.querySelector("[data-record-progress]"));
-    scrollWizardStepIntoView(detail,n);
+    // A panel can become current without being rebuilt (for example Review ->
+    // Investigation). Re-sync the actual form controls every time the visible
+    // step changes so a stale disabled attribute can never survive a transition.
+    if(typeof detail._syncStepEditability === "function"){
+      detail._syncStepEditability();
+      requestAnimationFrame(function(){
+        if(detail.isConnected && typeof detail._syncStepEditability === "function") detail._syncStepEditability();
+      });
+    }
+    scrollAppToTop();
+    focusActiveWizardHeading(detail,n);
   }
   function initialWizardStep(r){ return recommendedWizardStep(r); }
   function renderCloseStep(r,el,detail,auditEl){
@@ -3708,7 +3757,7 @@
         }
         if(r.status==="new") await updateStatus(r.id,"under_review",wrap,activeReopenStep(r)?2:null);
         else if(activeReopenStep(r)===1) await updateStatus(r.id,r.status,wrap,2);
-        refreshRecordWorkflow(r,detail); setWizardStep(detail,r,2,true); loadAudit(r.id,auditEl); toast("Report acknowledged — continue to Investigation","ok");
+        refreshRecordWorkflow(r,detail); setWizardStep(detail,r,2,true); syncStepEditability(); loadAudit(r.id,auditEl); toast("Report acknowledged — continue to Investigation","ok");
       }
       catch(ex){console.error(ex);toast("Could not acknowledge the report.","err");} finally{if(complete1.isConnected)complete1.disabled=!canEditStep(r,1);} });
 
@@ -3719,7 +3768,7 @@
       if(!invRoot.value.trim()) missing.push("why it happened");
       if(missing.length){if(req){req.textContent="Still required: "+missing.join(" and ")+".";req.classList.add("show");}toast("Answer both investigation questions before continuing.","err");return;}
       if(req)req.classList.remove("show"); complete2.disabled=true;
-      try{await waitForInvestigationEvidenceUpload();await persistInvestigation(false,true);setWizardStep(detail,r,3,true);toast("Investigation complete — continue to Corrective Actions","ok");}catch(ex){console.error(ex);toast("Could not complete Investigation.","err");}finally{if(complete2.isConnected)complete2.disabled=!canEditStep(r,2);} });
+      try{await waitForInvestigationEvidenceUpload();await persistInvestigation(false,true);setWizardStep(detail,r,3,true);syncStepEditability();toast("Investigation complete — continue to Corrective Actions","ok");}catch(ex){console.error(ex);toast("Could not complete Investigation.","err");}finally{if(complete2.isConnected)complete2.disabled=!canEditStep(r,2);} });
 
     var complete3=detail.querySelector('[data-step-complete="3"]'); if(complete3) complete3.addEventListener("click",async function(){
       if(!canEditStep(r,3)){toast("Only the assigned investigator or an Admin/Safety Manager can assign the corrective actions.","err");return;}
@@ -3731,6 +3780,7 @@
         renderActionWorkflow(r,detail.querySelector("[data-action-completion]"),auditEl,detail,"complete");
         renderActionWorkflow(r,detail.querySelector("[data-action-verification]"),auditEl,detail,"verify");
         setWizardStep(detail,r,4,true);
+        syncStepEditability();
         var emails=(result&&result.emailResults)||[], failed=emails.filter(function(x){return !x || (!x.sent&&!x.skipped);}), unavailable=emails.filter(function(x){return x&&x.skipped&&(x.reason==="NO_DASHBOARD_ASSIGNEE"||x.reason==="NO_ASSIGNEE_EMAIL");});
         if(failed.length){console.error("multi-action assignment notification failures",failed);toast("Actions assigned, but "+failed.length+" email notification"+(failed.length===1?"":"s")+" could not be sent.","err");}
         else if(unavailable.length){toast("Actions assigned. "+unavailable.length+" owner"+(unavailable.length===1?" has":"s have")+" no available assignment email.","ok");}
@@ -5240,6 +5290,7 @@
     var langSel=$("incidentLanguage"); if(langSel){ langSel.value=activeIncidentLanguage; }
     setIncidentLanguageState(r,activeIncidentLanguage,"loading");
     var body=$("incidentBody"); body.innerHTML=''; body.setAttribute("data-report-id",String(r.id)); buildDetail(r,body,null); showView('incident');
+    scrollAppToTop();
     changeIncidentLanguage(r,activeIncidentLanguage);
   }
   var _incidentLanguage=$("incidentLanguage"); if(_incidentLanguage) _incidentLanguage.addEventListener("change",function(){ if(activeIncident) changeIncidentLanguage(activeIncident,this.value); });
@@ -5699,7 +5750,7 @@
     if(name==="users"){ loadUsers(); loadAdminUserEvents(); }
     if(name==="home") renderHomeSnapshot();
     closeSidebar();
-    window.scrollTo({top:0});
+    scrollAppToTop();
   }
 
   function renderHomeSnapshot(){ renderHomeGreeting(); renderHomeStats(); renderHomeAttention(); renderHomeActivity(); updateNavCounts(); renderActions(); renderMyWork(); }
@@ -6762,7 +6813,7 @@
 
 
   /* ================= App polish: toasts, home, chips, chart, theme ================= */
-  var overdueOnly=false, injuryOnly=false;
+  var overdueOnly=false, injuryOnly=false, closedOnly=false;
 
   function toast(msg, kind){
     var wrap=document.getElementById("toasts"); if(!wrap) return;
@@ -6776,11 +6827,12 @@
 
   function setActiveChip(chip){ document.querySelectorAll(".chip").forEach(function(c){ c.classList.toggle("active", c.getAttribute("data-chip")===chip); }); }
   function setQuickFilter(chip){
-    overdueOnly=false; injuryOnly=false; var sf=$("statusFilter");
+    overdueOnly=false; injuryOnly=false; closedOnly=false; var sf=$("statusFilter");
     if(chip==="overdue"){ overdueOnly=true; if(sf) sf.value="all"; }
     else if(chip==="injuries"){ injuryOnly=true; if(sf) sf.value="all"; }
     else if(chip==="open"){ if(sf) sf.value="open"; }
     else if(chip==="new"){ if(sf) sf.value="new"; }
+    else if(chip==="closed"){ closedOnly=true; if(sf) sf.value="all"; }
     else { if(sf) sf.value="all"; }
     setActiveChip(chip); applyFilters();
   }
@@ -6842,6 +6894,6 @@
 
 })();
 </script>
-<!-- RBH Build 25: corrective-action owners remain assigned; verification is an unassigned reviewer decision with per-action verify/send-back controls. -->
+<!-- RBH Build 32: immediate step-transition editability sync + active Safety Inbox with separate Closed filter. -->
 </body>
 </html>
