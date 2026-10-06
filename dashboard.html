@@ -800,6 +800,17 @@
   .focused-action-readonly{background:var(--canvas);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;font-size:13.5px;color:var(--ink-2);line-height:1.5}
   .focused-action-complete{border-left:4px solid var(--ok);background:var(--ok-tint);padding:14px 16px;color:var(--ok);font-size:13.5px;line-height:1.5}
   .focused-action-complete b{display:block;font-size:14px;margin-bottom:3px}
+  .live-record-notices{display:grid;gap:10px;margin:0 0 14px}
+  .live-record-notice{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;border:1px solid var(--line);border-left:4px solid #4E87B2;background:#F2F7FB;border-radius:var(--r);padding:12px 14px;color:var(--ink-2);font-size:13.5px;line-height:1.45}
+  .live-record-notice b{display:block;color:var(--ink);font-size:14px;margin-bottom:2px}
+  .live-record-notice.presence-editing{border-left-color:#B46A00;background:#FFF8EA}
+  .live-record-notice.stale{border-left-color:var(--brand);background:var(--brand-tint);color:var(--brand)}
+  .live-record-notice.stale b{color:var(--brand)}
+  .live-record-notice-copy{min-width:0}
+  .live-record-notice-actions{flex:0 0 auto;display:flex;align-items:center;gap:8px}
+  .live-record-refresh{border:0;border-radius:999px;background:var(--ink);color:#fff;font-weight:800;padding:9px 13px;cursor:pointer;white-space:nowrap}
+  .live-record-refresh:hover{opacity:.88}
+  @media(max-width:620px){.live-record-notice{display:block}.live-record-notice-actions{margin-top:10px}.live-record-refresh{width:100%}}
   @media(max-width:820px){
     .focused-action-head{padding:18px;display:block}.focused-action-status{margin-top:12px}.focused-action-body{padding:18px}
     .focused-action-meta{grid-template-columns:1fr 1fr}.focused-action-meta-item:nth-child(3){border-left:0;border-top:1px solid var(--line)}.focused-action-meta-item:nth-child(4){border-top:1px solid var(--line)}
@@ -1978,7 +1989,256 @@
   var reopenReport=null, reopenReturnView="records", restartReport=null, restartReturnView="records";
   var regFollowupReport=null, regFollowupDetail=null;
   var NAV_VIEW_KEY="rbh_safety_active_view_v1", NAV_INCIDENT_KEY="rbh_safety_active_incident_v1";
-  var APP_VERSION="2026.10.06 · Build 43 Action Email Deep Links";
+  var APP_VERSION="2026.10.06 · Build 44 Live Sync & Record Integrity";
+
+  /* ---------- Build 44: live dashboard sync + presence + stale-save protection ---------- */
+  var LIVE_SYNC_FALLBACK_MS=60000, PRESENCE_HEARTBEAT_MS=20000, PRESENCE_ACTIVE_MS=55000, PRESENCE_EDITING_IDLE_MS=90000;
+  var liveSyncChannel=null, liveSyncFallbackTimer=null, liveSyncDebounceTimer=null, liveSyncRefreshing=false, presenceRefreshTimer=null, pendingSelfLiveChange=false;
+  var activeRecordPresence=null, recordPresenceTimer=null, recordPresenceMode="viewing", recordPresenceLastEditAt=0, remotePresenceRows=[];
+  var activeOpenResource=null;
+
+  function safeIsoNow(){ return new Date().toISOString(); }
+  function currentDisplayName(){ return (currentProfile&&(currentProfile.full_name||currentProfile.email))||((currentSession&&currentSession.user&&currentSession.user.email)||"Dashboard user"); }
+  function recordChangePersonName(userId){ var p=userId?profileById[String(userId)]:null; return p?profileName(p):"another user"; }
+  function actionVersionFingerprint(reportId){
+    return (allCorrectiveActions||[]).filter(function(a){return String(a.report_id||"")===String(reportId||"")&&!a.retired_at;}).map(function(a){return String(a.id||"")+"|"+String(a.updated_at||"")+"|"+String(a.status||"");}).sort().join(";");
+  }
+  function setActiveOpenResource(type,resourceId,reportId){
+    var r=(allReports||[]).find(function(x){return String(x.id)===String(reportId);});
+    var a=type==="corrective_action"?(allCorrectiveActions||[]).find(function(x){return String(x.id)===String(resourceId);}):null;
+    pendingSelfLiveChange=false;
+    activeOpenResource={
+      type:type, resourceId:String(resourceId||""), reportId:String(reportId||""), stale:false, changedBy:null,
+      capturedAt:safeIsoNow(), reportUpdatedAt:r&&r.updated_at?String(r.updated_at):"",
+      actionUpdatedAt:a&&a.updated_at?String(a.updated_at):"", actionFingerprint:type==="report"?actionVersionFingerprint(reportId):""
+    };
+    remotePresenceRows=[];
+    renderLiveRecordNotices();
+  }
+  function clearActiveOpenResource(){ activeOpenResource=null; remotePresenceRows=[]; pendingSelfLiveChange=false; renderLiveRecordNotices(); }
+  function activeOpenRoot(){
+    if(!activeOpenResource) return null;
+    return activeOpenResource.type==="corrective_action"?$("myActionShell"):$("incidentBody");
+  }
+  function liveResourceLabel(){ return activeOpenResource&&activeOpenResource.type==="corrective_action"?"corrective action":"record"; }
+  function ensureLiveNoticeHost(){
+    var root=activeOpenRoot(); if(!root) return null;
+    var host=root.querySelector(":scope > .live-record-notices");
+    if(!host){ host=document.createElement("div"); host.className="live-record-notices"; root.insertBefore(host,root.firstChild); }
+    return host;
+  }
+  function presenceNames(rows){
+    var names=[], seen={};
+    (rows||[]).forEach(function(row){var n=String(row.display_name||"Another user");if(!seen[n]){seen[n]=true;names.push(n);}});
+    if(!names.length) return ""; if(names.length===1) return names[0]; if(names.length===2) return names[0]+" and "+names[1]; return names[0]+", "+names[1]+" and "+(names.length-2)+" others";
+  }
+  function renderLiveRecordNotices(){
+    var host=ensureLiveNoticeHost(); if(!host) return;
+    var html="";
+    if(activeOpenResource&&activeOpenResource.stale){
+      var who=recordChangePersonName(activeOpenResource.changedBy);
+      html+='<div class="live-record-notice stale"><div class="live-record-notice-copy"><b>This '+liveResourceLabel()+' was updated by '+esc(who)+'.</b><span>Refresh to see the latest changes before continuing. Unsaved edits on this screen will be discarded when you refresh.</span></div><div class="live-record-notice-actions"><button class="live-record-refresh" type="button" data-refresh-open-resource>Refresh '+(activeOpenResource.type==="corrective_action"?'action':'record')+'</button></div></div>';
+    }
+    var others=(remotePresenceRows||[]).filter(function(row){return String(row.user_id||"")!==currentUserId();});
+    if(others.length){
+      var shown=editing.length?editing:others, names=presenceNames(shown);
+      var cls=editing.length?" presence-editing":"";
+      var plural=shown.length>1;
+      var target=activeOpenResource&&activeOpenResource.type==="corrective_action"?"this corrective action":"this record";
+      var headline=editing.length?(names+(plural?" are":" is")+" currently editing "+target+"."):(names+(plural?" also have ":" also has ")+target+" open.");
+      var guidance=editing.length?"To avoid conflicting changes, wait until they finish or contact them before making updates.":"You can continue, but coordinate before editing the same information.";
+      html+='<div class="live-record-notice'+cls+'"><div class="live-record-notice-copy"><b>'+esc(headline)+'</b><span>'+esc(guidance)+'</span></div></div>';
+    }
+    host.innerHTML=html; host.hidden=!html;
+    var refresh=host.querySelector("[data-refresh-open-resource]"); if(refresh) refresh.addEventListener("click",refreshActiveOpenResource);
+  }
+  function markActiveResourceStale(changedBy){
+    if(!activeOpenResource) return;
+    activeOpenResource.stale=true; activeOpenResource.changedBy=changedBy||null; renderLiveRecordNotices();
+  }
+  function relevantPresenceRows(rows){
+    if(!activeOpenResource) return [];
+    return (rows||[]).filter(function(row){
+      if(String(row.user_id||"")===currentUserId()) return false;
+      if(String(row.report_id||"")!==String(activeOpenResource.reportId||"")) return false;
+      if(activeOpenResource.type==="report") return true;
+      return row.resource_type==="report" || String(row.resource_id||"")===String(activeOpenResource.resourceId||"");
+    });
+  }
+  async function refreshPresenceRows(){
+    if(!activeOpenResource||!currentSession||!currentOrgId) return;
+    try{
+      var cutoff=new Date(Date.now()-PRESENCE_ACTIVE_MS).toISOString();
+      var q=await sb.from("rbh_record_presence").select("organization_id,report_id,resource_type,resource_id,user_id,display_name,mode,last_seen_at").eq("organization_id",currentOrgId).eq("report_id",activeOpenResource.reportId).gte("last_seen_at",cutoff).order("last_seen_at",{ascending:false});
+      if(q.error) throw q.error;
+      remotePresenceRows=relevantPresenceRows(q.data||[]); renderLiveRecordNotices();
+    }catch(ex){ console.warn("record presence refresh",ex); }
+  }
+  async function touchRecordPresence(forceMode){
+    if(!activeRecordPresence||!currentSession) return;
+    if(document.visibilityState==="hidden") return;
+    if(recordPresenceMode==="editing" && Date.now()-recordPresenceLastEditAt>PRESENCE_EDITING_IDLE_MS) recordPresenceMode="viewing";
+    var mode=forceMode||recordPresenceMode||"viewing";
+    try{
+      var res=await sb.rpc("rbh_touch_record_presence",{p_resource_type:activeRecordPresence.type,p_resource_id:activeRecordPresence.resourceId,p_report_id:activeRecordPresence.reportId,p_mode:mode});
+      if(res.error) throw res.error;
+      await refreshPresenceRows();
+    }catch(ex){ console.warn("record presence heartbeat",ex); }
+  }
+  function stopRecordPresence(){
+    var old=activeRecordPresence; activeRecordPresence=null; remotePresenceRows=[]; recordPresenceMode="viewing"; recordPresenceLastEditAt=0;
+    if(recordPresenceTimer){clearInterval(recordPresenceTimer);recordPresenceTimer=null;}
+    renderLiveRecordNotices();
+    if(old&&currentSession){ sb.rpc("rbh_leave_record_presence",{p_resource_type:old.type,p_resource_id:old.resourceId}).then(function(){}).catch(function(){}); }
+  }
+  function startRecordPresence(type,resourceId,reportId){
+    var same=activeRecordPresence&&activeRecordPresence.type===type&&String(activeRecordPresence.resourceId)===String(resourceId);
+    if(!same) stopRecordPresence();
+    activeRecordPresence={type:type,resourceId:String(resourceId),reportId:String(reportId)}; recordPresenceMode="viewing"; recordPresenceLastEditAt=0;
+    touchRecordPresence("viewing");
+    if(recordPresenceTimer) clearInterval(recordPresenceTimer);
+    recordPresenceTimer=setInterval(function(){touchRecordPresence();},PRESENCE_HEARTBEAT_MS);
+  }
+  function markPresenceEditingFromEvent(e){
+    if(!activeRecordPresence||!e||!e.target) return;
+    var root=activeOpenRoot(); if(!root||!root.contains(e.target)) return;
+    if(e.target.closest&&e.target.closest("[data-refresh-open-resource]")) return;
+    var tag=String(e.target.tagName||"").toLowerCase();
+    if(tag!=="input"&&tag!=="textarea"&&tag!=="select") return;
+    if(e.target.disabled||e.target.readOnly) return;
+    recordPresenceMode="editing"; recordPresenceLastEditAt=Date.now(); touchRecordPresence("editing");
+  }
+  document.addEventListener("input",markPresenceEditingFromEvent,true);
+  document.addEventListener("change",markPresenceEditingFromEvent,true);
+
+  function eventRelevantToOpenResource(ev){
+    if(!activeOpenResource||!ev) return false;
+    if(String(ev.report_id||"")!==String(activeOpenResource.reportId||"")) return false;
+    if(activeOpenResource.type==="report") return true;
+    return ev.resource_type==="report" || String(ev.resource_id||"")===String(activeOpenResource.resourceId||"");
+  }
+  async function latestRelevantRemoteChange(){
+    if(!activeOpenResource||!currentOrgId) return null;
+    try{
+      var q=await sb.from("rbh_record_change_events").select("id,report_id,resource_type,resource_id,event_type,changed_by,resource_updated_at,created_at").eq("organization_id",currentOrgId).eq("report_id",activeOpenResource.reportId).gt("created_at",activeOpenResource.capturedAt).order("created_at",{ascending:false}).limit(50);
+      if(q.error) throw q.error;
+      var uid=currentUserId();
+      return (q.data||[]).find(function(ev){return eventRelevantToOpenResource(ev)&&(!ev.changed_by||String(ev.changed_by)!==uid);})||null;
+    }catch(ex){ console.warn("record change check",ex); return null; }
+  }
+  async function versionMismatchRemoteChange(){
+    if(!activeOpenResource) return null;
+    try{
+      if(activeOpenResource.type==="report"){
+        var rq=await sb.from("reports").select("id,updated_at").eq("id",activeOpenResource.reportId).maybeSingle();
+        if(rq.error) throw rq.error;
+        var aq=await sb.from("report_corrective_actions").select("id,updated_at,status,retired_at").eq("report_id",activeOpenResource.reportId).is("retired_at",null);
+        if(aq.error) throw aq.error;
+        var fp=(aq.data||[]).map(function(a){return String(a.id||"")+"|"+String(a.updated_at||"")+"|"+String(a.status||"");}).sort().join(";");
+        var reportVersion=rq.data&&rq.data.updated_at?String(rq.data.updated_at):"";
+        if(reportVersion===activeOpenResource.reportUpdatedAt && fp===activeOpenResource.actionFingerprint) return null;
+      } else {
+        var ca=await sb.from("report_corrective_actions").select("id,updated_at,status,retired_at").eq("id",activeOpenResource.resourceId).maybeSingle();
+        if(ca.error) throw ca.error;
+        var av=ca.data&&ca.data.updated_at?String(ca.data.updated_at):"";
+        if(av===activeOpenResource.actionUpdatedAt) return null;
+      }
+      var changes=await sb.from("rbh_record_change_events").select("id,report_id,resource_type,resource_id,event_type,changed_by,created_at").eq("organization_id",currentOrgId).eq("report_id",activeOpenResource.reportId).gte("created_at",activeOpenResource.capturedAt).order("created_at",{ascending:false}).limit(50);
+      if(changes.error) throw changes.error;
+      var uid=currentUserId();
+      var remote=(changes.data||[]).find(function(ev){return eventRelevantToOpenResource(ev)&&(!ev.changed_by||String(ev.changed_by)!==uid);});
+      if(remote) return remote;
+      // The version moved, but every recent relevant change is ours. Refresh the baseline silently.
+      if(activeOpenResource.type==="report"){
+        var rr=(allReports||[]).find(function(x){return String(x.id)===String(activeOpenResource.reportId);});
+        activeOpenResource.reportUpdatedAt=(rq.data&&rq.data.updated_at)||activeOpenResource.reportUpdatedAt; activeOpenResource.actionFingerprint=fp;
+      } else activeOpenResource.actionUpdatedAt=(ca.data&&ca.data.updated_at)||activeOpenResource.actionUpdatedAt;
+      activeOpenResource.capturedAt=safeIsoNow();
+      return null;
+    }catch(ex){ console.warn("record version check",ex); return null; }
+  }
+  async function checkActiveResourceForRemoteChanges(){
+    if(!activeOpenResource||activeOpenResource.stale) return activeOpenResource&&activeOpenResource.stale;
+    var ev=await latestRelevantRemoteChange();
+    if(!ev) ev=await versionMismatchRemoteChange();
+    if(ev){markActiveResourceStale(ev.changed_by||null);return true;}
+    return false;
+  }
+  async function assertOpenResourceFresh(){
+    if(!activeOpenResource) return true;
+    if(activeOpenResource.stale){ renderLiveRecordNotices(); scrollAppToTop(); throw new Error("STALE_RECORD"); }
+    if(await checkActiveResourceForRemoteChanges()){ renderLiveRecordNotices(); scrollAppToTop(); throw new Error("STALE_RECORD"); }
+    return true;
+  }
+  async function refreshActiveOpenResource(){
+    if(!activeOpenResource) return;
+    var snapshot={type:activeOpenResource.type,resourceId:activeOpenResource.resourceId,reportId:activeOpenResource.reportId};
+    try{
+      await loadReports(true);
+      if(snapshot.type==="report"){
+        var r=(allReports||[]).find(function(x){return String(x.id)===String(snapshot.reportId);});
+        if(r) openIncident(r,lastOperationalView); else {toast("This record is no longer available.","err");showView("records");}
+      } else {
+        var a=(allCorrectiveActions||[]).find(function(x){return String(x.id)===String(snapshot.resourceId);});
+        if(a) openFocusedCorrectiveAction(a,focusedActionOrigin); else {toast("This corrective action is no longer available.","err");showView(focusedActionOrigin==="actions"?"actions":"mywork");}
+      }
+    }catch(ex){console.error(ex);toast("Could not refresh the latest record. Please try again.","err");}
+  }
+  function syncActiveOpenResourceBaselineFromLoaded(){
+    if(!activeOpenResource) return;
+    var r=(allReports||[]).find(function(x){return String(x.id)===String(activeOpenResource.reportId);});
+    if(activeOpenResource.type==="report"){
+      activeOpenResource.reportUpdatedAt=r&&r.updated_at?String(r.updated_at):activeOpenResource.reportUpdatedAt;
+      activeOpenResource.actionFingerprint=actionVersionFingerprint(activeOpenResource.reportId);
+    } else {
+      var a=(allCorrectiveActions||[]).find(function(x){return String(x.id)===String(activeOpenResource.resourceId);});
+      activeOpenResource.actionUpdatedAt=a&&a.updated_at?String(a.updated_at):activeOpenResource.actionUpdatedAt;
+    }
+    activeOpenResource.capturedAt=safeIsoNow();
+  }
+  function scheduleLiveDashboardRefresh(){
+    if(liveSyncDebounceTimer) clearTimeout(liveSyncDebounceTimer);
+    liveSyncDebounceTimer=setTimeout(async function(){
+      if(liveSyncRefreshing||!currentSession) return; liveSyncRefreshing=true;
+      try{
+        await loadReports(true); await loadNotifications(true);
+        if(activeOpenResource&&pendingSelfLiveChange&&!activeOpenResource.stale){syncActiveOpenResourceBaselineFromLoaded();pendingSelfLiveChange=false;}
+        if(activeOpenResource) await checkActiveResourceForRemoteChanges();
+      } catch(ex){console.warn("live dashboard refresh",ex);} finally{liveSyncRefreshing=false;}
+    },350);
+  }
+  function handleRecordChangeEvent(payload){
+    var ev=payload&&payload.new?payload.new:null; if(!ev) return;
+    if(eventRelevantToOpenResource(ev)){
+      if(!ev.changed_by || String(ev.changed_by)!==currentUserId()) markActiveResourceStale(ev.changed_by||null);
+      else if(activeOpenResource){pendingSelfLiveChange=true;}
+    }
+    scheduleLiveDashboardRefresh();
+  }
+  function schedulePresenceRefresh(){
+    if(presenceRefreshTimer) clearTimeout(presenceRefreshTimer);
+    presenceRefreshTimer=setTimeout(function(){refreshPresenceRows();},250);
+  }
+  function stopLiveSync(){
+    if(liveSyncFallbackTimer){clearInterval(liveSyncFallbackTimer);liveSyncFallbackTimer=null;}
+    if(liveSyncDebounceTimer){clearTimeout(liveSyncDebounceTimer);liveSyncDebounceTimer=null;}
+    if(presenceRefreshTimer){clearTimeout(presenceRefreshTimer);presenceRefreshTimer=null;}
+    if(liveSyncChannel){try{sb.removeChannel(liveSyncChannel);}catch(_e){} liveSyncChannel=null;}
+  }
+  function startLiveSync(){
+    stopLiveSync(); if(!currentSession||!currentOrgId||!sb.channel) return;
+    try{
+      liveSyncChannel=sb.channel("rbh-live-"+String(currentOrgId)+"-"+currentUserId())
+        .on("postgres_changes",{event:"INSERT",schema:"public",table:"rbh_record_change_events",filter:"organization_id=eq."+currentOrgId},handleRecordChangeEvent)
+        .on("postgres_changes",{event:"*",schema:"public",table:"rbh_record_presence",filter:"organization_id=eq."+currentOrgId},schedulePresenceRefresh)
+        .on("postgres_changes",{event:"*",schema:"public",table:"report_user_notifications",filter:"recipient_user_id=eq."+currentUserId()},function(){loadNotifications(true);})
+        .subscribe(function(status){if(status==="CHANNEL_ERROR"||status==="TIMED_OUT") console.warn("RBH live sync status",status);});
+    }catch(ex){console.warn("RBH live sync unavailable",ex);}
+    liveSyncFallbackTimer=setInterval(function(){if(document.visibilityState!=="hidden"&&currentSession)scheduleLiveDashboardRefresh();},LIVE_SYNC_FALLBACK_MS);
+  }
+  async function handleAppVisible(){
+    if(!currentSession) return; scheduleLiveDashboardRefresh(); if(activeRecordPresence) await touchRecordPresence(); if(activeOpenResource) await checkActiveResourceForRemoteChanges();
+  }
 
   /* Keep browser back/refresh restoration from reopening a workspace halfway down the page. */
   try{ if("scrollRestoration" in window.history) window.history.scrollRestoration="manual"; }catch(_scrollRestoreErr){}
@@ -2048,7 +2308,7 @@
   $("mStatus").innerHTML=statusOptions("new");
 
   /* ---------- auth ---------- */
-  function showLogin(){ stopNotificationPolling(); closeNotificationPanel(); userNotifications=[]; notificationActiveCount=0; renderNotificationCenter(); appView.style.display="none"; loginView.style.display="flex"; currentSession=null; currentProfile=null; currentRole="read_only"; isPlatformAdmin=false; currentOrgId=null; currentOrgName=""; allOrgs=[]; if(typeof closeProfileDrawer==="function") closeProfileDrawer(); }
+  function showLogin(){ stopNotificationPolling(); stopLiveSync(); stopRecordPresence(); clearActiveOpenResource(); closeNotificationPanel(); userNotifications=[]; notificationActiveCount=0; renderNotificationCenter(); appView.style.display="none"; loginView.style.display="flex"; currentSession=null; currentProfile=null; currentRole="read_only"; isPlatformAdmin=false; currentOrgId=null; currentOrgName=""; allOrgs=[]; if(typeof closeProfileDrawer==="function") closeProfileDrawer(); }
   async function showApp(session){
     currentSession=session;
     if(setupPasswordModeRequested()){ showPasswordSetup(); return; }
@@ -2069,6 +2329,7 @@
     await loadReports();
     await loadNotifications(true);
     startNotificationPolling();
+    startLiveSync();
     restoreSavedView();
   }
   sb.auth.getSession().then(function(res){ var s=res.data&&res.data.session; if(s) showApp(s); else showLogin(); });
@@ -2093,8 +2354,8 @@
   var _signout=$("signout"); if(_signout) _signout.addEventListener("click", async function(){ await sb.auth.signOut(); });
 
   /* ---------- data ---------- */
-  async function loadReports(){
-    listEl.innerHTML='<div class="state">Loading reports…</div>';
+  async function loadReports(silent){
+    if(!silent) listEl.innerHTML='<div class="state">Loading reports…</div>';
     try{
       var repQ=sb.from("reports").select("*").order("created_at",{ascending:false});
       if(currentOrgId) repQ=repQ.eq("organization_id", currentOrgId);
@@ -2126,7 +2387,7 @@
       });
       attByReport=nextAttByReport;
       applyFilters(); renderMetrics(); renderHomeSnapshot(); renderMyWork(); renderActions();
-    }catch(ex){ console.error(ex); listEl.innerHTML='<div class="state">Couldn\'t load reports. Please refresh.</div>'; }
+    }catch(ex){ console.error(ex); if(!silent) listEl.innerHTML='<div class="state">Couldn\'t load reports. Please refresh.</div>'; }
   }
   $("refresh").addEventListener("click", async function(){ await loadReports(); await loadNotifications(true); });
   $("search").addEventListener("input", applyFilters);
@@ -2336,7 +2597,7 @@
   var notificationPanel=$("notificationPanel"); if(notificationPanel) notificationPanel.addEventListener("click",function(e){e.stopPropagation();});
   document.addEventListener("click",function(){closeNotificationPanel();});
   document.addEventListener("keydown",function(e){if(e.key==="Escape")closeNotificationPanel();});
-  document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible"&&currentSession)loadNotifications(true);});
+  document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible"&&currentSession){loadNotifications(true);handleAppVisible();}});
 
   function applyFilters(){
     var q=($("search").value||"").toLowerCase().trim(), st=$("statusFilter").value;
@@ -3406,6 +3667,7 @@
     }
     async function persistInvestigator(nextId,showToast){
       if(!isManager()||isResolvedReport(r)) throw new Error("NOT_AUTHORIZED");
+      await assertOpenResourceFresh();
       nextId=nextId||null;
       if(nextId){
         var selected=profileById[String(nextId)];
@@ -3462,6 +3724,7 @@
     }
     async function persistRegulatoryReview(showToast){
       if(!r.involves_injury) return true;
+      await assertOpenResourceFresh();
       if(!regCard || !regStatus || !regAwareness) return false;
       if(!canVerify() || !canEditStep(r,1)){ toast("The Review step is read only after it is completed. Use Regulatory follow-up from the active step if the injury screening changes later.","err"); return false; }
       var status=regStatus.value, awareRaw=regAwareness.value, notified=!!(regNotified&&regNotified.checked), notifiedRaw=regNotifiedAt?regNotifiedAt.value:"";
@@ -3562,6 +3825,7 @@
 
     async function persistInvestigation(showToast,advanceReopen){
       if(!canEditStep(r,2)) throw new Error("NOT_AUTHORIZED");
+      await assertOpenResourceFresh();
       var findings=invFindings.value.trim()||null, cause=invRoot.value.trim()||null;
       var patch={investigation_findings:findings,root_cause:cause};
       if(advanceReopen && activeReopenStep(r)) patch.reopen_workflow_step=3;
@@ -3570,6 +3834,7 @@
       refreshRecordWorkflow(r,detail); loadAudit(r.id,auditEl); if(showToast) toast("Investigation saved","ok"); return true;
     }
     async function persistCorrectiveActionDecision(decision,reason,note){
+      await assertOpenResourceFresh();
       var res=await sb.rpc("rbh_set_corrective_action_decision",{
         p_report_id:r.id,
         p_decision:decision,
@@ -3981,6 +4246,7 @@
     }
     async function persistActionPlan(showToast,assign){
       if(!canEditStep(r,3)) throw new Error("NOT_AUTHORIZED");
+      await assertOpenResourceFresh();
       if(actionDecisionState.choice!=="required") throw new Error("CORRECTIVE_ACTION_DECISION_REQUIRED");
       if(String(r.corrective_action_decision||"")!=="required") await persistCorrectiveActionDecision("required",null,null);
       if(actionPlanState.loading) throw new Error("PLAN_STILL_LOADING");
@@ -4107,6 +4373,7 @@
       if(!note){toast("Describe what was completed before sending this action for review.","err");if(ta)ta.focus();return;}
       btn.disabled=true;
       try{
+        await assertOpenResourceFresh();
         await waitForActionEvidenceUpload(r.id,a.id);
         var res=await sb.rpc("rbh_submit_corrective_action_completion",{p_action_id:a.id,p_completion_note:note});
         if(res.error) throw res.error;
@@ -4151,6 +4418,7 @@
         var verifyNote=(verifyNoteEl&&verifyNoteEl.value.trim())||null;
         verifyBtn.disabled=true;
         try{
+          await assertOpenResourceFresh();
           await waitForActionEvidenceUpload(r.id,verifyAction.id);
           await releaseLegacyCorrectiveActionVerifier(verifyAction);
           var verifyRes=await sb.rpc("rbh_verify_corrective_action",{p_action_id:verifyAction.id,p_verification_note:verifyNote});
@@ -4191,6 +4459,7 @@
         if(changesReq) changesReq.classList.remove("show");
         changesBtn.disabled=true;
         try{
+          await assertOpenResourceFresh();
           await waitForActionEvidenceUpload(r.id,changesAction.id);
           await releaseLegacyCorrectiveActionVerifier(changesAction);
           var changesRes=await sb.rpc("rbh_request_corrective_action_changes",{p_action_id:changesAction.id,p_verification_note:changesNote});
@@ -4299,6 +4568,7 @@
   }
 
   async function updateStatus(reportId, status, wrap, nextReopenStep){
+    await assertOpenResourceFresh();
     var r=null; allReports.forEach(function(x){ if(x.id===reportId) r=x; });
     if(!r) throw new Error("NOT_AUTHORIZED");
     if(status==="under_review" || (status===r.status && nextReopenStep)){
@@ -4363,6 +4633,7 @@
     if(notified){ if(!notifiedRaw){ notifiedRaw=localDateTimeValue(new Date()); $("regFollowupNotifiedAt").value=notifiedRaw; } var nd=new Date(notifiedRaw); if(isNaN(nd.getTime())||nd.getTime()>Date.now()+300000){ err.textContent="Enter a valid Cal/OSHA notification time that is not in the future."; err.classList.add("show"); return; } if(awareIso && nd.getTime()<new Date(awareIso).getTime()){ err.textContent="The notification time cannot be earlier than the recorded awareness time."; err.classList.add("show"); return; } notifiedIso=nd.toISOString(); }
     err.classList.remove("show"); var btn=$("regFollowupSave"), old=btn.textContent; btn.disabled=true; btn.textContent="Saving…";
     try{
+      await assertOpenResourceFresh();
       await saveRegulatoryFollowupRecord(r,status,awareIso,notified,notifiedIso);
       var detail=regFollowupDetail; closeRegulatoryFollowupModal();
       if(detail&&detail.isConnected){ refreshPersistentRegulatoryBanner(detail,r); refreshUrgentTriage(detail,r); renderCloseStep(r,detail.querySelector("[data-close-step]"),detail,detail.querySelector("[data-audit]")); loadAudit(r.id,detail.querySelector("[data-audit]")); }
@@ -4440,6 +4711,7 @@
     var btn=$("reopenSave"); btn.disabled=true; var old=btn.textContent; btn.textContent="Reopening…";
     var rid=reopenReport.id, backView=reopenReturnView;
     try{
+      await assertOpenResourceFresh();
       var res=await sb.rpc("rbh_reopen_report",{p_report_id:String(rid),p_reason_code:code,p_reason:note});
       if(res.error) throw res.error;
       closeReopenModal();
@@ -4477,6 +4749,7 @@
     var btn=$("rSave"); btn.disabled=true; var old=btn.textContent; btn.textContent="Restarting…";
     var rid=restartReport.id, backView=restartReturnView;
     try{
+      await assertOpenResourceFresh();
       var res=await sb.rpc("rbh_restart_workflow",{p_report_id:String(rid),p_reason_code:code,p_reason:note});
       if(res.error) throw res.error;
       closeRestartModal();
@@ -5844,6 +6117,7 @@
     var langSel=$("incidentLanguage"); if(langSel){ langSel.value=activeIncidentLanguage; }
     setIncidentLanguageState(r,activeIncidentLanguage,"loading");
     var body=$("incidentBody"); body.innerHTML=''; body.setAttribute("data-report-id",String(r.id)); buildDetail(r,body,null); showView('incident');
+    setActiveOpenResource("report",r.id,r.id); startRecordPresence("report",r.id,r.id); renderLiveRecordNotices();
     scrollAppToTop();
     changeIncidentLanguage(r,activeIncidentLanguage);
   }
@@ -6136,7 +6410,8 @@
     focusedActionOrigin=from==="actions"?"actions":"mywork";
     var back=$("myActionBack"); if(back) back.textContent=focusedActionOrigin==="actions"?"← Back to Corrective Actions":"← Back to My Work";
     showView("myaction");
-    renderFocusedCorrectiveAction();
+    setActiveOpenResource("corrective_action",a.id,r.id); startRecordPresence("corrective_action",a.id,r.id);
+    renderFocusedCorrectiveAction(); renderLiveRecordNotices();
   }
   function renderFocusedCorrectiveAction(){
     var shell=$("myActionShell"); if(!shell) return;
@@ -6210,6 +6485,7 @@
 
     html+='</div>';
     shell.innerHTML=html;
+    renderLiveRecordNotices();
 
     var evidence=$("focusedActionEvidence");
     if(evidence) renderActionEvidence(r,evidence,null,a,{readOnly:status==="awaiting_verification"||status==="verified"}).catch(function(ex){console.error("focused action evidence",ex);});
@@ -6220,6 +6496,7 @@
       if(!note){toast("Describe what was completed before sending this action for review.","err");if(ta)ta.focus();return;}
       submit.disabled=true; var old=submit.textContent; submit.textContent="Submitting…";
       try{
+        await assertOpenResourceFresh();
         await waitForActionEvidenceUpload(r.id,a.id);
         var res=await sb.rpc("rbh_submit_corrective_action_completion",{p_action_id:a.id,p_completion_note:note});
         if(res.error) throw res.error;
@@ -6239,6 +6516,7 @@
       var noteEl=$("focusedVerificationNote"), note=(noteEl&&noteEl.value.trim())||null;
       verify.disabled=true; var old=verify.textContent; verify.textContent="Verifying…";
       try{
+        await assertOpenResourceFresh();
         await waitForActionEvidenceUpload(r.id,a.id);
         await clearFocusedLegacyVerifier(a);
         var res=await sb.rpc("rbh_verify_corrective_action",{p_action_id:a.id,p_verification_note:note});
@@ -6259,6 +6537,7 @@
       if(req) req.classList.remove("show");
       changes.disabled=true; var old=changes.textContent; changes.textContent="Sending back…";
       try{
+        await assertOpenResourceFresh();
         await waitForActionEvidenceUpload(r.id,a.id);
         await clearFocusedLegacyVerifier(a);
         var res=await sb.rpc("rbh_request_corrective_action_changes",{p_action_id:a.id,p_verification_note:note});
@@ -6288,6 +6567,7 @@
   function closeSidebar(){ if(sidebarEl) sidebarEl.classList.remove("open"); if(sbBackdrop) sbBackdrop.classList.remove("show"); }
 
   function showView(name){
+    if(name!=="incident"&&name!=="myaction"){ stopRecordPresence(); clearActiveOpenResource(); }
     if(name==="users" && currentRole!=="admin") name="home";
     if(name==="platform" && !isPlatformAdmin) name="home";
     if(name==="mywork" && currentRole==="read_only") name="records";
