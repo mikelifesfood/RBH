@@ -1978,7 +1978,7 @@
   var reopenReport=null, reopenReturnView="records", restartReport=null, restartReturnView="records";
   var regFollowupReport=null, regFollowupDetail=null;
   var NAV_VIEW_KEY="rbh_safety_active_view_v1", NAV_INCIDENT_KEY="rbh_safety_active_incident_v1";
-  var APP_VERSION="2026.10.05 · Injury Regulatory Follow-up V1";
+  var APP_VERSION="2026.10.06 · Build 43 Action Email Deep Links";
 
   /* Keep browser back/refresh restoration from reopening a workspace halfway down the page. */
   try{ if("scrollRestoration" in window.history) window.history.scrollRestoration="manual"; }catch(_scrollRestoreErr){}
@@ -1998,17 +1998,34 @@
   function requestedReportIdFromUrl(){
     try{ return new URLSearchParams(window.location.search||"").get("report")||""; }catch(_e){ return ""; }
   }
-  function clearRequestedReportFromUrl(){
+  function requestedCorrectiveActionIdFromUrl(){
+    try{ return new URLSearchParams(window.location.search||"").get("action")||""; }catch(_e){ return ""; }
+  }
+  function clearRequestedWorkItemFromUrl(){
     try{
-      var u=new URL(window.location.href); u.searchParams.delete("report");
+      var u=new URL(window.location.href);
+      u.searchParams.delete("report");
+      u.searchParams.delete("action");
       window.history.replaceState({},document.title,u.pathname+(u.search?u.search:"")+(u.hash||""));
     }catch(_e){}
   }
   function restoreSavedView(){
+    var directActionId=requestedCorrectiveActionIdFromUrl();
     var directReportId=requestedReportIdFromUrl();
+    if(directActionId){
+      var directAction=allCorrectiveActions.find(function(x){ return String(x.id)===String(directActionId); });
+      var directActionReport=directAction&&allReports.find(function(x){ return String(x.id)===String(directAction.report_id); });
+      clearRequestedWorkItemFromUrl();
+      if(directAction&&directActionReport){
+        openFocusedCorrectiveAction(directAction,"mywork");
+        return;
+      }
+      toast("That corrective action is unavailable or you no longer have access to it.","err");
+      return;
+    }
     if(directReportId){
       var directReport=allReports.find(function(x){ return String(x.id)===String(directReportId); });
-      clearRequestedReportFromUrl();
+      clearRequestedWorkItemFromUrl();
       if(directReport){ openIncident(directReport,"mywork"); return; }
       toast("That assigned record is unavailable or you no longer have access to it.","err");
     }

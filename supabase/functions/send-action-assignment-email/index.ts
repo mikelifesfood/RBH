@@ -1,4 +1,4 @@
-// RBH Safety - Workflow Transactional Email (Brevo) V9
+// RBH Safety - Workflow Transactional Email (Brevo) V10
 // Reuses the existing RBH Brevo project secrets and report_notification_events audit table.
 // Supports:
 //   investigator_assignment -> assigned Case Owner / Investigator
@@ -7,7 +7,8 @@
 //   verifier_assignment     -> specifically assigned Verification Owner
 //   verification_requested  -> specifically assigned Verification Owner when present;
 //                              otherwise all active Admin + Safety Manager users in the organization
-// Full incident details remain behind the authenticated RBH dashboard.
+// Action-specific notifications deep-link to the authenticated focused corrective-action workspace.
+// Report-level notifications continue to open the authenticated incident workspace.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -47,6 +48,22 @@ function dateOnly(value: unknown, lang = "en") {
   }
 }
 
+function dashboardLink(base: string, params: Record<string, string>) {
+  if (!base) return "";
+  try {
+    const url = new URL(base);
+    Object.entries(params).forEach(([key, value]) => {
+      if (value) url.searchParams.set(key, value);
+    });
+    return url.toString();
+  } catch {
+    const entries = Object.entries(params).filter(([, value]) => value);
+    if (!entries.length) return base;
+    const suffix = entries.map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`).join("&");
+    return `${base}${base.includes("?") ? "&" : "?"}${suffix}`;
+  }
+}
+
 async function hashText(input: string) {
   const bytes = new TextEncoder().encode(input);
   const digest = await crypto.subtle.digest("SHA-256", bytes);
@@ -83,8 +100,8 @@ function emailCopy(lang: string, data: any, logoUrl: string, notificationType = 
       ? `Verificación asignada — Reporte #${data.refNo}`
       : `Verification assigned — Report #${data.refNo}`;
     intro = spanish
-      ? "Se le ha asignado como responsable de verificar la acción correctiva de este reporte."
-      : "You have been assigned as the Verification Owner for this report.";
+      ? "Se le ha asignado como responsable de verificar esta acción correctiva."
+      : "You have been assigned as the Verification Owner for this corrective action.";
     button = spanish ? "Abrir verificación asignada" : "Open assigned verification";
     footer = spanish
       ? "Inicie sesión en RBH Safety para revisar la nota de finalización y la evidencia, y luego verifique la acción o solicite cambios. Este correo es una notificación automática."
@@ -113,7 +130,7 @@ function emailCopy(lang: string, data: any, logoUrl: string, notificationType = 
     intro = spanish
       ? "Su acción correctiva fue revisada y se devolvió porque se necesita evidencia adicional o una actualización antes de poder verificarla."
       : "Your corrective action was reviewed and returned because additional evidence or an update is needed before it can be verified.";
-    button = spanish ? "Abrir registro y actualizar" : "Open record and update";
+    button = spanish ? "Abrir acción y actualizar" : "Open action and update";
     footer = spanish
       ? "Inicie sesión en RBH Safety para revisar la solicitud del revisor, agregar o reemplazar evidencia, actualizar el trabajo completado y volver a enviarlo para verificación. Este correo es una notificación automática."
       : "Sign in to RBH Safety to review the reviewer request, add or replace evidence, update the completed work, and resubmit it for verification. This is an automated notification.";
@@ -125,16 +142,17 @@ function emailCopy(lang: string, data: any, logoUrl: string, notificationType = 
     intro = spanish
       ? "Se le ha asignado una acción correctiva en RBH Safety."
       : "You have been assigned a corrective action in RBH Safety.";
-    button = spanish ? "Abrir registro asignado" : "Open assigned record";
+    button = spanish ? "Abrir acción asignada" : "Open assigned action";
     footer = spanish
       ? "Inicie sesión en RBH Safety para revisar el registro completo, agregar evidencia y completar el trabajo asignado. Este correo es una notificación automática."
-      : "Sign in to RBH Safety to review the full record, add evidence, and complete the assigned work. This is an automated notification.";
+      : "Sign in to RBH Safety to open this corrective action, add evidence, and complete the assigned work. This is an automated notification.";
     eyebrow = spanish ? "Acción correctiva asignada" : "Corrective Action Assigned";
   }
 
   const greeting = spanish ? `Hola ${data.name},` : `Hi ${data.name},`;
   const reportLabel = spanish ? "Reporte" : "Report";
   const actionLabel = spanish ? "Acción correctiva" : "Corrective action";
+  const numberedActionLabel = data.actionNumber ? `${actionLabel} #${data.actionNumber}` : actionLabel;
   const dueLabel = spanish ? "Fecha límite" : "Due date";
   const priorityLabel = spanish ? "Prioridad" : "Priority";
   const reviewerLabel = spanish ? "Lo que se necesita" : "What is needed";
@@ -152,7 +170,7 @@ function emailCopy(lang: string, data: any, logoUrl: string, notificationType = 
     `${reportLabel}: #${data.refNo}`,
     responsibility ? `${roleLabel}: ${responsibility}` : "",
     verificationRequested && data.submittedBy ? `${submittedByLabel}: ${data.submittedBy}` : "",
-    data.correctiveAction ? `${actionLabel}: ${data.correctiveAction}` : "",
+    data.correctiveAction ? `${numberedActionLabel}: ${data.correctiveAction}` : "",
     verificationRequested && data.completionNote ? `${completionLabel}: ${data.completionNote}` : "",
     changesRequested && data.reviewerNote ? `${reviewerLabel}: ${data.reviewerNote}` : "",
     data.correctiveAction ? `${dueLabel}: ${data.dueDate}` : "",
@@ -188,7 +206,7 @@ function emailCopy(lang: string, data: any, logoUrl: string, notificationType = 
     ? `<div style="margin-bottom:10px;color:#161616;font:400 14px system-ui,sans-serif"><strong>${esc(roleLabel)}:</strong> ${esc(responsibility)}</div>`
     : "";
   const actionBlock = data.correctiveAction
-    ? `<div style="margin-bottom:10px;color:#161616;font:400 14px/1.5 system-ui,sans-serif"><strong>${esc(actionLabel)}:</strong><br>${esc(data.correctiveAction)}</div>
+    ? `<div style="margin-bottom:10px;color:#161616;font:400 14px/1.5 system-ui,sans-serif"><strong>${esc(numberedActionLabel)}:</strong><br>${esc(data.correctiveAction)}</div>
        <div style="margin-bottom:8px;color:#161616;font:400 14px system-ui,sans-serif"><strong>${esc(dueLabel)}:</strong> ${esc(data.dueDate)}</div>
        <div style="color:#161616;font:400 14px system-ui,sans-serif"><strong>${esc(priorityLabel)}:</strong> ${esc(data.priority)}</div>`
     : "";
@@ -244,9 +262,13 @@ Deno.serve(async (req: Request) => {
   let body: any;
   try { body = await req.json(); } catch { return json({ error: "INVALID_JSON" }, 400); }
   const reportId = String(body?.reportId || "").trim();
+  const correctiveActionId = String(body?.correctiveActionId || "").trim();
   const notificationType = String(body?.notificationType || "assignment").trim().toLowerCase();
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(reportId)) {
     return json({ error: "INVALID_REPORT_ID" }, 400);
+  }
+  if (correctiveActionId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(correctiveActionId)) {
+    return json({ error: "INVALID_CORRECTIVE_ACTION_ID" }, 400);
   }
   if (!["investigator_assignment", "assignment", "changes_requested", "verifier_assignment", "verification_requested"].includes(notificationType)) {
     return json({ error: "INVALID_NOTIFICATION_TYPE" }, 400);
@@ -268,11 +290,45 @@ Deno.serve(async (req: Request) => {
     .maybeSingle();
   if (reportError || !report) return json({ error: "REPORT_NOT_FOUND" }, 404);
   if (!caller.organization_id || String(caller.organization_id) !== String(report.organization_id)) return json({ error: "ORGANIZATION_MISMATCH" }, 403);
-  if (notificationType !== "investigator_assignment" && !String(report.corrective_action || "").trim()) return json({ error: "ACTION_PLAN_INCOMPLETE" }, 409);
 
-  const recordUrl = dashboardUrl
-    ? `${dashboardUrl}${dashboardUrl.includes("?") ? "&" : "?"}report=${encodeURIComponent(report.id)}`
-    : "";
+  let action: any = null;
+  if (correctiveActionId) {
+    const { data: actionRow, error: actionError } = await service
+      .from("report_corrective_actions")
+      .select("id,report_id,organization_id,workflow_generation,action_number,description,control_type,owner_user_id,due_date,priority,status,completion_note,completed_at,completed_by,verifier_user_id,verification_note,verified_at,verified_by,activated_at,activation_reopen_count,retired_at,created_at,updated_at")
+      .eq("id", correctiveActionId)
+      .maybeSingle();
+    if (actionError) return json({ error: "CORRECTIVE_ACTION_LOOKUP_FAILED", detail: actionError.message }, 503);
+    if (!actionRow || String(actionRow.report_id) !== String(report.id)) return json({ error: "CORRECTIVE_ACTION_NOT_FOUND" }, 404);
+    if (String(actionRow.organization_id) !== String(report.organization_id)) return json({ error: "CORRECTIVE_ACTION_ORGANIZATION_MISMATCH" }, 403);
+    if (actionRow.retired_at || !actionRow.activated_at
+      || Number(actionRow.workflow_generation || 0) !== Number(report.workflow_restart_count || 0)
+      || Number(actionRow.activation_reopen_count || 0) !== Number(report.reopen_count || 0)) {
+      return json({ error: "CORRECTIVE_ACTION_NOT_CURRENT" }, 409);
+    }
+    action = actionRow;
+  }
+
+  if (notificationType !== "investigator_assignment" && !action && !String(report.corrective_action || "").trim()) {
+    return json({ error: "ACTION_PLAN_INCOMPLETE" }, 409);
+  }
+
+  const recordUrl = dashboardLink(dashboardUrl, { report: String(report.id) });
+  const actionUrl = action
+    ? dashboardLink(dashboardUrl, { report: String(report.id), action: String(action.id) })
+    : recordUrl;
+
+  const actionStatus = String(action?.status ?? report.action_status ?? "");
+  const actionDescription = String(action?.description ?? report.corrective_action ?? "").trim();
+  const actionNumber = action?.action_number ?? null;
+  const actionOwnerUserId = action?.owner_user_id ?? report.assigned_user_id ?? null;
+  const actionVerifierUserId = action?.verifier_user_id ?? report.verifier_user_id ?? null;
+  const actionDueDate = action?.due_date ?? report.due_date ?? null;
+  const actionPriority = action?.priority ?? report.priority ?? null;
+  const actionCompletedAt = action?.completed_at ?? report.action_completed_at ?? null;
+  const actionCompletedBy = action?.completed_by ?? report.action_completed_by ?? null;
+  const actionCompletionNote = String(action?.completion_note ?? report.action_completion_note ?? "").trim();
+  const actionVerificationNote = String(action?.verification_note ?? report.action_verification_note ?? "").trim();
 
   async function reserveEvent(recipient: any, eventKey: string, logType: string) {
     const { data: existing, error: existingError } = await service
@@ -349,16 +405,16 @@ Deno.serve(async (req: Request) => {
 
   // Verification-request notifications fan out dynamically to everyone who can verify.
   if (notificationType === "verification_requested") {
-    if (String(report.action_status || "") !== "awaiting_verification") return json({ error: "ACTION_NOT_AWAITING_VERIFICATION" }, 409);
-    if (!String(report.action_completion_note || "").trim()) return json({ error: "COMPLETION_NOTE_REQUIRED" }, 409);
+    if (actionStatus !== "awaiting_verification") return json({ error: "ACTION_NOT_AWAITING_VERIFICATION" }, 409);
+    if (!actionCompletionNote) return json({ error: "COMPLETION_NOTE_REQUIRED" }, 409);
 
     let recipients: any[] = [];
     let specificVerifier = false;
-    if (report.verifier_user_id) {
+    if (actionVerifierUserId) {
       const { data: verifier, error: verifierError } = await service
         .from("profiles")
         .select("id,email,full_name,is_active,preferred_language,organization_id,app_role")
-        .eq("id", report.verifier_user_id)
+        .eq("id", actionVerifierUserId)
         .maybeSingle();
       if (verifierError) return json({ error: "VERIFIER_LOOKUP_FAILED", detail: verifierError.message }, 503);
       if (!verifier || verifier.is_active === false || !["admin", "safety_manager"].includes(String(verifier.app_role || ""))) {
@@ -381,8 +437,8 @@ Deno.serve(async (req: Request) => {
     }
 
     let submitterName = caller.full_name || caller.email || "RBH user";
-    if (report.action_completed_by && String(report.action_completed_by) !== String(caller.id)) {
-      const { data: completedBy } = await service.from("profiles").select("id,email,full_name").eq("id", report.action_completed_by).maybeSingle();
+    if (actionCompletedBy && String(actionCompletedBy) !== String(caller.id)) {
+      const { data: completedBy } = await service.from("profiles").select("id,email,full_name").eq("id", actionCompletedBy).maybeSingle();
       if (completedBy) submitterName = completedBy.full_name || completedBy.email || submitterName;
     }
 
@@ -390,12 +446,12 @@ Deno.serve(async (req: Request) => {
     const failures: any[] = [];
     for (const recipient of recipients) {
       const fingerprintInput = [
-        report.id, recipient.id, String(report.verifier_user_id || "shared"), String(report.action_completed_at || ""),
-        String(report.action_completion_note || "").trim(), String(report.reopen_count || 0),
+        report.id, String(action?.id || "legacy"), recipient.id, String(actionVerifierUserId || "shared"), String(actionCompletedAt || ""),
+        actionCompletionNote, String(report.reopen_count || 0),
         String(report.workflow_restart_count || 0),
       ].join("|");
       const eventHash = (await hashText(fingerprintInput)).slice(0, 40);
-      const eventKey = `action-verification-requested/${report.id}/${recipient.id}/${eventHash}`;
+      const eventKey = `action-verification-requested/${report.id}/${String(action?.id || "legacy")}/${recipient.id}/${eventHash}`;
       try {
         const reservation = await reserveEvent(recipient, eventKey, "action_verification_requested");
         if (reservation.duplicate) { duplicateCount++; continue; }
@@ -406,10 +462,11 @@ Deno.serve(async (req: Request) => {
           refNo: report.ref_no || String(report.id).slice(0, 8),
           specificVerifier,
           submittedBy: submitterName,
-          correctiveAction: String(report.corrective_action).trim(),
-          completionNote: String(report.action_completion_note || "").trim(),
-          dueDate: dateOnly(report.due_date, lang),
-          priority: titleCase(report.priority), recordUrl,
+          correctiveAction: actionDescription,
+          actionNumber,
+          completionNote: actionCompletionNote,
+          dueDate: dateOnly(actionDueDate, lang),
+          priority: titleCase(actionPriority), recordUrl: actionUrl,
         }, logoUrl, notificationType);
         const sent = await sendToRecipient(recipient, copy, reservation.eventId);
         if (sent.sent) sentCount++; else { failedCount++; failures.push({ recipient: recipient.email, error: sent.error }); }
@@ -479,35 +536,39 @@ Deno.serve(async (req: Request) => {
   // Verifier assignment goes only to the specifically assigned Verification Owner.
   if (notificationType === "verifier_assignment") {
     if (!["admin", "safety_manager"].includes(String(caller.app_role || ""))) return json({ error: "MANAGER_ROLE_REQUIRED" }, 403);
-    if (!report.verifier_user_id) return json({ ok: true, sent: false, skipped: true, reason: "NO_VERIFIER" });
-    if (String(report.action_status || "") !== "awaiting_verification") return json({ error: "ACTION_NOT_AWAITING_VERIFICATION" }, 409);
+    if (!actionVerifierUserId) return json({ ok: true, sent: false, skipped: true, reason: "NO_VERIFIER" });
+    if (actionStatus !== "awaiting_verification") return json({ error: "ACTION_NOT_AWAITING_VERIFICATION" }, 409);
 
     const { data: verifier, error: verifierError } = await service
       .from("profiles")
       .select("id,email,full_name,is_active,preferred_language,organization_id,app_role")
-      .eq("id", report.verifier_user_id)
+      .eq("id", actionVerifierUserId)
       .maybeSingle();
     if (verifierError || !verifier || verifier.is_active === false) return json({ error: "VERIFIER_PROFILE_UNAVAILABLE" }, 409);
     if (!["admin", "safety_manager"].includes(String(verifier.app_role || ""))) return json({ error: "INVALID_VERIFIER_ROLE" }, 409);
     if (String(verifier.organization_id) !== String(report.organization_id)) return json({ error: "VERIFIER_ORGANIZATION_MISMATCH" }, 409);
     if (!String(verifier.email || "").trim()) return json({ ok: true, sent: false, skipped: true, reason: "NO_VERIFIER_EMAIL" });
 
-    const { data: verifierAudit } = await service
-      .from("report_audit")
-      .select("created_at")
-      .eq("report_id", report.id)
-      .eq("field", "verifier_user_id")
-      .eq("new_value", verifier.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    let verifierAudit: any = null;
+    if (!action) {
+      const { data } = await service
+        .from("report_audit")
+        .select("created_at")
+        .eq("report_id", report.id)
+        .eq("field", "verifier_user_id")
+        .eq("new_value", verifier.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      verifierAudit = data;
+    }
     const fingerprintInput = [
-      report.id, verifier.id, String(verifierAudit?.created_at || ""),
-      String(report.action_completed_at || ""), String(report.action_completion_note || "").trim(),
+      report.id, String(action?.id || "legacy"), verifier.id, String(verifierAudit?.created_at || ""),
+      String(actionCompletedAt || ""), actionCompletionNote,
       String(report.reopen_count || 0), String(report.workflow_restart_count || 0),
     ].join("|");
     const eventHash = (await hashText(fingerprintInput)).slice(0, 40);
-    const eventKey = `verifier-assigned/${report.id}/${verifier.id}/${eventHash}`;
+    const eventKey = `verifier-assigned/${report.id}/${String(action?.id || "legacy")}/${verifier.id}/${eventHash}`;
 
     let reservation;
     try { reservation = await reserveEvent(verifier, eventKey, "verifier_assignment"); }
@@ -519,10 +580,11 @@ Deno.serve(async (req: Request) => {
     const copy = emailCopy(lang, {
       name: verifier.full_name || verifier.email,
       refNo: report.ref_no || String(report.id).slice(0, 8),
-      correctiveAction: String(report.corrective_action || "").trim(),
-      dueDate: dateOnly(report.due_date, lang),
-      priority: titleCase(report.priority),
-      recordUrl,
+      correctiveAction: actionDescription,
+      actionNumber,
+      dueDate: dateOnly(actionDueDate, lang),
+      priority: titleCase(actionPriority),
+      recordUrl: actionUrl,
     }, logoUrl, notificationType);
     const result = await sendToRecipient(verifier, copy, reservation.eventId);
     if (!result.sent) return json({ error: "EMAIL_SEND_FAILED", detail: result.error }, 502);
@@ -530,29 +592,29 @@ Deno.serve(async (req: Request) => {
   }
 
   // Assignment + changes-requested notifications go to the assigned dashboard user.
-  if (!report.assigned_user_id) return json({ ok: true, sent: false, skipped: true, reason: "NO_DASHBOARD_ASSIGNEE" });
+  if (!actionOwnerUserId) return json({ ok: true, sent: false, skipped: true, reason: "NO_DASHBOARD_ASSIGNEE" });
   if (notificationType === "changes_requested") {
     if (!["admin", "safety_manager"].includes(String(caller.app_role || ""))) return json({ error: "VERIFIER_ROLE_REQUIRED" }, 403);
-    if (String(report.action_status || "") !== "changes_requested") return json({ error: "CHANGES_NOT_REQUESTED" }, 409);
-    if (!String(report.action_verification_note || "").trim()) return json({ error: "REVIEWER_NOTE_REQUIRED" }, 409);
+    if (actionStatus !== "changes_requested") return json({ error: "CHANGES_NOT_REQUESTED" }, 409);
+    if (!actionVerificationNote) return json({ error: "REVIEWER_NOTE_REQUIRED" }, 409);
   }
 
   const { data: assignee, error: assigneeError } = await service
     .from("profiles")
     .select("id,email,full_name,is_active,preferred_language,organization_id")
-    .eq("id", report.assigned_user_id)
+    .eq("id", actionOwnerUserId)
     .maybeSingle();
   if (assigneeError || !assignee || assignee.is_active === false) return json({ error: "ASSIGNEE_PROFILE_UNAVAILABLE" }, 409);
   if (String(assignee.organization_id) !== String(report.organization_id)) return json({ error: "ASSIGNEE_ORGANIZATION_MISMATCH" }, 409);
   if (!String(assignee.email || "").trim()) return json({ ok: true, sent: false, skipped: true, reason: "NO_ASSIGNEE_EMAIL" });
 
   const fingerprintInput = notificationType === "changes_requested"
-    ? [report.id, assignee.id, String(report.action_completed_at || ""), String(report.action_verification_note || "").trim(), String(report.reopen_count || 0), String(report.workflow_restart_count || 0)].join("|")
-    : [report.id, assignee.id, String(report.corrective_action || "").trim(), String(report.due_date || ""), String(report.priority || ""), String(report.reopen_count || 0), String(report.workflow_restart_count || 0)].join("|");
+    ? [report.id, String(action?.id || "legacy"), assignee.id, String(actionCompletedAt || ""), actionVerificationNote, String(report.reopen_count || 0), String(report.workflow_restart_count || 0)].join("|")
+    : [report.id, String(action?.id || "legacy"), assignee.id, actionDescription, String(actionDueDate || ""), String(actionPriority || ""), String(report.reopen_count || 0), String(report.workflow_restart_count || 0)].join("|");
   const eventHash = (await hashText(fingerprintInput)).slice(0, 40);
   const eventKey = notificationType === "changes_requested"
-    ? `action-changes-requested/${report.id}/${assignee.id}/${eventHash}`
-    : `action-assigned/${report.id}/${assignee.id}/${eventHash}`;
+    ? `action-changes-requested/${report.id}/${String(action?.id || "legacy")}/${assignee.id}/${eventHash}`
+    : `action-assigned/${report.id}/${String(action?.id || "legacy")}/${assignee.id}/${eventHash}`;
   const logType = notificationType === "changes_requested" ? "action_changes_requested" : "action_assignment";
 
   let reservation;
@@ -565,10 +627,11 @@ Deno.serve(async (req: Request) => {
   const copy = emailCopy(lang, {
     name: assignee.full_name || assignee.email,
     refNo: report.ref_no || String(report.id).slice(0, 8),
-    correctiveAction: String(report.corrective_action).trim(),
-    reviewerNote: String(report.action_verification_note || "").trim(),
-    dueDate: dateOnly(report.due_date, lang),
-    priority: titleCase(report.priority), recordUrl,
+    correctiveAction: actionDescription,
+    actionNumber,
+    reviewerNote: actionVerificationNote,
+    dueDate: dateOnly(actionDueDate, lang),
+    priority: titleCase(actionPriority), recordUrl: actionUrl,
   }, logoUrl, notificationType);
   const result = await sendToRecipient(assignee, copy, reservation.eventId);
   if (!result.sent) return json({ error: "EMAIL_SEND_FAILED", detail: result.error }, 502);
