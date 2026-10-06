@@ -321,6 +321,20 @@
   .incident-language-tools{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:4px 2px;margin-bottom:14px}
   .incident-language-tools label{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:650;color:var(--ink-2)}
   .incident-language-tools select,.pdf-language-select{width:auto;min-height:36px;padding:6px 32px 6px 10px;font-size:13px}
+  .incident-owner-tool{display:flex;align-items:center;gap:8px;min-height:38px;padding:5px 8px 5px 10px;border:1px solid var(--line);border-radius:999px;background:var(--paper)}
+  .incident-owner-tool[hidden]{display:none!important}
+  .incident-owner-label{font-size:11.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.35px}
+  .incident-owner-person{display:flex;align-items:baseline;gap:5px;min-width:0}
+  .incident-owner-person strong{font-size:13px;color:var(--ink);white-space:nowrap}
+  .incident-owner-person span{font-size:11.5px;color:var(--muted);max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .incident-owner-change{border:0;background:#eef6fc;color:#245f8f;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:800;cursor:pointer}
+  .incident-owner-change:hover{background:#dcecf8}
+  .report-owner-step-card{margin:14px 0 16px;padding:14px 16px;border:1px solid #b9d7f0;border-radius:var(--r-lg);background:#eef6fc}
+  .report-owner-step-card b{display:block;color:#245f8f;font-size:14px;margin-bottom:3px}
+  .report-owner-step-card p{margin:0 0 10px;color:var(--ink-2);font-size:12.5px;line-height:1.45}
+  .report-owner-step-card label{display:grid;gap:6px;font-size:12.5px;font-weight:700;color:var(--ink-2)}
+  .report-owner-step-card select{background:var(--paper)}
+  .report-owner-modal-note{margin:0 0 14px;color:var(--muted);font-size:13px;line-height:1.5}
   .incident-language-state{font-size:12.5px;color:var(--muted);margin-left:auto}
   .incident-language-state.loading{font-weight:700;color:var(--brand)}
   .pdf-language-wrap{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)}
@@ -1012,7 +1026,7 @@
     .back-link{padding:8px 12px;font-size:13px}
     .incident-summary{padding:13px 14px}
     .incident-summary .is-desc{font-size:14.5px;line-height:1.5}
-    .incident-language-tools{align-items:stretch;flex-direction:column}.incident-language-tools>label{justify-content:space-between}.incident-language-state{margin-left:0}.incident-guidance-toggle{align-self:flex-end}
+    .incident-language-tools{align-items:stretch;flex-direction:column}.incident-language-tools>label{justify-content:space-between}.incident-language-state{margin-left:0}.incident-owner-tool{border-radius:var(--r);justify-content:space-between}.incident-owner-person{margin-left:auto}.incident-owner-person span{display:none}.incident-guidance-toggle{align-self:flex-end}
     .badge{font-size:11.5px;padding:4px 8px}
     .toolbar .search{min-width:0;flex:1 1 100%}
     .toolbar select{flex:1}
@@ -1416,6 +1430,11 @@
               <select id="incidentLanguage"><option value="en">English</option><option value="es">Español</option></select>
             </label>
             <span class="incident-language-state" id="incidentLanguageState"></span>
+            <div class="incident-owner-tool" id="incidentOwnerTool" hidden>
+              <span class="incident-owner-label">Report owner</span>
+              <span class="incident-owner-person"><strong id="incidentOwnerName">Unassigned</strong><span id="incidentOwnerEmail"></span></span>
+              <button class="incident-owner-change" id="incidentOwnerChange" type="button">Change</button>
+            </div>
             <label class="guidance-toggle incident-guidance-toggle" for="incidentGuidanceToggle"><input type="checkbox" id="incidentGuidanceToggle"><span>Show guidance</span></label>
           </div>
           <div class="incident-body" id="incidentBody"></div>
@@ -1566,6 +1585,16 @@
 <div id="toasts" class="toasts"></div>
 
 <!-- ============ ADMIN ADD USER MODAL ============ -->
+<div class="modal-backdrop" id="reportOwnerBackdrop">
+  <div class="modal-card">
+    <h3>Change report owner</h3>
+    <p class="report-owner-modal-note">The Report Owner is responsible for moving this report forward and receives report-level workflow emails. Changing the owner does not change anyone's role, access, or editing permissions.</p>
+    <label class="inv-l">Report owner<select id="reportOwnerSelect"></select></label>
+    <div class="err" id="reportOwnerErr"></div>
+    <div class="modal-actions"><button class="btn-secondary" id="reportOwnerCancel" type="button">Cancel</button><button class="wizard-primary" id="reportOwnerSave" type="button">Change owner</button></div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="addUserBackdrop">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="addUserHeading">
     <h3 id="addUserHeading">Add dashboard user</h3>
@@ -1853,6 +1882,73 @@
     return sendCorrectiveActionWorkflowEmail(r,action,"changes_requested");
   }
 
+  function canChangeReportOwner(r){ return !!(r&&isManager()&&!isResolvedReport(r)); }
+  function refreshIncidentOwnerHeader(r){
+    var tool=$("incidentOwnerTool"), nameEl=$("incidentOwnerName"), emailEl=$("incidentOwnerEmail"), change=$("incidentOwnerChange");
+    if(!tool) return;
+    var owner=reportOwnerProfile(r), shouldShow=!!(r&&(r.report_owner_user_id||String(r.status||"new")!=="new"));
+    tool.hidden=!shouldShow;
+    if(!shouldShow) return;
+    if(nameEl) nameEl.textContent=owner?profileName(owner):"Unassigned";
+    if(emailEl) emailEl.textContent=owner&&owner.email?owner.email:"";
+    if(change){ change.hidden=!canChangeReportOwner(r); change.disabled=!canChangeReportOwner(r); }
+  }
+  function refreshIncidentMeta(r){
+    if(!r||!$("incidentMeta")) return;
+    var meta=[];
+    if(r.job_site) meta.push(r.job_site);
+    if(reportOwnerName(r)) meta.push("Owner: "+reportOwnerName(r));
+    if(ENABLE_INVESTIGATOR_ASSIGNMENT_UI&&investigatorName(r)) meta.push("Investigator: "+investigatorName(r));
+    if(assigneeName(r)) meta.push("Action owner: "+assigneeName(r));
+    meta.push(fmtDate(r.created_at));
+    $("incidentMeta").textContent=meta.join(" · ");
+  }
+  async function persistReportOwner(r,nextId,notifyEmail){
+    if(!r||!canChangeReportOwner(r)) throw new Error("NOT_AUTHORIZED");
+    nextId=String(nextId||"").trim();
+    if(!nextId) throw new Error("REPORT_OWNER_REQUIRED");
+    var selected=profileById[nextId];
+    if(!selected||selected.is_active===false||["admin","safety_manager"].indexOf(String(selected.app_role||""))<0) throw new Error("INVALID_REPORT_OWNER");
+    if(String(selected.organization_id||currentOrgId||"")!==String(r.organization_id||currentOrgId||"")) throw new Error("REPORT_OWNER_ORGANIZATION_MISMATCH");
+    var oldId=String(r.report_owner_user_id||"");
+    if(oldId===nextId){ refreshIncidentOwnerHeader(r); return {changed:false,sent:false}; }
+    await assertOpenResourceFresh();
+    var res=await sb.rpc("rbh_set_report_owner",{p_report_id:r.id,p_owner_user_id:nextId});
+    if(res.error) throw res.error;
+    var d=res.data||{}; if(Array.isArray(d)) d=d[0]||{};
+    r.report_owner_user_id=d.report_owner_user_id||nextId;
+    r.report_owner_assigned_at=d.report_owner_assigned_at||new Date().toISOString();
+    r.report_owner_assigned_by=d.report_owner_assigned_by||currentUserId();
+    if(d.report_updated_at) r.updated_at=d.report_updated_at;
+    if(activeOpenResource&&String(activeOpenResource.reportId||"")===String(r.id)){
+      if(d.report_updated_at) activeOpenResource.reportUpdatedAt=String(d.report_updated_at);
+      activeOpenResource.capturedAt=safeIsoNow(); activeOpenResource.stale=false; activeOpenResource.changedBy=null;
+    }
+    refreshIncidentOwnerHeader(r); refreshIncidentMeta(r); renderLiveRecordNotices();
+    renderHomeSnapshot(); applyFilters();
+    var email=null;
+    if(notifyEmail) email=await sendReportOwnerAssignmentEmail(r);
+    return {changed:true,email:email};
+  }
+
+  async function sendReportOwnerAssignmentEmail(r){
+    if(!r||!r.report_owner_user_id) return {ok:true,sent:false,skipped:true,reason:"NO_REPORT_OWNER"};
+    if(!currentSession||!currentSession.access_token) return {ok:false,sent:false,error:"AUTH_REQUIRED"};
+    try{
+      var resp=await fetch(SUPA_URL+"/functions/v1/send-action-assignment-email",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","Authorization":"Bearer "+currentSession.access_token,"apikey":SUPA_KEY},
+        body:JSON.stringify({reportId:String(r.id),notificationType:"report_owner_assignment"})
+      });
+      var data=await resp.json().catch(function(){return {};});
+      if(!resp.ok) return {ok:false,sent:false,error:data.error||("HTTP_"+resp.status),detail:data.detail||""};
+      return data||{ok:true,sent:false};
+    }catch(ex){
+      console.error("report owner assignment email",ex);
+      return {ok:false,sent:false,error:"NETWORK_ERROR",detail:(ex&&ex.message)||""};
+    }
+  }
+
   async function sendInvestigatorAssignmentEmail(r){
     if(!r||!r.investigator_user_id) return {ok:true,sent:false,skipped:true,reason:"NO_INVESTIGATOR"};
     if(!currentSession||!currentSession.access_token) return {ok:false,sent:false,error:"AUTH_REQUIRED"};
@@ -1987,9 +2083,9 @@
   var modalReport=null, modalCard=null, modalNotesEl=null;
   var dispositionReport=null, dispositionWrap=null, dispositionNotesEl=null;
   var reopenReport=null, reopenReturnView="records", restartReport=null, restartReturnView="records";
-  var regFollowupReport=null, regFollowupDetail=null;
+  var regFollowupReport=null, regFollowupDetail=null, reportOwnerModalReport=null;
   var NAV_VIEW_KEY="rbh_safety_active_view_v1", NAV_INCIDENT_KEY="rbh_safety_active_incident_v1";
-  var APP_VERSION="2026.10.06 · Build 44 Live Sync & Record Integrity";
+  var APP_VERSION="2026.10.06 · Build 46 Report Ownership & Dynamic Notifications";
 
   /* ---------- Build 44: live dashboard sync + presence + stale-save protection ---------- */
   var LIVE_SYNC_FALLBACK_MS=60000, PRESENCE_HEARTBEAT_MS=20000, PRESENCE_ACTIVE_MS=55000, PRESENCE_EDITING_IDLE_MS=90000;
@@ -2613,7 +2709,7 @@
       if(injuryOnly && !r.involves_injury) return false;
       if(st==="open"){ if(resolved) return false; }
       else if(st!=="all" && r.status!==st) return false;
-      if(q){ var hay=[r.ref_no,r.report_type,r.description,r.hazard_category,r.reporter_name,r.people_involved,r.potential_severity,r.reporter_role,r.responsible_person,assigneeName(r),r.action_status,r.job_site]
+      if(q){ var hay=[r.ref_no,r.report_type,r.description,r.hazard_category,r.reporter_name,r.people_involved,r.potential_severity,r.reporter_role,r.responsible_person,reportOwnerName(r),assigneeName(r),r.action_status,r.job_site]
         .map(function(x){return String(x==null?"":x).toLowerCase();}).join(" "); if(hay.indexOf(q)<0) return false; }
       return true;
     });
@@ -2644,7 +2740,7 @@
     var wrap=document.createElement("div");
     wrap.className="card"+(resolved?" resolved":"")+inboxStateClass;
     wrap.setAttribute('data-report-id',r.id);
-    var meta=[fmtDate(r.created_at),(r.reporter_name||"Anonymous")]; if(r.hazard_category) meta.push(r.hazard_category); if(investigatorName(r)) meta.push("Investigator: "+investigatorName(r)); if(assigneeName(r)) meta.push("Action owner: "+assigneeName(r));
+    var meta=[fmtDate(r.created_at),(r.reporter_name||"Anonymous")]; if(r.hazard_category) meta.push(r.hazard_category); if(reportOwnerName(r)) meta.push("Owner: "+reportOwnerName(r)); if(ENABLE_INVESTIGATOR_ASSIGNMENT_UI&&investigatorName(r)) meta.push("Investigator: "+investigatorName(r)); if(assigneeName(r)) meta.push("Action owner: "+assigneeName(r));
     var dueInfo=reportDueInfo(r); if(dueInfo.date) meta.push(dueInfo.state==="overdue"?("Overdue — due "+shortDate(dueInfo.date)):(dueInfo.state==="today"?"Due today":("Due "+shortDate(dueInfo.date))));
     var pri=reportPriorityBadgeHtml(r), statusBadge=suppressParentStatusBadge(r)?"":('<span class="badge '+st.c+'" data-status-badge title="Status">'+esc(st.l)+'</span>');
     wrap.innerHTML=
@@ -2670,6 +2766,15 @@
     return opts.join("");
   }
   function investigatorOptions(selected){ return assignmentOptions(selected); }
+  function reportOwnerOptions(selected){
+    var opts=['<option value="">Select report owner</option>'];
+    allProfiles.filter(function(p){ return p.is_active!==false && (p.app_role==="admin"||p.app_role==="safety_manager"); })
+      .sort(function(a,b){ return profileName(a).localeCompare(profileName(b)); })
+      .forEach(function(p){
+        opts.push('<option value="'+esc(p.id)+'"'+(String(p.id)===String(selected||"")?' selected':'')+'>'+esc(profileName(p))+' · '+esc(roleLabel(p.app_role))+'</option>');
+      });
+    return opts.join("");
+  }
   function verifierOptions(selected){
     var opts=['<option value="">Unassigned — any Admin / Safety Manager can verify</option>'];
     allProfiles.filter(function(p){ return p.is_active!==false && (p.app_role==="admin"||p.app_role==="safety_manager"); })
@@ -2906,6 +3011,7 @@
         '<div class="wizard-task"><b>Start here</b><span>Review the report and attachments. If an injury is involved, complete the serious-event screen. Then either start an investigation or close the report with a documented reason.</span></div>'+
         '<span class="field-guidance">This step is intentionally simple: review what was submitted, then choose what happens next.</span>'+
         investigatorAssignmentCardHtml(r)+
+        '<div class="report-owner-step-card" data-report-owner-step><b>Report owner</b><p>The person responsible for moving this report through the workflow. If you do not change this field, the report will be assigned to you when you start the investigation.</p><label>Assign report to<select class="review-owner-select">'+reportOwnerOptions(r.report_owner_user_id||(isManager()?currentUserId():""))+'</select></label></div>'+
         '<div class="d-rows">'+rows.join("")+'</div>'+
         '<div class="d-atts" data-atts></div>'+
         regulatoryReviewHtml(r)+
@@ -3655,6 +3761,11 @@
     var gate=detail.querySelector("[data-role-gate]");
     var canEdit=canEditReport(r);
     if(!canEdit && gate) gate.classList.add("show");
+    var reviewOwnerSelect=detail.querySelector(".review-owner-select");
+    if(reviewOwnerSelect){
+      if(!r.report_owner_user_id && isManager() && currentUserId()) reviewOwnerSelect.value=currentUserId();
+      reviewOwnerSelect.disabled=!isManager()||!canEditStep(r,1);
+    }
 
     var investigatorCard=detail.querySelector("[data-investigator-card]"), investigatorSelect=investigatorCard?investigatorCard.querySelector(".inv-investigator"):null, investigatorSave=investigatorCard?investigatorCard.querySelector(".investigator-save"):null, investigatorSelf=investigatorCard?investigatorCard.querySelector(".investigator-self"):null, investigatorSaved=investigatorCard?investigatorCard.querySelector(".investigator-saved"):null, investigatorChip=investigatorCard?investigatorCard.querySelector("[data-investigator-chip]"):null, investigatorPermission=investigatorCard?investigatorCard.querySelector("[data-investigator-permission]"):null;
     function syncInvestigatorUi(){
@@ -4349,6 +4460,7 @@
         renderCorrectiveActionPlan();
       }
       renderCorrectiveActionDecision();
+      if(reviewOwnerSelect) reviewOwnerSelect.disabled=!isManager()||!canEditStep(r,1);
       if(reviewNextFooter) reviewNextFooter.classList.toggle("next-step-ready",canEditStep(r,1)&&caloshaScreenComplete(r));
       syncInvestigationNextStepState();
       syncPlanNextStepState();
@@ -4509,8 +4621,14 @@
     var complete1=detail.querySelector('[data-step-complete="1"]'); if(complete1) complete1.addEventListener("click",async function(){
       if(!canEditStep(r,1)){toast("You do not have permission to acknowledge this report.","err");return;} complete1.disabled=true;
       try{
-        /* Step 1 is acknowledgment/triage only. Do not change investigator ownership here.
-           Ownership can be handled in Investigation without blocking the Review -> Investigation transition. */
+        var ownerId=(reviewOwnerSelect&&reviewOwnerSelect.value)||r.report_owner_user_id||currentUserId();
+        if(!ownerId){toast("Choose a Report Owner before starting the investigation.","err");return;}
+        var ownerWasChanged=String(r.report_owner_user_id||"")!==String(ownerId);
+        if(ownerWasChanged){
+          var shouldNotify=String(ownerId)!==currentUserId();
+          var ownerResult=await persistReportOwner(r,ownerId,shouldNotify);
+          if(ownerResult&&ownerResult.email&&!ownerResult.email.sent&&!ownerResult.email.skipped){ console.error("report owner notification failed",ownerResult.email); toast("Report Owner saved, but the handoff email could not be sent.","err"); }
+        }
         if(r.involves_injury){
           if(canVerify()){
             if(!(await persistRegulatoryReview(false))) return;
@@ -4520,7 +4638,7 @@
         }
         if(r.status==="new") await updateStatus(r.id,"under_review",wrap,activeReopenStep(r)?2:null);
         else if(activeReopenStep(r)===1) await updateStatus(r.id,r.status,wrap,2);
-        refreshRecordWorkflow(r,detail); setWizardStep(detail,r,2,true); syncStepEditability(); loadAudit(r.id,auditEl); toast("Report acknowledged — continue to Investigation","ok");
+        refreshRecordWorkflow(r,detail); setWizardStep(detail,r,2,true); syncStepEditability(); loadAudit(r.id,auditEl); toast("Report acknowledged — "+(reportOwnerName(r)||"Report Owner")+" owns the report","ok");
       }
       catch(ex){console.error(ex);toast("Could not acknowledge the report.","err");} finally{if(complete1.isConnected)complete1.disabled=!canEditStep(r,1);} });
 
@@ -4641,6 +4759,38 @@
       toast(status==="pending"?"Regulatory follow-up saved — final decision still pending":"Regulatory follow-up saved","ok");
     }catch(ex){ console.error(ex); err.textContent="Could not save the regulatory follow-up. Confirm the Build 36 Supabase migration was run first."; err.classList.add("show"); }
     finally{ btn.disabled=false; btn.textContent=old; }
+  });
+
+  function openReportOwnerModal(r){
+    if(!r||!canChangeReportOwner(r)){toast("Only an Admin or Safety Manager can change the Report Owner while the report is open.","err");return;}
+    reportOwnerModalReport=r;
+    var sel=$("reportOwnerSelect"), err=$("reportOwnerErr");
+    if(sel){ sel.innerHTML=reportOwnerOptions(r.report_owner_user_id||currentUserId()); sel.value=r.report_owner_user_id||currentUserId(); }
+    if(err){err.textContent="";err.classList.remove("show");}
+    $("reportOwnerBackdrop").classList.add("open");
+    setTimeout(function(){if(sel)sel.focus();},40);
+  }
+  function closeReportOwnerModal(){ $("reportOwnerBackdrop").classList.remove("open"); reportOwnerModalReport=null; }
+  var _ownerChange=$("incidentOwnerChange"); if(_ownerChange) _ownerChange.addEventListener("click",function(){ if(activeIncident) openReportOwnerModal(activeIncident); });
+  var _ownerCancel=$("reportOwnerCancel"); if(_ownerCancel) _ownerCancel.addEventListener("click",closeReportOwnerModal);
+  var _ownerBackdrop=$("reportOwnerBackdrop"); if(_ownerBackdrop) _ownerBackdrop.addEventListener("click",function(e){if(e.target===_ownerBackdrop)closeReportOwnerModal();});
+  document.addEventListener("keydown",function(e){if(e.key==="Escape"&&_ownerBackdrop&&_ownerBackdrop.classList.contains("open"))closeReportOwnerModal();});
+  var _ownerSave=$("reportOwnerSave"); if(_ownerSave) _ownerSave.addEventListener("click",async function(){
+    if(!reportOwnerModalReport) return;
+    var r=reportOwnerModalReport, sel=$("reportOwnerSelect"), err=$("reportOwnerErr"), nextId=sel?sel.value:"";
+    if(!nextId){if(err){err.textContent="Choose a Report Owner.";err.classList.add("show");}return;}
+    _ownerSave.disabled=true; var old=_ownerSave.textContent; _ownerSave.textContent="Saving…";
+    try{
+      var result=await persistReportOwner(r,nextId,String(nextId)!==currentUserId());
+      closeReportOwnerModal();
+      var owner=reportOwnerName(r)||"Report Owner";
+      if(result&&result.email&&!result.email.sent&&!result.email.skipped){console.error("report owner handoff email",result.email);toast("Report owner changed to "+owner+", but the handoff email could not be sent.","err");}
+      else toast(result&&result.changed?("Report owner changed to "+owner):("Report owner is already "+owner),"ok");
+      var d=$("incidentBody"); if(d&&d.isConnected) loadAudit(r.id,d.querySelector("[data-audit]"));
+    }catch(ex){
+      console.error("change report owner",ex);
+      if(err){err.textContent=(ex&&ex.message==="INVALID_REPORT_OWNER")?"Choose an active Admin or Safety Manager.":"Could not change the Report Owner. Refresh the record and try again.";err.classList.add("show");}
+    }finally{_ownerSave.disabled=false;_ownerSave.textContent=old;}
   });
 
   var DISPOSITION_LABELS={no_issue:"No issue found",informational:"Informational only",not_safety:"Not safety-related",duplicate:"Duplicate report",other:"Other"};
@@ -4921,6 +5071,7 @@
     ["reporter_name","Reporter name"],["reporter_role","Reporter role"],["reporter_contact","Reporter contact"],
     ["language","Form language"],["involves_injury","Involves injury"],["job_site","Incident address"],["site_location","Specific location"],["observed_at","Observed at"],
     ["calosha_screening_status","Cal/OSHA serious-event screening"],["calosha_awareness_at","Company awareness time"],["calosha_notified_at","Cal/OSHA notified at"],["calosha_notified_by","Cal/OSHA notification recorded by"],
+    ["report_owner_user_id","Report owner user ID"],["report_owner_assigned_at","Report owner assigned at"],["report_owner_assigned_by","Report owner assigned by user ID"],
     ["investigator_user_id","Case owner / investigator user ID"],
     ["priority","Priority"],["likelihood","Likelihood"],["assigned_to","Assigned to"],
     ["assigned_user_id","Assigned dashboard user ID"],["action_status","Corrective action status"],
@@ -5032,8 +5183,8 @@
 
       var pdfMode=languageMode||"viewer", pdfLang=(pdfMode==="original"?normalizeLanguageCode(r.language||"en"):(pdfMode==="viewer"?(activeIncident===r?activeIncidentLanguage:preferredReadingLanguage()):normalizeLanguageCode(pdfMode)));
       var pdfLabels={
-        en:{notRecorded:"Not recorded",dashboardUser:"Dashboard user",reportWord:"Report",step:"STEP",workflow:["Review","Investigation","Corrective Actions","Close"],headerSubtitle:"Incident record - after-action summary",submitted:"Submitted",generated:"Generated",section1:"Report and review",section1Sub:"What was submitted and how the report entered the safety workflow.",reportType:"Report type",actualInjury:"Actual injury or illness",address:"Address of incident",specificSpot:"Specific spot on the site",whenNoticed:"When noticed",potentialSeverity:"Potential severity",hazardType:"Type of hazard",formLanguage:"Form language",describe:"Describe what you saw",noDescription:"No description recorded",involved:"Who or what was involved / any witnesses",immediate:"What was done right away",suggested:"What would fix it or prevent it",reporter:"Reporter",reportedBy:"Reported by",reporterRole:"Reporter role",reporterContact:"Reporter contact",reviewCompleted:"Review completed",reviewedBy:"Reviewed by",investigator:"Case owner / investigator",verifier:"Verification owner",workflowRestarts:"Workflow restarts",lastRestart:"Last restart",none:"None",originalFiles:"Original report photos and files",noOriginalFiles:"No original files attached",calosha:"Cal/OSHA serious-event screening",screeningResult:"Screening result",awareness:"Company awareness time",notifiedAt:"Cal/OSHA notified at",notifiedBy:"Notification recorded by",screeningNote:"Screening note",screeningDisclaimer:"Management screening only. This application does not submit a report to Cal/OSHA and the screening does not replace required regulatory reporting.",section2:"Investigation",section2Sub:"Document what the investigation found and why it happened.",whatHappened:"What happened?",rootCause:"Why did it happen?",investigationEvidence:"Investigation evidence",noInvestigationEvidence:"No investigation evidence attached",notYetRecorded:"Not yet recorded",section3:"Corrective actions",section3Sub:"Document whether additional corrective work was required and, when needed, the action plan.",correctiveDecision:"Corrective-action decision",noAdditionalAction:"No additional corrective action needed",noActionReason:"Reason",noActionExplanation:"Explanation",correctiveRequired:"Corrective action required",actionNumber:"Corrective Action",actionStatus:"Action status",controlType:"Control type",assignedUser:"Assigned dashboard user",notAssigned:"Not assigned",responsible:"Responsible person / crew",dueDate:"Due date",priority:"Priority",section4:"Corrective actions - Complete work",section4Sub:"Record what was actually completed and the supporting evidence.",completedWork:"Completed work submitted",notYetSubmitted:"Not yet submitted",completedOn:"Completed on",completedBy:"Completed by",currentEvidence:"Current-workflow corrective-action evidence",noCurrentEvidence:"No corrective-action evidence attached in the current workflow",priorEvidence:"Preserved evidence from earlier workflow",section5:"Corrective actions - Verify work",section5Sub:"Show the review decision and any verification or change-request note.",verificationOutcome:"Verification outcome",verifiedOn:"Verified on",verifiedBy:"Verified by",requestedChanges:"Requested changes",reviewerNote:"Reviewer verification note",noVerificationNote:"No verification note recorded",section6:"Close report",section6Sub:"Final disposition and closure information for the incident.",recordStatus:"Record status",closedOn:"Closed on",notYetClosed:"Not yet closed",closedBy:"Closed by",closurePath:"Closure path",closureReason:"Closure reason",closureNote:"Closure note",additionalNotes:"Additional notes",activityHistory:"Activity history",reportSubmitted:"Report submitted",anonymousReporter:"Anonymous reporter",note:"Note",system:"System",footer:"RBH Insulation, Inc. | Confidential safety document | License #558799",page:"Page",yes:"Yes",no:"No",originalRecord:"Original record",appendixTitle:"Attachment Appendix",appendixSub:"Files preserved with this record at the time the PDF was generated.",attachment:"Attachment",source:"Source",uploaded:"Uploaded",fileType:"File type",fileSize:"File size",sha256:"SHA-256",sourceOriginal:"Original report attachment",sourceInvestigationEvidence:"Investigation evidence",sourceCurrentEvidence:"Corrective-action evidence",sourcePriorEvidence:"Earlier-workflow corrective-action evidence",embeddedOnly:"Source file embedded in PDF",embeddedOnlyBody:"This file type cannot be rendered reliably as visible PDF pages in the browser. The original source file is embedded inside this PDF package so it remains with the exported record.",pdfPages:"Source PDF pages follow",appendixCount:"Attachments included",appendixNote:"Removed attachments are not included; their removal remains documented in the activity history.",attachmentUnavailable:"Attachment could not be loaded",attachmentUnavailableBody:"This attachment could not be retrieved when the PDF was generated. Its metadata remains listed in the appendix.",summaryPage:"Summary page"},
-        es:{notRecorded:"No registrado",dashboardUser:"Usuario del panel",reportWord:"Reporte",step:"PASO",workflow:["Revisión","Investigación","Acciones correctivas","Cerrar"],headerSubtitle:"Registro del incidente - resumen posterior a la acción",submitted:"Enviado",generated:"Generado",section1:"Reporte y revisión",section1Sub:"Lo que se envió y cómo el reporte ingresó al flujo de seguridad.",reportType:"Tipo de reporte",actualInjury:"Lesión o enfermedad real",address:"Dirección del incidente",specificSpot:"Lugar específico en la obra",whenNoticed:"Cuándo se observó",potentialSeverity:"Gravedad potencial",hazardType:"Tipo de peligro",formLanguage:"Idioma del formulario",describe:"Describa lo que vio",noDescription:"No se registró descripción",involved:"Quién o qué estuvo involucrado / testigos",immediate:"Qué se hizo de inmediato",suggested:"Qué lo corregiría o evitaría",reporter:"Reportante",reportedBy:"Reportado por",reporterRole:"Función del reportante",reporterContact:"Contacto del reportante",reviewCompleted:"Revisión completada",reviewedBy:"Revisado por",investigator:"Responsable / investigador",verifier:"Responsable de verificación",workflowRestarts:"Reinicios del flujo",lastRestart:"Último reinicio",none:"Ninguno",originalFiles:"Fotos y archivos del reporte original",noOriginalFiles:"No hay archivos originales adjuntos",calosha:"Evaluación de evento grave de Cal/OSHA",screeningResult:"Resultado de la evaluación",awareness:"Hora en que la empresa tuvo conocimiento",notifiedAt:"Cal/OSHA notificado a las",notifiedBy:"Notificación registrada por",screeningNote:"Nota de evaluación",screeningDisclaimer:"Solo evaluación de la gerencia. Esta aplicación no presenta un reporte a Cal/OSHA y la evaluación no reemplaza los reportes regulatorios requeridos.",section2:"Investigación",section2Sub:"Documente lo que determinó la investigación y por qué ocurrió.",whatHappened:"¿Qué pasó?",rootCause:"¿Por qué pasó?",investigationEvidence:"Evidencia de la investigación",noInvestigationEvidence:"No hay evidencia de investigación adjunta",notYetRecorded:"Aún no registrado",section3:"Acciones correctivas",section3Sub:"Documente si se requirió trabajo correctivo adicional y, cuando corresponda, el plan de acción.",correctiveDecision:"Decisión de acción correctiva",noAdditionalAction:"No se necesita acción correctiva adicional",noActionReason:"Motivo",noActionExplanation:"Explicación",correctiveRequired:"Acción correctiva requerida",actionNumber:"Acción correctiva",actionStatus:"Estado de la acción",controlType:"Tipo de control",assignedUser:"Usuario asignado del panel",notAssigned:"No asignado",responsible:"Persona / equipo responsable",dueDate:"Fecha límite",priority:"Prioridad",section4:"Acciones correctivas - Completar trabajo",section4Sub:"Registre lo que realmente se completó y la evidencia de respaldo.",completedWork:"Trabajo completado enviado",notYetSubmitted:"Aún no enviado",completedOn:"Completado el",completedBy:"Completado por",currentEvidence:"Evidencia de acción correctiva del flujo actual",noCurrentEvidence:"No hay evidencia de acción correctiva adjunta en el flujo actual",priorEvidence:"Evidencia preservada de un flujo anterior",section5:"Acciones correctivas - Verificar trabajo",section5Sub:"Muestre la decisión de revisión y cualquier nota de verificación o solicitud de cambios.",verificationOutcome:"Resultado de la verificación",verifiedOn:"Verificado el",verifiedBy:"Verificado por",requestedChanges:"Cambios solicitados",reviewerNote:"Nota de verificación del revisor",noVerificationNote:"No se registró una nota de verificación",section6:"Cerrar registro",section6Sub:"Disposición final e información de cierre del incidente.",recordStatus:"Estado del registro",closedOn:"Cerrado el",notYetClosed:"Aún no cerrado",closedBy:"Cerrado por",closurePath:"Ruta de cierre",closureReason:"Motivo de cierre",closureNote:"Nota de cierre",additionalNotes:"Notas adicionales",activityHistory:"Historial de actividad",reportSubmitted:"Reporte enviado",anonymousReporter:"Reportante anónimo",note:"Nota",system:"Sistema",footer:"RBH Insulation, Inc. | Documento confidencial de seguridad | Licencia #558799",page:"Página",yes:"Sí",no:"No",originalRecord:"Registro original",appendixTitle:"Apéndice de archivos adjuntos",appendixSub:"Archivos preservados con este registro al momento de generar el PDF.",attachment:"Adjunto",source:"Origen",uploaded:"Cargado",fileType:"Tipo de archivo",fileSize:"Tamaño",sha256:"SHA-256",sourceOriginal:"Adjunto del reporte original",sourceInvestigationEvidence:"Evidencia de la investigación",sourceCurrentEvidence:"Evidencia de acción correctiva",sourcePriorEvidence:"Evidencia de acción correctiva de un flujo anterior",embeddedOnly:"Archivo fuente incorporado en el PDF",embeddedOnlyBody:"Este tipo de archivo no se puede representar de forma confiable como páginas PDF visibles en el navegador. El archivo fuente original está incorporado dentro de este paquete PDF para que permanezca con el registro exportado.",pdfPages:"Las páginas del PDF fuente siguen",appendixCount:"Adjuntos incluidos",appendixNote:"Los adjuntos eliminados no se incluyen; su eliminación permanece documentada en el historial de actividad.",attachmentUnavailable:"No se pudo cargar el adjunto",attachmentUnavailableBody:"No se pudo recuperar este adjunto cuando se generó el PDF. Sus metadatos permanecen listados en el apéndice.",summaryPage:"Página de resumen"}
+        en:{notRecorded:"Not recorded",dashboardUser:"Dashboard user",reportWord:"Report",step:"STEP",workflow:["Review","Investigation","Corrective Actions","Close"],headerSubtitle:"Incident record - after-action summary",submitted:"Submitted",generated:"Generated",section1:"Report and review",section1Sub:"What was submitted and how the report entered the safety workflow.",reportType:"Report type",actualInjury:"Actual injury or illness",address:"Address of incident",specificSpot:"Specific spot on the site",whenNoticed:"When noticed",potentialSeverity:"Potential severity",hazardType:"Type of hazard",formLanguage:"Form language",describe:"Describe what you saw",noDescription:"No description recorded",involved:"Who or what was involved / any witnesses",immediate:"What was done right away",suggested:"What would fix it or prevent it",reporter:"Reporter",reportedBy:"Reported by",reporterRole:"Reporter role",reporterContact:"Reporter contact",reviewCompleted:"Review completed",reviewedBy:"Reviewed by",reportOwner:"Report owner",investigator:"Case owner / investigator",verifier:"Verification owner",workflowRestarts:"Workflow restarts",lastRestart:"Last restart",none:"None",originalFiles:"Original report photos and files",noOriginalFiles:"No original files attached",calosha:"Cal/OSHA serious-event screening",screeningResult:"Screening result",awareness:"Company awareness time",notifiedAt:"Cal/OSHA notified at",notifiedBy:"Notification recorded by",screeningNote:"Screening note",screeningDisclaimer:"Management screening only. This application does not submit a report to Cal/OSHA and the screening does not replace required regulatory reporting.",section2:"Investigation",section2Sub:"Document what the investigation found and why it happened.",whatHappened:"What happened?",rootCause:"Why did it happen?",investigationEvidence:"Investigation evidence",noInvestigationEvidence:"No investigation evidence attached",notYetRecorded:"Not yet recorded",section3:"Corrective actions",section3Sub:"Document whether additional corrective work was required and, when needed, the action plan.",correctiveDecision:"Corrective-action decision",noAdditionalAction:"No additional corrective action needed",noActionReason:"Reason",noActionExplanation:"Explanation",correctiveRequired:"Corrective action required",actionNumber:"Corrective Action",actionStatus:"Action status",controlType:"Control type",assignedUser:"Assigned dashboard user",notAssigned:"Not assigned",responsible:"Responsible person / crew",dueDate:"Due date",priority:"Priority",section4:"Corrective actions - Complete work",section4Sub:"Record what was actually completed and the supporting evidence.",completedWork:"Completed work submitted",notYetSubmitted:"Not yet submitted",completedOn:"Completed on",completedBy:"Completed by",currentEvidence:"Current-workflow corrective-action evidence",noCurrentEvidence:"No corrective-action evidence attached in the current workflow",priorEvidence:"Preserved evidence from earlier workflow",section5:"Corrective actions - Verify work",section5Sub:"Show the review decision and any verification or change-request note.",verificationOutcome:"Verification outcome",verifiedOn:"Verified on",verifiedBy:"Verified by",requestedChanges:"Requested changes",reviewerNote:"Reviewer verification note",noVerificationNote:"No verification note recorded",section6:"Close report",section6Sub:"Final disposition and closure information for the incident.",recordStatus:"Record status",closedOn:"Closed on",notYetClosed:"Not yet closed",closedBy:"Closed by",closurePath:"Closure path",closureReason:"Closure reason",closureNote:"Closure note",additionalNotes:"Additional notes",activityHistory:"Activity history",reportSubmitted:"Report submitted",anonymousReporter:"Anonymous reporter",note:"Note",system:"System",footer:"RBH Insulation, Inc. | Confidential safety document | License #558799",page:"Page",yes:"Yes",no:"No",originalRecord:"Original record",appendixTitle:"Attachment Appendix",appendixSub:"Files preserved with this record at the time the PDF was generated.",attachment:"Attachment",source:"Source",uploaded:"Uploaded",fileType:"File type",fileSize:"File size",sha256:"SHA-256",sourceOriginal:"Original report attachment",sourceInvestigationEvidence:"Investigation evidence",sourceCurrentEvidence:"Corrective-action evidence",sourcePriorEvidence:"Earlier-workflow corrective-action evidence",embeddedOnly:"Source file embedded in PDF",embeddedOnlyBody:"This file type cannot be rendered reliably as visible PDF pages in the browser. The original source file is embedded inside this PDF package so it remains with the exported record.",pdfPages:"Source PDF pages follow",appendixCount:"Attachments included",appendixNote:"Removed attachments are not included; their removal remains documented in the activity history.",attachmentUnavailable:"Attachment could not be loaded",attachmentUnavailableBody:"This attachment could not be retrieved when the PDF was generated. Its metadata remains listed in the appendix.",summaryPage:"Summary page"},
+        es:{notRecorded:"No registrado",dashboardUser:"Usuario del panel",reportWord:"Reporte",step:"PASO",workflow:["Revisión","Investigación","Acciones correctivas","Cerrar"],headerSubtitle:"Registro del incidente - resumen posterior a la acción",submitted:"Enviado",generated:"Generado",section1:"Reporte y revisión",section1Sub:"Lo que se envió y cómo el reporte ingresó al flujo de seguridad.",reportType:"Tipo de reporte",actualInjury:"Lesión o enfermedad real",address:"Dirección del incidente",specificSpot:"Lugar específico en la obra",whenNoticed:"Cuándo se observó",potentialSeverity:"Gravedad potencial",hazardType:"Tipo de peligro",formLanguage:"Idioma del formulario",describe:"Describa lo que vio",noDescription:"No se registró descripción",involved:"Quién o qué estuvo involucrado / testigos",immediate:"Qué se hizo de inmediato",suggested:"Qué lo corregiría o evitaría",reporter:"Reportante",reportedBy:"Reportado por",reporterRole:"Función del reportante",reporterContact:"Contacto del reportante",reviewCompleted:"Revisión completada",reviewedBy:"Revisado por",reportOwner:"Responsable del reporte",investigator:"Responsable / investigador",verifier:"Responsable de verificación",workflowRestarts:"Reinicios del flujo",lastRestart:"Último reinicio",none:"Ninguno",originalFiles:"Fotos y archivos del reporte original",noOriginalFiles:"No hay archivos originales adjuntos",calosha:"Evaluación de evento grave de Cal/OSHA",screeningResult:"Resultado de la evaluación",awareness:"Hora en que la empresa tuvo conocimiento",notifiedAt:"Cal/OSHA notificado a las",notifiedBy:"Notificación registrada por",screeningNote:"Nota de evaluación",screeningDisclaimer:"Solo evaluación de la gerencia. Esta aplicación no presenta un reporte a Cal/OSHA y la evaluación no reemplaza los reportes regulatorios requeridos.",section2:"Investigación",section2Sub:"Documente lo que determinó la investigación y por qué ocurrió.",whatHappened:"¿Qué pasó?",rootCause:"¿Por qué pasó?",investigationEvidence:"Evidencia de la investigación",noInvestigationEvidence:"No hay evidencia de investigación adjunta",notYetRecorded:"Aún no registrado",section3:"Acciones correctivas",section3Sub:"Documente si se requirió trabajo correctivo adicional y, cuando corresponda, el plan de acción.",correctiveDecision:"Decisión de acción correctiva",noAdditionalAction:"No se necesita acción correctiva adicional",noActionReason:"Motivo",noActionExplanation:"Explicación",correctiveRequired:"Acción correctiva requerida",actionNumber:"Acción correctiva",actionStatus:"Estado de la acción",controlType:"Tipo de control",assignedUser:"Usuario asignado del panel",notAssigned:"No asignado",responsible:"Persona / equipo responsable",dueDate:"Fecha límite",priority:"Prioridad",section4:"Acciones correctivas - Completar trabajo",section4Sub:"Registre lo que realmente se completó y la evidencia de respaldo.",completedWork:"Trabajo completado enviado",notYetSubmitted:"Aún no enviado",completedOn:"Completado el",completedBy:"Completado por",currentEvidence:"Evidencia de acción correctiva del flujo actual",noCurrentEvidence:"No hay evidencia de acción correctiva adjunta en el flujo actual",priorEvidence:"Evidencia preservada de un flujo anterior",section5:"Acciones correctivas - Verificar trabajo",section5Sub:"Muestre la decisión de revisión y cualquier nota de verificación o solicitud de cambios.",verificationOutcome:"Resultado de la verificación",verifiedOn:"Verificado el",verifiedBy:"Verificado por",requestedChanges:"Cambios solicitados",reviewerNote:"Nota de verificación del revisor",noVerificationNote:"No se registró una nota de verificación",section6:"Cerrar registro",section6Sub:"Disposición final e información de cierre del incidente.",recordStatus:"Estado del registro",closedOn:"Cerrado el",notYetClosed:"Aún no cerrado",closedBy:"Cerrado por",closurePath:"Ruta de cierre",closureReason:"Motivo de cierre",closureNote:"Nota de cierre",additionalNotes:"Notas adicionales",activityHistory:"Historial de actividad",reportSubmitted:"Reporte enviado",anonymousReporter:"Reportante anónimo",note:"Nota",system:"Sistema",footer:"RBH Insulation, Inc. | Documento confidencial de seguridad | Licencia #558799",page:"Página",yes:"Sí",no:"No",originalRecord:"Registro original",appendixTitle:"Apéndice de archivos adjuntos",appendixSub:"Archivos preservados con este registro al momento de generar el PDF.",attachment:"Adjunto",source:"Origen",uploaded:"Cargado",fileType:"Tipo de archivo",fileSize:"Tamaño",sha256:"SHA-256",sourceOriginal:"Adjunto del reporte original",sourceInvestigationEvidence:"Evidencia de la investigación",sourceCurrentEvidence:"Evidencia de acción correctiva",sourcePriorEvidence:"Evidencia de acción correctiva de un flujo anterior",embeddedOnly:"Archivo fuente incorporado en el PDF",embeddedOnlyBody:"Este tipo de archivo no se puede representar de forma confiable como páginas PDF visibles en el navegador. El archivo fuente original está incorporado dentro de este paquete PDF para que permanezca con el registro exportado.",pdfPages:"Las páginas del PDF fuente siguen",appendixCount:"Adjuntos incluidos",appendixNote:"Los adjuntos eliminados no se incluyen; su eliminación permanece documentada en el historial de actividad.",attachmentUnavailable:"No se pudo cargar el adjunto",attachmentUnavailableBody:"No se pudo recuperar este adjunto cuando se generó el PDF. Sus metadatos permanecen listados en el apéndice.",summaryPage:"Página de resumen"}
       };
       var L=pdfLabels[pdfLang]||pdfLabels.en;
       if(!pdfLabels[pdfLang] && pdfMode!=="original"){
@@ -5310,6 +5461,7 @@
         {label:L.reporterContact,value:r.reporter_contact},
         {label:L.reviewCompleted,value:reviewAudit?pdfDate(reviewAudit.created_at):""},
         {label:L.reviewedBy,value:reviewAudit?auditActor(reviewAudit.actor_email):""},
+        {label:L.reportOwner,value:reportOwnerName(r)||L.notAssigned},
         {label:L.investigator,value:investigatorName(r)||L.notAssigned},
         {label:L.workflowRestarts,value:(r.workflow_restart_count?String(r.workflow_restart_count):L.none)},
         {label:L.lastRestart,value:r.last_workflow_restart_at?pdfDate(r.last_workflow_restart_at):""}
@@ -5968,6 +6120,8 @@
   function controlTypeLabel(v,lang){ var map=normalizeLanguageCode(lang||"en")==="es"?CONTROL_TYPE_LABELS_ES:CONTROL_TYPE_LABELS; return map[v]||""; }
   function profileName(p){ return p?(p.full_name||p.email||"User"):""; }
   function assigneeName(r){ var p=r&&r.assigned_user_id?profileById[String(r.assigned_user_id)]:null; return p?profileName(p):""; }
+  function reportOwnerName(r){ var p=r&&r.report_owner_user_id?profileById[String(r.report_owner_user_id)]:null; return p?profileName(p):""; }
+  function reportOwnerProfile(r){ return r&&r.report_owner_user_id?profileById[String(r.report_owner_user_id)]||null:null; }
   function investigatorName(r){ var p=r&&r.investigator_user_id?profileById[String(r.investigator_user_id)]:null; return p?profileName(p):""; }
   function verifierName(r){ var p=r&&r.verifier_user_id?profileById[String(r.verifier_user_id)]:null; return p?profileName(p):""; }
   function isManager(){ return currentRole==="admin"||currentRole==="safety_manager"; }
@@ -6112,8 +6266,9 @@
     storeIncident(r,lastOperationalView);
     var back=$("incidentBack"); if(back) back.textContent=lastOperationalView==="mywork"?"← Back to My Work":(lastOperationalView==="actions"?"← Back to Corrective Actions":"← Back to Safety Inbox");
     $("incidentTitle").textContent="#"+(r.ref_no||r.id)+" · "+(r.report_type||"Safety report");
-    var meta=[]; if(r.job_site) meta.push(r.job_site); if(investigatorName(r)) meta.push("Investigator: "+investigatorName(r)); if(assigneeName(r)) meta.push("Action owner: "+assigneeName(r)); meta.push(fmtDate(r.created_at)); $("incidentMeta").textContent=meta.join(" · ");
+    refreshIncidentMeta(r);
     $("incidentSummary").innerHTML='<div class="is-badges">'+incidentBadgeHtml(r)+'</div><div class="is-desc">'+esc(r.description||"No description provided.")+'</div>';
+    refreshIncidentOwnerHeader(r);
     var langSel=$("incidentLanguage"); if(langSel){ langSel.value=activeIncidentLanguage; }
     setIncidentLanguageState(r,activeIncidentLanguage,"loading");
     var body=$("incidentBody"); body.innerHTML=''; body.setAttribute("data-report-id",String(r.id)); buildDetail(r,body,null); showView('incident');
@@ -7534,6 +7689,7 @@
     if(a.field==="responsible_person") return "Responsible person / crew: "+(a.old_value||"—")+" → "+(a.new_value||"—");
     if(a.field==="due_date") return "Due date: "+(a.old_value?shortDate(a.old_value):"—")+" → "+(a.new_value?shortDate(a.new_value):"—");
     if(a.field==="assigned_user_id") return "Corrective-action owner: "+auditAssignee(a.old_value)+" → "+auditAssignee(a.new_value);
+    if(a.field==="report_owner_user_id") return "Report owner: "+auditAssignee(a.old_value)+" → "+auditAssignee(a.new_value);
     if(a.field==="investigator_user_id") return "Case owner / investigator: "+auditAssignee(a.old_value)+" → "+auditAssignee(a.new_value);
     if(a.field==="verifier_user_id") return "Verification owner: "+auditAssignee(a.old_value)+" → "+auditAssignee(a.new_value);
     if(a.field==="action_status") return "Corrective-action status: "+actionLabel(a.old_value)+" → "+actionLabel(a.new_value);
@@ -7581,6 +7737,7 @@
       if((statusRow.old_value==="closed"||statusRow.old_value==="no_action"||statusRow.old_value==="duplicate") && (statusRow.new_value==="new"||statusRow.new_value==="under_review"||statusRow.new_value==="corrective_action")) return "Record reopened";
       return "Report status updated";
     }
+    if(fields.indexOf("report_owner_user_id")>=0) return "Report owner updated";
     if(fields.indexOf("investigator_user_id")>=0) return "Investigator assignment updated";
     if(fields.indexOf("verifier_user_id")>=0) return "Verification owner updated";
     if(fields.some(function(f){return ["corrective_action_decision","corrective_action_no_action_reason","corrective_action_no_action_note","corrective_action_decided_at","corrective_action_decided_by"].indexOf(f)>=0;})) return "Corrective-action decision recorded";
