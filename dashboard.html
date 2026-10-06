@@ -1674,6 +1674,7 @@
       <li>Original report, notes, original attachments, Cal/OSHA screening, and prior corrective-action evidence are preserved.</li>
       <li>The previous resolved status, reopen reason, and prior workflow values remain documented in Activity.</li>
       <li>The active root cause, action plan, assignment, due date, completion, and verification fields are reset.</li>
+      <li>The current Report Owner is cleared. Step 1 will assign a new owner when the reopened report is acknowledged.</li>
       <li>Closed, no-action, and duplicate records all reopen at Step 1 — Review Report.</li>
     </ul>
     <div class="login-err" id="reopenErr"></div>
@@ -1703,6 +1704,7 @@
       <li>Original employee report and original attachments stay unchanged.</li>
       <li>Cal/OSHA screening, company awareness time, and any recorded notification are preserved.</li>
       <li>Notes, activity history, and prior corrective-action evidence are preserved.</li>
+      <li>The current Report Owner is cleared. Step 1 will assign a new owner when the restarted report is acknowledged.</li>
       <li>A server-side snapshot of the cleared workflow is retained.</li>
     </ul>
     <div class="login-err" id="rErr"></div>
@@ -1889,7 +1891,7 @@
   function refreshIncidentOwnerHeader(r){
     var tool=$("incidentOwnerTool"), nameEl=$("incidentOwnerName"), emailEl=$("incidentOwnerEmail"), change=$("incidentOwnerChange");
     if(!tool) return;
-    var owner=reportOwnerProfile(r), shouldShow=!!(r&&(r.report_owner_user_id||String(r.status||"new")!=="new"));
+    var owner=reportOwnerProfile(r), shouldShow=!!(r&&r.report_owner_user_id);
     tool.hidden=!shouldShow;
     if(!shouldShow) return;
     if(nameEl) nameEl.textContent=owner?profileName(owner):"Unassigned";
@@ -2088,7 +2090,7 @@
   var reopenReport=null, reopenReturnView="records", restartReport=null, restartReturnView="records";
   var regFollowupReport=null, regFollowupDetail=null, reportOwnerModalReport=null;
   var NAV_VIEW_KEY="rbh_safety_active_view_v1", NAV_INCIDENT_KEY="rbh_safety_active_incident_v1";
-  var APP_VERSION="2026.10.06 · Build 48 Presence & Modal Polish";
+  var APP_VERSION="2026.10.06 · Build 49 Owner Reset on New Cycle";
 
   /* ---------- Build 44: live dashboard sync + presence + stale-save protection ---------- */
   var LIVE_SYNC_FALLBACK_MS=60000, PRESENCE_HEARTBEAT_MS=20000, PRESENCE_ACTIVE_MS=55000, PRESENCE_EDITING_IDLE_MS=90000;
@@ -4936,7 +4938,7 @@
       await loadReports();
       var fresh=allReports.find(function(x){return String(x.id)===String(rid);});
       if(fresh){ openIncident(fresh,backView); } else { showView(backView||"records"); }
-      toast("Record reopened at Step 1 — prior information carried forward","ok");
+      toast("Record reopened at Step 1 — Report Owner cleared for reassignment","ok");
     }catch(ex){
       console.error(ex);
       err.textContent=(ex&&ex.message)?ex.message:"Could not reopen the record. Please try again."; err.classList.add("show");
@@ -4975,7 +4977,7 @@
       var fresh=allReports.find(function(x){return String(x.id)===String(rid);});
       if(fresh){ openIncident(fresh,backView); }
       else { showView(backView||"records"); }
-      toast("Workflow restarted — returned to Step 1","ok");
+      toast("Workflow restarted — returned to Step 1 and Report Owner cleared","ok");
     }catch(ex){
       console.error(ex);
       err.textContent=(ex&&ex.message)?ex.message:"Could not restart the workflow. Please try again."; err.classList.add("show");
