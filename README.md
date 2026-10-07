@@ -4,7 +4,7 @@ RBH is the current live blueprint for the TeamWorkt Safety product. The reposito
 
 ## Current build status
 
-Current production candidate: **Build 53.1 - Corrective Action UI Polish** (2026-10-07).
+Current production candidate: **Build 53.1.3 - Corrective Action Final Alignment Polish** (2026-10-07).
 
 The working management flow is:
 
@@ -127,6 +127,10 @@ The Admin page now includes **Export company records (.zip)**. The archive is de
 - A README describing the package, counts, warnings, and security/retention limitations.
 
 The export is Admin-only, confirms before generating because the ZIP can contain sensitive information, and records missing/unavailable attachments in the manifest instead of silently omitting them. No database migration or Edge Function deployment is required for Build 53.
+
+## Build 53.1.3 — Corrective Action Final Alignment Polish — 2026-10-07
+
+Final UI-only alignment pass for the corrective-action workflow. Standardized card header alignment, progress/status/remove pill heights, compact field spacing, required-message alignment, completion/verification card spacing, mobile card padding, and the Add another corrective action control. No database, RPC, RLS, notification, archive, permission, or workflow behavior changed. Native browser date-picker popups remain browser/OS controlled.
 
 ## Build 53.1 — Corrective Action UI Polish — 2026-10-07
 
