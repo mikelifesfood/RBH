@@ -4,7 +4,7 @@ RBH is the current live blueprint for the TeamWorkt Safety product. The reposito
 
 ## Current build status
 
-Current production candidate: **Build 53.1.3 - Corrective Action Final Alignment Polish** (2026-10-07).
+Current production candidate: **Build 53.1.4 - Home Workflow Step Pills** (2026-10-07).
 
 The working management flow is:
 
@@ -131,6 +131,10 @@ The export is Admin-only, confirms before generating because the ZIP can contain
 ## Build 53.1.3 — Corrective Action Final Alignment Polish — 2026-10-07
 
 Final UI-only alignment pass for the corrective-action workflow. Standardized card header alignment, progress/status/remove pill heights, compact field spacing, required-message alignment, completion/verification card spacing, mobile card padding, and the Add another corrective action control. No database, RPC, RLS, notification, archive, permission, or workflow behavior changed. Native browser date-picker popups remain browser/OS controlled.
+
+## Build 53.1.4 — Home Workflow Step Pills — 2026-10-07
+
+Home **Needs your attention** cards now show a separate workflow-position pill in addition to the existing attention/status pill. The pill uses the existing four-step user-facing workflow and displays **Step 1 · Review**, **Step 2 · Investigation**, **Step 3 · Corrective Actions**, or **Step 4 · Close**. Corrective-action Plan, Complete Work, and Verify substages all intentionally remain grouped as Step 3. This is frontend-only and does not change report status, workflow progression, permissions, database fields, notifications, or Supabase behavior.
 
 ## Build 53.1 — Corrective Action UI Polish — 2026-10-07
 
