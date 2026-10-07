@@ -4,7 +4,7 @@ RBH is the current live blueprint for the TeamWorkt Safety product. The reposito
 
 ## Current build status
 
-Current production candidate: **Build 53 - Company Records Archive** (2026-10-06).
+Current production candidate: **Build 53.1 - Corrective Action UI Polish** (2026-10-07).
 
 The working management flow is:
 
@@ -127,3 +127,19 @@ The Admin page now includes **Export company records (.zip)**. The archive is de
 - A README describing the package, counts, warnings, and security/retention limitations.
 
 The export is Admin-only, confirms before generating because the ZIP can contain sensitive information, and records missing/unavailable attachments in the manifest instead of silently omitting them. No database migration or Edge Function deployment is required for Build 53.
+
+## Build 53.1 — Corrective Action UI Polish — 2026-10-07
+
+This frontend-only polish keeps the existing corrective-action workflow, database fields, permissions, notifications, and RPC behavior unchanged while making Step 3 more compact and easier to follow.
+
+- After the Yes/No corrective-action decision is selected, the large decision choices collapse into a compact summary with **Change decision** when the step is still editable.
+- Plan & Assign removes redundant instructional blocks so the first corrective-action card appears sooner.
+- Each action keeps the same five required values: what needs to be fixed, assigned owner, due date, priority, and type of fix.
+- On desktop, Assigned to / Due date / Priority share one compact row; mobile layouts stack cleanly.
+- Priority is now a direct Low / Medium / High button choice instead of a dropdown.
+- Assigned actions show the same compact Owner / Due / Priority / Type summary across Plan & Assign, Complete Work, and Verify.
+- Activated plans remain collapsed behind **View plan details** unless the plan itself needs editing.
+- No Supabase migration or Edge Function deployment is required.
+
+Build 54 remains reserved for the planned Scheduled Company Records Archive work.
+

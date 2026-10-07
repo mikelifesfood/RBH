@@ -575,6 +575,14 @@
   .ca-decision-choice b{font-size:15px;line-height:1.3;color:var(--ink)}
   .ca-decision-choice span{font-size:13px;line-height:1.45;color:var(--ink-2)}
   .ca-decision-choice small{font-size:12.5px;line-height:1.45;color:var(--muted);font-weight:500}
+  .ca-decision-summary{display:flex;align-items:center;justify-content:space-between;gap:14px;border:1px solid var(--line);border-left:4px solid var(--ink);border-radius:var(--r-lg);background:var(--canvas);padding:12px 14px}
+  .ca-decision-summary-copy{display:grid;gap:3px;min-width:0}
+  .ca-decision-summary-copy b{font-size:14px;color:var(--ink)}
+  .ca-decision-summary-copy span{font-size:12.5px;color:var(--muted);line-height:1.4}
+  .ca-decision-summary.no{border-left-color:var(--brand);background:var(--brand-tint)}
+  .ca-change-decision{appearance:none;border:0;background:transparent;color:var(--ink);font:inherit;font-size:12.5px;font-weight:750;text-decoration:underline;text-underline-offset:3px;cursor:pointer;white-space:nowrap;padding:5px 0}
+  .ca-change-decision:hover{color:var(--brand)}
+  .ca-decision.is-collapsed .ca-decision-head,.ca-decision.is-collapsed .ca-decision-grid{display:none}
   .ca-no-action-panel{margin-top:14px;border:1px solid var(--line);border-left:4px solid var(--brand);border-radius:var(--r-lg);background:var(--canvas);padding:15px 16px}
   .ca-no-action-panel h4{margin:0 0 4px;font-size:15px}
   .ca-no-action-panel>p{margin:0 0 14px;color:var(--muted);font-size:13px;line-height:1.45}
@@ -620,9 +628,21 @@
   .multi-action-title span{font-size:12.5px;color:var(--muted)}
   .multi-action-head-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
   .multi-action-status{display:inline-flex;align-items:center;border-radius:999px;background:var(--paper);border:1px solid var(--line-strong);padding:4px 9px;font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap}
-  .multi-action-fields{display:grid;gap:12px}
+  .multi-action-fields{display:grid;gap:11px}
   .multi-action-fields .inv-row{margin:0}
-  .multi-action-card textarea{min-height:80px}
+  .multi-action-compact-row{display:grid;grid-template-columns:minmax(220px,1.35fr) minmax(150px,.75fr) minmax(220px,1fr);gap:10px;align-items:start}
+  .multi-action-compact-row .inv-l{margin:0}
+  .priority-picker{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px}
+  .priority-option{appearance:none;border:1px solid var(--line-strong);border-radius:var(--r);background:var(--paper);color:var(--ink-2);min-height:44px;padding:8px 9px;font:inherit;font-size:12.5px;font-weight:750;cursor:pointer;transition:border-color .15s,background .15s,color .15s,box-shadow .15s}
+  .priority-option:hover:not(:disabled){border-color:var(--ink);box-shadow:0 2px 7px rgba(20,20,20,.06)}
+  .priority-option.selected[data-priority-value="low"]{border-color:var(--line-strong);background:var(--canvas-2);color:var(--ink)}
+  .priority-option.selected[data-priority-value="medium"]{border-color:var(--warn-line);background:var(--warn-tint);color:var(--warn)}
+  .priority-option.selected[data-priority-value="high"]{border-color:var(--brand);background:var(--brand);color:#fff}
+  .priority-option:disabled{cursor:default;opacity:.7}
+  .priority-value-input{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+  .ca-action-summary-meta{display:flex;gap:6px 14px;flex-wrap:wrap;margin-top:8px;font-size:12px;color:var(--muted)}
+  .ca-action-summary-meta span{white-space:nowrap}
+  .multi-action-card textarea{min-height:72px}
   .multi-action-translation{margin-top:8px;border-left:3px solid var(--ink);padding:8px 10px;background:var(--paper);border-radius:0 var(--r) var(--r) 0;font-size:12.5px;color:var(--muted)}
   .multi-action-translation b{display:block;color:var(--ink);font-size:12px;margin-bottom:3px}
   .multi-action-translation p{margin:0;white-space:pre-wrap;line-height:1.45}
@@ -1330,12 +1350,20 @@
   @media(max-width:900px){
     .support-grid{grid-template-columns:1fr}
   }
+  @media(max-width:900px){
+    .multi-action-compact-row{grid-template-columns:1fr 1fr}
+    .multi-action-compact-row .priority-field{grid-column:1/-1}
+  }
   @media(max-width:700px){
     .ca-lifecycle{grid-template-columns:1fr}
     .ca-life-copy span{white-space:normal}
     .ca-stage-heading{flex-wrap:wrap}
     .ca-stage-state{margin-left:38px}
     .action-plan-details>summary:after{display:none}
+    .multi-action-compact-row{grid-template-columns:1fr}
+    .multi-action-compact-row .priority-field{grid-column:auto}
+    .ca-decision-summary{align-items:flex-start;flex-direction:column}
+    .priority-picker{max-width:100%}
   }
 
 </style>
@@ -3346,6 +3374,7 @@
             '<button class="ca-decision-choice yes" type="button" data-ca-decision-choice="required"><b>Yes — something still needs to be fixed</b><span>Choose this when something still needs to be fixed, changed, repaired, trained, communicated, or assigned.</span><small>Examples: replace damaged equipment; change a work practice; provide training; install a guard or barrier.</small></button>'+
             '<button class="ca-decision-choice no" type="button" data-ca-decision-choice="not_required"><b>No — nothing else needs to be fixed</b><span>Choose this only when nothing remains to correct after the investigation.</span><small>Examples: the issue was fully corrected immediately and no underlying problem remains; the same issue is already covered by an existing active corrective action.</small></button>'+
           '</div>'+
+          '<div class="ca-decision-summary" data-ca-decision-summary hidden><div class="ca-decision-summary-copy"><b data-ca-decision-summary-title>Corrective action required</b><span data-ca-decision-summary-copy>Something still needs to be corrected.</span></div><button class="ca-change-decision" type="button" data-ca-change-decision>Change decision</button></div>'+
           '<div class="ca-no-action-panel" data-ca-no-action-panel hidden>'+
             '<h4>Explain why nothing else needs to be fixed</h4><p>This is a documented safety decision, not a skip. The final Close step will still require a deliberate closure.</p>'+
             '<label class="inv-l">Reason<select data-ca-no-action-reason><option value="">— Choose a reason —</option><option value="corrected_immediately">Corrected immediately — nothing remains to fix</option><option value="no_unsafe_condition">Investigation found no unsafe condition requiring correction</option><option value="existing_action">Already covered by another active corrective action</option><option value="duplicate_or_previously_addressed">Duplicate / previously addressed</option><option value="other">Other</option></select></label>'+
@@ -3360,9 +3389,7 @@
             '<div class="ca-life-item next" data-ca-life="4"><span class="ca-life-dot">2</span><div class="ca-life-copy"><b>Complete work</b><span>Document what was done</span></div></div>'+
             '<div class="ca-life-item next" data-ca-life="5"><span class="ca-life-dot">3</span><div class="ca-life-copy"><b>Verify</b><span>Approve or request changes</span></div></div>'+
           '</div>'+
-          '<div class="ca-stage-heading"><span class="ca-stage-num">1</span><div><b>Plan &amp; assign</b><p>Create one action for each distinct fix, owner, or deadline.</p></div><span class="ca-stage-state" data-ca-stage-state>Next</span></div>'+
-          '<div class="ca-focus-note"><b>What you need to do now</b>Complete the required fields for every corrective action, then assign the plan. Complete Work will open next.</div>'+
-          '<div class="multi-action-toolbar"><div class="multi-action-summary"><b>Corrective actions</b><span>Add a separate action when different work, owners, or deadlines are needed.</span></div></div>'+
+          '<div class="ca-stage-heading"><span class="ca-stage-num">1</span><div><b>Plan &amp; assign</b><p>Create one action for each different fix, owner, or deadline.</p></div><span class="ca-stage-state" data-ca-stage-state>Next</span></div>'+
           '<div class="multi-action-list" data-corrective-action-plan><div class="multi-action-loading">Loading corrective-action plan…</div></div>'+
           '<div class="multi-action-add-wrap"><button class="multi-action-add" type="button" data-add-corrective-action>+ Add another corrective action</button></div>'+
           '<div class="wizard-required" data-required="3"></div>'+
@@ -4190,10 +4217,10 @@
     var invFindings=detail.querySelector(".inv-findings"), invRoot=detail.querySelector(".inv-root");
     var rootSave=detail.querySelector(".root-save"), rootSaved=detail.querySelector(".root-saved"), actionPlanSave=detail.querySelector(".action-plan-save"), actionPlanSaved=detail.querySelector(".action-plan-saved");
     var actionPlanList=detail.querySelector("[data-corrective-action-plan]"), actionPlanAdd=detail.querySelector("[data-add-corrective-action]"), actionPlanOverviews=detail.querySelectorAll("[data-corrective-action-overview]"), multiActionCompletionEl=detail.querySelector("[data-multi-action-completion]"), multiActionVerificationStage=detail.querySelector("[data-multi-action-verification-stage]");
-    var caDecisionRoot=detail.querySelector("[data-ca-decision]"), caPlanWorkspace=detail.querySelector("[data-ca-plan-workspace]"), caDecisionChoices=detail.querySelectorAll("[data-ca-decision-choice]"), caNoActionPanel=detail.querySelector("[data-ca-no-action-panel]"), caNoActionReason=detail.querySelector("[data-ca-no-action-reason]"), caNoActionNote=detail.querySelector("[data-ca-no-action-note]"), caNoActionError=detail.querySelector("[data-ca-no-action-error]"), caNoActionContinue=detail.querySelector("[data-ca-no-action-continue]"), caNoActionNext=detail.querySelector("[data-ca-no-action-next]");
+    var caDecisionRoot=detail.querySelector("[data-ca-decision]"), caPlanWorkspace=detail.querySelector("[data-ca-plan-workspace]"), caDecisionChoices=detail.querySelectorAll("[data-ca-decision-choice]"), caDecisionSummary=detail.querySelector("[data-ca-decision-summary]"), caDecisionSummaryTitle=detail.querySelector("[data-ca-decision-summary-title]"), caDecisionSummaryCopy=detail.querySelector("[data-ca-decision-summary-copy]"), caChangeDecision=detail.querySelector("[data-ca-change-decision]"), caNoActionPanel=detail.querySelector("[data-ca-no-action-panel]"), caNoActionReason=detail.querySelector("[data-ca-no-action-reason]"), caNoActionNote=detail.querySelector("[data-ca-no-action-note]"), caNoActionError=detail.querySelector("[data-ca-no-action-error]"), caNoActionContinue=detail.querySelector("[data-ca-no-action-continue]"), caNoActionNext=detail.querySelector("[data-ca-no-action-next]");
     var reviewNextFooter=detail.querySelector('[data-next-step-footer="review"]'), investigationNextFooter=detail.querySelector('[data-next-step-footer="investigation"]'), actionPlanNextFooter=detail.querySelector('[data-next-step-footer="action-plan"]');
     if(reviewNextFooter) reviewNextFooter.classList.toggle("next-step-ready",canEditStep(r,1)&&caloshaScreenComplete(r));
-    var actionDecisionState={choice:correctiveActionDecisionValue(r)};
+    var actionDecisionState={choice:correctiveActionDecisionValue(r),expanded:!correctiveActionDecisionValue(r)};
     var actionPlanState={actions:[],loading:true,loaded:false,translationToken:0};
     detail._correctivePlanState=actionPlanState;
     invFindings.value=r.investigation_findings||"";
@@ -4265,11 +4292,20 @@
     function renderCorrectiveActionDecision(){
       if(!caDecisionRoot) return;
       var choice=actionDecisionState.choice||correctiveActionDecisionValue(r), editable=canEditStep(r,3);
+      var collapsed=!!choice&&!actionDecisionState.expanded;
+      caDecisionRoot.classList.toggle("is-collapsed",collapsed);
       caDecisionChoices.forEach(function(btn){
         var v=btn.getAttribute("data-ca-decision-choice");
         btn.classList.toggle("selected",v===choice);
         btn.disabled=!editable;
       });
+      if(caDecisionSummary){
+        caDecisionSummary.hidden=!collapsed;
+        caDecisionSummary.classList.toggle("no",choice==="not_required");
+        if(caDecisionSummaryTitle) caDecisionSummaryTitle.textContent=choice==="required"?"Corrective action required":"No additional corrective action needed";
+        if(caDecisionSummaryCopy) caDecisionSummaryCopy.textContent=choice==="required"?"Something still needs to be corrected. Plan and assign the work below.":"Nothing else needs to be corrected. Document the reason below before continuing to Close.";
+        if(caChangeDecision) caChangeDecision.hidden=!editable;
+      }
       if(caPlanWorkspace) caPlanWorkspace.hidden=choice!=="required";
       if(caNoActionPanel){
         caNoActionPanel.hidden=choice!=="not_required";
@@ -4296,7 +4332,7 @@
     }
     async function chooseCorrectiveActionRequired(){
       if(!canEditStep(r,3)){toast("This completed step is read only.","err");return;}
-      actionDecisionState.choice="required"; renderCorrectiveActionDecision();
+      actionDecisionState.choice="required"; actionDecisionState.expanded=false; renderCorrectiveActionDecision();
       try{
         if(String(r.corrective_action_decision||"")!=="required") await persistCorrectiveActionDecision("required",null,null);
         renderCorrectiveActionDecision(); loadAudit(r.id,auditEl); refreshRecordWorkflow(r,detail);
@@ -4304,7 +4340,7 @@
     }
     function chooseNoAdditionalCorrectiveAction(){
       if(!canEditStep(r,3)){toast("This completed step is read only.","err");return;}
-      actionDecisionState.choice="not_required";
+      actionDecisionState.choice="not_required"; actionDecisionState.expanded=false;
       if(caNoActionReason) caNoActionReason.value=r.corrective_action_no_action_reason||"";
       if(caNoActionNote) caNoActionNote.value=r.corrective_action_no_action_note||"";
       renderCorrectiveActionDecision();
@@ -4405,6 +4441,9 @@
       var cardsHtml=rows.map(function(a){
         var status=String(a.status||"not_started");
         var owner=a.owner_user_id&&profileById[String(a.owner_user_id)]?profileName(profileById[String(a.owner_user_id)]):"Not assigned";
+        var control=a.control_type?(controlTypeLabel(a.control_type)||a.control_type):"Not selected";
+        var due=a.due_date?fmtDate(a.due_date):"No due date";
+        var priority=a.priority?String(a.priority).charAt(0).toUpperCase()+String(a.priority).slice(1):"No priority";
         var completedBy=a.completed_by&&profileById[String(a.completed_by)]?profileName(profileById[String(a.completed_by)]):"";
         var verifiedBy=a.verified_by&&profileById[String(a.verified_by)]?profileName(profileById[String(a.verified_by)]):"";
         var review="";
@@ -4439,8 +4478,9 @@
         }
 
         return '<div class="multi-action-verification-card ca-status-'+esc(status)+'" data-child-verification-card="'+esc(a.id)+'">'+
-          '<div class="mav-head"><div class="mav-title"><b>Corrective Action #'+esc(a.action_number||"")+'</b><span>Owner: '+esc(owner)+'</span></div><span class="multi-action-status mas-status-'+esc(status)+'">'+esc(actionStatusLabel(status))+'</span></div>'+
+          '<div class="mav-head"><div class="mav-title"><b>Corrective Action #'+esc(a.action_number||"")+'</b><span>Assigned action</span></div><span class="multi-action-status mas-status-'+esc(status)+'">'+esc(actionStatusLabel(status))+'</span></div>'+
           '<div class="mav-desc">'+esc(a.description||"No description recorded.")+'</div>'+
+          '<div class="ca-action-summary-meta"><span><b>Assigned to:</b> '+esc(owner)+'</span><span><b>Due:</b> '+esc(due)+'</span><span><b>Priority:</b> '+esc(priority)+'</span><span><b>Type:</b> '+esc(control)+'</span></div>'+
           (a.completion_note?'<div class="multi-action-completion-note"><b>Completed work submitted</b>'+esc(a.completion_note)+(a.completed_at?'<div class="action-meta">Submitted '+esc(fmtDate(a.completed_at))+(completedBy?' by '+esc(completedBy):'')+'</div>':'')+'</div>':'')+
           '<div class="evidence-panel" data-action-evidence data-corrective-action-id="'+esc(a.id)+'"></div>'+
           review+
@@ -4519,9 +4559,9 @@
           work='<div class="multi-action-completion-note"><b>Assigned owner</b>'+esc(owner)+' must complete this corrective action before it can move to review.</div>';
         }
         return '<div class="multi-action-completion-card ca-status-'+esc(status)+'" data-child-completion-card="'+esc(a.id)+'">'+
-          '<div class="mac-head"><div class="mac-title"><b>Corrective Action #'+esc(a.action_number||"")+'</b><span>'+esc(owner)+'</span></div><span class="multi-action-status mas-status-'+esc(status)+'">'+esc(actionStatusLabel(status))+'</span></div>'+
+          '<div class="mac-head"><div class="mac-title"><b>Corrective Action #'+esc(a.action_number||"")+'</b><span>Assigned action</span></div><span class="multi-action-status mas-status-'+esc(status)+'">'+esc(actionStatusLabel(status))+'</span></div>'+
           '<div class="mac-desc">'+esc(a.description||"No description recorded.")+'</div>'+
-          '<div class="mac-meta"><span><b>Due:</b> '+esc(due)+'</span><span><b>Priority:</b> '+esc(priority)+'</span><span><b>Control:</b> '+esc(control)+'</span></div>'+
+          '<div class="ca-action-summary-meta"><span><b>Assigned to:</b> '+esc(owner)+'</span><span><b>Due:</b> '+esc(due)+'</span><span><b>Priority:</b> '+esc(priority)+'</span><span><b>Type:</b> '+esc(control)+'</span></div>'+
           work+
           '<div class="evidence-panel" data-action-evidence data-corrective-action-id="'+esc(a.id)+'"></div>'+
           (editable?'<div class="multi-action-completion-actions multi-action-submit-after-evidence"><button class="wizard-primary" type="button" data-submit-child-completion="'+esc(a.id)+'">'+(status==="changes_requested"?'Send again for review →':'Send for review →')+'</button></div>':'')+
@@ -4580,13 +4620,18 @@
         var control=a.control_type?(controlTypeLabel(a.control_type)||a.control_type):"Not selected";
         var progress='<span class="action-field-progress '+(missing.length?'missing':'complete')+'" data-action-field-progress>'+(missing.length?(completeCount+' of 5 required fields'):'Plan complete ✓')+'</span>';
         var missingHtml='<div class="action-missing-list" data-action-missing'+(missing.length?'':' hidden')+'>'+(missing.length?'<b>Still needed:</b> '+esc(missing.join(", "))+'.':'')+'</div>';
+        var priorityButtons='<div class="priority-picker" data-priority-picker>'+["low","medium","high"].map(function(value){var label=value.charAt(0).toUpperCase()+value.slice(1);return '<button class="priority-option'+(a.priority===value?' selected':'')+'" type="button" data-priority-value="'+value+'"'+disabled+'>'+label+'</button>';}).join("")+'<input class="priority-value-input" type="hidden" data-action-field="priority" value="'+esc(a.priority||"")+'"'+disabled+'></div>';
         var fields='<div class="multi-action-fields">'+
             '<label class="inv-l">What needs to be fixed?<textarea data-action-field="description" placeholder="Describe the specific fix or change needed."'+disabled+'>'+esc(a.description||"")+'</textarea><span class="field-guidance compact">Be specific enough that the assigned person knows exactly what to do.</span><div class="multi-action-translation" data-action-translation hidden></div></label>'+ 
+            '<div class="multi-action-compact-row">'+
+              '<label class="inv-l">Assigned to<select data-action-field="owner_user_id"'+disabled+'>'+assignmentOptions(a.owner_user_id||"")+'</select><span class="field-guidance compact">Who owns this action?</span></label>'+ 
+              '<label class="inv-l">Due date<input type="date" data-action-field="due_date" value="'+esc(a.due_date||"")+'"'+disabled+'><span class="field-guidance compact">When should this be finished?</span></label>'+
+              '<div class="inv-l priority-field"><span>Priority</span>'+priorityButtons+'<span class="field-guidance compact">How urgent is this action?</span></div>'+
+            '</div>'+
             '<label class="inv-l">Type of fix<select data-action-field="control_type"'+disabled+'><option value="">— Select type of fix —</option><option value="elimination"'+(a.control_type==="elimination"?' selected':'')+'>Elimination — remove the hazard</option><option value="substitution"'+(a.control_type==="substitution"?' selected':'')+'>Substitution — replace the hazard</option><option value="engineering"'+(a.control_type==="engineering"?' selected':'')+'>Engineering control — isolate people from the hazard</option><option value="administrative"'+(a.control_type==="administrative"?' selected':'')+'>Administrative / work practice — change how work is performed</option><option value="ppe"'+(a.control_type==="ppe"?' selected':'')+'>PPE — protect the worker</option><option value="other"'+(a.control_type==="other"?' selected':'')+'>Other</option></select><span class="field-guidance compact">Choose the option that best describes how this fix reduces the hazard.</span></label>'+ 
-            '<label class="inv-l">Who will complete this?<select data-action-field="owner_user_id"'+disabled+'>'+assignmentOptions(a.owner_user_id||"")+'</select><span class="field-guidance compact">Choose the person responsible for this specific action.</span></label>'+ 
-            '<div class="inv-row"><label class="inv-l">Due date<input type="date" data-action-field="due_date" value="'+esc(a.due_date||"")+'"'+disabled+'><span class="field-guidance compact">When should this work be finished?</span></label><label class="inv-l">Priority<select data-action-field="priority"'+disabled+'><option value="">— Choose priority —</option><option value="low"'+(a.priority==="low"?' selected':'')+'>Low</option><option value="medium"'+(a.priority==="medium"?' selected':'')+'>Medium</option><option value="high"'+(a.priority==="high"?' selected':'')+'>High</option></select><span class="field-guidance compact">How urgent is this action?</span></label></div>'+ 
           '</div>';
-        var planBody=live?('<details class="action-plan-details"><summary>'+((!editable||locked)?'View plan details':'View / edit plan details')+' · '+esc(owner)+' · '+esc(due)+'</summary>'+fields+'</details>'):fields;
+        var planMeta=live?'<div class="ca-action-summary-meta"><span><b>Assigned to:</b> '+esc(owner)+'</span><span><b>Due:</b> '+esc(due)+'</span><span><b>Priority:</b> '+esc(priority)+'</span><span><b>Type:</b> '+esc(control)+'</span></div>':'';
+        var planBody=live?(planMeta+'<details class="action-plan-details"><summary>'+((!editable||locked)?'View plan details':'View / edit plan details')+'</summary>'+fields+'</details>'):fields;
         var liveMessage=status==="verified"?"Work completed and verified.":(status==="awaiting_verification"?"Work sent and ready for review.":(status==="changes_requested"?"The reviewer requested changes. Continue in Complete work below.":"Continue below to Complete work."));
         var liveNote=live?'<div class="multi-action-live-note"><b>Plan assigned</b>'+esc(control)+' · '+esc(priority)+' priority. '+esc(liveMessage)+' Open the plan details only if the plan itself needs attention.</div>':'';
         return '<div class="multi-action-card ca-status-'+esc(status)+(live?' is-activated':'')+(locked?' is-locked':'')+'" data-action-card data-action-index="'+idx+'">'+
@@ -4696,6 +4741,13 @@
         if(v==="required") chooseCorrectiveActionRequired(); else chooseNoAdditionalCorrectiveAction();
       });
     });
+    if(caChangeDecision) caChangeDecision.addEventListener("click",function(){
+      if(!canEditStep(r,3)) return;
+      actionDecisionState.expanded=true;
+      renderCorrectiveActionDecision();
+      var selected=detail.querySelector('[data-ca-decision-choice="'+String(actionDecisionState.choice||'')+'"]');
+      if(selected) selected.focus();
+    });
     if(caNoActionContinue) caNoActionContinue.addEventListener("click",async function(){
       if(!canEditStep(r,3)){toast("This completed step is read only.","err");return;}
       var reason=caNoActionReason?caNoActionReason.value:"", note=caNoActionNote?caNoActionNote.value.trim():"";
@@ -4726,6 +4778,18 @@
       var cards=actionPlanList.querySelectorAll("[data-action-card]"); var last=cards[cards.length-1]; if(last){var ta=last.querySelector('textarea[data-action-field="description"]'); if(ta) ta.focus();}
     });
     if(actionPlanList) actionPlanList.addEventListener("click",function(e){
+      var priorityButton=e.target.closest("[data-priority-value]");
+      if(priorityButton){
+        if(priorityButton.disabled||!canEditStep(r,3)) return;
+        var picker=priorityButton.closest("[data-priority-picker]"), card=priorityButton.closest("[data-action-card]");
+        var input=picker&&picker.querySelector('[data-action-field="priority"]');
+        if(!input) return;
+        input.value=priorityButton.getAttribute("data-priority-value")||"";
+        picker.querySelectorAll("[data-priority-value]").forEach(function(button){button.classList.toggle("selected",button===priorityButton);});
+        input.dispatchEvent(new Event("change",{bubbles:true}));
+        refreshPlanCardFieldProgress(card); syncPlanNextStepState();
+        return;
+      }
       var btn=e.target.closest("[data-remove-corrective-action]"); if(!btn||btn.disabled||!canEditStep(r,3)) return;
       var idx=parseInt(btn.getAttribute("data-remove-corrective-action"),10); if(isNaN(idx)) return;
       if(actionPlanState.actions.length<=1){toast("Keep at least one corrective action in the plan.","err");return;}
