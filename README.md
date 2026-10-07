@@ -4,7 +4,7 @@ RBH is the current live blueprint for the TeamWorkt Safety product. The reposito
 
 ## Current build status
 
-Current production candidate: **Build 53.1.4 - Home Workflow Step Pills** (2026-10-07).
+Current production candidate: **Build 53.1.7 - Public Reference Guide Link** (2026-10-07).
 
 The working management flow is:
 
@@ -161,3 +161,8 @@ Build 54 remains reserved for the planned Scheduled Company Records Archive work
 ## Build 53.1.6 — Profile Support Removal — 2026-10-07
 
 Removed the customer-user **Support** tab and in-profile feedback submission form so account-level questions and change requests can be coordinated through the person responsible for the customer's TeamWorkt Safety account. Profile and Security remain unchanged, and the existing Help Coach remains available for workflow guidance. Historical feedback records and the Admin/Platform feedback viewer are preserved. No database, Supabase, notification, role, workflow, or archive changes are required.
+
+
+## Build 53.1.7 — Public Reference Guide Link — 2026-10-07
+
+Added a sanitized PDF workflow reference guide at `docs/RBH_Safety_Workflow_Reference_Guide.pdf` and linked it from the desktop `?` Help Coach. The PDF uses generic example identities/data so it can be served as a public documentation asset. Existing contextual Help Coach walkthroughs remain unchanged. No database, Supabase, notification, role, workflow, or archive changes are required.

@@ -1037,6 +1037,11 @@
   .help-coach-topic{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--line);background:var(--paper);border-radius:var(--r);padding:12px 13px;text-align:left;color:var(--ink);font-size:14px;font-weight:750;cursor:pointer}
   .help-coach-topic:hover{border-color:var(--line-strong);background:var(--canvas)}
   .help-coach-topic:after{content:"›";font-size:22px;font-weight:500;color:var(--muted)}
+  .help-coach-reference{display:block;margin-top:16px;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--canvas);padding:13px 14px;color:var(--ink);text-decoration:none;transition:border-color .15s,background .15s}
+  .help-coach-reference:hover{border-color:var(--line-strong);background:var(--paper)}
+  .help-coach-reference span{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--brand);font-weight:800;margin-bottom:3px}
+  .help-coach-reference b{display:block;font-size:13.5px;line-height:1.35;margin-bottom:3px}
+  .help-coach-reference small{display:block;font-size:11.5px;color:var(--muted);line-height:1.4}
   .help-coach-empty{border:1px solid var(--line);background:var(--canvas);border-radius:var(--r);padding:13px;font-size:13px;line-height:1.5;color:var(--muted)}
   .help-coach-guide-top{display:flex;align-items:center;gap:8px;margin-bottom:15px}
   .help-coach-back{border:0;background:none;padding:0;color:var(--ink-2);font-size:13px;font-weight:750;cursor:pointer}
@@ -2335,6 +2340,7 @@
     HELP_TOPIC_ORDER.forEach(function(id){var g=HELP_GUIDES[id];if(g&&helpGuideAllowed(id)){visible++;html+='<button class="help-coach-topic" type="button" data-help-topic="'+esc(id)+'">'+esc(g.title)+'</button>';}});
     html+='</div>';
     if(!visible) html+='<div class="help-coach-empty">No additional task guides are available for this role on the current screen.</div>';
+    html+='<a class="help-coach-reference" href="docs/RBH_Safety_Workflow_Reference_Guide.pdf" target="_blank" rel="noopener"><span>Full Reference Guide</span><b>Open the complete start-to-finish workflow guide ↗</b><small>PDF · Opens in a new tab · Uses sanitized example data</small></a>';
     body.innerHTML=html;
     var c=body.querySelector("[data-help-context]"); if(c&&context)c.addEventListener("click",function(){openHelpGuide(context.guideId,context.step||0);});
     body.querySelectorAll("[data-help-topic]").forEach(function(btn){btn.addEventListener("click",function(){openHelpGuide(btn.getAttribute("data-help-topic"),0);});});
