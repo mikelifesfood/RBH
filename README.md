@@ -4,7 +4,7 @@ RBH is the current live blueprint for the TeamWorkt Safety product. The reposito
 
 ## Current build status
 
-Current production candidate: **Build 53.1.9 - Subtle Live Dashboard Refresh** (2026-10-07).
+Current production candidate: **Build 53.1.10 - Injury Screening Reference Guide Update** (2026-10-07).
 
 The working management flow is:
 
@@ -166,3 +166,8 @@ Removed the customer-user **Support** tab and in-profile feedback submission for
 ## Build 53.1.7 — Public Reference Guide Link — 2026-10-07
 
 Added a sanitized PDF workflow reference guide at `docs/RBH_Safety_Workflow_Reference_Guide.pdf` and linked it from the desktop `?` Help Coach. The PDF uses generic example identities/data so it can be served as a public documentation asset. Existing contextual Help Coach walkthroughs remain unchanged. No database, Supabase, notification, role, workflow, or archive changes are required.
+
+## Build 53.1.10 — Injury Screening Reference Guide Update — 2026-10-07
+
+Updated the public workflow reference guide linked from the desktop `?` Help Coach. Step 1 now includes a dedicated Injury / illness regulatory-screening section with the current Screening Result choices (`No`, `Unsure`, `Yes`), the conditional company-awareness and Cal/OSHA notification fields shown for each choice, save/validation behavior, persistent follow-up behavior, and the final-close safeguard. Added the injury-screening screenshot to the guide and updated the email documentation to reflect grouped initial-intake recipients and the high-priority injury subject. This is documentation-only; no dashboard workflow, database, RLS, RPC, notification logic, or Edge Function behavior changed.
+
