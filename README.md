@@ -151,3 +151,13 @@ This frontend-only polish keeps the existing corrective-action workflow, databas
 
 Build 54 remains reserved for the planned Scheduled Company Records Archive work.
 
+## Build 53.1.5 — Final close navigation fix (2026-10-07)
+- After a successful final **Close report** action, the dashboard now returns to **Home** automatically.
+- Home counters, Needs your attention, My Work, and Corrective Actions refresh using the newly closed state.
+- The closed record remains available through the Closed filter as a read-only finalized record.
+- No database, Supabase, notification, role, or workflow-schema changes.
+
+
+## Build 53.1.6 — Profile Support Removal — 2026-10-07
+
+Removed the customer-user **Support** tab and in-profile feedback submission form so account-level questions and change requests can be coordinated through the person responsible for the customer's TeamWorkt Safety account. Profile and Security remain unchanged, and the existing Help Coach remains available for workflow guidance. Historical feedback records and the Admin/Platform feedback viewer are preserved. No database, Supabase, notification, role, workflow, or archive changes are required.

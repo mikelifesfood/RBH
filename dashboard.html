@@ -1633,7 +1633,6 @@
     <div class="profile-tabs" role="tablist" aria-label="Profile sections">
       <button class="profile-tab active" type="button" data-profile-tab="profile">Profile</button>
       <button class="profile-tab" type="button" data-profile-tab="security">Security</button>
-      <button class="profile-tab" type="button" data-profile-tab="support">Support</button>
     </div>
 
     <div class="profile-scroll">
@@ -1671,26 +1670,7 @@
         </div>
       </section>
 
-      <section class="profile-panel" data-profile-panel="support" hidden>
-        <div class="profile-section-title"><h3>Feedback &amp; support</h3><p>Send feedback directly from the app. Platform owners can review it in the Platform section.</p></div>
-        <form id="feedbackForm" class="profile-card-section">
-          <div class="field"><label for="feedbackType">Feedback type</label><select id="feedbackType"><option value="suggestion">Suggestion</option><option value="problem">Something isn't working</option><option value="question">Question</option><option value="other">Other</option></select></div>
-          <div class="field"><label for="feedbackSubject">Subject</label><input type="text" id="feedbackSubject" maxlength="160" required placeholder="A short summary"></div>
-          <div class="field"><label for="feedbackMessage">Message</label><textarea id="feedbackMessage" maxlength="4000" required placeholder="Tell us what you noticed or what would make the app better."></textarea></div>
-          <div class="feedback-context" id="feedbackContext"></div>
-          <div class="feedback-status" id="feedbackStatus" role="status" aria-live="polite"></div>
-          <button class="profile-primary" id="feedbackSubmit" type="submit">Send Feedback</button>
-        </form>
-        <div class="profile-card-section">
-          <h4>Quick help</h4>
-          <div class="profile-help-list">
-            <div><b>Can't edit a report?</b><span>Your app role and report assignment control which workflow actions are available.</span></div>
-            <div><b>Need a different role?</b><span>For security, users cannot change their own role. Ask another RBH Safety Admin.</span></div>
-            <div><b>Something looks wrong?</b><span>Use the feedback form above and include what screen you were on and what you expected to happen.</span></div>
-          </div>
-        </div>
-        <div class="profile-version"><span>RBH Safety</span><b id="profileAppVersion">Version 2026.09.21 · Admin User Provisioning V12</b></div>
-      </section>
+
     </div>
   </aside>
 </div>
@@ -4007,7 +3987,7 @@
       if(!canClose(r)){ toast(correctiveNoActionDocumented(r)?"Complete the required close checks before closing the record.":"Finish and verify every corrective action before closing the record.","err"); return; }
       if(!window.confirm("Close this report? This is the final workflow action. The report will become read-only unless it is reopened.")) return;
       btn.disabled=true; var old=btn.textContent; btn.textContent="Closing…";
-      try{ await updateStatus(r.id,"closed",null); $("incidentSummary").innerHTML='<div class="is-badges">'+incidentBadgeHtml(r)+'</div><div class="is-desc">'+esc(r.description||"No description provided.")+'</div>'; refreshRecordWorkflow(r,detail); loadAudit(r.id,auditEl); renderMyWork(); renderActions(); applyFilters(); toast("Report closed","ok"); }
+      try{ await updateStatus(r.id,"closed",null); $("incidentSummary").innerHTML='<div class="is-badges">'+incidentBadgeHtml(r)+'</div><div class="is-desc">'+esc(r.description||"No description provided.")+'</div>'; loadAudit(r.id,auditEl); renderMyWork(); renderActions(); applyFilters(); showView("home"); toast("Report #"+(r.ref_no||r.id)+" closed","ok"); }
       catch(ex){ console.error(ex); toast("Could not close the record.","err"); }
       finally{ if(btn.isConnected){btn.disabled=false;btn.textContent=old;} }
     });
@@ -6691,8 +6671,6 @@
     $("profileLanguage").value=(p.preferred_language&&["auto","en","es"].indexOf(String(p.preferred_language))>=0)?String(p.preferred_language):"auto";
     $("profileGuidance").checked=workflowGuidanceEnabled();
     $("profileHeadEmail").textContent=user.email||"";
-    $("profileAppVersion").textContent="Version "+APP_VERSION;
-    $("feedbackContext").textContent="App context included automatically: "+(currentOrgName?(currentOrgName+" · "):"")+currentViewLabel()+" · "+APP_VERSION;
     var afs=$("adminFeedbackSection"); if(afs) afs.hidden=true;
     var hc=$("platformContextLabel"); if(hc) hc.textContent=currentOrgName?("Current company: "+currentOrgName):"Platform overview";
     refreshProfileCard();
@@ -6777,38 +6755,6 @@
     catch(ex){ console.error("global signout",ex); toast("Could not sign out all sessions.","err"); _signoutAll.disabled=false; _signoutAll.textContent="Sign Out Everywhere"; }
   });
 
-  var _feedbackForm=$("feedbackForm"); if(_feedbackForm) _feedbackForm.addEventListener("submit",async function(e){
-    e.preventDefault(); if(!currentSession||!currentSession.user) return;
-    var btn=$("feedbackSubmit"), statusEl=$("feedbackStatus"), subject=$("feedbackSubject").value.trim(), message=$("feedbackMessage").value.trim();
-    function feedbackStatus(msg,kind){ if(!statusEl) return; statusEl.textContent=msg||""; statusEl.className="feedback-status"+(msg?(" show "+(kind||"")):""); }
-    feedbackStatus("","");
-    if(!subject||!message){ feedbackStatus("Add a subject and message before sending feedback.","err"); toast("Add a subject and message before sending feedback.","err"); return; }
-    btn.disabled=true; btn.textContent="Sending…";
-    try{
-      if(!currentOrgId) throw new Error("Your account is not attached to a company.");
-      var res=await sb.from("app_feedback").insert({
-        organization_id:currentOrgId,
-        user_id:currentSession.user.id,
-        user_email:currentSession.user.email||null,
-        feedback_type:$("feedbackType").value,
-        subject:subject,
-        message:message,
-        page_context:currentViewLabel(),
-        app_version:APP_VERSION,
-        status:"new"
-      }).select("id").single();
-      if(res.error) throw res.error;
-      _feedbackForm.reset(); $("feedbackType").value="suggestion"; fillProfileForm();
-      feedbackStatus("Feedback sent successfully. Thank you — your submission is now in the Platform feedback inbox.","ok");
-      toast("Feedback sent — thank you","ok");
-    }catch(ex){
-      console.error("feedback submit",ex);
-      var msg=(ex&&ex.message)?ex.message:"Feedback could not be submitted.";
-      feedbackStatus("Could not send feedback: "+msg,"err");
-      toast("Could not send feedback.","err");
-    }
-    finally{ btn.disabled=false; btn.textContent="Send Feedback"; }
-  });
 
   function feedbackStatusLabel(v){ return ({new:"New",reviewed:"Reviewed",planned:"Planned",resolved:"Resolved"})[v]||"New"; }
   async function loadFeedbackAdmin(){
