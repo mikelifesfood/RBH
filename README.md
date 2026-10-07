@@ -4,7 +4,7 @@ RBH is the current live blueprint for the TeamWorkt Safety product. The reposito
 
 ## Current build status
 
-Current production candidate: **Build 53.1.7 - Public Reference Guide Link** (2026-10-07).
+Current production candidate: **Build 53.1.9 - Subtle Live Dashboard Refresh** (2026-10-07).
 
 The working management flow is:
 

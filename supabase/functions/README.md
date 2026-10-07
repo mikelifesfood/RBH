@@ -4,7 +4,7 @@ These files are source-control copies of the Edge Functions used by the current 
 
 ## `notify-report`
 
-New-report email notification through Brevo. Build 46 dynamically resolves every active Admin and Safety Manager in the report organization from `public.profiles`; `NOTIFY_TO` is no longer used. The deployment is triggered from Postgres/pg_net and uses `BREVO_API_KEY`, `MAIL_FROM_EMAIL`, `MAIL_FROM_NAME`, `WEBHOOK_SECRET`, `DASHBOARD_URL`, and `LOGO_URL`, plus Supabase's standard service-role environment variables.
+New-report email notification through Brevo. Build 46 dynamically resolves every active Admin and Safety Manager in the report organization from `public.profiles`; `NOTIFY_TO` is no longer used. Build 53.1.8 sends the initial-intake notification as one shared message with all currently eligible Admin/Safety Manager recipients in the **To** line while preserving one audit event per intended user. Injury reports use a red-triangle high-priority subject treatment and add non-standard priority hints for mail clients that support them. Later workflow/responsibility emails remain individual. The deployment is triggered from Postgres/pg_net and uses `BREVO_API_KEY`, `MAIL_FROM_EMAIL`, `MAIL_FROM_NAME`, `WEBHOOK_SECRET`, `DASHBOARD_URL`, and `LOGO_URL`, plus Supabase's standard service-role environment variables.
 
 ## `send-action-assignment-email`
 

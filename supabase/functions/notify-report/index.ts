@@ -1,4 +1,5 @@
-// RBH Safety - New Report Notification (Brevo) V2
+// RBH Safety - New Report Notification (Brevo) V3
+// Build 53.1.8: grouped initial-intake delivery + injury priority treatment.
 // Build 46: dynamic recipients from public.profiles.
 //
 // Triggered by reports_notify (pg_net) on public.reports INSERT.
@@ -115,7 +116,8 @@ Deno.serve(async (req: Request) => {
     const injury = rec.involves_injury === true || rec.involves_injury === "true";
     const urgent = /critical|serious/i.test(rec.potential_severity ?? "");
     const ref = rec.ref_no != null ? `#${rec.ref_no}` : "";
-    const subject = `${injury ? "🚑 INJURY — " : ""}${urgent ? "⚠️ " : ""}[RBH Safety] ${rec.report_type ?? "New report"} ${ref}`.trim();
+    const subjectPrefix = injury ? "🔺 [HIGH PRIORITY – INJURY] " : (urgent ? "⚠️ " : "");
+    const subject = `${subjectPrefix}[RBH Safety] ${rec.report_type ?? "New report"} ${ref}`.trim();
     const reporter = (rec.reporter_name ?? "").trim() || "Anonymous";
     const submitted = rec.created_at ? new Date(rec.created_at).toLocaleString("en-US", { timeZone: "America/Los_Angeles" }) : "";
     const langLabel = rec.language === "es" ? "Spanish" : rec.language === "en" ? "English" : (rec.language ?? "");
@@ -161,41 +163,97 @@ Deno.serve(async (req: Request) => {
 
     let sentCount = 0, duplicateCount = 0, failedCount = 0;
     const failures: any[] = [];
+    const pending: Array<{ recipient: any; eventId: string }> = [];
+
+    // Reserve one audit event per intended recipient before sending. This preserves
+    // the existing per-user notification history even though the initial-intake
+    // message is now delivered as one shared email with all recipients in To:.
     for (const recipient of recipients) {
       let reservation: any;
       try { reservation = await reserveEvent(service, rec, recipient); }
-      catch (e) { failedCount++; failures.push({ recipient: recipient.email, error: String(e) }); continue; }
+      catch (e) {
+        failedCount++;
+        failures.push({ recipient: recipient.email, error: String(e) });
+        continue;
+      }
       if (reservation.duplicate) { duplicateCount++; continue; }
       if (reservation.inProgress || !reservation.eventId) continue;
+      pending.push({ recipient, eventId: reservation.eventId });
+    }
+
+    if (pending.length) {
+      // Brevo accepts multiple recipients in the To array. De-duplicate addresses
+      // defensively in case two active profiles share the same mailbox.
+      const seenEmails = new Set<string>();
+      const to = pending.reduce((list: any[], item) => {
+        const email = String(item.recipient.email || "").trim();
+        const key = email.toLowerCase();
+        if (!email || seenEmails.has(key)) return list;
+        seenEmails.add(key);
+        list.push({ email, name: item.recipient.full_name || undefined });
+        return list;
+      }, []);
 
       try {
+        const payload: any = {
+          sender: { name: FROM_NAME, email: FROM_EMAIL },
+          to,
+          subject,
+          htmlContent: html,
+          textContent: text,
+          tags: injury ? ["rbh-new-report", "rbh-injury"] : ["rbh-new-report"],
+        };
+        if (injury) {
+          // Non-standard priority hints. Mail clients may choose whether to show a
+          // visible High Importance marker; the subject/banner remain authoritative.
+          payload.headers = {
+            "X-Priority": "1 (Highest)",
+            "X-Msmail-Priority": "High",
+          };
+        }
+
         const resp = await fetch("https://api.brevo.com/v3/smtp/email", {
           method: "POST",
           headers: { "api-key": BREVO_API_KEY, "Content-Type": "application/json", "accept": "application/json" },
-          body: JSON.stringify({
-            sender: { name: FROM_NAME, email: FROM_EMAIL },
-            to: [{ email: String(recipient.email).trim(), name: recipient.full_name || undefined }],
-            subject, htmlContent: html, textContent: text, tags: ["rbh-new-report"],
-          }),
+          body: JSON.stringify(payload),
         });
         const providerData = await resp.json().catch(async () => ({ raw: await resp.text().catch(() => "") }));
         if (!resp.ok) throw new Error(providerData?.message || providerData?.code || providerData?.raw || `BREVO_${resp.status}`);
+
         const messageId = providerData?.messageId || providerData?.id || null;
-        await service.from("report_notification_events").update({
-          status: "sent", provider_message_id: messageId, sent_at: new Date().toISOString(), error_message: null, updated_at: new Date().toISOString(),
-        }).eq("id", reservation.eventId);
-        sentCount++;
+        const eventIds = pending.map((item) => item.eventId);
+        const { error: sentUpdateError } = await service.from("report_notification_events").update({
+          status: "sent",
+          provider_message_id: messageId,
+          sent_at: new Date().toISOString(),
+          error_message: null,
+          updated_at: new Date().toISOString(),
+        }).in("id", eventIds);
+        if (sentUpdateError) console.error("Grouped new-report audit update failed", sentUpdateError);
+        sentCount += pending.length;
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
-        failedCount++;
-        failures.push({ recipient: recipient.email, error: message });
-        await service.from("report_notification_events").update({
-          status: "failed", error_message: message.slice(0, 1000), updated_at: new Date().toISOString(),
-        }).eq("id", reservation.eventId);
+        failedCount += pending.length;
+        pending.forEach((item) => failures.push({ recipient: item.recipient.email, error: message }));
+        const eventIds = pending.map((item) => item.eventId);
+        const { error: failUpdateError } = await service.from("report_notification_events").update({
+          status: "failed",
+          error_message: message.slice(0, 1000),
+          updated_at: new Date().toISOString(),
+        }).in("id", eventIds);
+        if (failUpdateError) console.error("Grouped new-report failure audit update failed", failUpdateError);
       }
     }
 
-    const result = { ok: failedCount === 0, recipientCount: recipients.length, sentCount, duplicateCount, failedCount, failures: failures.slice(0, 5) };
+    const result = {
+      ok: failedCount === 0,
+      recipientCount: recipients.length,
+      messageRecipientCount: pending.length,
+      sentCount,
+      duplicateCount,
+      failedCount,
+      failures: failures.slice(0, 5),
+    };
     return new Response(JSON.stringify(result), {
       status: failedCount > 0 && sentCount === 0 && duplicateCount === 0 ? 502 : 200,
       headers: { "Content-Type": "application/json" },

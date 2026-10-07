@@ -2392,6 +2392,7 @@
   /* ---------- Build 44: live dashboard sync + presence + stale-save protection ---------- */
   var LIVE_SYNC_FALLBACK_MS=60000, PRESENCE_HEARTBEAT_MS=20000, PRESENCE_ACTIVE_MS=55000, PRESENCE_EDITING_IDLE_MS=90000;
   var liveSyncChannel=null, liveSyncFallbackTimer=null, liveSyncDebounceTimer=null, liveSyncRefreshing=false, presenceRefreshTimer=null, pendingSelfLiveChange=false;
+  var lastLiveDataFingerprint="";
   var activeRecordPresence=null, recordPresenceTimer=null, recordPresenceMode="viewing", recordPresenceLastEditAt=0, remotePresenceRows=[];
   var activeOpenResource=null;
 
@@ -2400,6 +2401,14 @@
   function recordChangePersonName(userId){ var p=userId?profileById[String(userId)]:null; return p?profileName(p):"another user"; }
   function actionVersionFingerprint(reportId){
     return (allCorrectiveActions||[]).filter(function(a){return String(a.report_id||"")===String(reportId||"")&&!a.retired_at;}).map(function(a){return String(a.id||"")+"|"+String(a.updated_at||"")+"|"+String(a.status||"");}).sort().join(";");
+  }
+  function fastLiveHash(value){
+    var s=typeof value==="string"?value:JSON.stringify(value||[]), h=2166136261;
+    for(var i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); }
+    return (h>>>0).toString(36);
+  }
+  function liveDataFingerprint(reports,actions,attachments){
+    return fastLiveHash(reports)+"."+fastLiveHash(actions)+"."+fastLiveHash(attachments)+"."+new Date().toDateString();
   }
   function setActiveOpenResource(type,resourceId,reportId){
     var r=(allReports||[]).find(function(x){return String(x.id)===String(reportId);});
@@ -2781,7 +2790,6 @@
       if(currentOrgId) repQ=repQ.eq("organization_id", currentOrgId);
       var rep=await repQ;
       if(rep.error) throw rep.error;
-      allReports=rep.data||[];
 
       var caQ=sb.from("report_corrective_actions")
         .select("id,report_id,organization_id,workflow_generation,action_number,description,control_type,owner_user_id,due_date,priority,status,completion_note,completed_at,completed_by,verifier_user_id,verification_note,verified_at,verified_by,activated_at,activation_reopen_count,retired_at,created_at,updated_at")
@@ -2789,12 +2797,17 @@
       if(currentOrgId) caQ=caQ.eq("organization_id", currentOrgId);
       var ca=await caQ;
       if(ca.error) throw ca.error;
-      allCorrectiveActions=ca.data||[];
 
       var atQ=sb.from("report_attachments").select("*");
       if(currentOrgId) atQ=atQ.eq("organization_id", currentOrgId);
       var at=await atQ;
       if(at.error) throw at.error;
+
+      var nextFingerprint=liveDataFingerprint(rep.data||[],ca.data||[],at.data||[]);
+      var dataChanged=nextFingerprint!==lastLiveDataFingerprint;
+      allReports=rep.data||[];
+      allCorrectiveActions=ca.data||[];
+
       // Build attachment state locally, then replace it in one step. This prevents
       // overlapping report refreshes/auth events from pushing the same row twice
       // into the shared in-memory attachment map.
@@ -2806,7 +2819,11 @@
         if(!exists) arr.push(a);
       });
       attByReport=nextAttByReport;
-      applyFilters(); renderMetrics(); renderHomeSnapshot(); renderMyWork(); renderActions();
+      lastLiveDataFingerprint=nextFingerprint;
+
+      // Silent realtime/fallback checks should not redraw an unchanged dashboard.
+      // This keeps Home visually stable while preserving the same live-sync safety net.
+      if(!silent||dataChanged){ applyFilters(); renderMetrics(); renderHomeSnapshot(); renderMyWork(); renderActions(); }
     }catch(ex){ console.error(ex); if(!silent) listEl.innerHTML='<div class="state">Couldn\'t load reports. Please refresh.</div>'; }
   }
   $("refresh").addEventListener("click", async function(){ await loadReports(); await loadNotifications(true); });
@@ -7109,6 +7126,9 @@
   function renderHomeAttention(){
     var el=$("homeAttention"); if(!el) return; var items=allReports.filter(function(r){ return r.status!=="closed"&&r.status!=="no_action"&&r.status!=="duplicate"; });
     items.sort(function(a,b){ return reportAttentionRank(b)-reportAttentionRank(a) || new Date(b.created_at)-new Date(a.created_at); }); items=items.slice(0,5);
+    var attentionSnapshot=items.map(function(r){var step=homeWorkflowStepInfo(r);return [r.id,r.ref_no,r.report_type||"",r.job_site||"",assigneeName(r)||"",r.created_at||"",r.status||"",r.action_status||"",r.involves_injury?1:0,isOverdue(r)?1:0,step.n,step.label].join("|");}).join("||");
+    if(el.dataset.homeAttentionSnapshot===attentionSnapshot) return;
+    el.dataset.homeAttentionSnapshot=attentionSnapshot;
     if(!items.length){ el.innerHTML='<div class="notes-empty">Nothing needs attention right now.</div>'; return; }
     el.innerHTML=''; items.forEach(function(r){
       var b=document.createElement('button'); b.className='attention-item'+(r.involves_injury?' attention-injury':''); b.type='button';
@@ -8691,31 +8711,39 @@
     var open=0,nw=0,inj=0,ov=0,verify=0;
     allReports.forEach(function(r){ if(r.status!=="closed"&&r.status!=="no_action"&&r.status!=="duplicate") open++; if(r.status==="new") nw++; if(r.involves_injury) inj++; if(isOverdue(r)) ov++; if(reportActionStatus(r)==="awaiting_verification") verify++; });
     function tile(n,k,f,al){ return '<button class="hs'+(al&&n>0?" alert":"")+'" data-filter="'+f+'" type="button"><div class="hs-n">'+n+'</div><div class="hs-k">'+k+'</div></button>'; }
-    el.innerHTML=tile(open,"Open","open")+tile(nw,"New","new")+tile(ov,"Overdue","overdue",true)+tile(verify,"To review","actions",true)+tile(inj,"Injuries","injuries",true);
+    var html=tile(open,"Open","open")+tile(nw,"New","new")+tile(ov,"Overdue","overdue",true)+tile(verify,"To review","actions",true)+tile(inj,"Injuries","injuries",true);
+    if(el.dataset.homeStatsSnapshot===html) return;
+    el.dataset.homeStatsSnapshot=html;
+    el.innerHTML=html;
     el.querySelectorAll(".hs").forEach(function(b){ b.addEventListener("click", function(){ var f=b.getAttribute("data-filter"); if(f==="actions") showView("actions"); else goToRecords(f); }); });
   }
 
   async function renderHomeActivity(){
     var el=$("homeActivity"); if(!el) return;
-    el.innerHTML='<div class="notes-empty">Loading…</div>';
+    if(!el.dataset.homeActivityLoaded&&!el.children.length) el.innerHTML='<div class="notes-empty">Loading…</div>';
     var events=[], map={};
     allReports.forEach(function(r){ map[r.id]=r.ref_no; });
-    allReports.slice(0,25).forEach(function(r){ events.push({ when:r.created_at, kind:"report", text:"New report #"+r.ref_no+" \u2014 "+(r.report_type||"Report") }); });
+    allReports.slice(0,25).forEach(function(r){ events.push({ when:r.created_at, kind:"report", text:"New report #"+r.ref_no+" — "+(r.report_type||"Report") }); });
     try{
       var res=await sb.from("report_audit").select("*").order("created_at",{ascending:false}).limit(20);
       (res.data||[]).forEach(function(a){ events.push({ when:a.created_at, kind:"change", text:"#"+(map[a.report_id]||"?")+"  "+fmtChange(a), who:a.actor_email }); });
     }catch(e){ console.error(e); }
     events.sort(function(a,b){ return new Date(b.when)-new Date(a.when); });
     events=events.slice(0,10);
+    var activitySnapshot=events.map(function(ev){return [ev.when,ev.kind,ev.text,ev.who||""].join("|");}).join("||");
+    if(el.dataset.homeActivityLoaded&&el.dataset.homeActivitySnapshot===activitySnapshot) return;
+    el.dataset.homeActivityLoaded="1";
+    el.dataset.homeActivitySnapshot=activitySnapshot;
     if(!events.length){ el.innerHTML='<div class="notes-empty">No activity yet.</div>'; return; }
-    el.innerHTML="";
+    var frag=document.createDocumentFragment();
     events.forEach(function(ev){
       var d=document.createElement("div"); d.className="act-row";
       d.innerHTML='<span class="act-dot '+(ev.kind==="report"?"d-new":"d-chg")+'"></span><div class="act-main"><div class="act-t"></div><div class="act-m"></div></div>';
       d.querySelector(".act-t").textContent=ev.text;
-      d.querySelector(".act-m").textContent=fmtDate(ev.when)+(ev.who?(" \u00b7 "+ev.who):"");
-      el.appendChild(d);
+      d.querySelector(".act-m").textContent=fmtDate(ev.when)+(ev.who?(" · "+ev.who):"");
+      frag.appendChild(d);
     });
+    el.replaceChildren(frag);
   }
 
   function monthChartHtml(){
