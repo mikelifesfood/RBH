@@ -4,7 +4,7 @@ RBH is the current live blueprint for the TeamWorkt Safety product. The reposito
 
 ## Current build status
 
-Current production candidate: **Build 51 - Intake Safety & Hardening** (2026-10-06).
+Current production candidate: **Build 53 - Company Records Archive** (2026-10-06).
 
 The working management flow is:
 
@@ -46,6 +46,7 @@ Recent database changes and canonical Edge Function source are now captured unde
 - `supabase/functions/notify-report/index.ts`
 - `supabase/functions/send-action-assignment-email/index.ts`
 - `supabase/functions/translate-report/index.ts`
+- `supabase/functions/admin-manage-user/index.ts`
 
 Secrets stay in Supabase and must never be committed to GitHub.
 
@@ -109,3 +110,20 @@ The authenticated dashboard now includes a desktop-only, role-aware and page-awa
 - Offline auto-submit was deliberately not added.
 
 See `docs/RBH_BUILD51_INTAKE_SAFETY_HARDENING_2026-10-06.md`.
+
+
+## Build 52 — Admin role update guard compatibility — 2026-10-06
+
+The `profiles` security trigger now permits trusted Supabase `service_role` backend updates while preserving the Admin-only guard for normal authenticated browser users. This resolves the `ROLE_UPDATE_FAILED / ADMIN_REQUIRED` conflict seen when `admin-manage-user` attempted to change another user's role. See `supabase/RBH_BUILD52_PROFILE_SECURITY_GUARD_SERVICE_ROLE_FIX.sql`.
+
+## Build 53 — Company Records Archive — 2026-10-06
+
+The Admin page now includes **Export company records (.zip)**. The archive is designed as an independent retention copy for the customer and includes:
+
+- Excel-compatible CSV exports for reports, corrective actions, notes, audit history, attachments, user profiles, and Admin activity.
+- One readable PDF copy for each report.
+- Original report, investigation, and corrective-action evidence files.
+- An attachment manifest with archive path, export status, file size, and SHA-256 hash.
+- A README describing the package, counts, warnings, and security/retention limitations.
+
+The export is Admin-only, confirms before generating because the ZIP can contain sensitive information, and records missing/unavailable attachments in the manifest instead of silently omitting them. No database migration or Edge Function deployment is required for Build 53.

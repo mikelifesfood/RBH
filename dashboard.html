@@ -11,6 +11,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <style>
 
   /* ==========================================================================
@@ -864,6 +865,17 @@
   .admin-info{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:16px 18px;margin-bottom:14px}
   .admin-info h3{margin:0 0 4px;font-size:15px}
   .admin-info p{margin:0;color:var(--muted);font-size:13.5px}
+  .admin-records-archive{display:flex;align-items:center;justify-content:space-between;gap:18px;background:linear-gradient(135deg,#f7f9fc,#eef3fb);border:1px solid #cfd9ea;border-radius:var(--r-lg);padding:18px;margin:0 0 16px}
+  .admin-records-archive h3{margin:0 0 4px;font-size:15px}
+  .admin-records-archive p{margin:0;color:var(--muted);font-size:13.5px;line-height:1.5}
+  .admin-records-archive .archive-copy{max-width:760px}
+  .archive-includes{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+  .archive-includes span{font-size:11px;font-weight:800;letter-spacing:.02em;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:5px 8px;color:var(--ink)}
+  .archive-export-action{display:flex;flex-direction:column;align-items:flex-end;gap:7px;min-width:235px}
+  .archive-export-btn{border:0;border-radius:10px;background:var(--ink);color:white;font:inherit;font-weight:850;padding:11px 14px;cursor:pointer;white-space:nowrap}
+  .archive-export-btn:hover{filter:brightness(1.07)}
+  .archive-export-btn:disabled{opacity:.55;cursor:not-allowed}
+  .archive-export-status{font-size:11.5px;color:var(--muted);text-align:right;min-height:16px;max-width:260px}
   .role-legend{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin:0 0 16px;background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden}
   .role-card{border:0;border-left:1px solid var(--line);padding:14px 16px;background:transparent}
   .role-card:first-child{border-left:0}
@@ -1023,6 +1035,9 @@
   @media(max-width:980px){.home-stats{grid-template-columns:repeat(3,minmax(0,1fr))}.home-stats .hs:nth-child(4){border-left:0}.home-stats .hs:nth-child(n+4){border-top:1px solid var(--line)}}
   @media(max-width:900px){
     .role-legend,.action-summary,.mywork-summary,.admin-user-summary{grid-template-columns:1fr 1fr}
+    .admin-records-archive{align-items:flex-start;flex-direction:column}
+    .archive-export-action{align-items:stretch;min-width:0;width:100%}
+    .archive-export-status{text-align:left;max-width:none}
     .role-card:nth-child(3),.action-stat:nth-child(3),.mywork-stat:nth-child(3),.admin-user-stat:nth-child(3){border-left:0}
     .role-card:nth-child(n+3),.action-stat:nth-child(n+3),.mywork-stat:nth-child(n+3),.admin-user-stat:nth-child(n+3){border-top:1px solid var(--line)}
     .assignment-grid,.mywork-grid{grid-template-columns:1fr}
@@ -1492,6 +1507,17 @@
         <section class="view" id="view-users" hidden>
           <div class="section-head"><div><h2>Admin</h2><p>Manage application roles and dashboard access.</p></div></div>
           <div class="admin-info"><h3>Role-based access</h3><p>Existing dashboard users retain administrative access after the Phase 2 migration. New users start as Read Only until an Admin assigns the appropriate role.</p></div>
+          <div class="admin-records-archive" id="companyRecordsArchive">
+            <div class="archive-copy">
+              <h3>Company records archive</h3>
+              <p>Download a portable copy of RBH safety records for independent retention. The ZIP includes Excel-compatible CSV files, one readable PDF per report, and the original report/evidence attachments. Store exported files securely.</p>
+              <div class="archive-includes"><span>All reports</span><span>Corrective actions</span><span>Notes &amp; audit history</span><span>Original attachments</span><span>SHA-256 file hashes</span></div>
+            </div>
+            <div class="archive-export-action">
+              <button class="archive-export-btn" id="exportCompanyArchive" type="button">Export company records (.zip)</button>
+              <div class="archive-export-status" id="exportCompanyArchiveStatus" aria-live="polite"></div>
+            </div>
+          </div>
           <div class="role-legend">
             <div class="role-card"><b>Admin</b><span>Full operational access plus user roles and account activation.</span></div>
             <div class="role-card"><b>Safety Manager</b><span>Full incident, investigation, corrective-action, and verification access.</span></div>
@@ -2208,7 +2234,8 @@
         {title:"Add a dashboard user",text:"Choose Add dashboard user. Enter the person's name and email, select the appropriate role, and send the setup email when access is ready.",target:"#addUserBtn"},
         {title:"Choose the right role",text:"Admins manage users and the full workflow. Safety Managers can work the full incident workflow without Admin access. Supervisors work assigned items. Read Only users can review without changing records.",target:"#usersList"},
         {title:"Deactivate or remove access carefully",text:"Deactivate temporarily blocks access. Delete user removes login access while preserving the person's profile and historical report/audit references."},
-        {title:"Review Admin activity",text:"Admin activity records role changes, access changes, password-reset actions, and removed-user events so important account changes remain traceable.",target:"#adminUserHistory"}
+        {title:"Review Admin activity",text:"Admin activity records role changes, access changes, password-reset actions, and removed-user events so important account changes remain traceable.",target:"#adminUserHistory"},
+        {title:"Export company records",text:"Use Company records archive when RBH needs an independent retention copy. The ZIP includes Excel-compatible data files, a readable PDF for each report, and the original attachments with an attachment manifest and SHA-256 hashes.",target:"#companyRecordsArchive"}
       ]
     },
     home_screen:{title:"Using Home",roles:["admin","safety_manager","supervisor","read_only"],steps:[
@@ -5473,6 +5500,459 @@
   }
   $("expView").addEventListener("click", function(){ exportCsv("view"); });
   $("expAll").addEventListener("click", function(){ exportCsv("all"); });
+
+  /* ---------- Company records archive | Build 53 ---------- */
+  function archiveSafeName(value){
+    var name=String(value==null?"":value).trim()
+      .replace(/[\\/:*?"<>|]+/g,"_")
+      .replace(/\s+/g," ")
+      .replace(/^\.+|\.+$/g,"");
+    return name||"file";
+  }
+  function archiveReportKey(r){
+    var ref=(r&&r.ref_no!=null)?String(r.ref_no).padStart(6,"0"):String(r&&r.id||"record").slice(0,8);
+    return "Report_"+ref;
+  }
+  function archiveValue(v){
+    if(v==null) return "";
+    if(typeof v==="object"){
+      try{return JSON.stringify(v);}catch(_e){return String(v);}
+    }
+    return String(v);
+  }
+  function archiveCsvCell(v){
+    v=archiveValue(v);
+    return /[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;
+  }
+  function archiveRowsToCsv(rows,preferred){
+    rows=Array.isArray(rows)?rows:[];
+    preferred=Array.isArray(preferred)?preferred:[];
+    var seen={}, cols=[];
+    preferred.forEach(function(k){if(k&&!seen[k]){seen[k]=true;cols.push(k);}});
+    rows.forEach(function(row){
+      Object.keys(row||{}).forEach(function(k){if(!seen[k]){seen[k]=true;cols.push(k);}});
+    });
+    if(!cols.length) cols=["message"];
+    var lines=[cols.map(archiveCsvCell).join(",")];
+    rows.forEach(function(row){ lines.push(cols.map(function(k){return archiveCsvCell(row&&row[k]);}).join(",")); });
+    return "\ufeff"+lines.join("\r\n");
+  }
+  async function archiveFetchAll(table,orderCol,optional){
+    var rows=[], from=0, page=1000;
+    while(true){
+      var q=sb.from(table).select("*");
+      if(orderCol) q=q.order(orderCol,{ascending:true});
+      q=q.range(from,from+page-1);
+      var res=await q;
+      if(res.error){
+        if(optional) return {rows:[],warning:table+": "+res.error.message};
+        throw new Error(table+": "+res.error.message);
+      }
+      var batch=res.data||[];
+      rows=rows.concat(batch);
+      if(batch.length<page) break;
+      from+=page;
+      if(from>100000) throw new Error(table+": export row limit exceeded");
+    }
+    return {rows:rows,warning:null};
+  }
+  function archiveMapByReport(rows){
+    var map={};
+    (rows||[]).forEach(function(row){
+      var rid=String(row.report_id||"");
+      if(!rid) return;
+      (map[rid]=map[rid]||[]).push(row);
+    });
+    return map;
+  }
+  function archiveProfilesById(rows){
+    var map={};
+    (rows||[]).forEach(function(p){if(p&&p.id)map[String(p.id)]=p;});
+    return map;
+  }
+  function archiveDisplayName(id,profiles){
+    if(!id) return "";
+    var p=profiles[String(id)];
+    return p?String(p.full_name||p.email||id):String(id);
+  }
+  function archiveLocalDate(v){
+    if(!v) return "";
+    try{return new Date(v).toLocaleString();}catch(_e){return String(v);}
+  }
+  function archiveStatusLabel(r){
+    var st=STATUS&&STATUS[r&&r.status];
+    return st&&st.l?st.l:String(r&&r.status||"");
+  }
+  function archiveActionSource(att,actionsById){
+    if(att&&att.corrective_action_id){
+      var a=actionsById[String(att.corrective_action_id)];
+      return a?"Corrective Action #"+String(a.action_number||""):"Corrective action evidence";
+    }
+    if(att&&String(att.storage_path||"").indexOf("investigation-evidence/")===0) return "Investigation evidence";
+    return "Original report attachment";
+  }
+  function archivePdfSafe(value){
+    return String(value==null?"":value)
+      .replace(/\u00a0/g," ")
+      .replace(/[\u2010\u2011\u2012\u2013\u2014\u2015]/g,"-")
+      .replace(/[\u2018\u2019]/g,"'")
+      .replace(/[\u201c\u201d]/g,'"')
+      .replace(/\u2026/g,"...");
+  }
+  function archiveBuildPdfBlob(r,ctx){
+    if(!window.jspdf||!window.jspdf.jsPDF) throw new Error("PDF library is unavailable");
+    var doc=new window.jspdf.jsPDF({unit:"pt",format:"letter"});
+    var W=doc.internal.pageSize.getWidth(), H=doc.internal.pageSize.getHeight(), M=42, y=48, bodyW=W-M*2;
+    function ensure(h){
+      if(y+h>H-56){doc.addPage();y=48;}
+    }
+    function line(text,opt){
+      opt=opt||{}; var size=opt.size||9.5, bold=!!opt.bold, indent=opt.indent||0, gap=opt.gap==null?4:opt.gap;
+      doc.setFont("helvetica",bold?"bold":"normal"); doc.setFontSize(size); doc.setTextColor(28,28,28);
+      var lines=doc.splitTextToSize(archivePdfSafe(text||""),bodyW-indent);
+      ensure(Math.max(1,lines.length)*(size+3)+gap);
+      doc.text(lines,M+indent,y); y+=Math.max(1,lines.length)*(size+3)+gap;
+    }
+    function section(title){
+      ensure(30); y+=6; doc.setDrawColor(205,205,205); doc.line(M,y-4,W-M,y-4);
+      line(title,{size:12,bold:true,gap:7});
+    }
+    function pair(label,value){
+      if(value==null||String(value).trim()==="") return;
+      line(label+": "+String(value),{size:9.2,gap:2});
+    }
+    function smallNote(text){ line(text,{size:7.6,gap:3}); }
+
+    doc.setFont("helvetica","bold"); doc.setFontSize(15); doc.text("RBH SAFETY",M,y); y+=22;
+    line("Incident Record Archive - Report #"+String(r.ref_no!=null?r.ref_no:r.id),{size:17,bold:true,gap:5});
+    line(archiveStatusLabel(r)+" | Exported "+new Date().toLocaleString(),{size:9,gap:10});
+    smallNote("This readable PDF is part of the RBH company-records ZIP. The CSV files and original attachments in the same ZIP preserve the underlying export data and source files. This document is not a substitute for any required OSHA or Cal/OSHA form.");
+
+    section("Report");
+    pair("Submitted",archiveLocalDate(r.created_at));
+    pair("Observed",archiveLocalDate(r.observed_at));
+    pair("Type",r.report_type);
+    pair("Injury or illness",r.involves_injury===true?"Yes":(r.involves_injury===false?"No":""));
+    pair("Potential severity",r.potential_severity);
+    pair("Hazard category",r.hazard_category);
+    pair("Job site / address",r.job_site);
+    pair("Specific location",r.site_location);
+    pair("Description",r.description);
+    pair("People involved / witnesses",r.people_involved);
+    pair("Immediate action",r.immediate_action);
+    pair("Suggested fix",r.suggested_fix);
+    pair("Reporter",r.reporter_name);
+    pair("Reporter role",r.reporter_role);
+    pair("Reporter contact",r.reporter_contact);
+
+    section("Workflow and regulatory screening");
+    pair("Status",archiveStatusLabel(r));
+    pair("Report owner",archiveDisplayName(r.report_owner_user_id,ctx.profiles));
+    pair("Investigator",archiveDisplayName(r.investigator_user_id,ctx.profiles));
+    pair("Cal/OSHA screening",r.calosha_screening_status);
+    pair("Company awareness time",archiveLocalDate(r.calosha_awareness_at));
+    pair("Cal/OSHA notified at",archiveLocalDate(r.calosha_notified_at));
+    pair("Screening note",r.calosha_screening_note);
+
+    section("Investigation");
+    pair("What happened",r.investigation_findings);
+    pair("Why it happened",r.root_cause);
+
+    section("Corrective actions");
+    pair("Decision",r.corrective_action_decision);
+    pair("No additional action reason",r.corrective_action_no_action_reason);
+    pair("No additional action explanation",r.corrective_action_no_action_note);
+    var actions=(ctx.actionsByReport[String(r.id)]||[]).slice().sort(function(a,b){
+      return Number(a.workflow_generation||0)-Number(b.workflow_generation||0)||Number(a.action_number||0)-Number(b.action_number||0);
+    });
+    if(!actions.length) line("No corrective-action rows recorded.",{size:9.2});
+    actions.forEach(function(a){
+      line("Corrective Action #"+String(a.action_number||"")+" - "+String(a.status||""),{size:10,bold:true,gap:3});
+      pair("Workflow generation",a.workflow_generation);
+      pair("Description",a.description);
+      pair("Control type",a.control_type);
+      pair("Owner",archiveDisplayName(a.owner_user_id,ctx.profiles));
+      pair("Due date",a.due_date);
+      pair("Priority",a.priority);
+      pair("Completion note",a.completion_note);
+      pair("Completed at",archiveLocalDate(a.completed_at));
+      pair("Verified by",archiveDisplayName(a.verified_by,ctx.profiles));
+      pair("Verification note",a.verification_note);
+      pair("Verified at",archiveLocalDate(a.verified_at));
+      if(a.retired_at) pair("Retired at",archiveLocalDate(a.retired_at));
+      y+=5;
+    });
+
+    section("Closure");
+    pair("Closed at",archiveLocalDate(r.closed_at));
+    pair("Workflow restarts",r.workflow_restart_count);
+    pair("Last workflow restart",archiveLocalDate(r.last_workflow_restart_at));
+    pair("Reopen count",r.reopen_count);
+    pair("Last reopened",archiveLocalDate(r.last_reopened_at));
+
+    section("Notes");
+    var notes=ctx.notesByReport[String(r.id)]||[];
+    if(!notes.length) line("No notes recorded.",{size:9.2});
+    notes.forEach(function(n){
+      line((archiveLocalDate(n.created_at)||"")+" - "+String(n.title||"Note"),{size:9.2,bold:true,gap:2});
+      if(n.body) line(String(n.body),{size:8.8,indent:10,gap:4});
+    });
+
+    section("Attachments");
+    var infos=ctx.attachmentInfoByReport[String(r.id)]||[];
+    if(!infos.length) line("No attachments recorded.",{size:9.2});
+    infos.forEach(function(info){
+      line(String(info.number)+". "+String(info.file_name||"file"),{size:9.2,bold:true,gap:2});
+      pair("Source",info.source);
+      pair("Archive path",info.archive_path);
+      pair("Uploaded",archiveLocalDate(info.created_at));
+    });
+
+    section("Activity history");
+    var audits=ctx.auditByReport[String(r.id)]||[];
+    if(!audits.length) line("No audit rows recorded.",{size:9.2});
+    audits.forEach(function(a){
+      var event=a.event_type||a.action||a.field_name||a.field||"Activity";
+      var actor=a.actor_email||a.user_email||a.changed_by||a.actor_user_id||"";
+      line((archiveLocalDate(a.created_at)||"")+" - "+String(event)+(actor?" - "+String(actor):""),{size:8.5,gap:2});
+    });
+
+    var total=doc.internal.getNumberOfPages();
+    for(var i=1;i<=total;i++){
+      doc.setPage(i); doc.setFont("helvetica","normal"); doc.setFontSize(7); doc.setTextColor(110,110,110);
+      doc.text("RBH Insulation, Inc. | Confidential safety record archive",M,H-24);
+      var pg="Page "+i+" / "+total;
+      doc.text(pg,W-M-doc.getTextWidth(pg),H-24);
+    }
+    return new Blob([doc.output("arraybuffer")],{type:"application/pdf"});
+  }
+  async function archiveSha256Hex(buf){
+    if(!(window.crypto&&window.crypto.subtle)) return "";
+    var h=await window.crypto.subtle.digest("SHA-256",buf);
+    return Array.from(new Uint8Array(h)).map(function(b){return b.toString(16).padStart(2,"0");}).join("");
+  }
+  function archiveDownloadBlob(blob,filename){
+    var url=URL.createObjectURL(blob), a=document.createElement("a");
+    a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
+    setTimeout(function(){URL.revokeObjectURL(url);},1800);
+  }
+  async function exportCompanyRecordsArchive(){
+    var btn=$("exportCompanyArchive"), statusEl=$("exportCompanyArchiveStatus");
+    if(!btn) return;
+    if(currentRole!=="admin"){toast("Admin access is required to export company records.","err");return;}
+    if(!window.JSZip){toast("The archive library is still loading. Try again in a moment.","err");return;}
+    if(!window.jspdf||!window.jspdf.jsPDF){toast("The PDF library is still loading. Try again in a moment.","err");return;}
+    if(!window.confirm("Create a portable archive of all company safety records and attachments? The ZIP may contain sensitive information and should be stored securely.")) return;
+
+    var original=btn.textContent, warnings=[];
+    btn.disabled=true; btn.textContent="Preparing archive...";
+    if(statusEl) statusEl.textContent="Reading company records...";
+    try{
+      var results=await Promise.all([
+        archiveFetchAll("reports","created_at",false),
+        archiveFetchAll("report_corrective_actions","created_at",false),
+        archiveFetchAll("report_attachments","created_at",false),
+        archiveFetchAll("report_notes","created_at",false),
+        archiveFetchAll("report_audit","created_at",false),
+        archiveFetchAll("report_corrective_action_audit","created_at",true),
+        archiveFetchAll("profiles","email",true),
+        archiveFetchAll("admin_user_events","created_at",true)
+      ]);
+      results.forEach(function(x){if(x.warning)warnings.push(x.warning);});
+      var reports=results[0].rows, actions=results[1].rows, attachments=results[2].rows, notes=results[3].rows, audits=results[4].rows;
+      var actionAudits=results[5].rows, profilesRows=results[6].rows, adminEvents=results[7].rows;
+      var profiles=archiveProfilesById(profilesRows), reportById={}, actionsById={};
+      reports.forEach(function(r){reportById[String(r.id)]=r;});
+      actions.forEach(function(a){actionsById[String(a.id)]=a;});
+      var actionsByReport=archiveMapByReport(actions), notesByReport=archiveMapByReport(notes), auditByReport=archiveMapByReport(audits);
+
+      var attachmentInfoByReport={}, attachmentManifest=[];
+      attachments.slice().sort(function(a,b){return new Date(a.created_at||0)-new Date(b.created_at||0);}).forEach(function(att){
+        var rid=String(att.report_id||""), r=reportById[rid], list=attachmentInfoByReport[rid]=attachmentInfoByReport[rid]||[];
+        var n=list.length+1, reportFolder=r?archiveReportKey(r):("Report_"+archiveSafeName(rid||"unknown"));
+        var clean=archiveSafeName(att.file_name||String(att.storage_path||"").split("/").pop()||("attachment_"+n));
+        var archivePath="Reports/"+reportFolder+"/Attachments/"+String(n).padStart(3,"0")+"_"+clean;
+        var info={
+          attachment_id:att.id||"",
+          report_id:att.report_id||"",
+          report_ref_no:r&&r.ref_no!=null?r.ref_no:"",
+          corrective_action_id:att.corrective_action_id||"",
+          source:archiveActionSource(att,actionsById),
+          file_name:att.file_name||clean,
+          storage_path:att.storage_path||"",
+          mime_type:att.mime_type||"",
+          recorded_size_bytes:att.size_bytes||"",
+          created_at:att.created_at||"",
+          archive_path:archivePath,
+          export_status:"PENDING",
+          exported_size_bytes:"",
+          sha256:""
+        };
+        info.number=n; list.push(info); attachmentManifest.push(info);
+      });
+
+      var zip=new window.JSZip();
+      var root=zip.folder("RBH_Company_Records");
+      var generatedAt=new Date().toISOString();
+
+      var reportCsvRows=reports.map(function(r){
+        var row=Object.assign({},r);
+        row.archive_folder="Reports/"+archiveReportKey(r);
+        row.corrective_action_count=(actionsByReport[String(r.id)]||[]).length;
+        row.attachment_count=(attachmentInfoByReport[String(r.id)]||[]).length;
+        row.note_count=(notesByReport[String(r.id)]||[]).length;
+        row.audit_row_count=(auditByReport[String(r.id)]||[]).length;
+        return row;
+      });
+      var actionCsvRows=actions.map(function(a){
+        var row=Object.assign({},a), r=reportById[String(a.report_id||"")];
+        row.report_ref_no=r&&r.ref_no!=null?r.ref_no:"";
+        row.report_archive_folder=r?("Reports/"+archiveReportKey(r)):"";
+        row.owner_name=archiveDisplayName(a.owner_user_id,profiles);
+        row.verifier_name=archiveDisplayName(a.verifier_user_id,profiles);
+        return row;
+      });
+      function enrichReportRows(rows){
+        return (rows||[]).map(function(x){var row=Object.assign({},x), r=reportById[String(x.report_id||"")];row.report_ref_no=r&&r.ref_no!=null?r.ref_no:"";return row;});
+      }
+
+      root.file("Reports.csv",archiveRowsToCsv(reportCsvRows,["ref_no","id","created_at","observed_at","status","report_type","involves_injury","description","job_site","site_location","closed_at","archive_folder","attachment_count","corrective_action_count"]));
+      root.file("Corrective_Actions.csv",archiveRowsToCsv(actionCsvRows,["report_ref_no","report_id","action_number","workflow_generation","description","owner_name","due_date","priority","status","completion_note","completed_at","verifier_name","verification_note","verified_at","retired_at"]));
+      root.file("Notes.csv",archiveRowsToCsv(enrichReportRows(notes),["report_ref_no","report_id","created_at","title","body","author_email","author_user_id"]));
+      root.file("Report_Audit.csv",archiveRowsToCsv(enrichReportRows(audits),["report_ref_no","report_id","created_at","event_type","action","field_name","actor_email","actor_user_id"]));
+      root.file("Corrective_Action_Audit.csv",archiveRowsToCsv(enrichReportRows(actionAudits),["report_ref_no","report_id","corrective_action_id","action_number","created_at","event_type","actor_email","actor_user_id"]));
+      root.file("Users.csv",archiveRowsToCsv(profilesRows,["id","email","full_name","app_role","is_active","job_title","department","last_active","access_deleted_at"]));
+      root.file("Admin_Activity.csv",archiveRowsToCsv(adminEvents,["created_at","event_type","actor_user_id","target_user_id","target_name_snapshot","target_email_snapshot","old_role","new_role","old_active","new_active"]));
+
+      if(statusEl) statusEl.textContent="Creating readable report PDFs...";
+      for(var pi=0;pi<reports.length;pi++){
+        var r=reports[pi], folder="Reports/"+archiveReportKey(r);
+        btn.textContent="PDF "+(pi+1)+" of "+reports.length;
+        var pdfBlob=archiveBuildPdfBlob(r,{
+          profiles:profiles,
+          actionsByReport:actionsByReport,
+          notesByReport:notesByReport,
+          auditByReport:auditByReport,
+          attachmentInfoByReport:attachmentInfoByReport
+        });
+        root.file(folder+"/"+archiveReportKey(r)+".pdf",pdfBlob);
+      }
+
+      var withPath=attachmentManifest.filter(function(x){return !!String(x.storage_path||"").trim();});
+      var signedMap={};
+      for(var si=0;si<withPath.length;si+=100){
+        var batch=withPath.slice(si,si+100), paths=batch.map(function(x){return x.storage_path;});
+        var sign=await sb.storage.from("report-attachments").createSignedUrls(paths,3600);
+        if(sign.error){
+          batch.forEach(function(info){info.export_status="SIGNED_URL_FAILED";});
+          warnings.push("Attachment signed URL batch failed: "+sign.error.message);
+          continue;
+        }
+        (sign.data||[]).forEach(function(sr,idx){signedMap[String(batch[idx].attachment_id||batch[idx].storage_path)]=sr;});
+      }
+      attachmentManifest.filter(function(x){return !String(x.storage_path||"").trim();}).forEach(function(info){
+        info.export_status="MISSING_STORAGE_PATH";
+        var missing="The attachment metadata exists, but no storage path was available when the company archive was created.\r\nAttachment ID: "+String(info.attachment_id||"")+"\r\nOriginal file name: "+String(info.file_name||"");
+        root.file(info.archive_path+".MISSING.txt",missing);
+      });
+
+      if(statusEl) statusEl.textContent="Copying original attachments...";
+      for(var ai=0;ai<withPath.length;ai++){
+        var info=withPath[ai];
+        btn.textContent="File "+(ai+1)+" of "+withPath.length;
+        var sr=signedMap[String(info.attachment_id||info.storage_path)];
+        if(!sr||sr.error||!sr.signedUrl){
+          if(info.export_status==="PENDING") info.export_status="SIGNED_URL_UNAVAILABLE";
+          root.file(info.archive_path+".MISSING.txt","RBH could not create a temporary download link for this attachment during export.\r\nStorage path: "+String(info.storage_path||""));
+          continue;
+        }
+        try{
+          var resp=await fetch(sr.signedUrl);
+          if(!resp.ok) throw new Error("HTTP "+resp.status);
+          var buf=await resp.arrayBuffer();
+          info.exported_size_bytes=buf.byteLength;
+          try{info.sha256=await archiveSha256Hex(buf);}catch(_hashErr){}
+          info.export_status="EXPORTED";
+          root.file(info.archive_path,buf);
+        }catch(fileErr){
+          info.export_status="DOWNLOAD_FAILED";
+          warnings.push("Attachment download failed: "+String(info.file_name||info.storage_path)+" ("+String(fileErr&&fileErr.message||fileErr)+")");
+          root.file(info.archive_path+".MISSING.txt","RBH could not retrieve this attachment while the company archive was created.\r\nStorage path: "+String(info.storage_path||"")+"\r\nError: "+String(fileErr&&fileErr.message||fileErr));
+        }
+      }
+
+      var cleanManifest=attachmentManifest.map(function(x){
+        var row=Object.assign({},x); delete row.number; return row;
+      });
+      root.file("Attachments.csv",archiveRowsToCsv(cleanManifest,["report_ref_no","report_id","attachment_id","corrective_action_id","source","file_name","created_at","mime_type","recorded_size_bytes","exported_size_bytes","sha256","export_status","archive_path","storage_path"]));
+
+      var failedAttachments=attachmentManifest.filter(function(x){return x.export_status!=="EXPORTED";}).length;
+      var readme=[
+        "RBH SAFETY - COMPANY RECORDS ARCHIVE",
+        "Generated: "+generatedAt,
+        "Company: "+String(currentOrgName||"RBH Insulation"),
+        "",
+        "PURPOSE",
+        "This ZIP is a portable customer retention/export copy of RBH safety records.",
+        "It contains Excel-compatible CSV files, one readable PDF per report, and the original attachments that RBH could retrieve at export time.",
+        "",
+        "CONTENTS",
+        "- Reports.csv: all reports visible to the exporting Admin.",
+        "- Corrective_Actions.csv: corrective-action rows, including prior workflow generations/retired rows when available.",
+        "- Notes.csv: report notes.",
+        "- Report_Audit.csv: report activity/audit rows.",
+        "- Corrective_Action_Audit.csv: corrective-action audit rows when available.",
+        "- Attachments.csv: attachment manifest, archive paths, export status, and SHA-256 hashes.",
+        "- Users.csv: RBH dashboard profile/access records visible to the Admin.",
+        "- Admin_Activity.csv: user-management history when available.",
+        "- Reports/Report_XXXXXX/: one readable report PDF and an Attachments folder containing original source files.",
+        "",
+        "IMPORTANT",
+        "- CSV files open in Microsoft Excel and other spreadsheet tools.",
+        "- Passwords, Supabase secrets, application keys, and authentication credentials are never included.",
+        "- Deleted source files cannot be recreated by an export. Deletion history may still appear in audit records.",
+        "- This archive does not determine the employer's legal retention period and is not itself an OSHA 300/300A/301 filing.",
+        "- Store this ZIP securely because it can contain personal, injury, and safety information.",
+        "",
+        "EXPORT COUNTS",
+        "Reports: "+reports.length,
+        "Corrective actions: "+actions.length,
+        "Notes: "+notes.length,
+        "Report audit rows: "+audits.length,
+        "Corrective-action audit rows: "+actionAudits.length,
+        "Attachments recorded: "+attachmentManifest.length,
+        "Attachments not fully exported: "+failedAttachments,
+        "Users: "+profilesRows.length,
+        "",
+        "WARNINGS",
+        warnings.length?warnings.map(function(w){return "- "+w;}).join("\r\n"):"None."
+      ].join("\r\n");
+      root.file("README.txt",readme);
+
+      if(statusEl) statusEl.textContent="Compressing ZIP...";
+      btn.textContent="Building ZIP...";
+      var zipBlob=await zip.generateAsync({type:"blob",compression:"DEFLATE",compressionOptions:{level:6}},function(meta){
+        if(statusEl) statusEl.textContent="Compressing ZIP... "+Math.round(meta.percent||0)+"%";
+      });
+      var company=archiveSafeName(currentOrgName||"RBH");
+      var stamp=new Date().toISOString().slice(0,10);
+      archiveDownloadBlob(zipBlob,company+"_Safety_Records_"+stamp+".zip");
+      if(failedAttachments){
+        toast("Company records archive downloaded. "+failedAttachments+" attachment"+(failedAttachments===1?" was":"s were")+" flagged in Attachments.csv for review.","err");
+      }else{
+        toast("Company records archive downloaded","ok");
+      }
+      if(statusEl) statusEl.textContent="Archive downloaded "+new Date().toLocaleTimeString([], {hour:"numeric",minute:"2-digit"})+".";
+    }catch(ex){
+      console.error("company records archive export",ex);
+      toast("Company records export failed. "+String(ex&&ex.message||ex),"err");
+      if(statusEl) statusEl.textContent="Export failed. Try again after refreshing.";
+    }finally{
+      btn.disabled=false; btn.textContent=original;
+    }
+  }
+  var _exportCompanyArchive=$("exportCompanyArchive");
+  if(_exportCompanyArchive) _exportCompanyArchive.addEventListener("click",exportCompanyRecordsArchive);
 
   /* ---------- After-action PDF | Phase 2.9.6 ---------- */
   async function generatePdf(r, btn, languageMode){
