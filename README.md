@@ -4,25 +4,26 @@ RBH is the current live blueprint for the TeamWorkt Safety product. The reposito
 
 ## Current build status
 
-Current production candidate: **Build 53.1.10 - Injury Screening Reference Guide Update** (2026-10-07).
+Current production candidate: **Build 53.1.11 - Final UX Cleanup** (2026-10-07).
 
-The working management flow is:
+The user-facing management flow is intentionally four steps:
 
 1. Review
 2. Investigation
-3. Action Plan
-4. Complete Action
-5. Verification
-6. Close
+3. Corrective Actions
+   - Plan & Assign
+   - Complete Work
+   - Verify / Request Changes
+4. Close
 
 Current ownership model:
 
-- Case Owner / Investigator: Steps 1-3
-- Corrective Action Owner: Step 4
-- Verification Owner: Step 5 when specifically assigned; otherwise shared Admin/Safety Manager queue
-- Closure: Admin / Safety Manager
+- Report Owner: one active Admin or Safety Manager accountable for the current report cycle
+- Corrective Action Owner: assigned per corrective action and responsible for completing that specific action
+- Verification: authorized Admins / Safety Managers review submitted corrective actions; no separate verifier assignment is required in the normal UI
+- Closure: Admin / Safety Manager after all required workflow and regulatory follow-up is complete
 
-The application also includes regulatory screening/timer behavior, hierarchy-of-controls tagging, corrective-action evidence, audit/activity history, PDF/CSV output, English/Spanish viewer preferences, Brevo transactional email notifications, and database-backed in-app notifications.
+The application also includes injury/Cal/OSHA screening, corrective-action evidence, audit/activity history, PDF/CSV output, company-records ZIP export, English/Spanish viewer preferences, Brevo transactional email notifications, database-backed in-app notifications, live presence/conflict protection, the desktop Help Coach, and a full public-safe PDF reference guide.
 
 ## Main application files
 
@@ -58,13 +59,11 @@ Current dashboard URL:
 
 `https://mikelifesfood.github.io/RBH/dashboard.html`
 
-## Continuation handoff
+## Current product phase
 
-The latest build handoff is stored at:
+RBH is in final user-testing / production-candidate cleanup. Avoid adding unrelated features before the current four-step workflow, role permissions, notifications, exports, and regulatory-screening paths complete regression testing.
 
-`docs/TeamWorkt_RBH_Buildout_Handoff_Step11A_2026-09-27.txt`
-
-The next planned build step is **Step 12 - Notification Acknowledgment + Acknowledgment History**.
+**Build 54** remains reserved for the planned Scheduled Company Records Archive and has not been built.
 
 ## Build 23 - simplified Investigation
 
@@ -101,7 +100,7 @@ The authenticated dashboard now includes a desktop-only, role-aware and page-awa
 - Injury / illness is now an explicit required first question with no default answer.
 - Injury / illness reports are automatically classified as `Injury / illness`; non-injury users then choose the applicable concern type.
 - Emergency copy now directs workers to call 911 / their supervisor first, then report once safe.
-- Photo controls are split into `Take photo` and `Choose from phone`; large supported photos are resized in-browser and all attachments are capped at 10 MB each.
+- Photo controls are split into `Take photo` and `Choose photo/file`; large supported photos are resized in-browser and all attachments are capped at 10 MB each.
 - `When did you notice it?` starts with the device's current local date/time and tells the user to adjust it if needed.
 - Public intake includes a low-friction honeypot. A true server-side anonymous rate limit remains intentionally deferred until the public intake is routed through a controlled server/Edge Function path.
 - Executable historical `index` / `dashboard` pages were removed from the published source.
@@ -171,3 +170,7 @@ Added a sanitized PDF workflow reference guide at `docs/RBH_Safety_Workflow_Refe
 
 Updated the public workflow reference guide linked from the desktop `?` Help Coach. Step 1 now includes a dedicated Injury / illness regulatory-screening section with the current Screening Result choices (`No`, `Unsure`, `Yes`), the conditional company-awareness and Cal/OSHA notification fields shown for each choice, save/validation behavior, persistent follow-up behavior, and the final-close safeguard. Added the injury-screening screenshot to the guide and updated the email documentation to reflect grouped initial-intake recipients and the high-priority injury subject. This is documentation-only; no dashboard workflow, database, RLS, RPC, notification logic, or Edge Function behavior changed.
 
+
+## Build 53.1.11 — Final UX Cleanup — 2026-10-07
+
+Customer-facing cleanup pass before interface freeze. Changes include open-injury Home counting, natural-height Home panels, name-based Recent activity actors when available, simplified overdue wording, removal of duplicate Step 4 close control, Analytics empty state, clearer Report Owner / intake / profile / export labels, removal of developer-era Admin wording, platform feedback wording aligned to the retired in-profile support form, and a refreshed four-step README. No database, RLS, RPC, notification-routing, corrective-action lifecycle, or record-retention behavior changed. Reopen behavior was not altered because the RPC implementation is not included in this repository and should be validated against the deployed database before changing its explanatory copy.

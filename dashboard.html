@@ -255,7 +255,7 @@
   .action-card.alt:hover{background:var(--brand-hover)}
   .action-card.alt .ac-d{color:rgba(255,255,255,.82)}
   .action-card.alt .ac-ic{background:rgba(255,255,255,.16);color:#fff}
-  .attention-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(280px,.8fr);gap:16px;margin-bottom:18px}
+  .attention-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(280px,.8fr);gap:16px;margin-bottom:18px;align-items:start}
   .home-panel{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px 20px}
   .hp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
   .hp-title{font-weight:800;font-stretch:var(--condensed);font-size:21px}
@@ -1494,8 +1494,8 @@
             </select>
             <select id="sortBy"><option value="newest">Newest</option><option value="oldest">Oldest</option><option value="priority">Priority</option><option value="due">Due date</option></select>
             <button class="refresh" id="refresh" type="button">Refresh</button>
-            <button class="exp" id="expView" type="button" title="Download the reports currently shown as a CSV">Export view</button>
-            <button class="exp" id="expAll" type="button" title="Download every report in the database as a CSV">Export all</button>
+            <button class="exp" id="expView" type="button" title="Download the reports currently shown as a CSV">Export shown reports</button>
+            <button class="exp" id="expAll" type="button" title="Download every report in the database as a CSV">Export all reports</button>
             <span class="count" id="count"></span>
           </div>
           <div id="list"></div>
@@ -1532,7 +1532,7 @@
             <div class="incident-owner-tool" id="incidentOwnerTool" hidden>
               <span class="incident-owner-label">Report owner</span>
               <span class="incident-owner-person"><strong id="incidentOwnerName">Unassigned</strong><span id="incidentOwnerEmail"></span></span>
-              <button class="incident-owner-change" id="incidentOwnerChange" type="button">Change</button>
+              <button class="incident-owner-change" id="incidentOwnerChange" type="button">Change owner</button>
             </div>
             <label class="guidance-toggle incident-guidance-toggle" for="incidentGuidanceToggle"><input type="checkbox" id="incidentGuidanceToggle"><span>Show guidance</span></label>
           </div>
@@ -1546,7 +1546,7 @@
 
         <section class="view" id="view-users" hidden>
           <div class="section-head"><div><h2>Admin</h2><p>Manage application roles and dashboard access.</p></div></div>
-          <div class="admin-info"><h3>Role-based access</h3><p>Existing dashboard users retain administrative access after the Phase 2 migration. New users start as Read Only until an Admin assigns the appropriate role.</p></div>
+          <div class="admin-info"><h3>Role-based access</h3><p>New dashboard users start as Read Only until an Admin assigns the appropriate role. Access can be updated at any time by another Admin.</p></div>
           <div class="admin-records-archive" id="companyRecordsArchive">
             <div class="archive-copy">
               <h3>Company records archive</h3>
@@ -1654,7 +1654,7 @@
             <div class="field profile-span-2"><label for="profileLanguage">Preferred report language</label><select id="profileLanguage"><option value="auto">Automatic — use my device</option><option value="en">English</option><option value="es">Español</option></select><div class="field-help">This controls the default language used when you read a report. The original submitted wording is always preserved.</div></div>
             <label class="setup-check profile-span-2"><input type="checkbox" id="profileGuidance" checked><span><b>Show workflow guidance</b><br>Keep short helper text visible while reviewing and completing reports. Regulatory warnings and required-field messages always remain visible.</span></label>
           </div>
-          <button class="profile-primary" id="profileSave" type="submit">Save Profile</button>
+          <button class="profile-primary" id="profileSave" type="submit">Save profile</button>
         </form>
       </section>
 
@@ -1663,15 +1663,15 @@
         <form id="passwordForm" class="profile-card-section">
           <div class="field"><label for="profileNewPassword">New password</label><input type="password" id="profileNewPassword" minlength="8" autocomplete="new-password" placeholder="At least 8 characters"></div>
           <div class="field"><label for="profileConfirmPassword">Confirm new password</label><input type="password" id="profileConfirmPassword" minlength="8" autocomplete="new-password"></div>
-          <button class="profile-primary" id="passwordSave" type="submit">Change Password</button>
+          <button class="profile-primary" id="passwordSave" type="submit">Change password</button>
         </form>
         <div class="profile-card-section">
           <h4>Password reset email</h4><p>Send a secure password-reset link to your account email address.</p>
-          <button class="profile-secondary" id="passwordReset" type="button">Send Reset Email</button>
+          <button class="profile-secondary" id="passwordReset" type="button">Email me a reset link</button>
         </div>
         <div class="profile-card-section profile-danger-zone">
-          <h4>Sessions</h4><p>Sign out of this browser, or sign out everywhere if you think another device should no longer have access.</p>
-          <div class="profile-action-row"><button class="profile-secondary" id="signout" type="button">Sign Out</button><button class="profile-danger" id="signoutAll" type="button">Sign Out Everywhere</button></div>
+          <h4>Sessions</h4><p>Sign out of this browser, or sign out on all devices if another device should no longer have access.</p>
+          <div class="profile-action-row"><button class="profile-secondary" id="signout" type="button">Sign out</button><button class="profile-danger" id="signoutAll" type="button">Sign out on all devices</button></div>
         </div>
       </section>
 
@@ -1770,7 +1770,7 @@
       <li>Original report, notes, original attachments, Cal/OSHA screening, and prior corrective-action evidence are preserved.</li>
       <li>The previous resolved status, reopen reason, and prior workflow values remain documented in Activity.</li>
       <li>The active root cause, action plan, assignment, due date, completion, and verification fields are reset.</li>
-      <li>The current Report Owner is cleared. Step 1 will assign a new owner when the reopened report is acknowledged.</li>
+      <li>The current Report Owner is cleared. Step 1 will assign a new owner when the reopened report starts Investigation.</li>
       <li>Closed, no-action, and duplicate records all reopen at Step 1 — Review Report.</li>
     </ul>
     <div class="login-err" id="reopenErr"></div>
@@ -1800,7 +1800,7 @@
       <li>Original employee report and original attachments stay unchanged.</li>
       <li>Cal/OSHA screening, company awareness time, and any recorded notification are preserved.</li>
       <li>Notes, activity history, and prior corrective-action evidence are preserved.</li>
-      <li>The current Report Owner is cleared. Step 1 will assign a new owner when the restarted report is acknowledged.</li>
+      <li>The current Report Owner is cleared. Step 1 will assign a new owner when the restarted report starts Investigation.</li>
       <li>A server-side snapshot of the cleared workflow is retained.</li>
     </ul>
     <div class="login-err" id="rErr"></div>
@@ -2186,7 +2186,7 @@
   var reopenReport=null, reopenReturnView="records", restartReport=null, restartReturnView="records";
   var regFollowupReport=null, regFollowupDetail=null, reportOwnerModalReport=null;
   var NAV_VIEW_KEY="rbh_safety_active_view_v1", NAV_INCIDENT_KEY="rbh_safety_active_incident_v1";
-  var APP_VERSION="2026.10.06 · Build 51 Intake Safety & Hardening";
+  var APP_VERSION="2026.10.07 · Build 53.1.11 Final UX Cleanup";
 
   /* ---------- Build 50: desktop-only role/page-aware Help Coach ---------- */
   var helpCoachState={guideId:null,step:0,returnStep:0};
@@ -3700,7 +3700,7 @@
         (childSummary.verified+" of "+childSummary.total+" corrective actions verified."))):
       (step5?"Corrective action was verified.":"An authorized reviewer must verify the completed work.");
     var details=[
-      step1?"Report acknowledged and moved out of New.":"Review the report and change status to Under review.",
+      step1?"Review complete. Investigation started.":"Review the report and start the investigation.",
       step2?"Investigation documented.":"Document what happened and why it happened.",
       step3Detail,
       step4Detail,
@@ -3861,7 +3861,7 @@
       if(!canPerformVerification(r)||r.action_status!=="awaiting_verification") return {save:null,complete:null};
       return {save:"Save draft & return home",complete:"Verify as complete →"};
     }
-    if(n===6){ if(r.status==="closed"||r.status==="no_action"||r.status==="duplicate") return {save:null,complete:null}; return {save:null,complete:canClose(r)?"Close report":null}; }
+    if(n===6){ return {save:null,complete:null}; }
     return {save:null,complete:null};
   }
   function scrollAppToTop(){
@@ -4346,7 +4346,7 @@
       try{
         if(String(r.corrective_action_decision||"")!=="required") await persistCorrectiveActionDecision("required",null,null);
         renderCorrectiveActionDecision(); loadAudit(r.id,auditEl); refreshRecordWorkflow(r,detail);
-      }catch(ex){ console.error(ex); actionDecisionState.choice=correctiveActionDecisionValue(r); renderCorrectiveActionDecision(); toast("Could not save the corrective-action decision. Confirm the Build 37 Supabase migration was run first.","err"); }
+      }catch(ex){ console.error(ex); actionDecisionState.choice=correctiveActionDecisionValue(r); renderCorrectiveActionDecision(); toast("Could not save the corrective-action decision. Refresh and try again. If the problem continues, contact your account administrator.","err"); }
     }
     function chooseNoAdditionalCorrectiveAction(){
       if(!canEditStep(r,3)){toast("This completed step is read only.","err");return;}
@@ -4774,7 +4774,7 @@
         toast("No additional corrective action documented — continue to Close","ok");
       }catch(ex){
         console.error(ex);
-        var msg=(ex&&ex.message&&String(ex.message).indexOf("ACTIVE_CORRECTIVE_ACTIONS_EXIST")>=0)?"Assigned corrective actions already exist. Complete or restart the workflow instead of choosing No additional action.":"Could not save the no-additional-action decision. Confirm the Build 37 Supabase migration was run first.";
+        var msg=(ex&&ex.message&&String(ex.message).indexOf("ACTIVE_CORRECTIVE_ACTIONS_EXIST")>=0)?"Assigned corrective actions already exist. Complete or restart the workflow instead of choosing No additional action.":"Could not save the no-additional-action decision. Refresh and try again. If the problem continues, contact your account administrator.";
         if(caNoActionError){caNoActionError.textContent=msg;caNoActionError.classList.add("show");} toast(msg,"err");
       }finally{if(caNoActionContinue.isConnected){caNoActionContinue.disabled=false;caNoActionContinue.textContent=old;}}
     });
@@ -4997,7 +4997,7 @@
     });
 
     var complete1=detail.querySelector('[data-step-complete="1"]'); if(complete1) complete1.addEventListener("click",async function(){
-      if(!canEditStep(r,1)){toast("You do not have permission to acknowledge this report.","err");return;} complete1.disabled=true;
+      if(!canEditStep(r,1)){toast("You do not have permission to start this investigation.","err");return;} complete1.disabled=true;
       try{
         var ownerId=(reviewOwnerSelect&&reviewOwnerSelect.value)||r.report_owner_user_id||currentUserId();
         if(!ownerId){toast("Choose a Report Owner before starting the investigation.","err");return;}
@@ -5017,12 +5017,12 @@
         if(shouldNotifyAfterAdvance) ownerEmail=await sendReportOwnerAssignmentEmail(r);
         refreshRecordWorkflow(r,detail); setWizardStep(detail,r,2,true); syncStepEditability(); loadAudit(r.id,auditEl);
         var ownerName=reportOwnerName(r)||"Report Owner";
-        if(ownerEmail&&ownerEmail.sent) toast("Report acknowledged — "+ownerName+" owns the report and was notified by email","ok");
-        else if(ownerEmail&&!ownerEmail.sent&&!ownerEmail.skipped){ console.error("report owner notification failed",ownerEmail); toast("Report acknowledged and assigned to "+ownerName+", but the handoff email could not be sent.","err"); }
-        else if(ownerEmail&&ownerEmail.skipped){ toast("Report acknowledged — "+ownerName+" owns the report, but no new handoff email was sent.","err"); }
-        else toast("Report acknowledged — "+ownerName+" owns the report","ok");
+        if(ownerEmail&&ownerEmail.sent) toast("Investigation started — "+ownerName+" owns the report and was notified by email","ok");
+        else if(ownerEmail&&!ownerEmail.sent&&!ownerEmail.skipped){ console.error("report owner notification failed",ownerEmail); toast("Investigation started — "+ownerName+" owns the report, but the handoff email could not be sent.","err"); }
+        else if(ownerEmail&&ownerEmail.skipped){ toast("Investigation started — "+ownerName+" owns the report. No handoff email was sent.","ok"); }
+        else toast("Investigation started — "+ownerName+" owns the report","ok");
       }
-      catch(ex){console.error(ex);toast("Could not acknowledge the report.","err");} finally{if(complete1.isConnected)complete1.disabled=!canEditStep(r,1);} });
+      catch(ex){console.error(ex);toast("Could not start the investigation.","err");} finally{if(complete1.isConnected)complete1.disabled=!canEditStep(r,1);} });
 
     var complete2=detail.querySelector('[data-step-complete="2"]'); if(complete2) complete2.addEventListener("click",async function(){
       if(!canEditStep(r,2)){toast("Only the assigned investigator or an Admin/Safety Manager can complete Investigation.","err");return;}
@@ -5139,7 +5139,7 @@
       if(detail&&detail.isConnected){ refreshPersistentRegulatoryBanner(detail,r); refreshUrgentTriage(detail,r); renderCloseStep(r,detail.querySelector("[data-close-step]"),detail,detail.querySelector("[data-audit]")); loadAudit(r.id,detail.querySelector("[data-audit]")); }
       renderHomeSnapshot(); applyFilters();
       toast(status==="pending"?"Regulatory follow-up saved — final decision still pending":"Regulatory follow-up saved","ok");
-    }catch(ex){ console.error(ex); err.textContent="Could not save the regulatory follow-up. Confirm the Build 36 Supabase migration was run first."; err.classList.add("show"); }
+    }catch(ex){ console.error(ex); err.textContent="Could not save the regulatory follow-up. Refresh and try again. If the problem continues, contact your account administrator."; err.classList.add("show"); }
     finally{ btn.disabled=false; btn.textContent=old; }
   });
 
@@ -5461,7 +5461,7 @@
   /* ---------- Metrics ---------- */
   function renderMetrics(){
     var m=$("metrics");
-    if(!allReports.length){ m.style.display="none"; return; }
+    if(!allReports.length){ m.style.display="block"; m.innerHTML='<div class="state"><b>No report data yet.</b><br>Analytics will appear here as safety reports are submitted.</div>'; return; }
     m.style.display="block";
     var total=allReports.length, cNew=0, cProg=0, cClosed=0, cOverdue=0, cInjury=0;
     var byType={}, bySev={Critical:0,Serious:0,Moderate:0,Minor:0,Unspecified:0};
@@ -6751,7 +6751,7 @@
       else if(profileV1Saved) toast("Profile updated","ok");
       else toast("Preferences saved","ok");
     }catch(ex){ console.error("profile update",ex); toast(ex&&ex.message?ex.message:"Could not save profile preferences.","err"); }
-    finally{ btn.disabled=false; btn.textContent="Save Profile"; }
+    finally{ btn.disabled=false; btn.textContent="Save profile"; }
   });
 
   var _passwordForm=$("passwordForm"); if(_passwordForm) _passwordForm.addEventListener("submit",async function(e){
@@ -6761,7 +6761,7 @@
     var btn=$("passwordSave"); btn.disabled=true; btn.textContent="Updating…";
     try{ var res=await sb.auth.updateUser({password:a}); if(res.error) throw res.error; $("profileNewPassword").value=""; $("profileConfirmPassword").value=""; toast("Password changed","ok"); }
     catch(ex){ console.error("password update",ex); toast(ex&&ex.message?ex.message:"Could not change password.","err"); }
-    finally{ btn.disabled=false; btn.textContent="Change Password"; }
+    finally{ btn.disabled=false; btn.textContent="Change password"; }
   });
 
   var _passwordReset=$("passwordReset"); if(_passwordReset) _passwordReset.addEventListener("click",async function(){
@@ -6769,13 +6769,13 @@
     _passwordReset.disabled=true; _passwordReset.textContent="Sending…";
     try{ var redirect=window.location.origin+window.location.pathname; var res=await sb.auth.resetPasswordForEmail(email,{redirectTo:redirect}); if(res.error) throw res.error; toast("Password reset email sent","ok"); }
     catch(ex){ console.error("password reset",ex); toast(ex&&ex.message?ex.message:"Could not send reset email.","err"); }
-    finally{ _passwordReset.disabled=false; _passwordReset.textContent="Send Reset Email"; }
+    finally{ _passwordReset.disabled=false; _passwordReset.textContent="Email me a reset link"; }
   });
 
   var _signoutAll=$("signoutAll"); if(_signoutAll) _signoutAll.addEventListener("click",async function(){
     _signoutAll.disabled=true; _signoutAll.textContent="Signing out…";
     try{ var res=await sb.auth.signOut({scope:"global"}); if(res&&res.error) throw res.error; }
-    catch(ex){ console.error("global signout",ex); toast("Could not sign out all sessions.","err"); _signoutAll.disabled=false; _signoutAll.textContent="Sign Out Everywhere"; }
+    catch(ex){ console.error("global signout",ex); toast("Could not sign out on all devices.","err"); _signoutAll.disabled=false; _signoutAll.textContent="Sign out on all devices"; }
   });
 
 
@@ -6804,7 +6804,7 @@
         });
         el.appendChild(card);
       });
-    }catch(ex){ console.error('load feedback',ex); if(sum) sum.innerHTML=''; el.innerHTML='<div class="state">Feedback inbox is unavailable. Apply the Profile V1 database migration if it has not been run yet.</div>'; }
+    }catch(ex){ console.error('load feedback',ex); if(sum) sum.innerHTML=''; el.innerHTML='<div class="state">Feedback history is unavailable right now. Refresh and try again.</div>'; }
   }
   var _feedbackRefresh=$("feedbackRefresh"); if(_feedbackRefresh) _feedbackRefresh.addEventListener("click",loadFeedbackAdmin);
 
@@ -7053,8 +7053,8 @@
     if(d===null) return {level:0,label:"No due date",cls:""};
     if(d<0){
       var late=Math.abs(d);
-      if(late>=14) return {level:3,label:late+" days overdue · escalation 3",cls:"over"};
-      if(late>=7) return {level:2,label:late+" days overdue · escalation 2",cls:"over"};
+      if(late>=14) return {level:3,label:late+" days overdue",cls:"over"};
+      if(late>=7) return {level:2,label:late+" days overdue",cls:"over"};
       return {level:1,label:late+" day"+(late===1?"":"s")+" overdue",cls:"over"};
     }
     if(d===0) return {level:1,label:"Due today",cls:"soon"};
@@ -8690,11 +8690,12 @@
     overdueOnly=false; injuryOnly=false; closedOnly=false; var sf=$("statusFilter");
     if(chip==="overdue"){ overdueOnly=true; if(sf) sf.value="all"; }
     else if(chip==="injuries"){ injuryOnly=true; if(sf) sf.value="all"; }
+    else if(chip==="open_injuries"){ injuryOnly=true; if(sf) sf.value="open"; }
     else if(chip==="open"){ if(sf) sf.value="open"; }
     else if(chip==="new"){ if(sf) sf.value="new"; }
     else if(chip==="closed"){ closedOnly=true; if(sf) sf.value="all"; }
     else { if(sf) sf.value="all"; }
-    setActiveChip(chip); applyFilters();
+    setActiveChip(chip==="open_injuries"?"injuries":chip); applyFilters();
   }
   function goToRecords(chip){ setQuickFilter(chip); showView("records"); }
 
@@ -8709,9 +8710,9 @@
   function renderHomeStats(){
     var el=$("homeStats"); if(!el) return;
     var open=0,nw=0,inj=0,ov=0,verify=0;
-    allReports.forEach(function(r){ if(r.status!=="closed"&&r.status!=="no_action"&&r.status!=="duplicate") open++; if(r.status==="new") nw++; if(r.involves_injury) inj++; if(isOverdue(r)) ov++; if(reportActionStatus(r)==="awaiting_verification") verify++; });
+    allReports.forEach(function(r){ var isOpen=r.status!=="closed"&&r.status!=="no_action"&&r.status!=="duplicate"; if(isOpen) open++; if(r.status==="new") nw++; if(isOpen&&r.involves_injury) inj++; if(isOverdue(r)) ov++; if(reportActionStatus(r)==="awaiting_verification") verify++; });
     function tile(n,k,f,al){ return '<button class="hs'+(al&&n>0?" alert":"")+'" data-filter="'+f+'" type="button"><div class="hs-n">'+n+'</div><div class="hs-k">'+k+'</div></button>'; }
-    var html=tile(open,"Open","open")+tile(nw,"New","new")+tile(ov,"Overdue","overdue",true)+tile(verify,"To review","actions",true)+tile(inj,"Injuries","injuries",true);
+    var html=tile(open,"Open","open")+tile(nw,"New","new")+tile(ov,"Overdue","overdue",true)+tile(verify,"To review","actions",true)+tile(inj,"Open injuries","open_injuries",true);
     if(el.dataset.homeStatsSnapshot===html) return;
     el.dataset.homeStatsSnapshot=html;
     el.innerHTML=html;
@@ -8726,7 +8727,7 @@
     allReports.slice(0,25).forEach(function(r){ events.push({ when:r.created_at, kind:"report", text:"New report #"+r.ref_no+" — "+(r.report_type||"Report") }); });
     try{
       var res=await sb.from("report_audit").select("*").order("created_at",{ascending:false}).limit(20);
-      (res.data||[]).forEach(function(a){ events.push({ when:a.created_at, kind:"change", text:"#"+(map[a.report_id]||"?")+"  "+fmtChange(a), who:a.actor_email }); });
+      (res.data||[]).forEach(function(a){ events.push({ when:a.created_at, kind:"change", text:"#"+(map[a.report_id]||"?")+"  "+fmtChange(a), who:a.actor_email?auditActor(a.actor_email):(a.actor_id&&profileById[String(a.actor_id)]?profileName(profileById[String(a.actor_id)]):"") }); });
     }catch(e){ console.error(e); }
     events.sort(function(a,b){ return new Date(b.when)-new Date(a.when); });
     events=events.slice(0,10);

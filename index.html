@@ -415,10 +415,10 @@
 
     <fieldset data-step="3">
       <legend><span data-i18n="s5_legend">Photos &amp; files</span> <span class="legend-note" data-i18n="dash_opt">— optional</span></legend>
-      <p class="hint" style="margin-top:2px" data-i18n="hint_photo">A photo of the hazard helps the team act fast. On a phone you can snap one right here. Please don't photograph anyone's injuries.</p>
+      <p class="hint" style="margin-top:2px" data-i18n="hint_photo">A photo of the hazard helps the team act fast. Take a new photo or choose a photo/file from your device. Please don't photograph anyone's injuries.</p>
       <div class="photo-actions">
         <button class="photo-cta" id="cameraBtn" type="button"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h4l2-3h6l2 3h4v13H3z"/><circle cx="12" cy="13" r="4"/></svg><span data-i18n="camera_btn">Take photo</span></button>
-        <button class="photo-cta secondary" id="chooseBtn" type="button"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><circle cx="9" cy="9" r="2"/><path d="m4 16 4-4 3 3 2-2 7 7"/></svg><span data-i18n="choose_btn">Choose from phone</span></button>
+        <button class="photo-cta secondary" id="chooseBtn" type="button"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><circle cx="9" cy="9" r="2"/><path d="m4 16 4-4 3 3 2-2 7 7"/></svg><span data-i18n="choose_btn">Choose photo/file</span></button>
       </div>
       <div class="drop" id="drop" tabindex="0" role="button" aria-label="Add photos or files">
         <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -480,7 +480,7 @@
     <div class="summary" id="summaryBox"></div>
     <p class="att-failed" id="attFailed" style="display:none" data-i18n="att_failed">Note: some photos couldn't be uploaded, but your report was saved.</p>
     <div class="succ-actions">
-      <button class="btn2 primary" id="copyBtn" type="button" data-i18n="btn_copy">Copy report</button>
+      <button class="btn2 primary" id="copyBtn" type="button" data-i18n="btn_copy">Copy report summary</button>
       <button class="btn2" id="againBtn" type="button" data-i18n="btn_again">Submit another report</button>
     </div>
   </section>
@@ -519,7 +519,7 @@
       title_p:"See a hazard, close call, injury, or unsafe work practice? Tell the safety team. Most reports take about a minute.",
       intro_eye:"RBH Safety", intro_h:"Speak up early. Help prevent the next incident.", intro_p:"Share what you saw. You can report anonymously, and you do not need to know every detail before sending a concern.",
       trust_fast_b:"Fast",trust_fast_s:"About 1 minute",trust_anon_b:"Anonymous",trust_anon_s:"Name is optional",trust_mobile_b:"Jobsite ready",trust_mobile_s:"Works on your phone",
-      where_note:"Enter the address where the incident or safety concern occurred. If you do not know the exact address, use the closest address or cross streets.", what_note:"Stick to the facts. A short, clear description is enough.", camera_btn:"Take photo", choose_btn:"Choose from phone", review_h:"Quick review", review_p:"Make sure the main details look right. You can go back to change anything.", btn_back:"Back", btn_next:"Continue",
+      where_note:"Enter the address where the incident or safety concern occurred. If you do not know the exact address, use the closest address or cross streets.", what_note:"Stick to the facts. A short, clear description is enough.", camera_btn:"Take photo", choose_btn:"Choose photo/file", review_h:"Quick review", review_p:"Make sure the main details look right. You can go back to change anything.", btn_back:"Back", btn_next:"Continue",
       emg_strong:"Emergency?",
       emg_small:"Call 911 and your site supervisor first. Once everyone is safe, report what happened here.",
       s1_legend:"What are you reporting?",
@@ -565,7 +565,7 @@
       ph_imm:"e.g. roped off the area and told the foreman",
       l_fix:"What would fix it or prevent it?", ph_fix:"Your suggestion, if you have one",
       s5_legend:"Photos & files",
-      hint_photo:"A photo of the hazard helps the team act fast. Take a new photo or choose one already on your phone. Please don't photograph anyone's injuries.",
+      hint_photo:"A photo of the hazard helps the team act fast. Take a new photo or choose a photo/file from your device. Please don't photograph anyone's injuries.",
       drop_b:"Choose photos or files", drop_s:"Up to 10 files. Large photos are optimized before upload.",
       s6_legend:"Your info",
       anon:"You can report anonymously — leave this blank. If you add your name or contact, the team can follow up or thank you. Reports are not used to get anyone in trouble.",
@@ -580,7 +580,7 @@
       foot_submit:"Takes about a minute. Report early — even if you're not sure it's a big deal.",
       succ_h2:"Report received",
       succ_p:"Thank you for speaking up. Your report has been sent to the RBH safety team. Please keep your reference number below.",
-      btn_copy:"Copy report", btn_copied:"Copied ✓", btn_again:"Submit another report",
+      btn_copy:"Copy report summary", btn_copied:"Copied ✓", btn_again:"Submit another report",
       footer_internal:"Internal safety reporting form",
       sum_head:"RBH INSULATION — SAFETY REPORT", sum_submitted:"Submitted",
       s_type:"Report type", s_site:"Incident address", s_loc:"Specific location", s_when:"When observed",
@@ -607,7 +607,7 @@
       title_p:"¿Vio un peligro, casi accidente, lesión o práctica insegura? Avise al equipo de seguridad. La mayoría de los reportes toma alrededor de un minuto.",
       intro_eye:"Seguridad RBH", intro_h:"Hable pronto. Ayude a prevenir el próximo incidente.", intro_p:"Comparta lo que vio. Puede reportar de forma anónima y no necesita conocer todos los detalles antes de enviar una inquietud.",
       trust_fast_b:"Rápido",trust_fast_s:"Aproximadamente 1 minuto",trust_anon_b:"Anónimo",trust_anon_s:"El nombre es opcional",trust_mobile_b:"Listo para obra",trust_mobile_s:"Funciona en su teléfono",
-      where_note:"Ingrese la dirección donde ocurrió el incidente o problema de seguridad. Si no conoce la dirección exacta, use la dirección más cercana o las calles de cruce.", what_note:"Describa los hechos. Una explicación corta y clara es suficiente.", camera_btn:"Tomar foto", choose_btn:"Elegir del teléfono", review_h:"Revisión rápida", review_p:"Confirme que los datos principales estén correctos. Puede regresar para cambiar algo.", btn_back:"Atrás", btn_next:"Continuar",
+      where_note:"Ingrese la dirección donde ocurrió el incidente o problema de seguridad. Si no conoce la dirección exacta, use la dirección más cercana o las calles de cruce.", what_note:"Describa los hechos. Una explicación corta y clara es suficiente.", camera_btn:"Tomar foto", choose_btn:"Elegir foto/archivo", review_h:"Revisión rápida", review_p:"Confirme que los datos principales estén correctos. Puede regresar para cambiar algo.", btn_back:"Atrás", btn_next:"Continuar",
       emg_strong:"¿Emergencia?",
       emg_small:"Llame primero al 911 y a su supervisor. Cuando todos estén seguros, reporte aquí lo ocurrido.",
       s1_legend:"¿Qué desea reportar?",
@@ -653,7 +653,7 @@
       ph_imm:"p. ej. acordoné el área y avisé al capataz",
       l_fix:"¿Qué lo arreglaría o lo evitaría?", ph_fix:"Su sugerencia, si tiene una",
       s5_legend:"Fotos y archivos",
-      hint_photo:"Una foto del peligro ayuda al equipo a actuar rápido. Tome una foto nueva o elija una que ya esté en su teléfono. Por favor no fotografíe las lesiones de nadie.",
+      hint_photo:"Una foto del peligro ayuda al equipo a actuar rápido. Tome una foto nueva o elija una foto/archivo de su dispositivo. Por favor no fotografíe las lesiones de nadie.",
       drop_b:"Elija fotos o archivos", drop_s:"Hasta 10 archivos. Las fotos grandes se optimizan antes de subirlas.",
       s6_legend:"Su información",
       anon:"Puede reportar de forma anónima — deje esto en blanco. Si agrega su nombre o contacto, el equipo puede dar seguimiento o agradecerle. Los reportes no se usan para meter a nadie en problemas.",
@@ -668,7 +668,7 @@
       foot_submit:"Toma alrededor de un minuto. Repórtelo pronto — aunque no esté seguro de que sea importante.",
       succ_h2:"Reporte recibido",
       succ_p:"Gracias por hablar. Su reporte se envió al equipo de seguridad de RBH. Por favor guarde su número de referencia.",
-      btn_copy:"Copiar reporte", btn_copied:"Copiado ✓", btn_again:"Enviar otro reporte",
+      btn_copy:"Copiar resumen del reporte", btn_copied:"Copiado ✓", btn_again:"Enviar otro reporte",
       footer_internal:"Formulario interno de reporte de seguridad",
       sum_head:"RBH INSULATION — REPORTE DE SEGURIDAD", sum_submitted:"Enviado",
       s_type:"Tipo de reporte", s_site:"Dirección del incidente", s_loc:"Lugar específico", s_when:"Cuándo se observó",
