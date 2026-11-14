@@ -23,7 +23,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.117.2";
 const BREVO_API_KEY  = Deno.env.get("BREVO_API_KEY") ?? "";
 const FROM_EMAIL     = Deno.env.get("MAIL_FROM_EMAIL") ?? "";
 const FROM_NAME      = Deno.env.get("MAIL_FROM_NAME") ?? "RBH Safety";
-const WEBHOOK_SECRET = Deno.env.get("WEBHOOK_SECRET") ?? "";
+const WEBHOOK_SECRET_NEXT = Deno.env.get("WEBHOOK_SECRET_NEXT") ?? "";
 const DASHBOARD_URL  = Deno.env.get("DASHBOARD_URL") ?? "";
 const LOGO_URL       = Deno.env.get("LOGO_URL") ?? "";
 const SUPABASE_URL   = Deno.env.get("SUPABASE_URL") ?? "";
@@ -87,7 +87,8 @@ async function reserveEvent(service: any, rec: any, recipient: any) {
 Deno.serve(async (req: Request) => {
   try {
     if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
-    if (WEBHOOK_SECRET && req.headers.get("x-webhook-secret") !== WEBHOOK_SECRET)
+    const presentedSecret = req.headers.get("x-webhook-secret") ?? "";
+    if (!WEBHOOK_SECRET_NEXT || !presentedSecret || presentedSecret !== WEBHOOK_SECRET_NEXT)
       return new Response("Unauthorized", { status: 401 });
 
     const body = await req.json().catch(() => ({}));
