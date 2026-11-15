@@ -50,7 +50,7 @@ function enqueue(payload,files,display){
   return list().then(function(items){
     if(items.filter(function(r){return r.status!=='sent';}).length>=30)throw new Error('TOO_MANY_UNSENT_REPORTS');
     var key=uuid();
-    var record={id:key,payload:payload,files:Array.prototype.slice.call(files||[]),
+    var record={id:key,uploadToken:uuid(),payload:payload,files:Array.prototype.slice.call(files||[]),
       createdAt:Date.now(),updatedAt:Date.now(),status:'queued',
       reportId:null,refNo:null,done:[],error:null,display:display||{}};
     return storeRequest(DB_OUTBOX,'put',record).then(function(){emit();return record;});
@@ -106,12 +106,21 @@ async function uploadAttachments(sb,record){
   for(var i=0;i<total;i++){
     if(record.done.indexOf(i)>=0)continue;
     var file=record.files[i];
-    var path='reports/'+record.reportId+'/offline/'+record.id+'/'+safeFileName(file,i);
-    var upload=await sb.storage.from('report-attachments').upload(path,file,{contentType:file.type||undefined,upsert:false});
-    if(upload.error&&!knownDuplicate(upload.error))throw upload.error;
-    var meta=await sb.rpc('add_attachment',{p_report_id:record.reportId,
-      p_storage_path:path,p_file_name:file.name,p_mime_type:file.type||null,p_size_bytes:file.size||null});
-    if(meta.error&&!knownDuplicate(meta.error))throw meta.error;
+    var path='reports/'+record.reportId+'/offline/'+record.uploadToken+'/'+safeFileName(file,i);
+    var args={p_report_id:record.reportId,p_storage_path:path,p_file_name:file.name,
+      p_mime_type:file.type||null,p_size_bytes:file.size||null};
+    // First ask whether the deterministic file path is already registered.
+    // This makes retries safe even when the report already has 10 uploaded photos.
+    var before=await sb.rpc('add_attachment',args);
+    if(before.error){
+      var beforeMessage=String(before.error.message||'');
+      if(!/UPLOADED_FILE_NOT_FOUND/.test(beforeMessage))throw before.error;
+      var upload=await sb.storage.from('report-attachments').upload(path,file,
+        {contentType:file.type||undefined,upsert:false});
+      if(upload.error&&!knownDuplicate(upload.error))throw upload.error;
+      var meta=await sb.rpc('add_attachment',args);
+      if(meta.error&&!knownDuplicate(meta.error))throw meta.error;
+    }
     record.done.push(i);
     await saveRecord(record);
   }
@@ -124,7 +133,7 @@ async function sendOne(id){
     var sb=await service();
     if(!record.reportId){
       record.status='sending';record.error=null;await saveRecord(record);
-      var payload=Object.assign({},record.payload,{client_submission_key:record.id});
+      var payload=Object.assign({},record.payload,{client_submission_key:record.id,offline_upload_token:record.uploadToken});
       var res=await sb.rpc('submit_report',{payload:payload});
       if(res.error)throw res.error;
       if(!res.data||!res.data.id||!res.data.ref_no)throw new Error('SERVER_RECEIPT_MISSING');
