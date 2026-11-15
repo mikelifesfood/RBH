@@ -46,6 +46,17 @@ These are existing code/prototype features; verify the behavior end-to-end befor
 - **Verified:** transaction-scoped admin RPC set/read for Grouped, Individual and Off, invalid option rejection, Read Only user rejection (rollback preserved no setting row). **Not yet verified:** browser interactions and actual inbox delivery in Grouped and Individual modes; owner should use fictional report(s) to test. No intentional test email issued in this build.
 - **Scope clarification:** company-level individual/grouped/off only affects initial intake emails. Future per-event toggles, workflow email policies or individual user opt-outs are separate enhancements and should be approved explicitly.
 
+## November 15 — Build 6 follow-up: dashboard-only Home Screen installation
+
+**Owner decision:** Public anonymous reporting must remain browser/QR accessible without encouraging an app install. Only the authorized staff Dashboard should display TeamWorkt's installation prompt.
+
+- `index.html`: removed public manifest, iOS standalone-app metadata, and public apple-touch-icon link; retained favicon, service-worker client, offline queue, bilingual warning, QR site association, reporting and form behavior. Versioned the PWA client script to refresh cached controls.
+- `pwa-client.js`: gated both installation UI creation and the managed `beforeinstallprompt` handler to the `dashboard.html` route. The public-form offline warning and shared service-worker registration remain active.
+- `dashboard.html`: continues to link `dashboard.webmanifest`, iOS Home Screen metadata, existing icons, and the now-versioned shared PWA client. No dashboard action/role/permission changes.
+- `sw.js`: cache version `rbh-public-shell-v12-20261115`, retains the safe public-form offline shell and queue script. **Do not clear IndexedDB or unregister the worker** while pending offline reports exist.
+- The legacy public `manifest.webmanifest` file remains unlinked for compatibility with devices that previously installed the public form; it is no longer advertised by `index.html`. The browser's own Safari Share → Add to Home Screen menu cannot be disabled by the website, and old user-created shortcuts are not automatically removed.
+- Test gate: iPhone Safari public form should show no custom Add to Home Screen card and still queue reports offline; dashboard should still show its own installation option. Device verification remains outstanding.
+
 ## November 15 — Build 6: Mobile UX and accurate sync states
 
 **Implemented on `main`; owner mobile acceptance pending.** The existing prioritized handoff calls for mobile UX polishing and report sync-status screens after the QR and offline PWA builds.
