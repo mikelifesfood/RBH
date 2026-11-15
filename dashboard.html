@@ -6783,6 +6783,12 @@
 
 
   function feedbackStatusLabel(v){ return ({new:"New",reviewed:"Reviewed",planned:"Planned",resolved:"Resolved"})[v]||"New"; }
+  // One status write shared by the company and platform feedback views.
+  async function saveFeedbackStatus(id,status){
+    var res=await sb.from('app_feedback')
+      .update({status:status,updated_at:new Date().toISOString()}).eq('id',id);
+    if(res.error) throw res.error;
+  }
   async function loadFeedbackAdmin(){
     var el=$("feedbackAdminList"), sum=$("feedbackSummary"); if(!el||currentRole!=="admin") return;
     el.innerHTML='<div class="state">Loading feedback…</div>';
@@ -6802,7 +6808,7 @@
         card.querySelector('.feedback-admin-body').textContent=f.message||'';
         var sel=card.querySelector('select'); sel.value=f.status||'new';
         sel.addEventListener('change',async function(){
-          sel.disabled=true; try{ var up=await sb.from('app_feedback').update({status:sel.value,updated_at:new Date().toISOString()}).eq('id',f.id); if(up.error) throw up.error; toast('Feedback status updated','ok'); loadFeedbackAdmin(); }
+          sel.disabled=true; try{ await saveFeedbackStatus(f.id,sel.value); toast('Feedback status updated','ok'); loadFeedbackAdmin(); }
           catch(ex){ console.error(ex); toast('Could not update feedback status.','err'); sel.value=f.status||'new'; sel.disabled=false; }
         });
         el.appendChild(card);
@@ -6848,10 +6854,18 @@
     if(!isPlatformAdmin) return;
     var el=$("platformStats"); if(el) el.innerHTML='<div class="state">Loading platform summary…</div>';
     try{
-      var orgs=await sb.from("organizations").select("id"); if(orgs.error) throw orgs.error;
-      var memberships=await sb.from("organization_memberships").select("id,status"); if(memberships.error) throw memberships.error;
-      var reports=await sb.from("reports").select("id,status"); if(reports.error) throw reports.error;
-      var feedback=await sb.from("app_feedback").select("id,status"); if(feedback.error) throw feedback.error;
+      // Independent reads are batched; the underlying queries and role checks are unchanged.
+      var summaryResults=await Promise.all([
+        sb.from("organizations").select("id"),
+        sb.from("organization_memberships").select("id,status"),
+        sb.from("reports").select("id,status"),
+        sb.from("app_feedback").select("id,status")
+      ]);
+      var orgs=summaryResults[0], memberships=summaryResults[1],
+          reports=summaryResults[2], feedback=summaryResults[3];
+      [orgs,memberships,reports,feedback].forEach(function(result){
+        if(result.error) throw result.error;
+      });
       var openReports=(reports.data||[]).filter(function(r){ return ["closed","duplicate","no_action"].indexOf(r.status||"new")<0; }).length;
       var openFeedback=(feedback.data||[]).filter(function(f){ return ["new","reviewed"].indexOf(f.status||"new")>=0; }).length;
       renderPlatformStatCards({
@@ -6866,10 +6880,18 @@
     var el=$("platformCompanies"); if(!el||!isPlatformAdmin) return;
     el.innerHTML='<div class="state">Loading companies…</div>';
     try{
-      var orgRes=await sb.from("organizations").select("id,name,slug,status,plan,created_at").order("created_at",{ascending:false}); if(orgRes.error) throw orgRes.error;
-      var memRes=await sb.from("organization_memberships").select("organization_id,role,status,created_at"); if(memRes.error) throw memRes.error;
-      var repRes=await sb.from("reports").select("organization_id,status,created_at"); if(repRes.error) throw repRes.error;
-      var fbRes=await sb.from("app_feedback").select("organization_id,created_at"); if(fbRes.error) throw fbRes.error;
+      // Fetch independent company summary sources together; output is unchanged.
+      var companyResults=await Promise.all([
+        sb.from("organizations").select("id,name,slug,status,plan,created_at").order("created_at",{ascending:false}),
+        sb.from("organization_memberships").select("organization_id,role,status,created_at"),
+        sb.from("reports").select("organization_id,status,created_at"),
+        sb.from("app_feedback").select("organization_id,created_at")
+      ]);
+      var orgRes=companyResults[0], memRes=companyResults[1],
+          repRes=companyResults[2], fbRes=companyResults[3];
+      [orgRes,memRes,repRes,fbRes].forEach(function(result){
+        if(result.error) throw result.error;
+      });
       var rows=(orgRes.data||[]).map(function(o){
         var mem=(memRes.data||[]).filter(function(x){return String(x.organization_id)===String(o.id);});
         var rep=(repRes.data||[]).filter(function(x){return String(x.organization_id)===String(o.id);});
@@ -6917,7 +6939,7 @@
         var sel=card.querySelector('select'); sel.value=f.status||'new';
         sel.addEventListener('change',async function(){
           sel.disabled=true;
-          try{ var up=await sb.from('app_feedback').update({status:sel.value,updated_at:new Date().toISOString()}).eq('id',f.id); if(up.error) throw up.error; toast('Feedback status updated','ok'); loadPlatformFeedback(); }
+          try{ await saveFeedbackStatus(f.id,sel.value); toast('Feedback status updated','ok'); loadPlatformFeedback(); }
           catch(ex){ console.error(ex); toast('Could not update feedback status.','err'); sel.value=f.status||'new'; sel.disabled=false; }
         });
         el.appendChild(card);
