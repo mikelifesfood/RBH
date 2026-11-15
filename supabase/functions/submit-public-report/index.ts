@@ -107,7 +107,8 @@ Deno.serve(async req=>{
     return reply(200,{...result,ok:true});
   }catch(e){
     const msg=String(e instanceof Error?e.message:e);
-    if(msg.includes("INTAKE_RATE_LIMITED"))return failure(429,"RATE_LIMITED",{retryable:true});
+    if(msg.includes("INTAKE_RATE_LIMITED"))
+      return reply(429,{ok:false,code:"RATE_LIMITED",retryable:true,retry_after_seconds:600},{"retry-after":"600"});
     if(msg.includes("SUBMISSION_KEY_PAYLOAD_MISMATCH"))return failure(409,"SUBMISSION_KEY_PAYLOAD_MISMATCH");
     if(/INVALID_REPORT|REPORT_FIELD|INVALID_OR_INACTIVE_SITE_CODE|INVALID_OBSERVED/.test(msg))
       return failure(400,"INVALID_REPORT",{detail:msg.slice(0,120)});
