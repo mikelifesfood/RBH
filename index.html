@@ -288,6 +288,7 @@
     .connection-summary{gap:9px;flex-wrap:wrap}
     .connection-summary-action{margin-left:22px;width:calc(100% - 22px)}
     .offline-pending button{width:100%;margin:6px 0}
+    .offline-pending button:disabled{opacity:.55;cursor:not-allowed}
     .offline-outbox-item .queue-btn{margin-right:8px}
     .brand-inner{min-width:0}
     .header-right{gap:8px}
@@ -1240,6 +1241,13 @@
     }
     button.textContent=offlineLang('Saved reports','Reportes guardados')+
       ((queued+photos+review)?' ('+(queued+photos+review)+')':'');
+    var retry=document.getElementById('offlinePendingRetry');
+    if(retry){
+      retry.disabled=offline;
+      retry.title=offlineLang(
+        offline?'Reconnect to retry; your queued report remains saved on this device.':'Retry now',
+        offline?'Conéctese para reintentar; el reporte sigue guardado en este dispositivo.':'Reintentar ahora');
+    }
   }
   document.getElementById('viewSavedReports').addEventListener('click',function(){
     document.getElementById('offlineOutbox').scrollIntoView({behavior:'smooth',block:'start'});
@@ -1255,6 +1263,7 @@
   }
   window.addEventListener('online',connectionChanged);
   window.addEventListener('offline',connectionChanged);
+  document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')connectionChanged();});
   function outboxItemButton(label,handler,danger){
     var b=document.createElement('button');b.type='button';
     b.className='queue-btn'+(danger?' queue-danger':'');b.textContent=label;
