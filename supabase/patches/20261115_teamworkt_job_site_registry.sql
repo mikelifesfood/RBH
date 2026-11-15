@@ -8,7 +8,7 @@ ALTER TABLE public.teamworkt_installation_context ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.teamworkt_installation_context FROM PUBLIC,anon,authenticated;
 GRANT SELECT ON public.teamworkt_installation_context TO service_role;
 INSERT INTO public.teamworkt_installation_context (singleton,organization_id)
-  SELECT true,min(id) FROM public.organizations HAVING count(*) = 1;
+  SELECT true,id FROM public.organizations WHERE (SELECT count(*) FROM public.organizations) = 1;
 DO $guard$ BEGIN
  IF (SELECT count(*) FROM public.teamworkt_installation_context) <> 1 THEN
    RAISE EXCEPTION 'Expected exactly one configured organization for isolated RBH installation';
