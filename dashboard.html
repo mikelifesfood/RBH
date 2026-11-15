@@ -252,6 +252,30 @@
   .hs-k{color:var(--muted);font-size:13.5px;margin-top:6px;font-weight:600;text-transform:none;letter-spacing:0}
   .hs.alert .hs-n{color:var(--brand)}
   .hs.alert::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--brand)}
+
+  /* Safety Pulse — read-only business overview, compact across screen sizes */
+  .safety-pulse{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px 20px;margin:0 0 22px;min-width:0}
+  .safety-pulse-header{display:flex;align-items:start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:15px}
+  .safety-pulse-title{font-weight:800;font-size:20px;line-height:1.2;margin:0}
+  .safety-pulse-caption{color:var(--muted);font-size:12.5px;margin:5px 0 0;max-width:680px}
+  .safety-pulse-link{padding:8px 12px;min-height:40px;background:var(--paper);color:var(--ink);border:1px solid var(--line-strong);border-radius:8px;font:700 12.5px var(--sans);cursor:pointer}
+  .safety-pulse-link:hover,.safety-pulse-link:focus-visible{border-color:var(--ink);background:var(--canvas)}
+  .safety-pulse-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+  .safety-pulse-metric{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--canvas);padding:13px 14px}
+  .safety-pulse-value{font-size:30px;font-weight:850;font-variant-numeric:tabular-nums;line-height:1.1}
+  .safety-pulse-label{font-size:13px;font-weight:750;margin-top:6px}
+  .safety-pulse-detail{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.4}
+  .safety-pulse-metric.attention .safety-pulse-value{color:var(--brand)}
+  .safety-pulse-bottom{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:15px}
+  .safety-pulse-panel{min-width:0;border-top:1px solid var(--line);padding-top:13px}
+  .safety-pulse-panel h3{font-size:14px;font-weight:800;margin:0 0 8px}
+  .safety-pulse-rows{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+  .safety-pulse-rows li{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:12.5px;min-width:0}
+  .safety-pulse-rows li span:first-child{min-width:0;overflow-wrap:anywhere}
+  .safety-pulse-count{flex:0 0 auto;border-radius:50px;background:var(--canvas-2);padding:3px 8px;font-size:12px;font-weight:750}
+  .safety-pulse-empty{color:var(--muted);font-size:12.5px;line-height:1.5}
+  @media(max-width:850px){.safety-pulse-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:520px){.safety-pulse{padding:15px}.safety-pulse-grid{gap:8px}.safety-pulse-metric{padding:12px}.safety-pulse-bottom{grid-template-columns:1fr}.safety-pulse-value{font-size:27px}}
   .home-actions{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px}
   .action-card{position:relative;text-align:left;border:1px solid var(--line);border-radius:var(--r-lg);padding:20px 22px;cursor:pointer;background:var(--paper);color:var(--ink);display:grid;grid-template-columns:auto 1fr;gap:2px 14px;align-items:center;transition:border-color .15s}
   .action-card:hover{border-color:var(--ink)}
@@ -1522,6 +1546,7 @@
         <section class="view" id="view-home">
           <div class="home-hero"><div><div class="home-kicker">Safety Operations</div><h1 id="homeGreeting">RBH Safety</h1><p>Focus first on new, overdue, and higher-attention reports.</p></div></div>
           <div class="home-stats" id="homeStats"></div>
+          <section class="safety-pulse" id="safetyPulse" aria-labelledby="safetyPulseTitle" aria-live="polite"></section>
           <div class="home-actions">
             <button class="action-card" id="homeOpen" type="button">
               <span class="ac-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></span>
@@ -7890,7 +7915,7 @@
     scrollAppToTop();
   }
 
-  function renderHomeSnapshot(){ renderHomeGreeting(); renderHomeStats(); renderHomeAttention(); renderHomeActivity(); updateNavCounts(); renderActions(); renderMyWork(); }
+  function renderHomeSnapshot(){ renderHomeGreeting(); renderHomeStats(); renderSafetyPulse(); renderHomeAttention(); renderHomeActivity(); updateNavCounts(); renderActions(); renderMyWork(); }
 
   async function upsertProfile(session){
     if(!session||!session.user) return;
@@ -9003,6 +9028,66 @@
   }
 
   function renderHomeGreeting(){ var el=$("homeGreeting"); if(!el) return; var h=new Date().getHours(); var g=h<12?"Good morning":(h<18?"Good afternoon":"Good evening"); el.textContent=g+" \u2014 RBH Safety"; }
+
+
+  /* Safety Pulse: derived only from reports already authorized for this account.
+     This is descriptive reporting, not an incident risk score or compliance rating. */
+  function renderSafetyPulse(){
+    var host=$("safetyPulse"); if(!host)return;
+    var now=Date.now(), day=86400000, recent=0, prior=0, openHigh=0, overdue=0;
+    var seen={}, groups={}, leading=[], open=allReports.filter(function(r){return !isResolvedReport(r);});
+    allReports.forEach(function(r){
+      var time=Date.parse(r.created_at||"");
+      if(Number.isFinite(time) && time<=now && time>=now-30*day)recent++;
+      else if(Number.isFinite(time) && time<now-30*day && time>=now-60*day)prior++;
+      if(!isResolvedReport(r)){
+        var severity=String(sevShort(r.potential_severity)||"").toLowerCase();
+        if(severity==="critical"||severity==="serious")openHigh++;
+        if(isOverdue(r))overdue++;
+      }
+      // Compare categories within the same job site when known.
+      // No severity/incident-type guesses are made from free-text descriptions.
+      if(!Number.isFinite(time)||time>now||time<now-90*day)return;
+      var category=String(r.hazard_category||"").trim();
+      if(!category)return;
+      var site=String(r.job_site||"").trim();
+      var key=category.toLocaleLowerCase()+"|"+site.toLocaleLowerCase();
+      if(!groups[key])groups[key]={category:category,site:site,count:0};
+      groups[key].count++;
+    });
+    leading=Object.keys(groups).map(function(k){return groups[k];}).filter(function(x){return x.count>=2;})
+      .sort(function(a,b){return b.count-a.count||a.category.localeCompare(b.category);}).slice(0,3);
+    var trend=recent>prior?"Up "+(recent-prior)+" from the prior 30 days":
+      recent<prior?"Down "+(prior-recent)+" from the prior 30 days":"Same as the prior 30 days";
+    function metric(n,label,detail,alert){
+      return '<div class="safety-pulse-metric'+(alert&&n>0?' attention':'')+'"><div class="safety-pulse-value">'+n+
+        '</div><div class="safety-pulse-label">'+label+'</div><div class="safety-pulse-detail">'+detail+'</div></div>';
+    }
+    var repeated=leading.length?'<ul class="safety-pulse-rows">'+leading.map(function(row){
+      var name=row.category+(row.site?' · '+row.site:'');
+      return '<li><span>'+esc(name)+'</span><span class="safety-pulse-count">'+row.count+' reports</span></li>';
+    }).join("")+'</ul>':'<div class="safety-pulse-empty">No repeated hazard categories identified in the last 90 days.</div>';
+    var latest=open.filter(function(r){return r.created_at;}).sort(function(a,b){
+      return Date.parse(b.created_at||0)-Date.parse(a.created_at||0);
+    }).slice(0,3);
+    var issues=latest.length?'<ul class="safety-pulse-rows">'+latest.map(function(r){
+      return '<li><span>Report #'+esc(String(r.ref_no||"—"))+' · '+esc(String(r.report_type||"Safety report"))+
+        '</span><span class="safety-pulse-count">'+esc(String(r.status||"Open").replace(/_/g," "))+'</span></li>';
+    }).join("")+'</ul>':'<div class="safety-pulse-empty">No unresolved reports.</div>';
+    var html='<div class="safety-pulse-header"><div><h2 id="safetyPulseTitle" class="safety-pulse-title">Safety Pulse</h2>'+
+      '<p class="safety-pulse-caption">A quick overview of your company’s safety reports. Counts reflect records visible to your account, not a safety or compliance rating.</p></div>'+
+      '<button class="safety-pulse-link" type="button" id="safetyPulseAnalytics">View analytics</button></div>'+
+      '<div class="safety-pulse-grid">'+
+      metric(recent,'Reports · 30 days',trend,false)+
+      metric(open.length,'Unresolved reports','All report dates',false)+
+      metric(openHigh,'Higher-severity open','Critical or Serious',true)+
+      metric(overdue,'Overdue reports','Unresolved work past due',true)+
+      '</div><div class="safety-pulse-bottom"><div class="safety-pulse-panel"><h3>Recurring hazard categories · 90 days</h3>'+repeated+
+      '</div><div class="safety-pulse-panel"><h3>Latest unresolved reports</h3>'+issues+'</div></div>';
+    if(host.dataset.snapshot===html)return;
+    host.dataset.snapshot=html;host.innerHTML=html;
+    host.querySelector("#safetyPulseAnalytics").addEventListener("click",function(){showView("metrics");});
+  }
 
   function renderHomeStats(){
     var el=$("homeStats"); if(!el) return;
