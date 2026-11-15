@@ -2,14 +2,14 @@
 **As of:** Saturday, November 14, 2026 (end-of-day checkpoint)  
 **Purpose:** Single starting point for the next ChatGPT conversation. Use this first, then consult the older technical handoffs.  
 **Status:** Development plan; **not yet a working MVP and not authorized for commercial go-live**.  
-**Source of truth:** GitHub `mikelifesfood/RBH`, working branch `teamworkt/supabase-security-20261114`, `main` remains the current GitHub Pages deployment. Supabase project `owhkxguiavgxzwvbxevj` is the **RBH Insulation pilot only**.  
-**Last checked:** 17 public tables, 4 test reports, 4 test profiles, one organization; new Vault notification secret present. The branch `dashboard.html` differs from `main` only by recent safe refactoring, but the branch also contains additional security files and updated `notify-report` function source. Browser regression and branch-to-production rollout **not done**.
+**Source of truth:** GitHub `mikelifesfood/RBH`, `main` is now the sole normal development/published branch. The historical branch `teamworkt/supabase-security-20261114` has been fast-forwarded into `main` and is retained only as a reference. Supabase project `owhkxguiavgxzwvbxevj` is the **RBH Insulation pilot only**.  
+**Last checked:** November 15, 2026 GitHub reconciliation: `main` was fast-forwarded to commit `6770a533e91fd60f7a7177d1fcca5594f7a226c1` (18 previously outstanding commits); a compare then confirmed `main` and the old security branch were identical. As of the November 14 database checkpoint: 17 public tables, 4 test reports, 4 test profiles, one organization, and a Vault notification secret present. The updated dashboard has **not** completed full browser regression. The GitHub update did not rerun SQL or redeploy Edge Functions.
 
 ## 0. Instructions for the next assistant
 1. Start by reading **this handoff**, `supabase/TEAMWORKT_CUSTOMER_INSTALLATION_BLUEPRINT.md`, `supabase/TEAMWORKT_SECURITY_STATUS_2026-11-14.md`, `supabase/TEAMWORKT_PUBLIC_INTAKE_ANTIBOT_PLAN.md`, and `supabase/README.md`; inspect actual GitHub/Supabase current state before edits. The original `TeamWorkt_Safety_RBH_Project_Handoff_2026-11-14.docx` explains the original backlog. Some prior documents have historical counts/statuses; **current connected state wins**.
 2. Work only in `mikelifesfood/RBH` and RBH Supabase project `owhkxguiavgxzwvbxevj`; **never touch Wandering Casks, Lane Log or unrelated projects**.
 3. **Always tell the owner exactly which paths, SQL objects, Edge Functions and behaviors will change before making any change.** Preserve the four existing roles and their permissions, all existing workflows, history, exports, bilingual features, and existing Brevo rules. Use a staged rollout, verify, and give rollback steps; distinguish GitHub-only vs SQL/Edge/Xcode (Xcode **not** required for this PWA).
-4. Work on a branch, use exact changed/new/deleted file paths and preferably changes-only ZIP for handoffs. Do not overwrite `main` or deploy to GitHub Pages until end-to-end RBH regression passes.
+4. Per the November 15 owner decision, work directly on `main` for RBH test/pilot development. Record exact changed/new/deleted paths and rollback commits. Because GitHub Pages publishes from `main`, test after each small change and do not represent untested changes as verified. Use a temporary branch only for unusually risky or multi-step changes, not as the standing working copy.
 5. Treat existing RBH records as fake test data (owner confirmed this), but avoid deleting data without previewing the exact change. Existing test accounts and cases are useful for regression.
 6. Explicitly distinguish **implemented**, **confirmed to build**, **candidate enhancement**, and **post-MVP custom work**. A plan or existing UI text is not proof a feature has been tested or works.
 7. Keep a single consolidated checklist here; update statuses after each completed build and test.
@@ -116,7 +116,7 @@ OSHA compliance automation/legal advice, voice/AI analysis, large LMS or HR trai
 
 ## 7. Prioritized work plan for the next chat
 **Day 1: produce a working RBH demo, not a new architecture proposal.**
-1. Inspect current RBH `main`, security branch, public `index.html`, `dashboard.html`, all deployed relevant Edge Functions and schema; confirm build snapshot. Choose a controlled pilot branch and baseline test.
+1. Inspect current RBH `main`, public `index.html`, `dashboard.html`, all deployed relevant Edge Functions and schema; confirm build snapshot and baseline test. The former security branch was consolidated into `main` November 15; `main` is the normal working branch.
 2. Implement **site registry + one site-specific QR** with a fictional job-site record, keep the general QR, and test scan → correct site → anonymous form → case visible in dashboard. This gives an immediately demonstrable feature.
 3. Implement **PWA manifest/service worker + offline local draft/queue** for public reporting, then test reconnect / retries and no duplicate reports. Split into safe, testable commits rather than a wholesale rewrite.
 4. Add **mobile UX polishing** and basic report sync-status screens; preserve existing intake and investigation roles/flow.
@@ -161,9 +161,9 @@ OSHA compliance automation/legal advice, voice/AI analysis, large LMS or HR trai
 ## 10. Source-control and operational handoff details
 - GitHub repository: `mikelifesfood/RBH`
 - Current public prototype: `https://mikelifesfood.github.io/RBH/dashboard.html`
-- Branch for cleanup: `teamworkt/supabase-security-20261114`
+- Primary development and GitHub Pages branch: `main` (former security branch consolidated November 15, 2026)
 - RBH Supabase project: `owhkxguiavgxzwvbxevj`
 - Existing Edge Functions: `notify-report`, `translate-report`, `send-action-assignment-email`, `manage-action-evidence`, `admin-provision-user`, `admin-manage-user`.
 - Current roles: `admin`, `safety_manager`, `supervisor`, `read_only`.
-- **This document is planning only.** Updating it should not modify `index.html`, `dashboard.html`, SQL schema, functions or `main` and should not send any new emails.
+- **This document is planning only.** Editing this Markdown on `main` should not modify `index.html`, `dashboard.html`, SQL schema, or deployed functions, and should not send any emails.
 - Historical docx: `TeamWorkt_Safety_RBH_Project_Handoff_2026-11-14.docx`. Related branch docs: `supabase/TEAMWORKT_NEXT_HANDOFF_PWA_AND_SAFE_CLEANUP.md`, `supabase/TEAMWORKT_CUSTOMER_INSTALLATION_BLUEPRINT.md`, `supabase/TEAMWORKT_PUBLIC_INTAKE_ANTIBOT_PLAN.md`, and `supabase/TEAMWORKT_SECURITY_STATUS_2026-11-14.md`.
