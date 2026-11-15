@@ -1405,6 +1405,17 @@
   .admin-settings-grid .archive-includes{margin-bottom:0}
   @media(max-width:900px){.admin-settings-grid{grid-template-columns:minmax(0,1fr)}}
 
+  .jobsite-field{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:700;min-width:0}
+  .jobsite-field input{width:100%;min-width:0;padding:11px;border:1px solid var(--line-strong);border-radius:8px;background:var(--paper);color:var(--ink);font:inherit;font-weight:500}
+  .jobsite-list{display:grid;gap:9px;margin-top:12px}
+  .jobsite-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 14px;border:1px solid var(--line);border-radius:9px;min-width:0}
+  .jobsite-main{min-width:0;overflow-wrap:anywhere}.jobsite-address{font-size:12px;color:var(--muted);margin-top:4px}
+  .jobsite-state{font-size:11px;color:var(--muted);border:1px solid var(--line-strong);padding:3px 7px;border-radius:999px;white-space:nowrap}
+  .jobsite-actions{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+  .jobsite-actions a,.jobsite-actions button{border:1px solid var(--line-strong);border-radius:8px;background:var(--paper);color:var(--ink);padding:8px 10px;text-decoration:none;cursor:pointer;font:inherit;font-size:12px;font-weight:700}
+  .jobsite-actions a:hover,.jobsite-actions button:hover{background:var(--canvas-2)}
+  @media(max-width:900px){#jobSiteForm{grid-template-columns:minmax(0,1fr)!important}.jobsite-row{align-items:flex-start;flex-direction:column}}
+
 </style>
 </head>
 <body>
@@ -1613,6 +1624,18 @@
               <div class="archive-export-status" id="exportCompanyArchiveStatus" aria-live="polite"></div>
             </div>
           </div>
+          </div>
+          <div class="admin-settings-heading"><h3>Job Sites &amp; QR Codes</h3><p>Create job sites and print a unique safety reporting poster for each one. Only Admins can manage sites.</p></div>
+          <div class="admin-info" id="jobSiteAdmin">
+            <h3>Manage job sites</h3>
+            <p>Each site keeps its QR code when renamed. Deactivate a site to stop its printed QR code from linking to that location. The company-wide QR poster remains available above.</p>
+            <form id="jobSiteForm" style="display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1.5fr) auto;gap:10px;align-items:end;margin-top:14px">
+              <label class="jobsite-field">Site name <input id="jobSiteName" type="text" maxlength="120" required placeholder="e.g. RBH Demo Project"></label>
+              <label class="jobsite-field">Address (optional) <input id="jobSiteAddress" type="text" maxlength="300" placeholder="Street address or nearby cross streets"></label>
+              <div style="display:flex;gap:8px;flex-wrap:wrap"><button id="saveJobSite" class="archive-export-btn" type="submit">Add job site</button><button id="cancelJobSiteEdit" type="button" class="archive-export-btn" style="display:none;background:var(--canvas-2);color:var(--ink)">Cancel</button></div>
+            </form>
+            <p id="jobSiteStatus" role="status" aria-live="polite" style="margin-top:10px">Loading job sites…</p>
+            <div id="jobSiteList" class="jobsite-list"></div>
           </div>
           <div class="admin-settings-heading user-settings-heading"><h3>User Settings</h3><p>Manage dashboard access, user roles, and account history.</p></div>
           <div class="admin-info"><h3>Role-based access</h3><p>New dashboard users start as Read Only until an Admin assigns the appropriate role. Access can be updated at any time by another Admin.</p></div>
@@ -7690,6 +7713,80 @@
     }finally{save.disabled=false;sel.disabled=false;}
   });
 
+  var managedJobSites=[],editingJobSiteId=null;
+  function resetJobSiteForm(){
+    editingJobSiteId=null;
+    var form=$("jobSiteForm");if(form)form.reset();
+    $("saveJobSite").textContent="Add job site";
+    $("cancelJobSiteEdit").style.display="none";
+  }
+  function renderJobSites(){
+    var el=$("jobSiteList");if(!el)return;
+    if(!managedJobSites.length){el.innerHTML='<p class="state">No job sites yet. Create one above to print its unique QR poster.</p>';return;}
+    el.innerHTML=managedJobSites.map(function(site){
+      var code=String(site.code||"");
+      var poster=/^[a-f0-9]{32}$/.test(code)?"./job-site-poster.html?site="+encodeURIComponent(code):"";
+      return '<div class="jobsite-row"><div class="jobsite-main"><b>'+esc(site.name)+'</b> '+
+        '<span class="jobsite-state">'+(site.active?'Active':'Inactive')+'</span>'+
+        (site.address?'<div class="jobsite-address">'+esc(site.address)+'</div>':'')+
+        '</div><div class="jobsite-actions">'+
+        '<button type="button" data-site-edit="'+esc(site.id)+'">Edit</button>'+
+        (site.active&&poster?'<a href="'+poster+'" target="_blank" rel="noopener noreferrer">Print site QR ↗</a>':'')+
+        '<button type="button" data-site-toggle="'+esc(site.id)+'">'+(site.active?'Deactivate':'Reactivate')+'</button>'+
+        '</div></div>';
+    }).join("");
+  }
+  async function loadJobSites(){
+    var status=$("jobSiteStatus");if(!status||currentRole!=="admin")return;
+    status.textContent="Loading job sites…";
+    try{
+      var result=await sb.rpc("rbh_list_job_sites");
+      if(result.error)throw result.error;
+      managedJobSites=Array.isArray(result.data)?result.data:[];
+      renderJobSites();
+      status.textContent=managedJobSites.length+" job site"+(managedJobSites.length===1?"":"s")+" registered.";
+    }catch(e){console.error("Job site list failed",e);status.textContent="Could not load job sites. Try re-opening Admin.";}
+  }
+  var jobSiteForm=$("jobSiteForm");
+  if(jobSiteForm)jobSiteForm.addEventListener("submit",async function(e){
+    e.preventDefault();if(currentRole!=="admin")return;
+    var name=$("jobSiteName").value.trim(),address=$("jobSiteAddress").value.trim();
+    if(!name||name.length>120||address.length>300)return;
+    var status=$("jobSiteStatus"),btn=$("saveJobSite");btn.disabled=true;status.textContent="Saving job site…";
+    try{
+      var result=await sb.rpc("rbh_save_job_site",{p_id:editingJobSiteId,p_name:name,p_address:address,p_active:true});
+      if(result.error)throw result.error;
+      resetJobSiteForm();await loadJobSites();toast("Job site saved","ok");
+    }catch(err){console.error("Could not save job site",err);status.textContent="Could not save job site. Please try again.";toast("Job site not saved","err");}
+    finally{btn.disabled=false;}
+  });
+  var cancelSite=$("cancelJobSiteEdit");if(cancelSite)cancelSite.addEventListener("click",resetJobSiteForm);
+  var siteList=$("jobSiteList");if(siteList)siteList.addEventListener("click",async function(e){
+    var edit=e.target.closest("[data-site-edit]"),toggle=e.target.closest("[data-site-toggle]");
+    if(currentRole!=="admin")return;
+    if(edit){
+      var site=managedJobSites.find(function(x){return x.id===edit.getAttribute("data-site-edit");});
+      if(!site)return;
+      editingJobSiteId=site.id;$("jobSiteName").value=site.name||"";$("jobSiteAddress").value=site.address||"";
+      $("saveJobSite").textContent="Save site changes";$("cancelJobSiteEdit").style.display="";
+      $("jobSiteName").focus();return;
+    }
+    if(toggle){
+      var site=managedJobSites.find(function(x){return x.id===toggle.getAttribute("data-site-toggle");});
+      if(!site)return;
+      var next=!site.active;
+      if(!next&&!window.confirm("Deactivate "+site.name+"? Its printed QR code will no longer select this site until reactivated."))return;
+      toggle.disabled=true;
+      try{
+        var result=await sb.rpc("rbh_save_job_site",{p_id:site.id,p_name:site.name,p_address:site.address||"",p_active:next});
+        if(result.error)throw result.error;
+        if(editingJobSiteId===site.id)resetJobSiteForm();
+        await loadJobSites();toast(next?"Job site reactivated":"Job site deactivated","ok");
+      }catch(err){console.error(err);$("jobSiteStatus").textContent="Could not change site status.";toast("Job site update failed","err");}
+      finally{toggle.disabled=false;}
+    }
+  });
+
   function showView(name){
     if(name!=="incident"&&name!=="myaction"){ stopRecordPresence(); clearActiveOpenResource(); }
     if(name==="users" && currentRole!=="admin") name="home";
@@ -7705,7 +7802,7 @@
     if(name==="mywork") renderMyWork();
     if(name==="actions") renderActions();
     if(name==="platform") loadPlatformDashboard();
-    if(name==="users"){ loadUsers(); loadAdminUserEvents(); loadReportEmailMode(); }
+    if(name==="users"){ loadUsers(); loadAdminUserEvents(); loadReportEmailMode(); loadJobSites(); }
     if(name==="home") renderHomeSnapshot();
     refreshHelpCoachContext();
     closeSidebar();
