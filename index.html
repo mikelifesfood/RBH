@@ -263,6 +263,37 @@
   .offline-pending p{font-size:14px;color:#614316;line-height:1.6;margin:0 0 14px}
   .offline-pending button{margin:6px 7px 0 0}
 
+  /* Build 6: compact, accessible connection and submission state. */
+  .connection-summary{display:flex;align-items:center;gap:11px;margin:12px 0 14px;padding:11px 13px;background:var(--paper);border:1px solid var(--line);border-radius:11px;box-shadow:var(--shadow);min-width:0}
+  .connection-status-dot{flex:0 0 auto;width:11px;height:11px;border-radius:50%;background:#71806e;box-shadow:0 0 0 3px rgba(113,128,110,.13)}
+  .connection-summary[data-state="offline"] .connection-status-dot,.connection-summary[data-state="pending"] .connection-status-dot{background:#b87914;box-shadow:0 0 0 3px #b8791421}
+  .connection-summary[data-state="review"] .connection-status-dot{background:var(--red);box-shadow:0 0 0 3px var(--focus)}
+  .connection-summary[data-state="online"] .connection-status-dot{background:var(--ok);box-shadow:0 0 0 3px #1f7a441c}
+  .connection-summary-text{flex:1;min-width:0}
+  .connection-summary-text strong{display:block;font-family:var(--display);font-size:13.5px;line-height:1.4}
+  .connection-summary-text span{display:block;font-size:12px;color:var(--muted);line-height:1.4;margin-top:2px}
+  .connection-summary-action{font:700 12px var(--sans);color:var(--ink);background:var(--surface);border:1px solid var(--line-strong);border-radius:8px;padding:10px 12px;min-height:44px;cursor:pointer;white-space:nowrap}
+  #offlineOutbox,#offlinePending,#success{scroll-margin-top:16px}
+  .offline-outbox-item[data-state="sent"]{border-left:4px solid var(--ok)}
+  .offline-outbox-item[data-state="needs_review"]{border-left:4px solid var(--red)}
+  .offline-outbox-item[data-state="queued"],.offline-outbox-item[data-state="sending"],.offline-outbox-item[data-state="uploading"]{border-left:4px solid #b87914}
+  .offline-outbox-item .queue-btn{min-height:44px}
+  @media(max-width:600px){
+    .wrap{padding-left:14px;padding-right:14px;padding-bottom:calc(68px + env(safe-area-inset-bottom,0px))}
+    fieldset{padding:16px 13px 18px}
+    input[type=text],input[type=tel],input[type=email],input[type=datetime-local],select,textarea{font-size:16px;min-height:46px}
+    .type,.yn-opt,.seg label{min-height:48px}
+    .files .rm{min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}
+    .offline-draft-save,button.submit{min-height:50px}
+    .connection-summary{gap:9px;flex-wrap:wrap}
+    .connection-summary-action{margin-left:22px;width:calc(100% - 22px)}
+    .offline-pending button{width:100%;margin:6px 0}
+    .offline-outbox-item .queue-btn{margin-right:8px}
+    .brand-inner{min-width:0}
+    .header-right{gap:8px}
+  }
+  @media(prefers-reduced-motion:reduce){.type,.seg label,.connection-summary-action{transition:none!important}}
+
 </style>
 </head>
 <body>
@@ -299,6 +330,15 @@
       <div class="trust-item"><b data-i18n="trust_mobile_b">Jobsite ready</b><span data-i18n="trust_mobile_s">Works on your phone</span></div>
     </div>
   </section>
+
+  <aside id="connectionSummary" class="connection-summary" aria-live="polite" aria-atomic="true">
+    <div class="connection-status-dot" id="connectionStatusDot" aria-hidden="true"></div>
+    <div class="connection-summary-text">
+      <strong id="connectionSummaryTitle">Checking connection and saved reports…</strong>
+      <span id="connectionSummaryDetail">Reports are received only after a server confirmation number appears.</span>
+    </div>
+    <button type="button" id="viewSavedReports" class="connection-summary-action" aria-controls="offlineOutbox">Saved reports</button>
+  </aside>
 
   <form id="reportForm" novalidate>
     <div class="hp-field" aria-hidden="true"><label for="companyWebsite">Leave this field blank</label><input type="text" id="companyWebsite" name="companyWebsite" tabindex="-1" autocomplete="off"></div>
@@ -1165,6 +1205,56 @@
     document.getElementById('offlinePendingRetry').textContent=offlineLang('Retry now','Reintentar ahora');
     window.scrollTo({top:0,behavior:'smooth'});
   }
+  function refreshConnectionSummary(rows){
+    var panel=document.getElementById('connectionSummary');
+    if(!panel)return;
+    var title=document.getElementById('connectionSummaryTitle');
+    var detail=document.getElementById('connectionSummaryDetail');
+    var button=document.getElementById('viewSavedReports');
+    var offline=navigator.onLine===false;
+    var queued=(rows||[]).filter(function(r){return r.status!=='sent'&&r.status!=='needs_review'&&!r.reportId;}).length;
+    var review=(rows||[]).filter(function(r){return r.status==='needs_review';}).length;
+    var photos=(rows||[]).filter(function(r){return r.reportId&&r.status!=='sent';}).length;
+    panel.dataset.state=review?'review':offline?'offline':queued||photos?'pending':'online';
+    if(review){
+      title.textContent=offlineLang(review+' report'+(review===1?' needs':'s need')+' review — not submitted',
+        review+' reporte'+(review===1?' requiere':'s requieren')+' revisión — no enviado'+(review===1?'':'s'));
+      detail.textContent=offlineLang('Edit the saved report before retrying.',
+        'Edite el reporte guardado antes de reintentar.');
+    }else if(offline){
+      title.textContent=offlineLang('Offline — saved reports are not submitted','Sin conexión — los reportes guardados no se han enviado');
+      detail.textContent=offlineLang(queued?queued+' report'+(queued===1?'':'s')+' queued on this device.':'You may save or queue reports on this device.',
+        queued?queued+' reporte'+(queued===1?'':'s')+' en espera en este dispositivo.':'Puede guardar reportes en este dispositivo.');
+    }else if(photos){
+      title.textContent=offlineLang('Report received — photos still syncing','Reporte recibido — fotos pendientes');
+      detail.textContent=offlineLang(photos+' report'+(photos===1?' has':'s have')+' photos to upload. Keep the page open.',
+        photos+' reporte'+(photos===1?' tiene':'s tienen')+' fotos por subir. Mantenga la página abierta.');
+    }else if(queued){
+      title.textContent=offlineLang('Connecting — report submission pending','Conectando — envío de reportes pendiente');
+      detail.textContent=offlineLang(queued+' report'+(queued===1?' is':'s are')+' still on this device, not yet acknowledged.',
+        queued+' reporte'+(queued===1?' sigue':'s siguen')+' en el dispositivo, aún sin confirmación.');
+    }else{
+      title.textContent=offlineLang('Online — ready to report','En línea — listo para reportar');
+      detail.textContent=offlineLang('A report is submitted only after a server reference number is issued.',
+        'Un reporte se envía solo cuando el servidor emite un número de referencia.');
+    }
+    button.textContent=offlineLang('Saved reports','Reportes guardados')+
+      ((queued+photos+review)?' ('+(queued+photos+review)+')':'');
+  }
+  document.getElementById('viewSavedReports').addEventListener('click',function(){
+    document.getElementById('offlineOutbox').scrollIntoView({behavior:'smooth',block:'start'});
+  });
+  function connectionChanged(){
+    if(!Q){refreshConnectionSummary([]);return;}
+    Q.list().then(refreshConnectionSummary).catch(function(){
+      var title=document.getElementById('connectionSummaryTitle');
+      title.textContent=offlineLang('Device storage unavailable — check saved reports',
+        'Almacenamiento no disponible — revise los reportes guardados');
+      document.getElementById('connectionSummary').dataset.state='review';
+    });
+  }
+  window.addEventListener('online',connectionChanged);
+  window.addEventListener('offline',connectionChanged);
   function outboxItemButton(label,handler,danger){
     var b=document.createElement('button');b.type='button';
     b.className='queue-btn'+(danger?' queue-danger':'');b.textContent=label;
@@ -1175,6 +1265,7 @@
     var container=document.getElementById('offlineOutboxList');
     try{
       var rows=await Q.list();
+      refreshConnectionSummary(rows);
       container.replaceChildren();
       if(!rows.length){
         var p=document.createElement('p');p.className='queue-privacy';
@@ -1182,13 +1273,18 @@
       }
       rows.forEach(function(record){
         var item=document.createElement('article');item.className='offline-outbox-item';
+        item.dataset.state=record.status;
         var title=document.createElement('strong');
         var stage=record.status==='sent'?
           offlineLang('Submitted — report #','Enviado — reporte #')+record.refNo:
           record.reportId?
-          offlineLang('Report #','Reporte #')+record.refNo+offlineLang(' received — photos pending',' recibido — fotos pendientes'):
+          offlineLang('Report #','Reporte #')+record.refNo+
+          (record.status==='uploading'?offlineLang(' — uploading photos',' — subiendo fotos'):
+            offlineLang(' received — photos pending',' recibido — fotos pendientes')):
           record.status==='needs_review'?
           offlineLang('Needs review — NOT submitted','Requiere revisión — NO enviado'):
+          record.status==='sending'?
+          offlineLang('Sending — awaiting server confirmation','Enviando — esperando confirmación del servidor'):
           offlineLang('Saved on device — NOT submitted','Guardado en dispositivo — NO enviado');
         title.textContent=stage;item.appendChild(title);
         var desc=document.createElement('p');
@@ -1244,7 +1340,13 @@
       showSuccess(current.display.reportType||'Report',current.refNo,0);
       return;
     }
-    if(current.reportId){
+    if(current.status==='sending'&&!current.reportId){
+      document.getElementById('offlinePendingTitle').textContent=offlineLang(
+        'Sending — awaiting confirmation','Enviando — esperando confirmación');
+      document.getElementById('offlinePendingMessage').textContent=offlineLang(
+        'This report is being sent. Do not close the page until a reference appears.',
+        'Se está enviando el reporte. Mantenga abierta la página hasta que aparezca una referencia.');
+    }else if(current.reportId){
       document.getElementById('offlinePendingTitle').textContent=offlineLang(
         'Report #'+current.refNo+' RECEIVED — photos pending',
         'Reporte #'+current.refNo+' RECIBIDO — fotos pendientes');
@@ -1387,6 +1489,7 @@
   /* ---------------- Init: auto-detect Spanish ---------------- */
   var pref=(navigator.language||navigator.userLanguage||'en').toLowerCase();
   setLang(pref.indexOf('es')===0 ? 'es' : 'en'); prefillAddressFromUrl();
+  refreshConnectionSummary([]);
   loadQrSite().then(function(){
     return restoreDraftFromDevice();
   }).catch(function(e){console.warn('Site/draft setup delayed',e);}).finally(function(){
