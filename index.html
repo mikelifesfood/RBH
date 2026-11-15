@@ -938,7 +938,7 @@
   function val(id){ var el=document.getElementById(id); return el?el.value.trim():''; }
   function radio(name){ var el=form.querySelector('input[name="'+name+'"]:checked'); return el?el.value:''; }
   function currentSite(){ return site ? site.value.trim() : ''; }
-  var validatedQrSiteCode=null,validatedQrSite=null,qrLookupPending=false;
+  var validatedQrSiteCode=null,validatedQrSite=null,pendingQrSiteCode=null,qrLookupPending=false;
   function renderQrSiteContext(){
     var box=document.getElementById('qrSiteContext'),title=document.getElementById('qrSiteTitle');
     var address=document.getElementById('qrSiteAddress'),btn=document.getElementById('qrChangeSite');
@@ -954,6 +954,7 @@
     var params=new URLSearchParams(window.location.search);
     var code=params.get('site')||'';
     if(!/^[a-f0-9]{32}$/.test(code))return;
+    pendingQrSiteCode=code;
     qrLookupPending=true;
     var error=document.getElementById('qrSiteError');
     try{
@@ -961,21 +962,21 @@
       var res=await client.rpc('rbh_get_job_site',{p_code:code});
       if(res.error)throw res.error;
       if(!res.data||res.data.code!==code)throw new Error('invalid-or-inactive');
-      validatedQrSiteCode=code;validatedQrSite=res.data;
+      validatedQrSiteCode=code;validatedQrSite=res.data;pendingQrSiteCode=null;
       site.value=res.data.address||res.data.name;
       site.readOnly=true;
       renderQrSiteContext();
     }catch(e){
       console.warn('Site QR selection unavailable',e);
-      validatedQrSiteCode=null;validatedQrSite=null;site.readOnly=false;
+      validatedQrSiteCode=null;validatedQrSite=null;pendingQrSiteCode=code;site.readOnly=false;
       error.hidden=false;
       error.textContent=CUR==='es'
-        ?'El código QR del sitio no está activo o no se pudo verificar. Indique la dirección manualmente o utilice el código general.'
-        :'This site QR code is inactive or could not be verified. Enter the location manually or use the company-wide QR code.';
+        ?'No se pudo verificar este código QR del sitio. Puede guardar el reporte con este código; el servidor lo validará al recuperar la conexión. Si el sitio fue eliminado, tendrá que editar el reporte antes de enviarlo.'
+        :'This site QR could not be verified right now. You may queue the report with its site code; the server will validate it when connected. If the site was deleted, you will need to edit the report before it can be submitted.';
     }finally{qrLookupPending=false;}
   }
   document.getElementById('qrChangeSite').addEventListener('click',function(){
-    validatedQrSiteCode=null;validatedQrSite=null;site.readOnly=false;site.value='';
+    validatedQrSiteCode=null;validatedQrSite=null;pendingQrSiteCode=null;site.readOnly=false;site.value='';
     var params=new URLSearchParams(window.location.search);params.delete('site');
     try{history.replaceState(null,'',window.location.pathname+(params.toString()?'?'+params.toString():'')+window.location.hash);}catch(e){}
     renderQrSiteContext();site.focus();
@@ -997,7 +998,7 @@
       language:CUR,
       involves_injury:(function(){ var el=form.querySelector('input[name="injury"]:checked'); return el?el.value==="yes":false; })(),
       job_site:currentSite(),
-      site_code:validatedQrSiteCode||undefined,
+      site_code:validatedQrSiteCode||pendingQrSiteCode||undefined,
       site_location:val('location'),
       observed_at:val('observed')
     };
@@ -1035,7 +1036,7 @@
     }).map(function(el){return {id:el.id||'',name:el.name||'',type:el.type||'',value:el.value,checked:!!el.checked};});
   }
   function currentDraft(){
-    return {fields:snapshotFields(),files:files.map(function(file){return {blob:file,name:file.name||'photo',type:file.type||'',size:file.size||0};}),siteCode:validatedQrSiteCode,
+    return {fields:snapshotFields(),files:files.map(function(file){return {blob:file,name:file.name||'photo',type:file.type||'',size:file.size||0};}),siteCode:validatedQrSiteCode||pendingQrSiteCode,
       siteInfo:validatedQrSite,updatedAt:Date.now()};
   }
   function hasDraftContent(draft){
@@ -1085,8 +1086,11 @@
         try{return new File([item.blob],item.name||'photo',{type:item.type||'application/octet-stream'});}catch(e){return item.blob;}
       }):[];
       render();
+      if(draft.siteCode&&!draft.siteInfo){
+        pendingQrSiteCode=draft.siteCode;validatedQrSiteCode=null;validatedQrSite=null;site.readOnly=false;
+      }
       if(draft.siteCode&&draft.siteInfo){
-        validatedQrSiteCode=draft.siteCode;validatedQrSite=draft.siteInfo;
+        validatedQrSiteCode=draft.siteCode;validatedQrSite=draft.siteInfo;pendingQrSiteCode=null;
         site.value=draft.siteInfo.address||draft.siteInfo.name;
         site.readOnly=true;renderQrSiteContext();
       }
