@@ -1245,6 +1245,46 @@
     document.getElementById('offlinePendingNew').addEventListener('click',function(){resetAfterQueued(false);});
     document.getElementById('offlinePendingRetry').addEventListener('click',function(){Q.flush().catch(function(e){console.warn(e);});});
   }
+  var directOnlineFallback=null;
+  async function submitOnlineWithoutDeviceStorage(type){
+    // Preserve normal online reporting in private browsing or where IndexedDB is unavailable.
+    // This path does NOT claim to save offline and does not persist photos if upload fails.
+    if(navigator.onLine===false)throw new Error('OFFLINE_DEVICE_STORAGE_UNAVAILABLE');
+    var sb=getClient();if(!sb)throw new Error('SUPABASE_CLIENT_UNAVAILABLE');
+    if(!directOnlineFallback){
+      if(!window.crypto||!crypto.randomUUID)throw new Error('SECURE_DEVICE_IDENTIFIER_UNAVAILABLE');
+      directOnlineFallback={id:crypto.randomUUID(),uploadToken:crypto.randomUUID(),payload:buildPayload(type)};
+    }
+    var attempt=directOnlineFallback;
+    var data=Object.assign({},attempt.payload,{
+      client_submission_key:attempt.id,offline_upload_token:attempt.uploadToken
+    });
+    var result=await sb.rpc('submit_report',{payload:data});
+    if(result.error)throw result.error;
+    if(!result.data||!result.data.id||!result.data.ref_no)throw new Error('SERVER_RECEIPT_MISSING');
+    var reportId=result.data.id,ref=result.data.ref_no,failed=0;
+    for(var i=0;i<files.length;i++){
+      var photo=files[i];
+      var safe=(photo.name||'photo').replace(/[^a-zA-Z0-9._-]/g,'_').slice(-115);
+      var path='reports/'+reportId+'/offline/'+attempt.uploadToken+'/'+i+'_'+safe;
+      var args={p_report_id:reportId,p_storage_path:path,p_file_name:photo.name||'photo',
+        p_mime_type:photo.type||null,p_size_bytes:photo.size||null};
+      try{
+        var before=await sb.rpc('add_attachment',args);
+        if(before.error){
+          if(!/UPLOADED_FILE_NOT_FOUND/.test(String(before.error.message||'')))throw before.error;
+          var up=await sb.storage.from('report-attachments').upload(path,photo,{
+            contentType:photo.type||undefined,upsert:false
+          });
+          if(up.error&&!(/already exists|duplicate/i.test(String(up.error.message||''))||Number(up.error.status)===409))throw up.error;
+          var meta=await sb.rpc('add_attachment',args);
+          if(meta.error&&!(/already registered|duplicate/i.test(String(meta.error.message||''))))throw meta.error;
+        }
+      }catch(e){failed++;console.warn('Direct online photo upload failed',e);}
+    }
+    directOnlineFallback=null;
+    showSuccess(type,ref,failed);
+  }
   async function submitReport(type){
     var btn=form.querySelector('button.submit');btn.disabled=true;btn.textContent=t('btn_sending');
     try{
@@ -1260,6 +1300,15 @@
       await renderOutbox();
       if(navigator.onLine!==false)Q.flush().catch(function(e){console.warn('Sending postponed',e);});
     }catch(err){
+      var reason=String(err&&err.message||err||'');
+      var storageFailure=/DEVICE_STORAGE|OFFLINE_QUEUE_SCRIPT_NOT_AVAILABLE|QuotaExceededError|SECURE_DEVICE_IDENTIFIER_UNAVAILABLE/.test(reason)
+        ||(err&&err.name==='QuotaExceededError');
+      if(storageFailure&&navigator.onLine!==false){
+        try{
+          await submitOnlineWithoutDeviceStorage(type);
+          return;
+        }catch(directError){console.error('Direct online fallback failed',directError);}
+      }
       console.error('Could not queue report',err);
       btn.disabled=false;btn.textContent=t('btn_submit');
       var sendErr=document.getElementById('sendErr');
