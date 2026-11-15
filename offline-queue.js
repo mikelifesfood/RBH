@@ -41,20 +41,59 @@ function uuid(){
   if(!window.crypto||!crypto.randomUUID)throw new Error('SECURE_DEVICE_IDENTIFIER_UNAVAILABLE');
   return crypto.randomUUID();
 }
+// Safari/WebKit can drop or fail to rehydrate nested File/Blob objects in IndexedDB.
+// Persist raw ArrayBuffer bytes + explicit metadata so the image is reconstructable.
+async function fileBytes(file){
+  var blob=file&&file.blob||file;
+  if(file&&file.bytes instanceof ArrayBuffer)return file.bytes;
+  if(!blob)return new ArrayBuffer(0);
+  if(typeof blob.arrayBuffer==='function')return blob.arrayBuffer();
+  return new Promise(function(resolve,reject){
+    var reader=new FileReader();
+    reader.onload=function(){resolve(reader.result);};
+    reader.onerror=function(){reject(reader.error||new Error('PHOTO_READ_FAILED'));};
+    reader.readAsArrayBuffer(blob);
+  });
+}
+async function packFiles(items){
+  var entries=Array.prototype.slice.call(items||[]);
+  var result=[];
+  for(var i=0;i<entries.length;i++){
+    var file=entries[i],bytes=await fileBytes(file);
+    var declaredSize=Number(file.size!=null?file.size:(file.blob&&file.blob.size));
+    if(!(bytes instanceof ArrayBuffer)||bytes.byteLength===0
+       ||(Number.isFinite(declaredSize)&&declaredSize>0&&bytes.byteLength!==declaredSize)){
+      throw new Error('PHOTO_BYTES_COULD_NOT_BE_PRESERVED');
+    }
+    result.push({bytes:bytes,name:String(file.name||'photo'),type:String(file.type||'application/octet-stream'),size:bytes.byteLength});
+  }
+  return result;
+}
+function checkFiles(saved,expected){
+  if(!saved||!Array.isArray(saved.files)||saved.files.length!==expected.length)throw new Error('SAVED_PHOTO_COUNT_MISMATCH');
+  expected.forEach(function(file,index){
+    var record=saved.files[index];
+    if(!(record.bytes instanceof ArrayBuffer)||record.bytes.byteLength!==file.size
+      ||record.name!==file.name)throw new Error('SAVED_PHOTO_BYTES_MISMATCH');
+  });
+}
 function list(){
   return storeRequest(DB_OUTBOX,'getAll').then(function(rows){
     return (rows||[]).sort(function(a,b){return b.createdAt-a.createdAt;});
   });
 }
-function enqueue(payload,files,display){
-  return list().then(function(items){
-    if(items.filter(function(r){return r.status!=='sent';}).length>=30)throw new Error('TOO_MANY_UNSENT_REPORTS');
-    var key=uuid();
-    var record={id:key,uploadToken:uuid(),payload:payload,files:Array.prototype.slice.call(files||[]).map(function(file){return {blob:file,name:file.name||'photo',type:file.type||'',size:file.size||0};}),
-      createdAt:Date.now(),updatedAt:Date.now(),status:'queued',
-      reportId:null,refNo:null,done:[],error:null,display:display||{}};
-    return storeRequest(DB_OUTBOX,'put',record).then(function(){emit();return record;});
-  });
+async function enqueue(payload,files,display){
+  var items=await list();
+  if(items.filter(function(r){return r.status!=='sent';}).length>=30)throw new Error('TOO_MANY_UNSENT_REPORTS');
+  var packed=await packFiles(files);
+  var key=uuid();
+  var record={id:key,uploadToken:uuid(),payload:payload,files:packed,
+    createdAt:Date.now(),updatedAt:Date.now(),status:'queued',
+    reportId:null,refNo:null,done:[],error:null,display:display||{}};
+  await storeRequest(DB_OUTBOX,'put',record);
+  checkFiles(await storeRequest(DB_OUTBOX,'get',key),packed);
+  emit();
+  return record;
 }
 async function saveRecord(record){
   record.updatedAt=Date.now();
@@ -106,7 +145,7 @@ async function uploadAttachments(sb,record){
   for(var i=0;i<total;i++){
     if(record.done.indexOf(i)>=0)continue;
     var file=record.files[i];
-    var data=file.blob||file; // Blob and original filename stored separately for Safari IndexedDB
+    var data=file.bytes instanceof ArrayBuffer?new Blob([file.bytes],{type:file.type||'application/octet-stream'}):(file.blob||file); // also handle older pre-fix queued photos
     var path='reports/'+record.reportId+'/offline/'+record.uploadToken+'/'+safeFileName(file,i);
     var args={p_report_id:record.reportId,p_storage_path:path,p_file_name:file.name,
       p_mime_type:file.type||null,p_size_bytes:file.size||null};
@@ -172,8 +211,10 @@ function flush(){
   return activeFlush;
 }
 async function saveDraft(draft){
-  draft.id='current';draft.updatedAt=Date.now();
-  await storeRequest(DB_DRAFT,'put',draft);
+  var packed=await packFiles(draft.files||[]);
+  var stored=Object.assign({},draft,{id:'current',updatedAt:Date.now(),files:packed});
+  await storeRequest(DB_DRAFT,'put',stored);
+  checkFiles(await storeRequest(DB_DRAFT,'get','current'),packed);
   emit();
 }
 async function getDraft(){return storeRequest(DB_DRAFT,'get','current');}
