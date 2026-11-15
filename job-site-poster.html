@@ -51,6 +51,8 @@ sb.rpc('rbh_get_job_site',{p_code:code}).then(function(res){
  siteName.textContent=info.name;
  siteAddress.textContent=info.address||'';
  var destination=new URL('./',window.location.href);destination.searchParams.set('site',code);
+ // Include a non-authoritative address fallback for first-time offline QR scans.
+ destination.searchParams.set('address',info.address||info.name);
  var href=destination.href;
  var anchor=document.createElement('a');anchor.href=href;anchor.textContent=href;
  link.textContent='Or visit: ';link.appendChild(anchor);
