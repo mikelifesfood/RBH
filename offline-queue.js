@@ -186,6 +186,7 @@ async function sendOne(id){
     record.files=[];record.payload=null;record.done=[];
     record.display={reportType:(record.display&&record.display.reportType)||'Report'}; // discard sensitive local draft after receipt
     await saveRecord(record);
+    return true;
   }catch(error){
     record=await getRecord(id)||record;
     if(record.status==='sent')return;
@@ -195,6 +196,10 @@ async function sendOne(id){
     record.error=message.slice(0,350);
     try{await saveRecord(record);}catch(e){console.error('Could not preserve offline retry state',e);}
     console.warn('RBH offline report remains queued',message);
+    // One cancelled/failed challenge must not create a cascade of new
+    // verification dialogs or consume more rate-limit quota in this pass.
+    if(/VERIFICATION|PROTECTION_|RATE_LIMITED|TEMPORARILY_UNAVAILABLE|NETWORK_NOT_SENT/.test(message))return false;
+    return true;
   }
 }
 function flush(){
@@ -205,7 +210,7 @@ function flush(){
     for(var i=items.length-1;i>=0;i--){
       if(navigator.onLine===false)break;
       if(items[i].status==='sent'||items[i].status==='needs_review')continue;
-      await sendOne(items[i].id);
+      if(await sendOne(items[i].id)===false)break;
     }
   })().finally(function(){activeFlush=null;emit();});
   return activeFlush;
