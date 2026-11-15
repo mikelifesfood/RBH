@@ -1414,6 +1414,8 @@
   .jobsite-actions{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
   .jobsite-actions a,.jobsite-actions button{border:1px solid var(--line-strong);border-radius:8px;background:var(--paper);color:var(--ink);padding:8px 10px;text-decoration:none;cursor:pointer;font:inherit;font-size:12px;font-weight:700}
   .jobsite-actions a:hover,.jobsite-actions button:hover{background:var(--canvas-2)}
+  .jobsite-actions .jobsite-delete-btn{border-color:#cc8088;color:#981a2b;background:#fff7f7}
+  .jobsite-actions .jobsite-delete-btn:hover{background:#ffe8ec}
   @media(max-width:900px){#jobSiteForm{grid-template-columns:minmax(0,1fr)!important}.jobsite-row{align-items:flex-start;flex-direction:column}}
 
 </style>
@@ -1629,7 +1631,7 @@
           <div class="admin-settings-heading"><h3>Job Sites &amp; QR Codes</h3><p>Create job sites and print a unique safety reporting poster for each one. Only Admins can manage sites.</p></div>
           <div class="admin-info" id="jobSiteAdmin">
             <h3>Manage job sites</h3>
-            <p>Each site keeps its QR code when renamed. Deactivate a site to stop its printed QR code from linking to that location. The company-wide QR poster remains available above.</p>
+            <p>Each site keeps its QR code when renamed. Delete a site when it is no longer needed; its QR code stops working. Existing safety reports remain in the Safety Inbox with their recorded location details. The company-wide poster remains available above.</p>
             <form id="jobSiteForm" style="display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1.5fr) auto;gap:10px;align-items:end;margin-top:14px">
               <label class="jobsite-field">Site name <input id="jobSiteName" type="text" maxlength="120" required placeholder="e.g. RBH Demo Project"></label>
               <label class="jobsite-field">Address (optional) <input id="jobSiteAddress" type="text" maxlength="300" placeholder="Street address or nearby cross streets"></label>
@@ -7752,7 +7754,8 @@
         '</div><div class="jobsite-actions">'+
         '<button type="button" data-site-edit="'+esc(site.id)+'">Edit</button>'+
         (site.active&&poster?'<a href="'+poster+'" target="_blank" rel="noopener noreferrer">Print site QR ↗</a>':'')+
-        '<button type="button" data-site-toggle="'+esc(site.id)+'">'+(site.active?'Deactivate':'Reactivate')+'</button>'+
+        '(!site.active?'<button type="button" data-site-toggle="'+esc(site.id)+'">Reactivate</button>':'')+
+        '<button type="button" class="jobsite-delete-btn" data-site-delete="'+esc(site.id)+'">Delete</button>'+
         '</div></div>';
     }).join("");
   }
@@ -7783,7 +7786,7 @@
   });
   var cancelSite=$("cancelJobSiteEdit");if(cancelSite)cancelSite.addEventListener("click",resetJobSiteForm);
   var siteList=$("jobSiteList");if(siteList)siteList.addEventListener("click",async function(e){
-    var edit=e.target.closest("[data-site-edit]"),toggle=e.target.closest("[data-site-toggle]");
+    var edit=e.target.closest("[data-site-edit]"),toggle=e.target.closest("[data-site-toggle]"),del=e.target.closest("[data-site-delete]");
     if(currentRole!=="admin")return;
     if(edit){
       var site=managedJobSites.find(function(x){return x.id===edit.getAttribute("data-site-edit");});
@@ -7792,11 +7795,34 @@
       $("saveJobSite").textContent="Save site changes";$("cancelJobSiteEdit").style.display="";
       $("jobSiteName").focus();return;
     }
+    if(del){
+      var site=managedJobSites.find(function(x){return x.id===del.getAttribute("data-site-delete");});
+      if(!site)return;
+      var warning='Permanently delete job site "'+site.name+'"?\n\nIts site-specific QR code will stop working immediately. Existing safety reports and their recorded locations will be preserved, but those reports will appear as unregistered locations in site filters.\n\nThis action cannot be undone.';
+      if(!window.confirm(warning))return;
+      del.disabled=true;
+      var status=$("jobSiteStatus");status.textContent="Deleting job site…";
+      try{
+        var result=await sb.rpc("rbh_delete_job_site",{p_id:site.id});
+        if(result.error)throw result.error;
+        if(editingJobSiteId===site.id)resetJobSiteForm();
+        await loadReports(true);
+        await loadJobSites();
+        var linked=Number(result.data||0);
+        status.textContent='Site deleted. '+(linked?linked+' existing report'+(linked===1?'':'s')+' retained with location text.':'No reports were affected.');
+        toast("Job site deleted; reports preserved","ok");
+      }catch(err){
+        console.error("Job site delete failed",err);
+        status.textContent="Could not delete job site. No reports were removed.";
+        toast("Job site deletion failed","err");
+      }finally{del.disabled=false;}
+      return;
+    }
     if(toggle){
       var site=managedJobSites.find(function(x){return x.id===toggle.getAttribute("data-site-toggle");});
       if(!site)return;
       var next=!site.active;
-      if(!next&&!window.confirm("Deactivate "+site.name+"? Its printed QR code will no longer select this site until reactivated."))return;
+      if(!next)return; // Existing inactive sites may be reactivated, but new deactivation is no longer offered.
       toggle.disabled=true;
       try{
         var result=await sb.rpc("rbh_save_job_site",{p_id:site.id,p_name:site.name,p_address:site.address||"",p_active:next});
