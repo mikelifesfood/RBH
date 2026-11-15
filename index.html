@@ -1079,6 +1079,17 @@
     try{
       var draft=await Q.getDraft();
       if(!draft||!Array.isArray(draft.fields))return;
+      // Never silently overwrite a freshly scanned job-site QR with a draft
+      // saved for another location. It remains stored for recovery on the general form.
+      var requestedSite=new URLSearchParams(window.location.search).get('site')||'';
+      if(/^[a-f0-9]{32}$/.test(requestedSite)&&draft.siteCode!==requestedSite){
+        var mismatch=document.getElementById('offlineDraftStatus');
+        mismatch.hidden=false;
+        mismatch.textContent=offlineLang(
+          'A saved draft belongs to another location. It was not loaded here; open the company-wide form to recover it.',
+          'Hay un borrador guardado para otro lugar. No se cargó aquí; abra el formulario general para recuperarlo.');
+        return;
+      }
       draft.fields.forEach(function(field){
         var el=field.id?document.getElementById(field.id):null;
         if(!el&&field.name){
