@@ -1,12 +1,12 @@
 /* TeamWorkt Build 7 — browser Turnstile integration.
  * This module uses the protected Edge Function only when explicitly enabled
  * by its server config. It never caches or stores Turnstile tokens in IndexedDB.
- * STAGING ONLY: legacy fallback stays allowed until verified secure cutover.
+ * Enforced production mode: never fall back to the anonymous submit_report RPC.
  */
 (function(){
 'use strict';
 var BASE='https://owhkxguiavgxzwvbxevj.supabase.co/functions/v1/submit-public-report';
-var STAGING_LEGACY_FALLBACK=true; // CHANGE TO false during enforced cutover, along with revoking anonymous RPC.
+var STAGING_LEGACY_FALLBACK=false; // Production intake must always be protected.
 var PREVIEW=!!(window.location&&new URLSearchParams(window.location.search).get('build7_preview')==='1');
 var config=null,configTime=0,configPromise=null,challengePromise=null,scriptPromise=null;
 function spanish(){return (document.documentElement.lang||'en').indexOf('es')===0;}
@@ -102,7 +102,7 @@ function askChallenge(settings){
 async function protectedSubmit(payload){
   var settings=await getConfig();
   if(settings.mode==='not_ready')throw fail('SECURITY_VERIFICATION_NOT_READY','PROTECTION_NOT_CONFIGURED');
-  if(settings.mode!=='protected')return null; // staging only; caller uses legacy RPC.
+  if(settings.mode!=='protected'||!settings.ready)throw fail('PROTECTION_NOT_CONFIGURED','PROTECTION_NOT_CONFIGURED');
   if(!settings.sitekey||!settings.action)throw fail('SECURITY_VERIFICATION_NOT_READY','PROTECTION_NOT_CONFIGURED');
   var token=await askChallenge(settings);
   var response;
@@ -121,10 +121,7 @@ async function protectedSubmit(payload){
   return {data:body,error:null};
 }
 async function submit(payload,sb){
-  var result=await protectedSubmit(payload);
-  if(result)return result;
-  if(!STAGING_LEGACY_FALLBACK)throw fail('PROTECTION_NOT_CONFIGURED','PROTECTION_NOT_CONFIGURED');
-  return sb.rpc('submit_report',{payload:payload});
+  return protectedSubmit(payload);
 }
 window.RBHIntake={submit:submit,getConfig:getConfig,
   isStagingLegacy:function(){return STAGING_LEGACY_FALLBACK;},isPreview:function(){return PREVIEW;}};
