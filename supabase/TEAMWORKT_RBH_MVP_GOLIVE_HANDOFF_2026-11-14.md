@@ -46,6 +46,14 @@ These are existing code/prototype features; verify the behavior end-to-end befor
 - **Verified:** transaction-scoped admin RPC set/read for Grouped, Individual and Off, invalid option rejection, Read Only user rejection (rollback preserved no setting row). **Not yet verified:** browser interactions and actual inbox delivery in Grouped and Individual modes; owner should use fictional report(s) to test. No intentional test email issued in this build.
 - **Scope clarification:** company-level individual/grouped/off only affects initial intake emails. Future per-event toggles, workflow email policies or individual user opt-outs are separate enhancements and should be approved explicitly.
 
+## November 15 — Build 5 Safari QA remediation (awaiting retest)
+
+- Owner reported two failed tests: text restored after Safari reopening but photo did not; offline Safari still showed the old "do not submit until reconnect" guidance.
+- Updated `offline-queue.js` to save photo **ArrayBuffer bytes + metadata**, and verify IndexedDB read-back; `index.html` now restores saved bytes as named File objects and confirms image save near the picker. Existing draft text and queued reports have not been deleted or reset.
+- Updated `sw.js` to **`rbh-public-shell-v10-20261115`**, activate the worker promptly, and use network-first script fetching; `index.html` uses versioned script URLs to avoid stale "do not submit" handler.
+- Mock IndexedDB tests passed photo draft/queued roundtrip, offline prevention of network sends, online reconnect, and receipt cleanup. Source syntax checked. **Owner iPhone retest still required**; do not mark Build 5 complete. Previously missing photo may need reattachment.
+- Retest steps and precautions recorded in `docs/TEAMWORKT_BUILD5_OFFLINE_QA_2026-11-15.md`. Important: **Do not clear Safari site data or uninstall PWA to refresh**, because this can erase locally stored unsent content.
+
 ## November 15, 2026 — Build 5: Offline drafts, photos, queue and idempotent retry
 
 **Status:** Implemented in RBH pilot on GitHub `main` and RBH Supabase; static/backend/mocked-queue tests passed. **Requires owner real-device testing before closing Build 5.**
