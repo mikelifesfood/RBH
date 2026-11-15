@@ -39,7 +39,7 @@ Retained: public reporting, offline upload mechanisms, action-specific completio
 
 ## Verified versus still needing live tests
 - Verified: #58 has an active Admin Report Owner; My Work browser acceptance was reported passed; migrated SQL functions and report RLS predicate inspected after deployment.
-- Code-verified, **not yet provider-tested after these changes**: Report Owner self-assignment sends email exactly once. No backfill emails were sent for old assignments.
+- **Assignment email delivery — ACCEPTED (user-tested, 2026-11-15):** User confirmed receiving initial new-report email, Report Owner assignment email, corrective-action assignment email, and corrective-action closed/completion email. Delivery for these four tested cases is signed off. Separate negative-path checks (no duplicate notifications on unchanged assignment, all delivery-mode configurations, and changes-requested notification) are not implied by this sign-off.
 - **Not yet tested with eligible pilot accounts**: live Safety Manager and Supervisor task completion/verification cycles (RBH currently has no active accounts with those roles); create controlled test accounts before claiming complete role acceptance.
 - Subsequent priority: Safety Pulse browser QA, intake after lockdown, offline-photo regression and notification setting QA from the November 15 handoff.
 
