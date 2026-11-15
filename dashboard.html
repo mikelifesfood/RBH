@@ -7754,7 +7754,7 @@
         '</div><div class="jobsite-actions">'+
         '<button type="button" data-site-edit="'+esc(site.id)+'">Edit</button>'+
         (site.active&&poster?'<a href="'+poster+'" target="_blank" rel="noopener noreferrer">Print site QR ↗</a>':'')+
-        '(!site.active?'<button type="button" data-site-toggle="'+esc(site.id)+'">Reactivate</button>':'')+
+        (!site.active?'<button type="button" data-site-toggle="'+esc(site.id)+'">Reactivate</button>':'')+
         '<button type="button" class="jobsite-delete-btn" data-site-delete="'+esc(site.id)+'">Delete</button>'+
         '</div></div>';
     }).join("");
