@@ -46,6 +46,22 @@ These are existing code/prototype features; verify the behavior end-to-end befor
 - **Verified:** transaction-scoped admin RPC set/read for Grouped, Individual and Off, invalid option rejection, Read Only user rejection (rollback preserved no setting row). **Not yet verified:** browser interactions and actual inbox delivery in Grouped and Individual modes; owner should use fictional report(s) to test. No intentional test email issued in this build.
 - **Scope clarification:** company-level individual/grouped/off only affects initial intake emails. Future per-event toggles, workflow email policies or individual user opt-outs are separate enhancements and should be approved explicitly.
 
+## November 15, 2026 — Build 3 Job Sites & Site-Specific QR (RBH pilot)
+
+**Implemented in GitHub `main` and RBH Supabase:**
+- Admin-only job-site registry (create, rename, optional address, activate/deactivate) and unique stable 128-bit public QR identifiers. Existing four roles remain unchanged. Deactivated sites stop resolving, without deleting historical reports.
+- `job-site-poster.html?site=<opaque-code>` generates an active-site-specific printable poster; `report-poster.html` remains the original company-wide QR poster.
+- `index.html?site=<opaque-code>` resolves a site through a server-side function, shows the selected site, and allows reporting another location without the original site association. An invalid/inactive code visibly fails rather than silently associating another site.
+- Existing server-side `submit_report(payload)` validations retained, now validating the site code and associating `reports.job_site_id` with the registered site, while keeping historical free-text `job_site` data.
+- Admin registry under Admin Settings and Safety Inbox site filter (including unregistered/legacy reports).
+- Source: `supabase/patches/20261115_teamworkt_job_site_registry.sql` applied once; `dashboard.html`, `index.html`, and new `job-site-poster.html`.
+
+**Verification:** SQL transaction tests passed site create, rename stability, deactivation, invalid token rejection, report association, and Read Only denial. One persistent fake job-site `RBH Demo Job Site — TEST ONLY` created (no address), code `941f56a8250e46228bfea9d3a740f434`. Fake report **#48** stored the correct site UUID/name; two grouped Brevo provider acceptances recorded. All other existing reports retain null `job_site_id`. All inline browser scripts passed syntax parsing.
+
+**Still requires owner device/browser testing:** Admin create/edit/activate, printed QR scan on iPhone/Android, mobile public form preselection and change-location behavior, actual printable QR rendering (the poster loads pinned `qrcodejs` from a CDN), Save and Safety Inbox filter. Do not mark production-ready or start Build 4 before those browser checks pass.
+
+**Rollback:** revert the specific GitHub commits affecting `dashboard.html`, `index.html`, `job-site-poster.html` to return to the existing company-wide reporting flow. Leave the additive schema/table/column in place while investigating (do not drop live report associations). Do not restore the original SQL submit function without first checking whether current reports depend on the new behavior.
+
 ## 3. CONFIRMED BUILD ADDITIONS for the RBH FULL WORKING DEMO / STANDARD MVP
 The next chat should prioritize completing these, without replacing existing functionality. All remain **unimplemented or not fully demonstrated** unless separately verified.
 
