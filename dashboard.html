@@ -8339,7 +8339,14 @@
   var _ptDays=$("pulseTrendDays"); if(_ptDays)_ptDays.addEventListener("change",function(){if(pulseTrendFilter){pulseTrendFilter.days=Number(this.value)||90;applyFilters();}});
   var _ptClear=$("pulseTrendClear"); if(_ptClear)_ptClear.addEventListener("click",function(){pulseTrendFilter=null;syncPulseTrendToolbar();setQuickFilter("all");});
   var _ho=$("homeOpen"); if(_ho) _ho.addEventListener("click", function(){ if(currentRole!=="read_only") showView("mywork"); else { var sf=$("statusFilter"); if(sf) sf.value="open"; showView("records"); applyFilters(); } });
-  var _hc=$("homeCreate"); if(_hc) _hc.addEventListener("click", function(){ window.open("index.html","_blank","noopener"); });
+  var _hc=$("homeCreate"); if(_hc) _hc.addEventListener("click", function(){
+    var formUrl=new URL("./index.html",window.location.href);
+    formUrl.searchParams.set("from","dashboard");
+    var inInstalledApp=(window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)||navigator.standalone===true;
+    // Installed PWAs should remain in one navigable app window. Desktop browsers retain a separate form tab.
+    if(inInstalledApp)window.location.assign(formUrl.href);
+    else window.open(formUrl.href,"_blank","noopener");
+  });
 
   var _ib=$("incidentBack"); if(_ib) _ib.addEventListener("click", function(){ showView(lastOperationalView==='mywork'?'mywork':(lastOperationalView==='actions'?'actions':'records')); });
   var _hb=$("hamburger"); if(_hb) _hb.addEventListener("click", openSidebar);
