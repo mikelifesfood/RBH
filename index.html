@@ -506,8 +506,8 @@
 
     <div class="actions" id="submitActions">
       <button type="submit" class="submit" data-i18n="btn_submit">Send report to the safety team</button>
-      <button type="button" id="saveOfflineDraft" class="offline-draft-save">Save draft on this device / Guardar borrador</button>
-      <p class="queue-privacy" id="offlineSaveHelp">If you're offline, sending will queue the report and photos on this device. You will not receive a report number until the server receives it.</p>
+      <button type="button" id="saveOfflineDraft" class="offline-draft-save" data-en="Save draft on this device" data-es="Guardar borrador en este dispositivo">Save draft on this device</button>
+      <p class="queue-privacy" id="offlineSaveHelp" data-en="If you are offline, sending queues the report and photos on this device. You will receive a report number only after the server receives the report." data-es="Sin conexión, el reporte y las fotos quedarán en espera en este dispositivo. Recibirá un número de reporte solo después de que el servidor lo reciba.">If you are offline, sending queues the report and photos on this device. You will receive a report number only after the server receives the report.</p>
       <div class="send-err" id="sendErr" role="alert"></div>
       <p class="form-foot" data-i18n="foot_submit">Takes about a minute. Report early — even if you're not sure it's a big deal.</p>
       <p class="legal-note" data-i18n="legal_note">RBH does not retaliate against anyone who reports a safety concern in good faith (California Labor Code §6310). This information is used only to investigate and improve job-site safety.</p>
@@ -754,6 +754,9 @@
     if(!I18N[lang]) lang="en";
     CUR=lang;
     document.documentElement.lang=lang;
+    document.querySelectorAll('[data-en][data-es]').forEach(function(el){
+      el.textContent=el.getAttribute(lang==='es'?'data-es':'data-en');
+    });
     document.querySelectorAll('[data-i18n]').forEach(function(el){
       var k=el.getAttribute('data-i18n'); if(I18N[lang][k]!=null) el.textContent=I18N[lang][k];
     });
@@ -764,6 +767,9 @@
       var k=el.getAttribute('data-i18n-tip'); if(I18N[lang][k]!=null) el.setAttribute('data-tip',I18N[lang][k]);
     });
     if(document.getElementById('qrSiteContext')) renderQrSiteContext();
+    if(typeof Q!=='undefined'&&Q&&typeof syncOutboxUI==='function'){
+      syncOutboxUI().catch(function(e){console.warn('Offline labels refresh failed',e);});
+    }
     document.querySelectorAll('.lang button').forEach(function(b){
       var on=b.getAttribute('data-lang')===lang;
       b.classList.toggle('active',on); b.setAttribute('aria-pressed',on?'true':'false');
@@ -1027,6 +1033,7 @@
   }
 
   var activeQueuedId=null,draftSaveTimer=null,draftRestorePending=false;
+  var draftSaveInFlight=Promise.resolve();
   var Q=window.RBHQueue;
   if(Q) Q.configure(getClient);
   function offlineLang(en,es){return CUR==='es'?es:en;}
@@ -1052,7 +1059,8 @@
     if(!Q||draftRestorePending||form.style.display==='none')return;
     var draft=currentDraft();
     if(!force&&!hasDraftContent(draft))return;
-    await Q.saveDraft(draft);
+    draftSaveInFlight=Q.saveDraft(draft);
+    await draftSaveInFlight;
     var status=document.getElementById('offlineDraftStatus');
     status.hidden=false;
     status.textContent=offlineLang('Draft saved on this device — not submitted.','Borrador guardado en este dispositivo — no enviado.');
@@ -1242,6 +1250,7 @@
     try{
       if(!Q)throw new Error('OFFLINE_QUEUE_SCRIPT_NOT_AVAILABLE');
       clearTimeout(draftSaveTimer);
+      await draftSaveInFlight.catch(function(){/* A failed prior autosave does not block a new, atomic queue write. */});
       var draft=currentDraft();
       var payload=buildPayload(type);
       var record=await Q.enqueue(payload,files,{reportType:type,snapshot:{fields:draft.fields,siteCode:draft.siteCode,siteInfo:draft.siteInfo}});
