@@ -3,7 +3,7 @@
  * Never cache dashboard HTML, Supabase responses, Auth tokens, images uploaded
  * to Storage, incident records or POST/PUT/PATCH/DELETE requests.
  */
-const CACHE_NAME = 'rbh-public-shell-v8-20261115';
+const CACHE_NAME = 'rbh-public-shell-v9-20261115';
 const SCOPE = new URL(self.registration.scope);
 const FORM = new URL('index.html', SCOPE);
 const OFFLINE = new URL('offline.html', SCOPE);
@@ -17,7 +17,11 @@ const ASSETS = [
 ];
 
 self.addEventListener('install',event=>{
-  event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.addAll(ASSETS)));
+  event.waitUntil((async()=>{
+    const cache=await caches.open(CACHE_NAME);
+    await cache.addAll(ASSETS);
+    await self.skipWaiting();
+  })());
 });
 self.addEventListener('activate',event=>{
   event.waitUntil((async()=>{
@@ -33,8 +37,23 @@ self.addEventListener('fetch',event=>{
   if(url.origin!==SCOPE.origin)return;
   // These safe static assets must be readable offline as well as the HTML shell.
   // In particular pwa-client.js supplies the explicit no-offline-submission notice.
-  if(ASSETS.includes(url.href)&&url.pathname!==FORM.pathname&&url.pathname!==OFFLINE.pathname){
-    event.respondWith(caches.match(url.href).then(cached=>cached||fetch(req)));
+  // Cache-busting query strings are canonicalized to the safe static asset key.
+  // JS scripts are network-first so a prior Safari cache cannot keep the old
+  // "do not submit" handler after Build 5 has enabled offline submission.
+  const staticKey=new URL(url.pathname,url.origin).href;
+  if(ASSETS.includes(staticKey)&&url.pathname!==FORM.pathname&&url.pathname!==OFFLINE.pathname){
+    event.respondWith((async()=>{
+      const cache=await caches.open(CACHE_NAME);
+      try{
+        const response=await fetch(req);
+        if(response.ok&&response.type==='basic')await cache.put(staticKey,response.clone());
+        return response;
+      }catch(e){
+        const cached=await cache.match(staticKey);
+        if(cached)return cached;
+        throw e;
+      }
+    })());
     return;
   }
   if(req.mode!=='navigate')return;
