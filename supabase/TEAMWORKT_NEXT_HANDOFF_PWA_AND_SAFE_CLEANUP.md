@@ -1,9 +1,28 @@
 # TeamWorkt Safety — Next Handoff: PWA, QR, Roles, and Safe Cleanup
 Updated: November 14, 2026
 Repository: `mikelifesfood/RBH`
-Working branch: `teamworkt/supabase-security-20261114`
-Live GitHub Pages: `main` (not changed during this refactor)
+Working branch: `main` (consolidated November 15)
+Live GitHub Pages: `main` (Build 4 committed November 15; browser/device tests pending)
 Pilot Supabase: RBH Insulation, project `owhkxguiavgxzwvbxevj`
+
+## November 15, 2026 — Build 4: PWA installation and safe public-form caching
+
+**Implemented on GitHub `main`, GitHub Pages hosting (no Supabase/Edge/Brevo changes):**
+- Separate PWA manifests for the anonymous public intake (`manifest.webmanifest`, starts at `./`) and authorized staff dashboard (`dashboard.webmanifest`, starts at `./dashboard.html`). Both use `./` scope and distinct IDs to permit separately labeled Home Screen shortcuts.
+- Added app icons `icons/icon-192.png`, `icons/icon-512.png` (maskable), `icons/apple-touch-icon.png` for supported Android/desktop/iPhone installation.
+- Added `pwa-client.js` with opt-in browser installation prompt, iOS Safari Add to Home Screen directions and bilingual offline warning for the reporting form.
+- Added `sw.js` (cache name `rbh-public-shell-v3-20261115`) and `offline.html` with English/Spanish guidance. The service worker stores only public form HTML, safe install icons, the warning script, and the static offline page. Public form navigation is **network-first** with cached shell fallback. Dashboard navigation is network-only, with **static offline explanation** if unreachable. It does **not** cache signed-in dashboards, report data, photos, login tokens, Supabase API responses, notification endpoints, or any POST. Cross-origin resources are never intercepted.
+- Changed only `index.html` and `dashboard.html` to add their respective manifest, icon tags and defer-loaded PWA client. QR URLs, report submission and existing roles/workflows remain unchanged.
+
+**Verification:** GitHub new files and icon object SHA/size confirmed. Web manifests parse as JSON with intended start URLs and icons. JavaScript in `index.html`, `dashboard.html`, `pwa-client.js` and `sw.js` passed static syntax checks. Service worker was simulated with mocked fetch/cache: GET public online goes to network, public offline falls back to cached HTML, dashboard offline falls back to `offline.html`, cached `pwa-client.js` remains available offline; private Supabase requests and POST submissions are not intercepted or cached.
+
+**Not yet confirmed:** Live GitHub Pages availability of newly published assets (remote web fetch was unavailable), real Android Chrome and iOS Safari installation, home-screen icon appearance, real airplane-mode navigation, browser storage eviction, real QR navigation after installation. **Do not mark the PWA as device-tested yet.**
+
+**Critical scope:** Build 4 does **not** implement offline report drafts or offline photo queues. The previously loaded public form may display when disconnected, but explicitly warns **view only**, and submission is blocked when `navigator.onLine===false`. An already filled report is not saved offline. Reliable offline drafts, photos, upload retries and server-side idempotency keys remain a separate later build; never tell users an offline report was submitted.
+
+**Owner test gate:** Open both URLs over HTTPS online, verify manifest/icon/install or Add to Home Screen, install the public reporting app and staff dashboard separately (if supported). Visit public form online once before airplane mode. Disconnect and reopen: public form should display an amber offline warning and reject submission; staff shortcut should show a safe offline message without cached reports. Reconnect and verify normal reporting and logged-in dashboard functionality still work. Device/OS browser install prompts are not identical, and background syncing is not promised.
+
+**Rollback:** Revert only Build 4 web HTML link/script changes and new static resources as necessary. **Previously installed service workers remain registered on devices** even after server files are removed; for a full rollback, temporarily deploy a worker that deletes `rbh-public-shell-*` caches, tells clients to unregister, and verify those clients receive it before removing `sw.js`. Avoid deleting service-worker code first and leaving old installed caches orphaned. No database rollback is required.
 
 ## Decisions locked in
 1. **One installation per paying customer.** Each business will have an independently deployed website/PWA, Supabase project, Auth users, Storage, Edge Functions, secrets, reporting data, and Brevo configuration. Shared master code and migrations, not a shared customer database.
