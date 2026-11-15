@@ -112,7 +112,7 @@ Deno.serve(async req=>{
     if(msg.includes("SUBMISSION_KEY_PAYLOAD_MISMATCH"))return failure(409,"SUBMISSION_KEY_PAYLOAD_MISMATCH");
     if(/INVALID_REPORT|REPORT_FIELD|INVALID_OR_INACTIVE_SITE_CODE|INVALID_OBSERVED/.test(msg))
       return failure(400,"INVALID_REPORT",{detail:msg.slice(0,120)});
-    console.warn("Protected intake unavailable (without logging report or token)",msg.slice(0,90));
+    console.warn("Protected intake temporarily unavailable; content and tokens intentionally omitted");
     return failure(503,"TEMPORARILY_UNAVAILABLE",{retryable:true});
   }
 });
