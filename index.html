@@ -585,7 +585,8 @@
 
 <div id="tip" role="tooltip"></div>
 
-<script src="./offline-queue.js?v=20261115-photo-fix1"></script>
+<script src="./turnstile-intake.js?v=20261115-build7-stage1"></script>
+<script src="./offline-queue.js?v=20261115-build7-stage1"></script>
 <script>
 (function(){
   "use strict";
@@ -1396,7 +1397,7 @@
     var data=Object.assign({},attempt.payload,{
       client_submission_key:attempt.id,offline_upload_token:attempt.uploadToken
     });
-    var result=await sb.rpc('submit_report',{payload:data});
+    var result=window.RBHIntake?await window.RBHIntake.submit(data,sb):await sb.rpc('submit_report',{payload:data});
     if(result.error)throw result.error;
     if(!result.data||!result.data.id||!result.data.ref_no)throw new Error('SERVER_RECEIPT_MISSING');
     var reportId=result.data.id,ref=result.data.ref_no,failed=0;
