@@ -3,13 +3,14 @@
  * Never cache dashboard HTML, Supabase responses, Auth tokens, images uploaded
  * to Storage, incident records or POST/PUT/PATCH/DELETE requests.
  */
-const CACHE_NAME = 'rbh-public-shell-v12-20261115';
+const CACHE_NAME = 'rbh-public-shell-v13-20261115';
 const SCOPE = new URL(self.registration.scope);
 const FORM = new URL('index.html', SCOPE);
 const OFFLINE = new URL('offline.html', SCOPE);
 const ASSETS = [
   FORM.href, OFFLINE.href,
   new URL('pwa-client.js',SCOPE).href,
+  new URL('turnstile-intake.js',SCOPE).href,
   new URL('offline-queue.js',SCOPE).href,
   new URL('icons/icon-192.png',SCOPE).href,
   new URL('icons/icon-512.png',SCOPE).href,
