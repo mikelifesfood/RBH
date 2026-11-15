@@ -3,7 +3,7 @@ Last verified against the RBH pilot: 2026-11-14
 
 ## Deployment boundary
 
-**Current direction:** use the RBH Supabase project as a pilot, but deploy separate customer databases/projects for customer production. This avoids placing all customers' incident reports and evidence in a shared production Supabase project. Per-project costs, backups, secret management, migrations, and operational maintenance need to be included in the commercial rollout plan.
+**Confirmed product requirement:** Each paying customer receives its own complete TeamWorkt Safety deployment: independent application hosting/deployment, Supabase project/database, Auth users, private file storage, Edge Functions, secrets, and notifications. RBH remains the pilot; the reusable master source code and repeatable migration/installation process are shared, but customer records are never combined in a central multi-company Supabase database. Per-installation costs, backups, secret management, migrations, and maintenance must be reflected in pricing. Existing RBH organization-scoped checks remain as defense in depth, not as a shared multi-tenant architecture.
 
 Do not clone RBH production test records, Auth users, Storage objects, active webhook secrets, or Brevo history into a customer's project.
 
@@ -54,3 +54,19 @@ For each customer deployment, capture: customer legal/display name, generated or
 A full schema baseline should be derived by an explicit schema-only export of the pilot, then reviewed to remove RBH-specific data, literal company IDs, legacy/duplicate policies and demo-only objects. Ensure the database triggers and every Edge Function are represented in source control. Rehearse installation into a new blank test project before declaring the installation reproducible.
 
 This draft makes no changes to the RBH application's live tenant, users, test data, or GitHub `main`.
+
+
+## Confirmed job-site QR reporting requirement
+
+- Workers must be able to scan a QR code physically posted at a job site and submit a safety report on a mobile-friendly page without signing in, creating an account, or installing an app.
+- Each customer installation must support an optional **company-wide reporting QR code** and **site-specific QR codes**; QR codes link only to that customer's independent reporting website and database.
+- A site-specific QR code should include an opaque, non-secret site identifier in the URL. Backend validation maps this identifier to a site within the **current customer's isolated installation**; do not trust arbitrary site names or organization IDs in the request.
+- The reporting page should show the site name clearly, allow workers to confirm the correct location, and provide a way to select another site or report a site that is not listed (subject to customer configuration).
+- Submission collects report type, description, relevant date/time, optional photos/evidence, and optional contact information, retaining English/Spanish accessibility and existing notification/investigation workflows.
+- The same printed site QR code must stay useful if the site is renamed. Admins should be able to deactivate a lost or obsolete QR code or a completed site, and generate printable posters/PDFs.
+- Protect public QR entry against abuse using a backend-enforced verification flow, preferably Cloudflare Turnstile Managed mode subject to user approval; simply adding a client-side widget without a protected backend endpoint is insufficient.
+- Do not print secrets, keys, employee information, or raw database credentials in QR codes.
+- Future engineering tasks: add a job-site registry (site name, status, opaque public code, optional address), site code management within customer admin UI, QR code generation/download, validated prefill on public intake, report/site association, and job-site filters in dashboard and notification rules.
+- Keep anonymous submission as a first-class requirement; rate limiting and verification must not impose an employee account requirement.
+
+**Implementation status:** Product architecture and QR workflow are confirmed. This document update makes no live database or frontend changes; job-site registry, QR poster generation, and Turnstile backend enforcement still require implementation and testing.
