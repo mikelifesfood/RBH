@@ -1519,6 +1519,7 @@
           <div class="toolbar">
             <div class="chips" id="chips"><button class="chip active" data-chip="all" type="button">All</button><button class="chip" data-chip="open" type="button">Open</button><button class="chip" data-chip="overdue" type="button">Overdue</button><button class="chip" data-chip="injuries" type="button">Injuries</button><button class="chip" data-chip="new" type="button">New</button><button class="chip" data-chip="closed" type="button">Closed</button></div>
             <input type="text" class="search" id="search" placeholder="Search reports…">
+            <select id="jobSiteFilter" aria-label="Filter reports by job site"><option value="">All job sites</option></select>
             <select id="statusFilter">
               <option value="all">All statuses</option>
               <option value="open">Open (active)</option>
@@ -2887,6 +2888,7 @@
       var nextFingerprint=liveDataFingerprint(rep.data||[],ca.data||[],at.data||[]);
       var dataChanged=nextFingerprint!==lastLiveDataFingerprint;
       allReports=rep.data||[];
+      refreshJobSiteFilter();
       allCorrectiveActions=ca.data||[];
 
       // Build attachment state locally, then replace it in one step. This prevents
@@ -2909,6 +2911,7 @@
   }
   $("refresh").addEventListener("click", async function(){ await loadReports(); await loadNotifications(true); });
   $("search").addEventListener("input", applyFilters);
+  $("jobSiteFilter").addEventListener("change",applyFilters);
   $("statusFilter").addEventListener("change", function(){ overdueOnly=false; injuryOnly=false; closedOnly=false; var v=$("statusFilter").value; var chip=(v==="all"||v==="open"||v==="new")?v:(["closed","no_action","duplicate"].indexOf(v)>=0?"closed":""); setActiveChip(chip); applyFilters(); });
 
   /* ---------- Step 12B: attention-only notification panel ---------- */
@@ -3117,6 +3120,20 @@
   document.addEventListener("keydown",function(e){if(e.key==="Escape")closeNotificationPanel();});
   document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible"&&currentSession){loadNotifications(true);handleAppVisible();}});
 
+  function refreshJobSiteFilter(){
+    var sel=$("jobSiteFilter");if(!sel)return;
+    var chosen=sel.value,sites=new Map();
+    allReports.forEach(function(r){
+      if(r.job_site_id&&!sites.has(String(r.job_site_id)))sites.set(String(r.job_site_id),String(r.job_site||"Registered job site"));
+    });
+    var options='<option value="">All job sites</option><option value="unregistered">Other / unregistered locations</option>';
+    Array.from(sites.entries()).sort(function(a,b){return a[1].localeCompare(b[1]);}).forEach(function(pair){
+      options+='<option value="'+esc(pair[0])+'">'+esc(pair[1])+'</option>';
+    });
+    sel.innerHTML=options;
+    sel.value=chosen;
+    if(sel.selectedIndex<0)sel.value="";
+  }
   function applyFilters(){
     var q=($("search").value||"").toLowerCase().trim(), st=$("statusFilter").value;
     var explicitResolvedStatus=["closed","no_action","duplicate"].indexOf(st)>=0;
@@ -3129,6 +3146,9 @@
       else if(!explicitResolvedStatus && resolved) return false;
       if(overdueOnly && !isOverdue(r)) return false;
       if(injuryOnly && !r.involves_injury) return false;
+      var siteFilter=$("jobSiteFilter")?$("jobSiteFilter").value:"";
+      if(siteFilter==="unregistered"&&r.job_site_id)return false;
+      if(siteFilter&&siteFilter!=="unregistered"&&String(r.job_site_id||"")!==siteFilter)return false;
       if(st==="open"){ if(resolved) return false; }
       else if(st!=="all" && r.status!==st) return false;
       if(q){ var hay=[r.ref_no,r.report_type,r.description,r.hazard_category,r.reporter_name,r.people_involved,r.potential_severity,r.reporter_role,r.responsible_person,reportOwnerName(r),assigneeName(r),r.action_status,r.job_site]
@@ -7754,7 +7774,8 @@
     if(!name||name.length>120||address.length>300)return;
     var status=$("jobSiteStatus"),btn=$("saveJobSite");btn.disabled=true;status.textContent="Saving job site…";
     try{
-      var result=await sb.rpc("rbh_save_job_site",{p_id:editingJobSiteId,p_name:name,p_address:address,p_active:true});
+      var existingSite=editingJobSiteId?managedJobSites.find(function(x){return x.id===editingJobSiteId;}):null;
+      var result=await sb.rpc("rbh_save_job_site",{p_id:editingJobSiteId,p_name:name,p_address:address,p_active:existingSite?!!existingSite.active:true});
       if(result.error)throw result.error;
       resetJobSiteForm();await loadJobSites();toast("Job site saved","ok");
     }catch(err){console.error("Could not save job site",err);status.textContent="Could not save job site. Please try again.";toast("Job site not saved","err");}
