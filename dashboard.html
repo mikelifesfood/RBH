@@ -891,6 +891,16 @@
   .mc-v{font-size:12px;color:var(--ink);font-weight:700}
 
   /* ---------- 15. Admin ---------- */
+  .admin-settings-heading{margin:26px 0 12px;padding:0 2px 10px;border-bottom:2px solid var(--line-strong)}
+  .admin-settings-heading h3{margin:0;color:var(--ink);font-size:20px;font-weight:850}
+  .admin-settings-heading p{margin:4px 0 0;color:var(--muted);font-size:13.5px}
+  .user-settings-heading{margin-top:28px}
+  .report-email-select-wrap{display:block;position:relative;min-width:285px;max-width:100%}
+  .report-email-select-wrap select{display:block;width:100%;min-height:46px;max-width:100%;appearance:none;-webkit-appearance:none;border:1.5px solid var(--line-strong);border-radius:8px;background:var(--paper);color:var(--ink);font:inherit;font-size:14px;font-weight:700;padding:10px 46px 10px 12px;cursor:pointer}
+  .report-email-select-wrap::after{content:"";position:absolute;right:17px;top:50%;width:9px;height:9px;border-right:2.5px solid var(--ink);border-bottom:2.5px solid var(--ink);transform:translateY(-70%) rotate(45deg);pointer-events:none}
+  .report-email-select-wrap select:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+  .report-email-select-wrap select:disabled{cursor:wait;opacity:.65}
+  @media(max-width:480px){.report-email-select-wrap{min-width:0;width:100%}}
   .admin-info{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:16px 18px;margin-bottom:14px}
   .admin-info h3{margin:0 0 4px;font-size:15px}
   .admin-info p{margin:0;color:var(--muted);font-size:13.5px}
@@ -1549,17 +1559,19 @@
 
         <section class="view" id="view-users" hidden>
           <div class="section-head"><div><h2>Admin</h2><p>Manage application roles and dashboard access.</p></div></div>
-          <div class="admin-info"><h3>Role-based access</h3><p>New dashboard users start as Read Only until an Admin assigns the appropriate role. Access can be updated at any time by another Admin.</p></div>
+          <div class="admin-settings-heading"><h3>Admin Settings</h3><p>Manage company reporting, notifications, and records.</p></div>
           <div class="admin-info" id="reportEmailPreferences">
             <h3>New report email notifications</h3>
             <p>Choose how active Admins and Safety Managers receive the initial email when a report is submitted. Assignment, investigation, corrective action, and in-app alerts are not changed by this setting.</p>
             <div style="display:flex;flex-wrap:wrap;align-items:end;gap:10px;margin-top:12px">
               <label for="reportEmailMode" style="display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:700">Email delivery
-                <select id="reportEmailMode" disabled style="min-width:225px;padding:10px;border:1px solid var(--line-strong);border-radius:8px;background:var(--paper);color:var(--ink);font:inherit">
+                <span class="report-email-select-wrap">
+                  <select id="reportEmailMode" disabled aria-label="Email delivery mode">
                   <option value="grouped">Grouped email (current default)</option>
                   <option value="individual">Individual email per recipient</option>
                   <option value="off">Off — no new report emails</option>
-                </select>
+                  </select>
+                </span>
               </label>
               <button id="saveReportEmailMode" type="button" class="archive-export-btn" disabled>Save email setting</button>
             </div>
@@ -1586,6 +1598,8 @@
               <div class="archive-export-status" id="exportCompanyArchiveStatus" aria-live="polite"></div>
             </div>
           </div>
+          <div class="admin-settings-heading user-settings-heading"><h3>User Settings</h3><p>Manage dashboard access, user roles, and account history.</p></div>
+          <div class="admin-info"><h3>Role-based access</h3><p>New dashboard users start as Read Only until an Admin assigns the appropriate role. Access can be updated at any time by another Admin.</p></div>
           <div class="role-legend">
             <div class="role-card"><b>Admin</b><span>Full operational access plus user roles and account activation.</span></div>
             <div class="role-card"><b>Safety Manager</b><span>Full incident, investigation, corrective-action, and verification access.</span></div>
