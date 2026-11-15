@@ -245,6 +245,24 @@
   #site[readonly]{background:#f1f4f1;color:#314a3d}
   @media(max-width:540px){.qr-site-context{flex-direction:column;align-items:flex-start}}
 
+  /* Build 5 — local draft/queued reporting feedback */
+  .offline-outbox{margin:22px 0 12px;border:1px solid var(--line);border-radius:var(--radius);padding:16px;background:var(--paper);box-shadow:var(--shadow)}
+  .offline-outbox h2{margin:0 0 7px;font-size:17px;font-family:var(--display)}
+  .queue-privacy{margin:6px 0 11px;font-size:12px;line-height:1.6;color:var(--muted)}
+  .offline-draft-status{font-size:13px;font-weight:650;color:var(--ok);padding:10px;border:1px solid #b5dfc1;background:#f1faf3;border-radius:8px;margin:8px 0}
+  .offline-outbox-list{display:grid;gap:8px}
+  .offline-outbox-item{border:1px solid var(--line);border-radius:8px;padding:12px;background:var(--surface)}
+  .offline-outbox-item strong{display:block;font-size:14px}
+  .offline-outbox-item p{margin:5px 0 8px;font-size:12.5px;color:var(--ink);overflow-wrap:anywhere}
+  .offline-outbox-item .queue-btn{font:700 12px var(--sans);cursor:pointer;border:1px solid var(--line-strong);background:var(--paper);color:var(--ink);border-radius:7px;margin:3px 6px 0 0;padding:8px 10px}
+  .offline-outbox-item .queue-danger{color:var(--red-dark);border-color:var(--red)}
+  .offline-draft-save{width:100%;font:700 13px var(--sans);padding:11px;border:1px solid var(--line-strong);border-radius:9px;background:var(--paper);color:var(--ink);cursor:pointer}
+  .offline-pending{margin:20px 0;background:#fff5dc;border:2px solid #b57616;border-radius:11px;padding:18px}
+  .offline-pending[hidden],.offline-draft-status[hidden]{display:none!important}
+  .offline-pending h2{font-size:19px;line-height:1.3;color:#6c4100;margin:0 0 9px}
+  .offline-pending p{font-size:14px;color:#614316;line-height:1.6;margin:0 0 14px}
+  .offline-pending button{margin:6px 7px 0 0}
+
 </style>
 </head>
 <body>
@@ -488,11 +506,26 @@
 
     <div class="actions" id="submitActions">
       <button type="submit" class="submit" data-i18n="btn_submit">Send report to the safety team</button>
+      <button type="button" id="saveOfflineDraft" class="offline-draft-save">Save draft on this device / Guardar borrador</button>
+      <p class="queue-privacy" id="offlineSaveHelp">If you're offline, sending will queue the report and photos on this device. You will not receive a report number until the server receives it.</p>
       <div class="send-err" id="sendErr" role="alert"></div>
       <p class="form-foot" data-i18n="foot_submit">Takes about a minute. Report early — even if you're not sure it's a big deal.</p>
       <p class="legal-note" data-i18n="legal_note">RBH does not retaliate against anyone who reports a safety concern in good faith (California Labor Code §6310). This information is used only to investigate and improve job-site safety.</p>
     </div>
   </form>
+
+  <section class="offline-outbox" id="offlineOutbox" aria-live="polite">
+    <h2 data-en="Saved reports on this device" data-es="Reportes guardados en este dispositivo">Saved reports on this device</h2>
+    <p class="queue-privacy" data-en="Drafts and photos stay in this browser on this device until they are sent or deleted. Anyone with access to this device may see them. Do not clear browser data or uninstall the app while reports are pending." data-es="Los borradores y las fotos permanecen en este navegador hasta que se envían o eliminan. Otras personas con acceso a este dispositivo podrían verlos. No borre los datos ni desinstale la aplicación mientras haya reportes pendientes.">Drafts and photos stay in this browser on this device until they are sent or deleted. Anyone with access to this device may see them. Do not clear browser data or uninstall the app while reports are pending.</p>
+    <p id="offlineDraftStatus" class="offline-draft-status" role="status" hidden></p>
+    <div id="offlineOutboxList" class="offline-outbox-list"></div>
+  </section>
+  <section class="offline-pending" id="offlinePending" hidden aria-live="assertive">
+    <h2 id="offlinePendingTitle">Saved on this device — NOT SUBMITTED</h2>
+    <p id="offlinePendingMessage">Your report and photos are queued locally. This is not a report confirmation. Keep this app installed, then reconnect and reopen it to send.</p>
+    <button id="offlinePendingNew" type="button" class="btn2 primary">Start another report</button>
+    <button id="offlinePendingRetry" type="button" class="btn2">Retry now</button>
+  </section>
 
   <section class="success" id="success" aria-live="polite">
     <div class="check"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
@@ -516,6 +549,7 @@
 
 <div id="tip" role="tooltip"></div>
 
+<script src="./offline-queue.js"></script>
 <script>
 (function(){
   "use strict";
@@ -810,7 +844,7 @@
       meta.innerHTML='<div class="fname"></div><div class="fsize">'+fmtSize(f.size)+'</div>';
       meta.querySelector('.fname').textContent=f.name;
       var rm=document.createElement('button'); rm.className='rm'; rm.type='button'; rm.setAttribute('aria-label','Remove '+f.name); rm.innerHTML='&times;';
-      rm.addEventListener('click',function(){ files.splice(i,1); render(); setFileStatus(''); });
+      rm.addEventListener('click',function(){ files.splice(i,1); render(); setFileStatus(''); if(typeof scheduleDraftSave==='function')scheduleDraftSave(); });
       li.appendChild(thumb); li.appendChild(meta); li.appendChild(rm); list.appendChild(li);
     });
   }
@@ -853,6 +887,7 @@
       files.push(f);
     }
     render();
+    if(typeof scheduleDraftSave==='function')scheduleDraftSave();
     if(rejected.length) setFileStatus(rejected[0]+' '+t('file_too_large'),true);
     else if(hitLimit) setFileStatus(t('file_limit'),true);
     else if(optimized) setFileStatus(t('photo_optimized'),false);
@@ -990,32 +1025,231 @@
     return head+'\n'+t('sum_submitted')+': '+stamp+'\n\n'+lines.join('\n');
   }
 
-  async function submitReport(type){
-    var btn=form.querySelector('button.submit');
-    btn.disabled=true; btn.textContent=t('btn_sending');
+  var activeQueuedId=null,draftSaveTimer=null,draftRestorePending=false;
+  var Q=window.RBHQueue;
+  if(Q) Q.configure(getClient);
+  function offlineLang(en,es){return CUR==='es'?es:en;}
+  function snapshotFields(){
+    return Array.prototype.slice.call(form.querySelectorAll('input,select,textarea')).filter(function(el){
+      return el.type!=='file'&&el.id!=='companyWebsite'&&!!(el.name||el.id);
+    }).map(function(el){return {id:el.id||'',name:el.name||'',type:el.type||'',value:el.value,checked:!!el.checked};});
+  }
+  function currentDraft(){
+    return {fields:snapshotFields(),files:files.slice(),siteCode:validatedQrSiteCode,
+      siteInfo:validatedQrSite,updatedAt:Date.now()};
+  }
+  function hasDraftContent(draft){
+    if(draft.files.length)return true;
+    return draft.fields.some(function(f){
+      if(f.type==='radio'||f.type==='checkbox')return f.checked;
+      if(f.id==='observed')return false;
+      if(f.id==='site'&&validatedQrSiteCode)return false;
+      return !!String(f.value||'').trim();
+    });
+  }
+  async function persistDraft(force){
+    if(!Q||draftRestorePending||form.style.display==='none')return;
+    var draft=currentDraft();
+    if(!force&&!hasDraftContent(draft))return;
+    await Q.saveDraft(draft);
+    var status=document.getElementById('offlineDraftStatus');
+    status.hidden=false;
+    status.textContent=offlineLang('Draft saved on this device — not submitted.','Borrador guardado en este dispositivo — no enviado.');
+  }
+  function scheduleDraftSave(){
+    clearTimeout(draftSaveTimer);
+    draftSaveTimer=setTimeout(function(){persistDraft(false).catch(function(e){
+      console.error('Could not save offline draft',e);
+      var status=document.getElementById('offlineDraftStatus');
+      status.hidden=false;status.textContent=offlineLang('Draft could not be saved. Check device storage.','No se pudo guardar el borrador. Revise el almacenamiento.');
+    });},700);
+  }
+  async function restoreDraftFromDevice(){
+    if(!Q)return;
+    draftRestorePending=true;
     try{
-      var sb=getClient();
-      if(!sb) throw new Error('client-unavailable');
-      var res=await sb.rpc('submit_report',{ payload:buildPayload(type) });
-      if(res.error) throw res.error;
-      var out=res.data||{}; var id=out.id, ref=out.ref_no;
-      var failed=0;
-      for(var i=0;i<files.length;i++){
-        try{
-          var f=files[i];
-          var safe=(f.name||'file').replace(/[^a-zA-Z0-9._-]/g,'_'); if(safe.length>120) safe=safe.slice(-120);
-          var path='reports/'+id+'/'+Date.now()+'_'+i+'_'+safe;
-          var up=await sb.storage.from('report-attachments').upload(path,f,{ contentType:f.type||undefined, upsert:false });
-          if(up.error){ failed++; continue; }
-          var ins=await sb.rpc('add_attachment',{ p_report_id:id, p_storage_path:path, p_file_name:f.name, p_mime_type:f.type||null, p_size_bytes:f.size||null });
-          if(ins.error){ failed++; }
-        }catch(e){ failed++; }
+      var draft=await Q.getDraft();
+      if(!draft||!Array.isArray(draft.fields))return;
+      draft.fields.forEach(function(field){
+        var el=field.id?document.getElementById(field.id):null;
+        if(!el&&field.name){
+          var candidates=form.querySelectorAll('[name="'+field.name.replace(/"/g,'')+'"]');
+          for(var i=0;i<candidates.length;i++)if(candidates[i].value===field.value){el=candidates[i];break;}
+        }
+        if(!el)return;
+        if(field.type==='checkbox'||field.type==='radio')el.checked=!!field.checked;
+        else el.value=field.value==null?'':field.value;
+      });
+      files=Array.isArray(draft.files)?draft.files.slice():[];
+      render();
+      if(draft.siteCode&&draft.siteInfo){
+        validatedQrSiteCode=draft.siteCode;validatedQrSite=draft.siteInfo;
+        site.value=draft.siteInfo.address||draft.siteInfo.name;
+        site.readOnly=true;renderQrSiteContext();
       }
-      showSuccess(type, ref, failed);
+      syncInjuryState();
+      var status=document.getElementById('offlineDraftStatus');
+      status.hidden=false;
+      status.textContent=offlineLang('Previous draft restored from this device. It has NOT been submitted.',
+        'Se restauró el borrador de este dispositivo. NO se ha enviado.');
+    }catch(e){console.error('Draft restore unavailable',e);}
+    finally{draftRestorePending=false;}
+  }
+  function resetAfterQueued(){
+    form.style.display='';
+    document.getElementById('offlinePending').hidden=true;
+    document.getElementById('success').classList.remove('show');
+    activeQueuedId=null;
+    var button=form.querySelector('button.submit');button.disabled=false;button.textContent=t('btn_submit');
+    form.reset();files=[];render();clearErr();hideSendErr();setFileStatus('');
+    if(validatedQrSite){site.value=validatedQrSite.address||validatedQrSite.name;site.readOnly=true;renderQrSiteContext();}
+    if(injuryWarn)injuryWarn.classList.remove('show');
+    syncInjuryState();fillObservedNow(true);
+    var status=document.getElementById('offlineDraftStatus');status.hidden=true;
+    if(Q)Q.clearDraft().catch(function(e){console.warn('Could not clear draft',e);});
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  function showQueued(){
+    form.style.display='none';
+    var banner=document.getElementById('offlinePending');banner.hidden=false;
+    document.getElementById('offlinePendingTitle').textContent=offlineLang(
+      'Saved on this device — NOT SUBMITTED','Guardado en este dispositivo — NO ENVIADO');
+    document.getElementById('offlinePendingMessage').textContent=offlineLang(
+      'Your report and photos are safely queued on this device, but the safety team has NOT received them yet. Reconnect and reopen this app to send. Do not remove browser data.',
+      'El reporte y las fotos están en espera en este dispositivo, pero el equipo de seguridad aún NO los ha recibido. Conéctese y abra esta aplicación para enviarlos. No borre los datos del navegador.');
+    document.getElementById('offlinePendingNew').textContent=offlineLang('Start another report','Crear otro reporte');
+    document.getElementById('offlinePendingRetry').textContent=offlineLang('Retry now','Reintentar ahora');
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  function outboxItemButton(label,handler,danger){
+    var b=document.createElement('button');b.type='button';
+    b.className='queue-btn'+(danger?' queue-danger':'');b.textContent=label;
+    b.addEventListener('click',handler);return b;
+  }
+  async function renderOutbox(){
+    if(!Q)return;
+    var container=document.getElementById('offlineOutboxList');
+    try{
+      var rows=await Q.list();
+      container.replaceChildren();
+      if(!rows.length){
+        var p=document.createElement('p');p.className='queue-privacy';
+        p.textContent=offlineLang('No queued reports.','No hay reportes en espera.');container.appendChild(p);return;
+      }
+      rows.forEach(function(record){
+        var item=document.createElement('article');item.className='offline-outbox-item';
+        var title=document.createElement('strong');
+        var stage=record.status==='sent'?
+          offlineLang('Submitted — report #','Enviado — reporte #')+record.refNo:
+          record.reportId?
+          offlineLang('Report #','Reporte #')+record.refNo+offlineLang(' received — photos pending',' recibido — fotos pendientes'):
+          record.status==='needs_review'?
+          offlineLang('Needs review — NOT submitted','Requiere revisión — NO enviado'):
+          offlineLang('Saved on device — NOT submitted','Guardado en dispositivo — NO enviado');
+        title.textContent=stage;item.appendChild(title);
+        var desc=document.createElement('p');
+        desc.textContent=(record.display&&record.display.reportType||'Report')+
+          ' · '+new Date(record.createdAt).toLocaleString()+
+          (record.error?' · '+record.error:'');
+        item.appendChild(desc);
+        if(record.status==='sent'){
+          item.appendChild(outboxItemButton(offlineLang('Clear local receipt','Borrar recibo local'),async function(){
+            try{await Q.clearReceipt(record.id);await renderOutbox();}catch(e){console.warn(e);}
+          },false));
+        }else{
+          item.appendChild(outboxItemButton(offlineLang('Retry now','Reintentar ahora'),function(){
+            Q.flush().catch(function(e){console.warn(e);});
+          },false));
+          if(!record.reportId){
+            item.appendChild(outboxItemButton(offlineLang('Edit report','Editar reporte'),async function(){
+              if(!window.confirm(offlineLang('Edit this saved report? It is not yet submitted.','¿Editar este reporte guardado? Aún no se ha enviado.')))return;
+              try{
+                var saved=await Q.queueForEdit(record.id);
+                var snap=saved.display&&saved.display.snapshot;
+                if(!snap)throw new Error('DRAFT_SNAPSHOT_UNAVAILABLE');
+                await Q.saveDraft(Object.assign({},snap,{files:saved.files}));
+                await Q.deleteRecord(record.id);
+                resetAfterQueued();await restoreDraftFromDevice();await renderOutbox();
+              }catch(e){window.alert(offlineLang('Could not restore this report; the queued copy is unchanged.','No se pudo recuperar el reporte; la copia en espera no cambió.'));}
+            },false));
+            item.appendChild(outboxItemButton(offlineLang('Delete unsent copy','Borrar copia no enviada'),async function(){
+              if(!window.confirm(offlineLang('Permanently delete this UNSENT report and its locally stored photos?','¿Eliminar permanentemente este reporte NO ENVIADO y sus fotos locales?')))return;
+              try{await Q.deleteRecord(record.id);if(activeQueuedId===record.id)resetAfterQueued();await renderOutbox();}
+              catch(e){window.alert(offlineLang('Cannot delete a report already received by the server.','No se puede borrar un reporte recibido por el servidor.'));}
+            },true));
+          }
+        }
+        container.appendChild(item);
+      });
+    }catch(e){
+      console.error('Could not read saved reports',e);
+      container.textContent=offlineLang('Local reports are unavailable. Check browser storage.','No se pueden leer los reportes locales. Revise el almacenamiento.');
+    }
+  }
+  async function syncOutboxUI(){
+    await renderOutbox();
+    if(!activeQueuedId||!Q)return;
+    var records=await Q.list();
+    var current=records.find(function(row){return row.id===activeQueuedId;});
+    if(!current)return;
+    if(current.status==='sent'){
+      activeQueuedId=null;
+      document.getElementById('offlinePending').hidden=true;
+      showSuccess(current.display.reportType||'Report',current.refNo,0);
+      return;
+    }
+    if(current.reportId){
+      document.getElementById('offlinePendingTitle').textContent=offlineLang(
+        'Report #'+current.refNo+' RECEIVED — photos pending',
+        'Reporte #'+current.refNo+' RECIBIDO — fotos pendientes');
+      document.getElementById('offlinePendingMessage').textContent=offlineLang(
+        'The safety team has received this report. Some photos still need uploading; keep the app and reconnect to finish.',
+        'El equipo de seguridad recibió el reporte. Algunas fotos siguen pendientes; mantenga la aplicación y conéctese.');
+    }else if(current.status==='needs_review'){
+      document.getElementById('offlinePendingTitle').textContent=offlineLang(
+        'Needs review — NOT SUBMITTED','Requiere revisión — NO ENVIADO');
+      document.getElementById('offlinePendingMessage').textContent=offlineLang(
+        'The server rejected this report. Use Edit report in Saved reports below to correct it and try again.',
+        'El servidor rechazó el reporte. Seleccione Editar reporte abajo para corregirlo y reintentar.');
+    }
+  }
+  if(Q){
+    Q.subscribe(function(){syncOutboxUI().catch(function(e){console.warn(e);});});
+    form.addEventListener('input',scheduleDraftSave);
+    form.addEventListener('change',scheduleDraftSave);
+    document.getElementById('saveOfflineDraft').addEventListener('click',async function(){
+      clearTimeout(draftSaveTimer);
+      try{await persistDraft(true);
+        if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(function(){});
+      }catch(e){
+        console.error('Draft save failed',e);
+        window.alert(offlineLang('Could not save this draft. Do not close the page. Check available storage.',
+          'No se pudo guardar este borrador. No cierre la página. Revise el almacenamiento.'));
+      }
+    });
+    document.getElementById('offlinePendingNew').addEventListener('click',resetAfterQueued);
+    document.getElementById('offlinePendingRetry').addEventListener('click',function(){Q.flush().catch(function(e){console.warn(e);});});
+  }
+  async function submitReport(type){
+    var btn=form.querySelector('button.submit');btn.disabled=true;btn.textContent=t('btn_sending');
+    try{
+      if(!Q)throw new Error('OFFLINE_QUEUE_SCRIPT_NOT_AVAILABLE');
+      clearTimeout(draftSaveTimer);
+      var draft=currentDraft();
+      var payload=buildPayload(type);
+      var record=await Q.enqueue(payload,files,{reportType:type,snapshot:{fields:draft.fields,siteCode:draft.siteCode,siteInfo:draft.siteInfo}});
+      activeQueuedId=record.id;
+      try{await Q.clearDraft();}catch(e){console.warn('Old draft could not be removed',e);}
+      showQueued();
+      await renderOutbox();
+      if(navigator.onLine!==false)Q.flush().catch(function(e){console.warn('Sending postponed',e);});
     }catch(err){
-      console.error('submit failed', err);
-      btn.disabled=false; btn.textContent=t('btn_submit');
-      showSendErr();
+      console.error('Could not queue report',err);
+      btn.disabled=false;btn.textContent=t('btn_submit');
+      var sendErr=document.getElementById('sendErr');
+      sendErr.textContent=offlineLang('Could not save the report on this device. Nothing was submitted. Check device storage and try again.',
+        'No se pudo guardar el reporte. No se envió nada. Revise el almacenamiento del dispositivo e intente de nuevo.');
+      sendErr.classList.add('show');
     }
   }
 
@@ -1038,6 +1272,7 @@
     document.getElementById('againBtn').onclick=function(){
       var b=form.querySelector('button.submit'); b.disabled=false; b.textContent=t('btn_submit');
       form.reset(); files=[]; render(); clearErr(); hideSendErr(); setFileStatus('');
+      if(Q)Q.clearDraft().catch(function(e){console.warn(e);});
       if(validatedQrSite){site.value=validatedQrSite.address||validatedQrSite.name;site.readOnly=true;renderQrSiteContext();}
       if(injuryWarn) injuryWarn.classList.remove('show'); syncInjuryState(); fillObservedNow(true);
       s.classList.remove('show'); form.style.display='';
@@ -1055,7 +1290,15 @@
 
   /* ---------------- Init: auto-detect Spanish ---------------- */
   var pref=(navigator.language||navigator.userLanguage||'en').toLowerCase();
-  setLang(pref.indexOf('es')===0 ? 'es' : 'en'); prefillAddressFromUrl(); loadQrSite();
+  setLang(pref.indexOf('es')===0 ? 'es' : 'en'); prefillAddressFromUrl();
+  loadQrSite().then(function(){
+    return restoreDraftFromDevice();
+  }).catch(function(e){console.warn('Site/draft setup delayed',e);}).finally(function(){
+    if(Q){
+      renderOutbox().catch(function(e){console.warn(e);});
+      if(navigator.onLine!==false)Q.flush().catch(function(e){console.warn('Offline retry postponed',e);});
+    }
+  });
 })();
 </script>
 </body>
