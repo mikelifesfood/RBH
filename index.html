@@ -228,6 +228,15 @@
   .emergency{margin-top:14px;box-shadow:none}
   .legal-note{font-size:11.5px;line-height:1.55}
 
+  .qr-site-context{border:1.5px solid #7bb49d;border-radius:10px;background:#eff8f3;padding:12px 14px;margin:10px 0 14px;display:flex;justify-content:space-between;gap:12px;align-items:center;color:#164b33}
+  .qr-site-context[hidden],.qr-site-error[hidden]{display:none!important}
+  .qr-site-context strong{display:block;font-size:15px}
+  .qr-site-context span{display:block;font-size:12px;margin-top:3px}
+  .qr-site-context button{border:1px solid #467b63;background:white;color:#164b33;border-radius:7px;padding:8px 10px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+  .qr-site-error{padding:11px;border:1px solid #b01e28;background:#fff4f4;color:#8a141c;border-radius:8px;font-size:13px}
+  #site[readonly]{background:#f1f4f1;color:#314a3d}
+  @media(max-width:540px){.qr-site-context{flex-direction:column;align-items:flex-start}}
+
 </style>
 </head>
 <body>
@@ -315,6 +324,11 @@
     <fieldset id="whereWhen" data-step="2">
       <legend data-i18n="s2_legend">Where &amp; when</legend>
       <p class="step-note" data-i18n="where_note">Enter the address where the incident or safety concern occurred. If you do not know the exact address, use the closest address or cross streets.</p>
+      <div id="qrSiteContext" class="qr-site-context" hidden role="status" aria-live="polite">
+        <div><strong id="qrSiteTitle"></strong><span id="qrSiteAddress"></span></div>
+        <button id="qrChangeSite" type="button">Report another location</button>
+      </div>
+      <p id="qrSiteError" class="qr-site-error" hidden role="alert"></p>
 
       <div class="field">
         <label class="lab" for="site"><span data-i18n="l_site">Address of incident</span>
@@ -707,6 +721,7 @@
     document.querySelectorAll('[data-i18n-tip]').forEach(function(el){
       var k=el.getAttribute('data-i18n-tip'); if(I18N[lang][k]!=null) el.setAttribute('data-tip',I18N[lang][k]);
     });
+    if(document.getElementById('qrSiteContext')) renderQrSiteContext();
     document.querySelectorAll('.lang button').forEach(function(b){
       var on=b.getAttribute('data-lang')===lang;
       b.classList.toggle('active',on); b.setAttribute('aria-pressed',on?'true':'false');
@@ -860,6 +875,11 @@
 
   form.addEventListener('submit',function(e){
     e.preventDefault(); clearErr(); hideSendErr();
+    if(qrLookupPending){
+      var error=document.getElementById('qrSiteError');
+      error.hidden=false;error.textContent=CUR==='es'?'Verificando el sitio, inténtelo de nuevo.':'Verifying the site, please try again.';
+      return;
+    }
     var ok=true, firstBad=null, injury=form.querySelector('input[name="injury"]:checked');
     var type=form.querySelector('input[name="reportType"]:checked');
     var desc=document.getElementById('description');
@@ -875,6 +895,49 @@
   function val(id){ var el=document.getElementById(id); return el?el.value.trim():''; }
   function radio(name){ var el=form.querySelector('input[name="'+name+'"]:checked'); return el?el.value:''; }
   function currentSite(){ return site ? site.value.trim() : ''; }
+  var validatedQrSiteCode=null,validatedQrSite=null,qrLookupPending=false;
+  function renderQrSiteContext(){
+    var box=document.getElementById('qrSiteContext'),title=document.getElementById('qrSiteTitle');
+    var address=document.getElementById('qrSiteAddress'),btn=document.getElementById('qrChangeSite');
+    var error=document.getElementById('qrSiteError');
+    if(validatedQrSite){
+      box.hidden=false;error.hidden=true;
+      title.textContent=(CUR==='es'?'Está informando desde: ':'Reporting for: ')+validatedQrSite.name;
+      address.textContent=validatedQrSite.address?' · '+validatedQrSite.address:'';
+      btn.textContent=CUR==='es'?'Informar de otra ubicación':'Report another location';
+    }else{box.hidden=true;}
+  }
+  async function loadQrSite(){
+    var params=new URLSearchParams(window.location.search);
+    var code=params.get('site')||'';
+    if(!/^[a-f0-9]{32}$/.test(code))return;
+    qrLookupPending=true;
+    var error=document.getElementById('qrSiteError');
+    try{
+      var client=getClient();if(!client)throw new Error('client-unavailable');
+      var res=await client.rpc('rbh_get_job_site',{p_code:code});
+      if(res.error)throw res.error;
+      if(!res.data||res.data.code!==code)throw new Error('invalid-or-inactive');
+      validatedQrSiteCode=code;validatedQrSite=res.data;
+      site.value=res.data.address||res.data.name;
+      site.readOnly=true;
+      renderQrSiteContext();
+    }catch(e){
+      console.warn('Site QR selection unavailable',e);
+      validatedQrSiteCode=null;validatedQrSite=null;site.readOnly=false;
+      error.hidden=false;
+      error.textContent=CUR==='es'
+        ?'El código QR del sitio no está activo o no se pudo verificar. Indique la dirección manualmente o utilice el código general.'
+        :'This site QR code is inactive or could not be verified. Enter the location manually or use the company-wide QR code.';
+    }finally{qrLookupPending=false;}
+  }
+  document.getElementById('qrChangeSite').addEventListener('click',function(){
+    validatedQrSiteCode=null;validatedQrSite=null;site.readOnly=false;site.value='';
+    var params=new URLSearchParams(window.location.search);params.delete('site');
+    try{history.replaceState(null,'',window.location.pathname+(params.toString()?'?'+params.toString():'')+window.location.hash);}catch(e){}
+    renderQrSiteContext();site.focus();
+  });
+
 
   function buildPayload(type){
     return {
@@ -891,6 +954,7 @@
       language:CUR,
       involves_injury:(function(){ var el=form.querySelector('input[name="injury"]:checked'); return el?el.value==="yes":false; })(),
       job_site:currentSite(),
+      site_code:validatedQrSiteCode||undefined,
       site_location:val('location'),
       observed_at:val('observed')
     };
@@ -975,14 +1039,14 @@
 
   function prefillAddressFromUrl(){
     try{
-      var p=new URLSearchParams(window.location.search), q=p.get('address')||p.get('site');
+      var p=new URLSearchParams(window.location.search), q=p.get('address')||((p.get('site')||'').match(/^[a-f0-9]{32}$/)?'':p.get('site'));
       if(q && site) site.value=q;
     }catch(e){}
   }
 
   /* ---------------- Init: auto-detect Spanish ---------------- */
   var pref=(navigator.language||navigator.userLanguage||'en').toLowerCase();
-  setLang(pref.indexOf('es')===0 ? 'es' : 'en'); prefillAddressFromUrl();
+  setLang(pref.indexOf('es')===0 ? 'es' : 'en'); prefillAddressFromUrl(); loadQrSite();
 })();
 </script>
 </body>
