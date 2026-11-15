@@ -132,7 +132,7 @@ BEGIN
   END IF;
   RETURN jsonb_build_object('id',new_id,'ref_no',new_ref,'duplicate',false);
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.teamworkt_allow_anonymous_report_upload(p_path text)
@@ -174,7 +174,7 @@ BEGIN
  ) >= 10 THEN RETURN false; END IF;
  RETURN true;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.add_attachment(p_report_id uuid, p_storage_path text, p_file_name text, p_mime_type text, p_size_bytes bigint)
@@ -244,5 +244,5 @@ BEGIN
  (report_id,organization_id,storage_path,file_name,mime_type,size_bytes)
  VALUES (p_report_id,v_org,p_storage_path,p_file_name,p_mime_type,p_size_bytes);
 END;
-$function$
+$function$;
 
