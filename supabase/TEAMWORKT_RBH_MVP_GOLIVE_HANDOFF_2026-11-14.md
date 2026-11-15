@@ -149,6 +149,15 @@ OSHA compliance automation/legal advice, voice/AI analysis, large LMS or HR trai
 
 **Important:** Do not sell customized features as standard until deliberately added to the master and priced accordingly. Do not classify essential security fixes or defects in advertised baseline behavior as chargeable "new features" by default.
 
+## 9A. Initial email recipients and notification diagram (verified)
+
+- **When a report is first saved, the initial new-report email is sent only to active `admin` and `safety_manager` accounts with email addresses in that same customer installation.**
+- `supervisor` and `read_only` accounts do **not** get this initial email simply because of their role. Subsequent assignment/workflow emails are separately addressed to the applicable assignee or Report Owner.
+- Current RBH test accounts include **1 active Admin and 0 Safety Managers**; thus **1 current eligible initial recipient**. The function looks up recipients dynamically, so future active Safety Managers are included automatically.
+- When a report indicates injury, the same Admin/Safety Manager recipients get an urgent/high-priority version; there is no extra role added.
+- The original conversation-generated infographic is preserved as a PNG attachment in the chat. **An updated, GitHub-rendered graphic that documents the verified current recipients and all supported assignment/email events is included here: [TeamWorkt Email & Notification Flow](TEAMWORKT_NOTIFICATION_EMAIL_FLOW.md).** Use the updated visual for future development and sales discussions because it corrects earlier generic recipient wording.
+- The diagram distinguishes observed receipt routing from email event handlers whose dashboard trigger still needs an end-to-end test. Don't promise automatic sends for unverified UI actions.
+
 ## 10. Source-control and operational handoff details
 - GitHub repository: `mikelifesfood/RBH`
 - Current public prototype: `https://mikelifesfood.github.io/RBH/dashboard.html`
