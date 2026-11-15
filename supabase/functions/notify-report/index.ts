@@ -101,6 +101,26 @@ Deno.serve(async (req: Request) => {
     if (!SUPABASE_URL || !SERVICE_ROLE) return new Response("Missing Supabase service environment", { status: 500 });
 
     const service = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false, autoRefreshToken: false } });
+    // Per-company intake email preference. Missing row means existing grouped behavior.
+    // An unreadable setting must fail closed rather than unexpectedly bypass an Admin's choice.
+    const { data: emailSetting, error: emailSettingError } = await service
+      .from("report_email_settings")
+      .select("delivery_mode")
+      .eq("organization_id", rec.organization_id)
+      .maybeSingle();
+    if (emailSettingError) {
+      console.error("Intake email settings unavailable", emailSettingError);
+      return new Response("Email settings unavailable", { status: 503 });
+    }
+    const deliveryMode = ["grouped", "individual", "off"].includes(emailSetting?.delivery_mode)
+      ? emailSetting.delivery_mode : "grouped";
+    if (deliveryMode === "off") {
+      console.info("New-report email disabled by company Admin setting", rec.id);
+      return new Response(JSON.stringify({ ok: true, emailDisabled: true, deliveryMode: "off" }), {
+        status: 200, headers: { "Content-Type": "application/json" },
+      });
+    }
+
     const { data: profiles, error: profileError } = await service
       .from("profiles")
       .select("id,email,full_name,app_role,is_active,organization_id")
@@ -195,6 +215,42 @@ Deno.serve(async (req: Request) => {
         return list;
       }, []);
 
+      if (deliveryMode === "individual") {
+        // Each recipient receives a separate Brevo message; the same per-user
+        // event keys, retry windows and injury priority treatment are preserved.
+        for (const item of pending) {
+          try {
+            const payload: any = {
+              sender: { name: FROM_NAME, email: FROM_EMAIL },
+              to: [{ email: String(item.recipient.email).trim(), name: item.recipient.full_name || undefined }],
+              subject, htmlContent: html, textContent: text,
+              tags: injury ? ["rbh-new-report", "rbh-injury"] : ["rbh-new-report"],
+            };
+            if (injury) payload.headers = { "X-Priority": "1 (Highest)", "X-Msmail-Priority": "High" };
+            const resp = await fetch("https://api.brevo.com/v3/smtp/email", {
+              method: "POST",
+              headers: { "api-key": BREVO_API_KEY, "Content-Type": "application/json", accept: "application/json" },
+              body: JSON.stringify(payload),
+            });
+            const providerData = await resp.json().catch(() => ({}));
+            if (!resp.ok) throw new Error(providerData?.message || providerData?.code || `BREVO_${resp.status}`);
+            const { error: auditError } = await service.from("report_notification_events").update({
+              status: "sent", provider_message_id: providerData?.messageId || providerData?.id || null,
+              sent_at: new Date().toISOString(), error_message: null, updated_at: new Date().toISOString(),
+            }).eq("id", item.eventId);
+            if (auditError) console.error("Individual new-report audit update failed", auditError);
+            sentCount++;
+          } catch (e) {
+            const message = e instanceof Error ? e.message : String(e);
+            failedCount++;
+            failures.push({ recipient: item.recipient.email, error: message });
+            const { error: auditError } = await service.from("report_notification_events").update({
+              status: "failed", error_message: message.slice(0, 1000), updated_at: new Date().toISOString(),
+            }).eq("id", item.eventId);
+            if (auditError) console.error("Individual new-report failure audit update failed", auditError);
+          }
+        }
+      } else {
       try {
         const payload: any = {
           sender: { name: FROM_NAME, email: FROM_EMAIL },
@@ -243,6 +299,7 @@ Deno.serve(async (req: Request) => {
           updated_at: new Date().toISOString(),
         }).in("id", eventIds);
         if (failUpdateError) console.error("Grouped new-report failure audit update failed", failUpdateError);
+      }
       }
     }
 
