@@ -12,10 +12,16 @@ p{font-size:15px;line-height:1.6;color:#444}
 a,button{display:inline-flex;align-items:center;justify-content:center;text-align:center;padding:12px 16px;border-radius:9px;border:0;background:#a1182c;color:white;font:700 14px system-ui;text-decoration:none;cursor:pointer}
 </style></head><body>
 <main><div class="brand">RBH Insulation · Safety</div>
-<h1>You're offline</h1>
-<p>The connected Safety dashboard and report submission require an internet connection.</p>
-<div class="notice"><strong>Nothing has been submitted.</strong> This version does not save drafts or photos offline. Do not assume a report has been received until you see its confirmation number.</div>
-<p>If you previously opened the public reporting form online, it may be available for viewing offline. Wait until you reconnect before entering and sending a report.</p>
-<button onclick="location.reload()" type="button">Try again</button>
-<a href="./" style="margin-left:8px;background:#262326">Open reporting form</a>
-</main></body></html>
+<h1 data-es="Sin conexión">You are offline</h1>
+<p data-es="El panel de seguridad y el envío de reportes requieren conexión a Internet.">The connected Safety dashboard and report submission require an internet connection.</p>
+<div class="notice" data-es="No se ha enviado ningún reporte. Esta versión no guarda borradores ni fotos sin conexión. Un reporte solo se recibe cuando aparece el número de confirmación."><strong>Nothing has been submitted.</strong> This version does not save drafts or photos offline. Do not assume a report has been received until you see its confirmation number.</div>
+<p data-es="Es posible consultar sin conexión un formulario abierto anteriormente. Espere hasta recuperar la conexión antes de completar y enviar un reporte.">If you previously opened the public reporting form online, it may be available for viewing offline. Wait until you reconnect before entering and sending a report.</p>
+<button onclick="location.reload()" type="button" data-es="Reintentar">Try again</button>
+<a href="./" style="margin-left:8px;background:#262326" data-es="Abrir formulario">Open reporting form</a>
+</main><script>
+(function(){
+  if(!/^es/i.test(navigator.language||''))return;
+  document.documentElement.lang='es';
+  document.querySelectorAll('[data-es]').forEach(function(el){el.textContent=el.getAttribute('data-es');});
+})();
+</script></body></html>
