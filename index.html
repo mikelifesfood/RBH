@@ -269,6 +269,7 @@
   .connection-summary-text span{display:block;font-size:12px;color:var(--muted);line-height:1.4;margin-top:2px}
   .connection-summary-action{font:700 12px var(--sans);color:var(--ink);background:var(--surface);border:1px solid var(--line-strong);border-radius:8px;padding:10px 12px;min-height:44px;cursor:pointer;white-space:nowrap}
   #offlineOutbox,#offlinePending,#success{scroll-margin-top:16px}
+  #offlineOutbox[hidden],#offlineDraftStatus[hidden],#viewSavedReports[hidden]{display:none!important}
   .offline-outbox-item[data-state="sent"]{border-left:4px solid var(--ok)}
   .offline-outbox-item[data-state="needs_review"]{border-left:4px solid var(--red)}
   .offline-outbox-item[data-state="queued"],.offline-outbox-item[data-state="sending"],.offline-outbox-item[data-state="uploading"]{border-left:4px solid #b87914}
@@ -1084,7 +1085,7 @@
   }
 
   var activeQueuedId=null,draftSaveTimer=null,draftRestorePending=false;
-  var draftSaveInFlight=Promise.resolve();
+  var draftSaveInFlight=Promise.resolve(),draftGeneration=0,draftSaveSuppressed=false;
   var Q=window.RBHQueue;
   if(Q) Q.configure(getClient);
   function offlineLang(en,es){return CUR==='es'?es:en;}
@@ -1106,22 +1107,52 @@
       return !!String(f.value||'').trim();
     });
   }
-  async function persistDraft(force){
-    if(!Q||draftRestorePending||form.style.display==='none')return;
-    var draft=currentDraft();
-    if(!force&&!hasDraftContent(draft))return;
-    draftSaveInFlight=draftSaveInFlight.catch(function(){/* retry from current fields */}).then(function(){return Q.saveDraft(draft);});
-    await draftSaveInFlight;
+  function hideSavedDraftNotice(){
     var status=document.getElementById('offlineDraftStatus');
+    if(status){status.hidden=true;status.textContent='';}
+  }
+  function setSavedDraftNotice(en,es){
+    var status=document.getElementById('offlineDraftStatus');
+    if(!status)return;
+    if(navigator.onLine!==false){hideSavedDraftNotice();return;}
+    status.textContent=offlineLang(en,es);
     status.hidden=false;
-    status.textContent=offlineLang('Draft saved on this device — not submitted.','Borrador guardado en este dispositivo — no enviado.');
+  }
+  async function refreshSavedDraftNotice(){
+    // A confirmed/queued report is NOT an unfinished form draft.
+    if(!Q||navigator.onLine!==false||draftSaveSuppressed){
+      hideSavedDraftNotice();return false;
+    }
+    var saved=await Q.getDraft();
+    var hasDraft=!!(saved&&Array.isArray(saved.fields)&&hasDraftContent(saved));
+    if(hasDraft){
+      setSavedDraftNotice('Draft saved on this device — NOT SUBMITTED.',
+        'Borrador guardado en este dispositivo — NO ENVIADO.');
+    }else hideSavedDraftNotice();
+    return hasDraft;
+  }
+  async function persistDraft(force){
+    if(!Q||draftRestorePending||draftSaveSuppressed||form.style.display==='none')return;
+    var draft=currentDraft(),version=draftGeneration;
+    if(!force&&!hasDraftContent(draft))return;
+    // Queued/confirmed submissions invalidate pending autosaves. Otherwise an
+    // older async photo write can recreate an already-submitted form draft.
+    draftSaveInFlight=draftSaveInFlight.catch(function(){/* retry current fields */}).then(function(){
+      if(version!==draftGeneration||draftSaveSuppressed||form.style.display==='none')return;
+      return Q.saveDraft(draft);
+    });
+    await draftSaveInFlight;
+    if(version!==draftGeneration||draftSaveSuppressed||form.style.display==='none')return;
+    setSavedDraftNotice('Draft saved on this device — NOT SUBMITTED.',
+      'Borrador guardado en este dispositivo — NO ENVIADO.');
   }
   function scheduleDraftSave(){
+    if(draftSaveSuppressed||form.style.display==='none')return;
     clearTimeout(draftSaveTimer);
     draftSaveTimer=setTimeout(function(){persistDraft(false).catch(function(e){
       console.error('Could not save offline draft',e);
-      var status=document.getElementById('offlineDraftStatus');
-      status.hidden=false;status.textContent=offlineLang('Draft could not be saved. Check device storage.','No se pudo guardar el borrador. Revise el almacenamiento.');
+      setSavedDraftNotice('Draft could not be saved. Check device storage.',
+        'No se pudo guardar el borrador. Revise el almacenamiento.');
     });},700);
   }
   async function restoreDraftFromDevice(){
@@ -1169,14 +1200,14 @@
         site.readOnly=true;renderQrSiteContext();
       }
       syncInjuryState();
-      var status=document.getElementById('offlineDraftStatus');
-      status.hidden=false;
-      status.textContent=offlineLang('Previous draft restored from this device. It has NOT been submitted.',
+      setSavedDraftNotice('Previous draft restored from this device. It has NOT been submitted.',
         'Se restauró el borrador de este dispositivo. NO se ha enviado.');
     }catch(e){console.error('Draft restore unavailable',e);}
     finally{draftRestorePending=false;}
   }
   function resetAfterQueued(preserveDraft){
+    draftGeneration++;draftSaveSuppressed=false;
+    hideSavedDraftNotice();
     form.style.display='';
     document.getElementById('offlinePending').hidden=true;
     document.getElementById('success').classList.remove('show');
@@ -1191,6 +1222,7 @@
     window.scrollTo({top:0,behavior:'smooth'});
   }
   function showQueued(){
+    hideSavedDraftNotice();
     form.style.display='none';
     var banner=document.getElementById('offlinePending');banner.hidden=false;
     document.getElementById('offlinePendingTitle').textContent=offlineLang(
@@ -1235,8 +1267,10 @@
       detail.textContent=offlineLang('A report is submitted only after a server reference number is issued.',
         'Un reporte se envía solo cuando el servidor emite un número de referencia.');
     }
+    var waiting=queued+photos+review;
+    button.hidden=waiting===0;
     button.textContent=offlineLang('Saved reports','Reportes guardados')+
-      ((queued+photos+review)?' ('+(queued+photos+review)+')':'');
+      (waiting?' ('+waiting+')':'');
     var retry=document.getElementById('offlinePendingRetry');
     if(retry){
       retry.disabled=offline;
@@ -1257,8 +1291,17 @@
       document.getElementById('connectionSummary').dataset.state='review';
     });
   }
-  window.addEventListener('online',connectionChanged);
-  window.addEventListener('offline',connectionChanged);
+  window.addEventListener('online',function(){
+    hideSavedDraftNotice();
+    connectionChanged();
+    renderOutbox().catch(function(e){console.warn(e);});
+  });
+  window.addEventListener('offline',function(){
+    connectionChanged();
+    refreshSavedDraftNotice().then(function(saved){
+      if(saved)document.getElementById('offlineOutbox').hidden=false;
+    }).catch(function(e){console.warn(e);});
+  });
   document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')connectionChanged();});
   function safeSendError(error){
     var code=String(error||'');
@@ -1288,11 +1331,14 @@
       var rows=await Q.list();
       refreshConnectionSummary(rows);
       container.replaceChildren();
-      if(!rows.length){
-        var p=document.createElement('p');p.className='queue-privacy';
-        p.textContent=offlineLang('No queued reports.','No hay reportes en espera.');container.appendChild(p);return;
+      var outstanding=rows.filter(function(r){return r.status!=='sent';});
+      if(!outstanding.length){
+        var savedDraft=await refreshSavedDraftNotice();
+        document.getElementById('offlineOutbox').hidden=!savedDraft;
+        return;
       }
-      rows.forEach(function(record){
+      document.getElementById('offlineOutbox').hidden=false;
+      outstanding.forEach(function(record){
         var item=document.createElement('article');item.className='offline-outbox-item';
         item.dataset.state=record.status;
         var title=document.createElement('strong');
@@ -1356,6 +1402,7 @@
     var current=records.find(function(row){return row.id===activeQueuedId;});
     if(!current)return;
     if(current.status==='sent'){
+      hideSavedDraftNotice();
       activeQueuedId=null;
       document.getElementById('offlinePending').hidden=true;
       showSuccess(current.display.reportType||'Report',current.refNo,0);
@@ -1446,6 +1493,8 @@
   }
   async function submitReport(type){
     var btn=form.querySelector('button.submit');btn.disabled=true;btn.textContent=t('btn_sending');
+    draftGeneration++;draftSaveSuppressed=true;
+    clearTimeout(draftSaveTimer);
     try{
       if(!Q)throw new Error('OFFLINE_QUEUE_SCRIPT_NOT_AVAILABLE');
       clearTimeout(draftSaveTimer);
@@ -1469,6 +1518,7 @@
         }catch(directError){console.error('Direct online fallback failed',directError);}
       }
       console.error('Could not queue report',err);
+      draftSaveSuppressed=false;
       btn.disabled=false;btn.textContent=t('btn_submit');
       var sendErr=document.getElementById('sendErr');
       sendErr.textContent=offlineLang('Could not save the report on this device. Nothing was submitted. Check device storage and try again.',
@@ -1478,6 +1528,9 @@
   }
 
   function showSuccess(type, ref, failed){
+    draftGeneration++;draftSaveSuppressed=true;
+    clearTimeout(draftSaveTimer);
+    hideSavedDraftNotice();
     var text=buildSummary(type, ref);
     document.getElementById('summaryBox').textContent=text;
     var rl=document.getElementById('succRef');
@@ -1494,6 +1547,8 @@
       function fallback(){ var ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta); done(); }
     };
     document.getElementById('againBtn').onclick=function(){
+      draftGeneration++;draftSaveSuppressed=false;
+      hideSavedDraftNotice();
       var b=form.querySelector('button.submit'); b.disabled=false; b.textContent=t('btn_submit');
       form.reset(); files=[]; render(); clearErr(); hideSendErr(); setFileStatus('');
       if(Q)Q.clearDraft().catch(function(e){console.warn(e);});
