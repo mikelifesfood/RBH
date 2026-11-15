@@ -46,6 +46,17 @@ These are existing code/prototype features; verify the behavior end-to-end befor
 - **Verified:** transaction-scoped admin RPC set/read for Grouped, Individual and Off, invalid option rejection, Read Only user rejection (rollback preserved no setting row). **Not yet verified:** browser interactions and actual inbox delivery in Grouped and Individual modes; owner should use fictional report(s) to test. No intentional test email issued in this build.
 - **Scope clarification:** company-level individual/grouped/off only affects initial intake emails. Future per-event toggles, workflow email policies or individual user opt-outs are separate enhancements and should be approved explicitly.
 
+## November 15 — Build 6: Mobile UX and accurate sync states
+
+**Implemented on `main`; owner mobile acceptance pending.** The existing prioritized handoff calls for mobile UX polishing and report sync-status screens after the QR and offline PWA builds.
+
+- `index.html` now includes a compact online/offline/pending/review connection strip with a saved-report count and navigation. It distinguishes local queued **NOT submitted**, in-flight server acknowledgement, server-accepted report/photo upload pending, and completed receipts. Buttons are touch-friendly, offline manual retry is disabled, mobile inputs resist Safari zoom, and the public workflow remains unchanged.
+- `dashboard.html` contains CSS-only narrow-screen adjustments to Safety Inbox chips/filters, report controls and Admin job-site action touch targets. No role or workflow JS changes.
+- `sw.js` cache version `rbh-public-shell-v11-20261115` refreshes public forms without clearing IndexedDB drafts or sensitive receipts.
+- Tested inline JS parsing and seven connection-status simulated scenarios. No SQL/Edge/Brevo deployment was required.
+- QA guide: `docs/TEAMWORKT_BUILD6_MOBILE_UX_QA_2026-11-15.md`. **Do not mark Build 6 device-tested until owner reviews iPhone Safari and dashboard.**
+- Next MVP security gate (backend-verified anonymous intake anti-abuse) still needs an explicit Cloudflare Turnstile vs approved equivalent/hosting decision before changing anonymous submission routing. Do not deploy a front-end-only gate.
+
 ## November 15 — Build 5 Safari QA remediation (awaiting retest)
 
 - Owner reported two failed tests: text restored after Safari reopening but photo did not; offline Safari still showed the old "do not submit until reconnect" guidance.
