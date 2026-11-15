@@ -1260,6 +1260,22 @@
   window.addEventListener('online',connectionChanged);
   window.addEventListener('offline',connectionChanged);
   document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')connectionChanged();});
+  function safeSendError(error){
+    var code=String(error||'');
+    if(/RATE_LIMITED/.test(code))return offlineLang(
+      'Too many attempts. Keep this report saved and retry in about 10 minutes.',
+      'Demasiados intentos. Guarde este reporte y vuelva a intentar en unos 10 minutos.');
+    if(/VERIFICATION_CANCELLED/.test(code))return offlineLang(
+      'Security verification was cancelled. This report remains saved; retry when ready.',
+      'Se canceló la verificación. El reporte sigue guardado; reintente cuando esté listo.');
+    if(/VERIFICATION_FAILED|VERIFICATION_REQUIRED|TURNSTILE_SCRIPT_UNAVAILABLE/.test(code))return offlineLang(
+      'Security verification could not finish. This report remains saved; retry later.',
+      'No se pudo completar la verificación. El reporte sigue guardado; reintente después.');
+    if(/PROTECTION_|TEMPORARILY_UNAVAILABLE|NETWORK_NOT_SENT/.test(code))return offlineLang(
+      'Submission is temporarily unavailable. This report is saved locally; reopen or retry online.',
+      'El envío no está disponible. El reporte está guardado; reabra o reintente en línea.');
+    return code.slice(0,120);
+  }
   function outboxItemButton(label,handler,danger){
     var b=document.createElement('button');b.type='button';
     b.className='queue-btn'+(danger?' queue-danger':'');b.textContent=label;
@@ -1295,7 +1311,7 @@
         var desc=document.createElement('p');
         desc.textContent=(record.display&&record.display.reportType||'Report')+
           ' · '+new Date(record.createdAt).toLocaleString()+
-          (record.error?' · '+record.error:'');
+          (record.error?' · '+safeSendError(record.error):'');
         item.appendChild(desc);
         if(record.status==='sent'){
           item.appendChild(outboxItemButton(offlineLang('Clear local receipt','Borrar recibo local'),async function(){
@@ -1345,7 +1361,12 @@
       showSuccess(current.display.reportType||'Report',current.refNo,0);
       return;
     }
-    if(current.status==='sending'&&!current.reportId){
+    if(current.status==='queued'&&/VERIFICATION|PROTECTION_|RATE_LIMITED|TEMPORARILY_UNAVAILABLE/.test(String(current.error||''))){
+      document.getElementById('offlinePendingTitle').textContent=offlineLang(
+        'Saved — verification or retry needed. NOT SUBMITTED',
+        'Guardado — se requiere verificación o reintento. NO ENVIADO');
+      document.getElementById('offlinePendingMessage').textContent=safeSendError(current.error);
+    }else if(current.status==='sending'&&!current.reportId){
       document.getElementById('offlinePendingTitle').textContent=offlineLang(
         'Sending — awaiting confirmation','Enviando — esperando confirmación');
       document.getElementById('offlinePendingMessage').textContent=offlineLang(
