@@ -1425,6 +1425,33 @@
   .jobsite-actions .jobsite-delete-btn:hover{background:#ffe8ec}
   @media(max-width:900px){#jobSiteForm{grid-template-columns:minmax(0,1fr)!important}.jobsite-row{align-items:flex-start;flex-direction:column}}
 
+  /* Build 6 — mobile-only readability and touch targets.
+     No role, action, workflow, data or permission logic changes. */
+  @media(max-width:620px){
+    .topbar{padding-left:12px;padding-right:12px;gap:8px;min-height:60px}
+    .topbar-actions{gap:6px;min-width:0}
+    .page-title{font-size:15px;line-height:1.3;overflow-wrap:anywhere}
+    .content{min-width:0;padding-left:12px;padding-right:12px}
+    .toolbar{padding:10px;gap:8px}
+    .toolbar .search{flex:1 1 100%;min-width:0;max-width:100%}
+    .toolbar select,#sortBy,#jobSiteFilter{flex:1 1 calc(50% - 8px);min-width:0;max-width:100%;width:auto}
+    .toolbar .count{width:100%;margin:2px 0 0;text-align:left}
+    .chips{display:flex;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:thin;gap:4px;padding-bottom:10px}
+    .chips .chip{flex:0 0 auto;min-height:44px;white-space:nowrap}
+    .card-head{min-height:64px}
+    .card-head .open-report{min-height:42px;display:inline-flex;align-items:center;justify-content:center}
+    .jobsite-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
+    .jobsite-actions a,.jobsite-actions button{min-height:44px;display:flex;align-items:center;justify-content:center;text-align:center;min-width:0}
+    #jobSiteForm input,#reportEmailMode,.admin-settings-grid button,.admin-records-archive button{min-height:44px}
+    input[type="text"],input[type="email"],input[type="tel"],input[type="date"],input[type="datetime-local"],select,textarea{font-size:16px}
+    .notification-panel{max-height:calc(100dvh - 82px)}
+    .modal-actions button,.profile-action-row button{min-height:44px}
+  }
+  @media(max-width:375px){
+    .toolbar select,#sortBy,#jobSiteFilter{flex-basis:100%}
+    .jobsite-actions{grid-template-columns:1fr}
+  }
+
 </style>
 </head>
 <body>
