@@ -7,7 +7,7 @@ File changed: `dashboard.html`
 Give a small-business supervisor or owner a rapid, read-only snapshot of safety-report activity on the Home dashboard without requiring a separate analytics workflow. This is not a compliance score, incident prediction, or a substitute for investigation or mandatory reporting.
 
 ## Home dashboard behavior
-Safety Pulse is displayed below the existing five report counters and above the two Home action cards.
+Safety Pulse was initially displayed above the action cards, but the final November 15 layout places it **at the bottom of Home**, after the existing Home statistics, **Open My Work**, **Submit a safety report**, **Needs your attention**, and **Recent activity**. This keeps the primary employee and manager actions accessible before the overview.
 
 ### Four headline metrics
 - **Reports · 30 days:** Number of reports created in the last rolling 30 days. The caption compares this count with the immediately preceding 30 days. The comparison is a *difference in reporting volume* and does not claim safety improved or worsened.
