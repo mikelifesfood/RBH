@@ -174,7 +174,7 @@ async function sendOne(id){
     if(!record.reportId){
       record.status='sending';record.error=null;await saveRecord(record);
       var payload=Object.assign({},record.payload,{client_submission_key:record.id,offline_upload_token:record.uploadToken});
-      var res=await sb.rpc('submit_report',{payload:payload});
+      var res=window.RBHIntake?await window.RBHIntake.submit(payload,sb):await sb.rpc('submit_report',{payload:payload});
       if(res.error)throw res.error;
       if(!res.data||!res.data.id||!res.data.ref_no)throw new Error('SERVER_RECEIPT_MISSING');
       record.reportId=res.data.id;record.refNo=res.data.ref_no;
@@ -190,7 +190,7 @@ async function sendOne(id){
     record=await getRecord(id)||record;
     if(record.status==='sent')return;
     var message=String(error&&error.message||error||'Connection unavailable');
-    record.status=/INVALID_OR_INACTIVE_SITE_CODE|INVALID_REPORT|REPORT_FIELD|INVALID_OBSERVED|SUBMISSION_KEY_PAYLOAD_MISMATCH|INVALID_CLIENT_SUBMISSION_KEY/.test(message)
+    record.status=/INVALID_OR_INACTIVE_SITE_CODE|INVALID_REPORT|REPORT_FIELD|INVALID_OBSERVED|SUBMISSION_KEY_PAYLOAD_MISMATCH|INVALID_CLIENT_SUBMISSION_KEY|INVALID_REPORT_PAYLOAD/.test(message)
       ?'needs_review':'queued';
     record.error=message.slice(0,350);
     try{await saveRecord(record);}catch(e){console.error('Could not preserve offline retry state',e);}
