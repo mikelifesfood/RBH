@@ -1570,7 +1570,7 @@
           <div class="mywork-banner"><div><h3 id="myWorkGreeting">Your work queue</h3><p id="myWorkBannerText">Only work assigned to your dashboard account is shown here.</p></div><span class="mw-role" id="myWorkRole">Supervisor</span></div>
           <div class="mywork-summary" id="myWorkSummary"></div>
           <div class="mywork-grid">
-            <div class="mywork-panel"><h3>My assignments</h3><p class="panel-sub">Investigations and corrective actions assigned directly to you. Corrective actions open as one focused task so you cannot accidentally update the wrong action.</p><div id="myWorkList" class="task-list"></div></div>
+            <div class="mywork-panel"><h3>My assignments</h3><p class="panel-sub">Reports you own through the full workflow, plus corrective actions assigned directly to you. Each action opens in its own focused workspace.</p><div id="myWorkList" class="task-list"></div></div>
             <div class="mywork-panel mywork-review" id="myWorkReviewPanel"><h3>Review queue</h3><p class="panel-sub">Corrective actions waiting for a review decision. No reviewer assignment is required.</p><div id="myWorkReviewList" class="task-list"></div></div>
           </div>
         </section>
@@ -7325,9 +7325,9 @@
   }
   function isOpenOperational(r){ return !!(r && r.status!=="closed" && r.status!=="no_action" && r.status!=="duplicate"); }
   function isAssignedToMe(r){ return isActionAssignedToMe(r); }
-  function investigatorWorkActive(r){
-    if(!isOpenOperational(r)||!isInvestigatorAssignedToMe(r)) return false;
-    return recommendedWizardStep(r)<=3;
+  function reportOwnerWorkActive(r){
+    // Ownership lasts throughout all open workflow stages; the legacy separate investigator field does not drive My Work.
+    return !!(isOpenOperational(r)&&currentUserId()&&String(r.report_owner_user_id||"")===currentUserId());
   }
   function myActionWorkRows(){
     var uid=currentUserId();
@@ -7381,6 +7381,19 @@
     b.addEventListener("click",function(){ if(r) openFocusedCorrectiveAction(a,"mywork"); });
     return b;
   }
+  function myWorkCard(r){
+    var step=homeWorkflowStepInfo(r);
+    var b=document.createElement("button"); b.type="button"; b.className="task-card";
+    var status=(STATUS[r.status]||{}).l||String(r.status||"Open").replace(/_/g," ");
+    var site=r.job_site?" · "+r.job_site:"";
+    b.innerHTML=
+      '<div class="task-title">#'+esc(r.ref_no)+' · '+esc(r.report_type||"Report")+
+      '<span class="task-state">Step '+esc(step.n)+' · '+esc(step.label)+'</span></div>'+
+      '<div class="task-action">Report Owner · '+esc(status)+'</div>'+
+      '<div class="task-meta">Responsible for investigation, corrective-action planning and report completion'+esc(site)+'</div>';
+    b.addEventListener("click",function(){openIncident(r,"mywork");});
+    return b;
+  }
   function renderMyWork(){
     var list=$("myWorkList"), summary=$("myWorkSummary"), count=$("myWorkCount"); if(!list||!summary) return;
     var canOwn=currentRole!=="read_only", user=currentSession&&currentSession.user;
@@ -7391,7 +7404,7 @@
       return;
     }
 
-    var investigations=allReports.filter(investigatorWorkActive).sort(function(a,b){return new Date(b.created_at)-new Date(a.created_at);});
+    var investigations=allReports.filter(reportOwnerWorkActive).sort(function(a,b){return new Date(b.created_at)-new Date(a.created_at);});
     var actions=myActionWorkRows().sort(childActionSort);
     var reviews=myVerificationWorkRows().sort(childActionSort);
     var overdue=actions.filter(isOverdue).length;
@@ -7401,7 +7414,7 @@
     function stat(n,l,cls){return '<div class="mywork-stat '+(cls||'')+'"><b>'+n+'</b><span>'+l+'</span></div>';}
     summary.innerHTML=
       stat(investigations.length+actions.length,'Assigned to me')+
-      stat(investigations.length,'Investigations')+
+      stat(investigations.length,'Reports I own')+
       stat(soon,'Due in 3 days',soon?'warn':'')+
       stat(overdue,'Overdue',overdue?'alert':'');
 
@@ -7413,9 +7426,9 @@
     if(ng) ng.textContent=nm?('Work for '+nm):'Your work queue';
     if(br){
       if(reviewCount) br.textContent=reviewCount+' corrective action'+(reviewCount===1?' is':'s are')+' ready for review.';
-      else if(investigations.length) br.textContent=investigations.length+' investigation'+(investigations.length===1?'':'s')+' currently need'+(investigations.length===1?'s':'')+' your attention.';
+      else if(investigations.length) br.textContent=investigations.length+' open report'+(investigations.length===1?'':'s')+' assigned to you as Report Owner.';
       else if(actions.length) br.textContent='Start with overdue, changes-requested, or due-soon corrective actions first.';
-      else br.textContent='Your assigned investigations, corrective actions, and reviews will appear here.';
+      else br.textContent='Reports you own and corrective actions assigned to you will appear here.';
     }
     if(role) role.textContent=roleLabel(currentRole);
 
