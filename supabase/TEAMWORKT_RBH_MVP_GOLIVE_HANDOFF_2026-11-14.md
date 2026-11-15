@@ -38,6 +38,14 @@ These are existing code/prototype features; verify the behavior end-to-end befor
 - Current feedback/admin views and desktop Help Coach; avoid deleting these accidentally in a cleanup.
 - Company/platform summary screens currently exist. Even if some are excessive for future single-company deployments, do not delete screens or backing tables under a **no functional change** instruction.
 
+## November 15, 2026 — Build 2 notification preference implementation
+
+- **Implemented (RBH pilot):** Admin-controlled **initial new-report email delivery** with Grouped (default), Individual (one message/recipient), or Off (also disables urgent injury intake emails, with confirmation). Other email events and in-app notifications remain unchanged.
+- **GitHub `main` changed:** `dashboard.html`, `supabase/functions/notify-report/index.ts`; **new** `supabase/patches/20261115_teamworkt_report_email_preferences.sql`. Updated the email flow document and this handoff.
+- **Supabase RBH:** applied `teamworkt_report_email_preferences_20261115` migration, adding RLS-protected `report_email_settings` and Admin-only `rbh_get_report_email_mode` / `rbh_set_report_email_mode` RPCs; deployed `notify-report` Edge Function version 40. Default remains grouped and no existing company setting was overwritten.
+- **Verified:** transaction-scoped admin RPC set/read for Grouped, Individual and Off, invalid option rejection, Read Only user rejection (rollback preserved no setting row). **Not yet verified:** browser interactions and actual inbox delivery in Grouped and Individual modes; owner should use fictional report(s) to test. No intentional test email issued in this build.
+- **Scope clarification:** company-level individual/grouped/off only affects initial intake emails. Future per-event toggles, workflow email policies or individual user opt-outs are separate enhancements and should be approved explicitly.
+
 ## 3. CONFIRMED BUILD ADDITIONS for the RBH FULL WORKING DEMO / STANDARD MVP
 The next chat should prioritize completing these, without replacing existing functionality. All remain **unimplemented or not fully demonstrated** unless separately verified.
 
