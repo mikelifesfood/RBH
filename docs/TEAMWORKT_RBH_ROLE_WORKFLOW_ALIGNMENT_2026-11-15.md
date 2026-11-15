@@ -41,7 +41,9 @@ Retained: public reporting, offline upload mechanisms, action-specific completio
 - Verified: #58 has an active Admin Report Owner; My Work browser acceptance was reported passed; migrated SQL functions and report RLS predicate inspected after deployment.
 - **Assignment email delivery — ACCEPTED (user-tested, 2026-11-15):** User confirmed receiving initial new-report email, Report Owner assignment email, corrective-action assignment email, and corrective-action closed/completion email. Delivery for these four tested cases is signed off. Separate negative-path checks (no duplicate notifications on unchanged assignment, all delivery-mode configurations, and changes-requested notification) are not implied by this sign-off.
 - **Not yet tested with eligible pilot accounts**: live Safety Manager and Supervisor task completion/verification cycles (RBH currently has no active accounts with those roles); create controlled test accounts before claiming complete role acceptance.
-- Subsequent priority: Safety Pulse browser QA, intake after lockdown, offline-photo regression and notification setting QA from the November 15 handoff.
+- **Safety Pulse — ACCEPTED (user-tested, 2026-11-15):** User confirmed the category/site display and reporting filters passed after the follow-up dashboard fix.
+- **Job-site QR, offline photo, and Cloudflare Turnstile intake regression — ACCEPTED (user-tested, 2026-11-15):** User confirmed all three passed. These are implemented features, not pending development work.
+- **Remaining acceptance:** Live Safety Manager / Supervisor role permissions are scheduled for 2026-11-16. Advanced notification negative-path scenarios remain separate optional coverage.
 
 ## Rollback
 - Frontend: revert only the two named `dashboard.html` commits if needed.
