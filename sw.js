@@ -3,7 +3,7 @@
  * Never cache dashboard HTML, Supabase responses, Auth tokens, images uploaded
  * to Storage, incident records or POST/PUT/PATCH/DELETE requests.
  */
-const CACHE_NAME = 'rbh-public-shell-v1-20261115';
+const CACHE_NAME = 'rbh-public-shell-v2-20261115';
 const SCOPE = new URL(self.registration.scope);
 const FORM = new URL('index.html', SCOPE);
 const OFFLINE = new URL('offline.html', SCOPE);
@@ -27,9 +27,16 @@ self.addEventListener('activate',event=>{
 });
 self.addEventListener('fetch',event=>{
   const req=event.request;
-  if(req.method!=='GET'||req.mode!=='navigate')return;
+  if(req.method!=='GET')return;
   const url=new URL(req.url);
   if(url.origin!==SCOPE.origin)return;
+  // These safe static assets must be readable offline as well as the HTML shell.
+  // In particular pwa-client.js supplies the explicit no-offline-submission notice.
+  if(ASSETS.includes(url.href)&&url.pathname!==FORM.pathname&&url.pathname!==OFFLINE.pathname){
+    event.respondWith(caches.match(url.href).then(cached=>cached||fetch(req)));
+    return;
+  }
+  if(req.mode!=='navigate')return;
   // Query parameters can contain an opaque site token, never use query as cache key.
   const publicForm=url.pathname===SCOPE.pathname||url.pathname===FORM.pathname;
   const staffDashboard=url.pathname===new URL('dashboard.html',SCOPE).pathname;
