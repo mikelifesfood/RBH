@@ -9,7 +9,7 @@
 
 **Currently configured RBH test accounts:** 1 active Admin with an email, 0 Safety Managers, 2 active Read Only users and 1 inactive Read Only user. Therefore **1 current eligible initial email recipient**, as of the database check. The count will change when eligible accounts are added.
 
-The new-report email is a **grouped Brevo message** to eligible recipients, with per-recipient `report_notification_events` tracking/deduplication. When `involves_injury=true`, the existing recipient group is preserved but the subject receives **HIGH PRIORITY – INJURY** treatment. Serious/critical severity also triggers warning styling when not injury-flagged. A missing eligible recipient group returns a notification error; the report record already exists.
+By default, the new-report email is a **grouped Brevo message** to eligible recipients (the Admin can now change it to individual or off), with per-recipient `report_notification_events` tracking/deduplication. When `involves_injury=true`, the existing recipient group is preserved but the subject receives **HIGH PRIORITY – INJURY** treatment. Serious/critical severity also triggers warning styling when not injury-flagged. A missing eligible recipient group returns a notification error; the report record already exists.
 
 ```mermaid
 flowchart TB
@@ -21,7 +21,7 @@ flowchart TB
     E -->|"No"| G["No intake email<br/>Notification error to investigate"]
     F -->|"Standard"| H["EMAIL A<br/>New report notification"]
     F -->|"Urgent"| I["EMAIL A — PRIORITY<br/>Injury / serious event"]
-    H --> J["Brevo grouped email<br/>Admin + Safety Manager"]
+    H --> J["Brevo email according to Admin setting<br/>Grouped / Individual / Off"]
     I --> J
     J --> K["Log provider outcome in<br/>report_notification_events"]
     B --> L["Optional files uploaded<br/>and linked to the report"]
@@ -58,6 +58,17 @@ flowchart TB
 | **H — User setup/access** | Admin provisions access and setup email configuration/link generation succeeds | Newly provisioned user | `admin-provision-user` may create access while returning an email warning if setup email cannot send. |
 
 **Important distinction:** This chart shows the recipient routing implemented by the deployed functions. For B–G, the function's support for an event does **not alone** confirm that every dashboard action currently calls that event; end-to-end UI trigger verification is a required MVP test. The existing in-app notification center is a separate workflow and is not an email. Closure, restart, reopening and other events should not be described as automatic emails unless verified in the calling code.
+
+## Build 2 — Admin-controlled initial email delivery (2026-11-15)
+
+**Implemented in RBH pilot:** Admin → New report email notifications. An authorized active company `admin` can choose:
+- **Grouped (default):** one Brevo message addressing active Admin and Safety Manager recipients together, preserving the existing behavior.
+- **Individual:** separate Brevo message for each eligible recipient; each retains its own notification audit event and provider message ID.
+- **Off:** suppresses **all initial new-report emails**, including high-priority injury intake emails. The Admin UI explicitly warns and requires confirmation. Reports still save and are visible in the dashboard.
+
+The setting affects **only email A — new report**. Existing assignment/workflow email events B–H, role eligibility, in-app notifications and report submission are unchanged. Settings are keyed by the company's organization, guarded by Admin-only SQL RPCs; missing setting defaults to grouped. SQL applies from `supabase/patches/20261115_teamworkt_report_email_preferences.sql` and the deployed `notify-report` Edge Function is version 40.
+
+**Verification status:** Database RPC defaults, individual/off settings, invalid values and read-only user denial passed transactional tests (rolled back, so the live setting remains grouped). Browser settings UI and actual Brevo grouped/individual delivery need owner-driven end-to-end tests. No new test email was deliberately sent as part of this update.
 
 ## Verification checklist for next build
 - [ ] New anonymous report sends a single grouped intake email to current active Admin/Safety Manager recipients; no Supervisor or Read Only inclusion.
