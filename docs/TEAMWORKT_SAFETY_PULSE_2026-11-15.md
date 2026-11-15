@@ -20,7 +20,7 @@ Safety Pulse was initially displayed above the action cards, but the final Novem
 - **Latest unresolved reports:** Shows three most recently created unresolved reports with reference number, report type, and current status. No reporter names or personal incident descriptions are shown.
 
 ### Navigation
-The **View analytics** button opens the existing Safety Analytics page; it does not create new routes, RPCs or roles. Existing report counter and inbox navigation remain unchanged.
+The **View analytics** button opens the existing Safety Analytics page. In the November 15 follow-up, each recurring category/site group became a clickable drill-down into the existing Safety Inbox, with exact category/site matching and report-type and 30/60/90-day controls. Matching resolved records are included so trend counts do not disagree with historical lists; the ordinary Safety Inbox still hides resolved records by default. Use **Clear trend filter** to return to normal Inbox behavior. All filtering is performed on already-authorized in-memory reports.
 
 ### Empty states
 - If no unresolved reports exist, the list explicitly says so.
@@ -49,4 +49,4 @@ Still required on an authenticated RBH account:
 - Verify each existing role sees only its current organization-approved data.
 
 ## Future refinements (not included)
-Filters by job site, time range selection, trend drill-down, and corrective-action completion rates require additional product review and broader data-quality testing. Preserve Build 54 for Scheduled Company Records Archive.
+**Follow-up implementation:** Recurring hazard drill-down by exact site/category, report type, and 30/60/90-day period was committed in dashboard.html (commit 01a376d). No additional API, schema, role or email changes. Still needs browser/mobile acceptance with at least two reports sharing a site/category; there were no such groups in the existing RBH pilot data during this source review. Future: wider analytics drill-down, more refined job-site views, and corrective-action completion rates. Preserve Build 54 for Scheduled Company Records Archive.
