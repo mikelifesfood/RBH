@@ -8,7 +8,8 @@ const ENABLED=Deno.env.get("TURNSTILE_ENFORCE")==="true";
 const EXPECTED_HOST=Deno.env.get("TURNSTILE_ALLOWED_HOSTNAME")||"mikelifesfood.github.io";
 const EXPECTED_ORIGIN=Deno.env.get("TURNSTILE_ALLOWED_ORIGIN")||"https://mikelifesfood.github.io";
 const ACTION="rbh_public_report";
-const READY=ENABLED&&!!SITE_KEY&&!!SECRET_KEY&&!!SERVICE_KEY&&!!API_BASE;
+const CONFIGURED=!!SITE_KEY&&!!SECRET_KEY&&!!SERVICE_KEY&&!!API_BASE;
+const READY=ENABLED&&CONFIGURED;
 const headers={
   "access-control-allow-origin":EXPECTED_ORIGIN,
   "access-control-allow-methods":"GET,POST,OPTIONS",
@@ -70,10 +71,16 @@ async function verify(token,ip){
 Deno.serve(async req=>{
   if(!allowed(req))return failure(403,"ORIGIN_NOT_ALLOWED");
   if(req.method==="OPTIONS")return new Response(null,{status:204,headers});
-  if(req.method==="GET")return reply(200,{mode:READY?"protected":ENABLED?"not_ready":"legacy",
-    sitekey:READY?SITE_KEY:null,action:ACTION,ready:READY});
+  if(req.method==="GET"){
+    // Controlled preview: employees still get legacy intake until ENFORCE=true.
+    // A test URL may use ?preview=1 to exercise Siteverify before cutover.
+    const preview=new URL(req.url).searchParams.get("preview")==="1";
+    const active=CONFIGURED&&(ENABLED||preview);
+    return reply(200,{mode:active?"protected":ENABLED||preview?"not_ready":"legacy",
+      sitekey:active?SITE_KEY:null,action:ACTION,ready:active,preview:preview&&!ENABLED});
+  }
   if(req.method!=="POST")return failure(405,"METHOD_NOT_ALLOWED");
-  if(!READY)return failure(503,"PROTECTION_NOT_CONFIGURED",{retryable:true});
+  if(!CONFIGURED)return failure(503,"PROTECTION_NOT_CONFIGURED",{retryable:true});
   if(Number(req.headers.get("content-length")||0)>72000)return failure(413,"PAYLOAD_TOO_LARGE");
   let data;try{data=await req.json()}catch{return failure(400,"INVALID_JSON")}
   if(!data||typeof data!=="object"||Array.isArray(data))return failure(400,"INVALID_REQUEST");
