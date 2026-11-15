@@ -50,3 +50,10 @@ Still required on an authenticated RBH account:
 
 ## Future refinements (not included)
 **Follow-up implementation:** Recurring hazard drill-down by exact site/category, report type, and 30/60/90-day period was committed in dashboard.html (commit 01a376d). No additional API, schema, role or email changes. Still needs browser/mobile acceptance with at least two reports sharing a site/category; there were no such groups in the existing RBH pilot data during this source review. Future: wider analytics drill-down, more refined job-site views, and corrective-action completion rates. Preserve Build 54 for Scheduled Company Records Archive.
+
+## 2026-11-15 follow-up: visible categories and filters
+- RBH pilot data had **no repeated category-plus-site pair** in the rolling 90-day window. Many test reports had no hazard category. Earlier UI therefore offered no clickable entries, and its period/type filter was inaccessible.
+- `dashboard.html` commit `536123c` now shows up to three actual category/site groups even when a group contains only one report. These are labelled **Hazard categories by site**, not recurring hazards; the no-repeat explanation remains explicit.
+- New **Browse all reports with filters** entry point is always available in Safety Pulse, even with no category data. It opens the Safety Inbox with reporting-period (30/60/90-day) and report-type controls. Clicking a specific grouped entry also filters by exact category/site.
+- The normal Safety Inbox still defaults to active reports. Drill-down intentionally includes resolved historical reports until cleared.
+- JavaScript parse validation and post-commit code presence checks passed. **Authenticated live-browser acceptance and role-based testing remain open.**
