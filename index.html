@@ -1035,7 +1035,7 @@
     }).map(function(el){return {id:el.id||'',name:el.name||'',type:el.type||'',value:el.value,checked:!!el.checked};});
   }
   function currentDraft(){
-    return {fields:snapshotFields(),files:files.slice(),siteCode:validatedQrSiteCode,
+    return {fields:snapshotFields(),files:files.map(function(file){return {blob:file,name:file.name||'photo',type:file.type||'',size:file.size||0};}),siteCode:validatedQrSiteCode,
       siteInfo:validatedQrSite,updatedAt:Date.now()};
   }
   function hasDraftContent(draft){
@@ -1080,7 +1080,10 @@
         if(field.type==='checkbox'||field.type==='radio')el.checked=!!field.checked;
         else el.value=field.value==null?'':field.value;
       });
-      files=Array.isArray(draft.files)?draft.files.slice():[];
+      files=Array.isArray(draft.files)?draft.files.map(function(item){
+        if(!item.blob)return item;
+        try{return new File([item.blob],item.name||'photo',{type:item.type||'application/octet-stream'});}catch(e){return item.blob;}
+      }):[];
       render();
       if(draft.siteCode&&draft.siteInfo){
         validatedQrSiteCode=draft.siteCode;validatedQrSite=draft.siteInfo;
