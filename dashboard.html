@@ -274,6 +274,14 @@
   .safety-pulse-rows li span:first-child{min-width:0;overflow-wrap:anywhere}
   .safety-pulse-count{flex:0 0 auto;border-radius:50px;background:var(--canvas-2);padding:3px 8px;font-size:12px;font-weight:750}
   .safety-pulse-empty{color:var(--muted);font-size:12.5px;line-height:1.5}
+  .safety-pulse-drill{display:inline;text-align:left;border:0;background:none;padding:0;font:inherit;font-weight:700;color:var(--ink);text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px;cursor:pointer}
+  .safety-pulse-drill:hover,.safety-pulse-drill:focus-visible{color:var(--brand)}
+  .pulse-trend-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 14px;background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);margin:0 0 12px}
+  .pulse-trend-toolbar[hidden]{display:none}
+  .pulse-trend-toolbar label{display:flex;align-items:center;gap:6px;font-size:12px}
+  .pulse-trend-toolbar select{max-width:180px}
+  .pulse-trend-toolbar button{border:1px solid var(--line);background:var(--canvas);padding:7px 12px;border-radius:8px;font-weight:700;cursor:pointer}
+  .pulse-trend-heading{font-size:12px;font-weight:750;margin-right:auto}
   @media(max-width:850px){.safety-pulse-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
   @media(max-width:520px){.safety-pulse{padding:15px}.safety-pulse-grid{gap:8px}.safety-pulse-metric{padding:12px}.safety-pulse-bottom{grid-template-columns:1fr}.safety-pulse-value{font-size:27px}}
   .home-actions{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px}
@@ -1597,6 +1605,12 @@
             <button class="exp" id="expView" type="button" title="Download the reports currently shown as a CSV">Export shown reports</button>
             <button class="exp" id="expAll" type="button" title="Download every report in the database as a CSV">Export all reports</button>
             <span class="count" id="count"></span>
+          </div>
+          <div id="pulseTrendToolbar" class="pulse-trend-toolbar" hidden aria-live="polite">
+            <span id="pulseTrendHeading" class="pulse-trend-heading"></span>
+            <label>Report type <select id="pulseTrendType" aria-label="Filter trend by report type"></select></label>
+            <label>Period <select id="pulseTrendDays" aria-label="Filter trend by period"><option value="30">30 days</option><option value="60">60 days</option><option value="90">90 days</option></select></label>
+            <button id="pulseTrendClear" type="button">Clear trend filter</button>
           </div>
           <div id="list"></div>
         </section>
@@ -3204,7 +3218,14 @@
       // The Closed chip intentionally groups every resolved disposition
       // (Closed, No action, and Duplicate) so the active inbox stays focused.
       if(closedOnly){ if(!resolved) return false; }
-      else if(!explicitResolvedStatus && resolved) return false;
+      else if(!pulseTrendFilter && !explicitResolvedStatus && resolved) return false;
+      if(pulseTrendFilter){
+        var created=Date.parse(r.created_at||"");
+        if(!Number.isFinite(created)||created>Date.now()||created<Date.now()-pulseTrendFilter.days*86400000)return false;
+        if(String(r.hazard_category||"").trim().toLocaleLowerCase()!==pulseTrendFilter.category.toLocaleLowerCase())return false;
+        if(String(r.job_site||"").trim().toLocaleLowerCase()!==pulseTrendFilter.site.toLocaleLowerCase())return false;
+        if(pulseTrendFilter.reportType&&String(r.report_type||"")!==pulseTrendFilter.reportType)return false;
+      }
       if(overdueOnly && !isOverdue(r)) return false;
       if(injuryOnly && !r.involves_injury) return false;
       var siteFilter=$("jobSiteFilter")?$("jobSiteFilter").value:"";
@@ -8310,7 +8331,13 @@
   var _aubd=$("addUserBackdrop"); if(_aubd) _aubd.addEventListener("click",function(e){if(e.target===_aubd)closeAddUserModal();});
   var _pss=$("passwordSetupSave"); if(_pss) _pss.addEventListener("click",finishPasswordSetup);
 
-  document.querySelectorAll(".nav-item").forEach(function(n){ n.addEventListener("click", function(){ showView(n.getAttribute("data-view")); }); });
+  document.querySelectorAll(".nav-item").forEach(function(n){ n.addEventListener("click", function(){
+    if(n.getAttribute("data-view")==="records"){pulseTrendFilter=null;syncPulseTrendToolbar();applyFilters();}
+    showView(n.getAttribute("data-view"));
+  }); });
+  var _ptType=$("pulseTrendType"); if(_ptType)_ptType.addEventListener("change",function(){if(pulseTrendFilter){pulseTrendFilter.reportType=this.value;applyFilters();}});
+  var _ptDays=$("pulseTrendDays"); if(_ptDays)_ptDays.addEventListener("change",function(){if(pulseTrendFilter){pulseTrendFilter.days=Number(this.value)||90;applyFilters();}});
+  var _ptClear=$("pulseTrendClear"); if(_ptClear)_ptClear.addEventListener("click",function(){pulseTrendFilter=null;syncPulseTrendToolbar();setQuickFilter("all");});
   var _ho=$("homeOpen"); if(_ho) _ho.addEventListener("click", function(){ if(currentRole!=="read_only") showView("mywork"); else { var sf=$("statusFilter"); if(sf) sf.value="open"; showView("records"); applyFilters(); } });
   var _hc=$("homeCreate"); if(_hc) _hc.addEventListener("click", function(){ window.open("index.html","_blank","noopener"); });
 
@@ -9006,7 +9033,7 @@
 
 
   /* ================= App polish: toasts, home, chips, chart, theme ================= */
-  var overdueOnly=false, injuryOnly=false, closedOnly=false;
+  var overdueOnly=false, injuryOnly=false, closedOnly=false, pulseTrendFilter=null;
 
   function toast(msg, kind){
     var wrap=document.getElementById("toasts"); if(!wrap) return;
@@ -9030,7 +9057,36 @@
     else { if(sf) sf.value="all"; }
     setActiveChip(chip==="open_injuries"?"injuries":chip); applyFilters();
   }
-  function goToRecords(chip){ setQuickFilter(chip); showView("records"); }
+  function goToRecords(chip){ pulseTrendFilter=null; syncPulseTrendToolbar(); setQuickFilter(chip); showView("records"); }
+  function openPulseTrend(category,site){
+    pulseTrendFilter={category:String(category||""),site:String(site||""),reportType:"",days:90};
+    if($("search"))$("search").value="";
+    if($("jobSiteFilter"))$("jobSiteFilter").value="";
+    setQuickFilter("all");
+    syncPulseTrendToolbar();
+    showView("records");
+    applyFilters();
+  }
+  function syncPulseTrendToolbar(){
+    var bar=$("pulseTrendToolbar"); if(!bar)return;
+    bar.hidden=!pulseTrendFilter;
+    if(!pulseTrendFilter)return;
+    var label=pulseTrendFilter.category+(pulseTrendFilter.site?" · "+pulseTrendFilter.site:" · Unspecified site");
+    $("pulseTrendHeading").textContent="Recurring category: "+label;
+    var types={}, cutoff=Date.now()-90*86400000;
+    allReports.forEach(function(r){
+      if(String(r.hazard_category||"").trim().toLocaleLowerCase()!==pulseTrendFilter.category.toLocaleLowerCase())return;
+      if(String(r.job_site||"").trim().toLocaleLowerCase()!==pulseTrendFilter.site.toLocaleLowerCase())return;
+      var time=Date.parse(r.created_at||"");
+      if(!Number.isFinite(time)||time> Date.now()||time<cutoff)return;
+      if(r.report_type)types[String(r.report_type)]=true;
+    });
+    var options='<option value="">All report types</option>';
+    Object.keys(types).sort().forEach(function(type){options+='<option value="'+esc(type)+'">'+esc(type)+'</option>';});
+    var sel=$("pulseTrendType"); sel.innerHTML=options;sel.value=pulseTrendFilter.reportType;
+    if(sel.selectedIndex<0){sel.value="";pulseTrendFilter.reportType="";}
+    $("pulseTrendDays").value=String(pulseTrendFilter.days);
+  }
 
   function updateNavCounts(){
     var el=$("navOpenCount"); if(!el) return;
@@ -9076,7 +9132,7 @@
     }
     var repeated=leading.length?'<ul class="safety-pulse-rows">'+leading.map(function(row){
       var name=row.category+(row.site?' · '+row.site:'');
-      return '<li><span>'+esc(name)+'</span><span class="safety-pulse-count">'+row.count+' reports</span></li>';
+      return '<li><button type="button" class="safety-pulse-drill" data-trend-index="'+leading.indexOf(row)+'" aria-label="Open matching reports for '+esc(name)+'">'+esc(name)+'</button><span class="safety-pulse-count">'+row.count+' reports</span></li>';
     }).join("")+'</ul>':'<div class="safety-pulse-empty">No repeated hazard categories identified in the last 90 days.</div>';
     var latest=open.filter(function(r){return r.created_at;}).sort(function(a,b){
       return Date.parse(b.created_at||0)-Date.parse(a.created_at||0);
@@ -9098,6 +9154,12 @@
     if(host.dataset.snapshot===html)return;
     host.dataset.snapshot=html;host.innerHTML=html;
     host.querySelector("#safetyPulseAnalytics").addEventListener("click",function(){showView("metrics");});
+    host.querySelectorAll("[data-trend-index]").forEach(function(btn){
+      btn.addEventListener("click",function(){
+        var item=leading[Number(btn.getAttribute("data-trend-index"))];
+        if(item)openPulseTrend(item.category,item.site);
+      });
+    });
   }
 
   function renderHomeStats(){
