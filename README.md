@@ -190,3 +190,7 @@ Cloudflare Turnstile-protected public reporting and the legacy submission-RPC lo
 ## Safety Pulse dashboard — 2026-11-15
 
 The Home dashboard now includes a read-only [Safety Pulse overview](docs/TEAMWORKT_SAFETY_PULSE_2026-11-15.md) summarizing 30-day reporting volume and comparison, unresolved reports, open Critical/Serious concerns, overdue reports, repeat hazard categories by job site during the past 90 days, and latest unresolved reports. It uses existing role-restricted report data and provides navigation to existing Safety Analytics. Only `dashboard.html` was modified for the feature; no Supabase, permissions, notification, or workflow changes were made. Device/browser acceptance testing remains outstanding.
+
+## November 15 MVP restart handoff
+
+The current prioritized RBH/TeamWorkt Safety feature backlog, QA requirements, email-role eligibility, Supabase paid-plan limitation, commercial deployment gates, and suggested first action for a new chat are captured in [`docs/TEAMWORKT_NEXT_CHAT_HANDOFF_2026-11-15.md`](docs/TEAMWORKT_NEXT_CHAT_HANDOFF_2026-11-15.md). Start by verifying Safety Pulse at the bottom of the Home dashboard, then work on a job-site / repeated-hazard drill-down without changing existing roles or the four-stage workflow. The scheduled Safety Pulse email digest is NOT yet built.
