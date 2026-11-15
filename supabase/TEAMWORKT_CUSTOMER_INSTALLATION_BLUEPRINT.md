@@ -56,6 +56,14 @@ A full schema baseline should be derived by an explicit schema-only export of th
 This draft makes no changes to the RBH application's live tenant, users, test data, or GitHub `main`.
 
 
+## November 15, 2026 — Build 3 follow-up: permanent Job Site Delete
+
+- Owner approved **Delete instead of Deactivate** for disposable job sites. Admin Settings now shows **Delete** with a strong confirmation explaining that QR codes immediately become invalid and the deletion cannot be undone. Legacy inactive sites retain **Reactivate** solely to recover sites deactivated under the earlier interface.
+- New Admin-only `rbh_delete_job_site(uuid)` RPC from `supabase/patches/20261115_teamworkt_job_site_deletion.sql`, deployed to RBH Supabase. It enforces active Admin membership in the configured organization and deletes the site row.
+- **Reports are never deleted**: the pre-existing `reports.job_site_id REFERENCES job_sites(id) ON DELETE SET NULL` detaches the site association, but the report's free-text `job_site`, `site_location`, report content, attachments and audit data remain. Such reports appear under the Safety Inbox **Other / unregistered locations** site filter instead of under the deleted site.
+- GitHub `dashboard.html` updated to replace the Deactivate control with Delete, confirmation, and report/filter refresh. No changes to `index.html`, `job-site-poster.html`, Brevo, or existing report workflows. No existing sites were deleted by this implementation.
+- Transaction-scoped tests passed: Admin create/delete, non-Admin rejection, deleted-QR lookup failure, second-delete rejection. The database transaction was rolled back; backend report association preservation follows the verified FK definition. Dashboard inline JavaScript passed syntax validation. Owner should test Delete with a disposable site in the browser.
+
 ## November 15, 2026 — Build 3 Job Sites & Site-Specific QR (RBH pilot)
 
 **Implemented in GitHub `main` and RBH Supabase:**
