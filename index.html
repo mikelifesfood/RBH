@@ -1183,9 +1183,11 @@
             try{await Q.clearReceipt(record.id);await renderOutbox();}catch(e){console.warn(e);}
           },false));
         }else{
-          item.appendChild(outboxItemButton(offlineLang('Retry now','Reintentar ahora'),function(){
-            Q.flush().catch(function(e){console.warn(e);});
-          },false));
+          if(record.status!=='needs_review'){
+            item.appendChild(outboxItemButton(offlineLang('Retry now','Reintentar ahora'),function(){
+              Q.flush().catch(function(e){console.warn(e);});
+            },false));
+          }
           if(!record.reportId){
             item.appendChild(outboxItemButton(offlineLang('Edit report','Editar reporte'),async function(){
               if(!window.confirm(offlineLang('Edit this saved report? It is not yet submitted.','¿Editar este reporte guardado? Aún no se ha enviado.')))return;
