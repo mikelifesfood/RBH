@@ -1550,6 +1550,22 @@
         <section class="view" id="view-users" hidden>
           <div class="section-head"><div><h2>Admin</h2><p>Manage application roles and dashboard access.</p></div></div>
           <div class="admin-info"><h3>Role-based access</h3><p>New dashboard users start as Read Only until an Admin assigns the appropriate role. Access can be updated at any time by another Admin.</p></div>
+          <div class="admin-info" id="reportEmailPreferences">
+            <h3>New report email notifications</h3>
+            <p>Choose how active Admins and Safety Managers receive the initial email when a report is submitted. Assignment, investigation, corrective action, and in-app alerts are not changed by this setting.</p>
+            <div style="display:flex;flex-wrap:wrap;align-items:end;gap:10px;margin-top:12px">
+              <label for="reportEmailMode" style="display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:700">Email delivery
+                <select id="reportEmailMode" disabled style="min-width:225px;padding:10px;border:1px solid var(--line-strong);border-radius:8px;background:var(--paper);color:var(--ink);font:inherit">
+                  <option value="grouped">Grouped email (current default)</option>
+                  <option value="individual">Individual email per recipient</option>
+                  <option value="off">Off — no new report emails</option>
+                </select>
+              </label>
+              <button id="saveReportEmailMode" type="button" class="archive-export-btn" disabled>Save email setting</button>
+            </div>
+            <p id="reportEmailModeStatus" role="status" aria-live="polite" style="margin-top:10px">Loading company email setting…</p>
+            <p style="margin-top:6px">Off also suppresses high-priority injury intake emails. Reports remain saved and visible in the dashboard. No recipient roles are added or removed.</p>
+          </div>
           <div class="admin-records-archive" id="companyReportingPoster">
             <div class="archive-copy">
               <h3>Company safety reporting QR poster</h3>
@@ -7605,6 +7621,45 @@
   function openSidebar(){ if(sidebarEl) sidebarEl.classList.add("open"); if(sbBackdrop) sbBackdrop.classList.add("show"); }
   function closeSidebar(){ if(sidebarEl) sidebarEl.classList.remove("open"); if(sbBackdrop) sbBackdrop.classList.remove("show"); }
 
+  async function loadReportEmailMode(){
+    var sel=$("reportEmailMode"),save=$("saveReportEmailMode"),status=$("reportEmailModeStatus");
+    if(!sel||!save||!status||currentRole!=="admin") return;
+    sel.disabled=true; save.disabled=true; status.textContent="Loading company email setting…";
+    try{
+      var result=await sb.rpc("rbh_get_report_email_mode");
+      if(result.error) throw result.error;
+      var mode=String(result.data||"grouped");
+      if(["grouped","individual","off"].indexOf(mode)<0) throw new Error("Unexpected setting");
+      sel.value=mode; sel.dataset.savedMode=mode;
+      sel.disabled=false; save.disabled=false;
+      status.textContent="Current setting: "+sel.options[sel.selectedIndex].text+".";
+    }catch(err){
+      console.error("Could not load report email setting",err);
+      status.textContent="Unable to load this setting. Refresh the dashboard before changing it.";
+    }
+  }
+  var reportEmailSaveBtn=$("saveReportEmailMode");
+  if(reportEmailSaveBtn) reportEmailSaveBtn.addEventListener("click",async function(){
+    var sel=$("reportEmailMode"),status=$("reportEmailModeStatus"),save=$("saveReportEmailMode");
+    if(!sel||!status||!save||currentRole!=="admin") return;
+    var mode=sel.value;
+    if(["grouped","individual","off"].indexOf(mode)<0) return;
+    if(mode==="off" && !window.confirm("Turn off ALL initial new-report emails, including urgent injury notifications? Reports will still appear in the dashboard and assignment emails will remain enabled.")) return;
+    save.disabled=true; sel.disabled=true; status.textContent="Saving company email setting…";
+    try{
+      var result=await sb.rpc("rbh_set_report_email_mode",{p_mode:mode});
+      if(result.error) throw result.error;
+      sel.dataset.savedMode=mode;
+      status.textContent="Saved: "+sel.options[sel.selectedIndex].text+". New submissions will use this choice.";
+      toast("New report email setting saved","ok");
+    }catch(err){
+      console.error("Could not save report email setting",err);
+      sel.value=sel.dataset.savedMode||"grouped";
+      status.textContent="Setting not saved. Previous option restored; please try again.";
+      toast("Could not save email setting","err");
+    }finally{save.disabled=false;sel.disabled=false;}
+  });
+
   function showView(name){
     if(name!=="incident"&&name!=="myaction"){ stopRecordPresence(); clearActiveOpenResource(); }
     if(name==="users" && currentRole!=="admin") name="home";
@@ -7620,7 +7675,7 @@
     if(name==="mywork") renderMyWork();
     if(name==="actions") renderActions();
     if(name==="platform") loadPlatformDashboard();
-    if(name==="users"){ loadUsers(); loadAdminUserEvents(); }
+    if(name==="users"){ loadUsers(); loadAdminUserEvents(); loadReportEmailMode(); }
     if(name==="home") renderHomeSnapshot();
     refreshHelpCoachContext();
     closeSidebar();
