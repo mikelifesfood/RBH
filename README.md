@@ -178,3 +178,11 @@ Customer-facing cleanup pass before interface freeze. Changes include open-injur
 ## Build 53.1.12 — Active Workflow Step Visual State — 2026-10-07
 
 Updated the workflow color language so the user's current location is easier to identify without competing with black action buttons. Completed steps remain green, future steps remain gray, and the active step now uses a soft RBH crimson tint with a stronger crimson accent. The same current-state treatment is applied to the Corrective Actions Plan & Assign / Complete Work / Verify lifecycle and to the mobile current-step header. Black remains reserved for deliberate primary actions. This is a presentation-only change; workflow logic, report status, permissions, database behavior, notifications, and corrective-action rules are unchanged.
+
+## Build 7 security handoff — 2026-11-15
+
+Cloudflare Turnstile-protected public reporting and the legacy submission-RPC lockdown are documented in [the Build 7 security handoff](docs/TEAMWORKT_BUILD7_SECURITY_HANDOFF_2026-11-15.md). The public form uses the protected Edge Function, while both anonymous and authenticated direct execution of `submit_report(jsonb)` are revoked; `service_role` retains server-side execution. An offline/photo post-cutover regression test and tighter attachment-token enforcement remain pre-launch follow-ups.
+
+**Supabase plan limitation:** RBH's current Supabase plan is not eligible for **leaked-password protection**, so the option is not enabled in the pilot. For every future **paid-customer** deployment on an eligible Supabase paid plan, enable and verify leaked-password protection in Auth settings during customer onboarding; a paid plan alone does not confirm it is enabled. Each customer will use an independent Supabase project.
+
+**Next product-development workstream:** Scoped Home/Analytics dashboard cleanup and a small-business Safety Pulse overview, preserving existing roles and the four-step reporting workflow. Build 54 remains reserved for Scheduled Company Records Archive.
