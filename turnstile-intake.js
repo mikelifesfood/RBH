@@ -7,6 +7,7 @@
 'use strict';
 var BASE='https://owhkxguiavgxzwvbxevj.supabase.co/functions/v1/submit-public-report';
 var STAGING_LEGACY_FALLBACK=true; // CHANGE TO false during enforced cutover, along with revoking anonymous RPC.
+var PREVIEW=!!(window.location&&new URLSearchParams(window.location.search).get('build7_preview')==='1');
 var config=null,configTime=0,configPromise=null,challengePromise=null,scriptPromise=null;
 function spanish(){return (document.documentElement.lang||'en').indexOf('es')===0;}
 function localized(en,es){return spanish()?es:en;}
@@ -16,14 +17,14 @@ async function getConfig(){
   if(config&&Date.now()-configTime<15000)return config;
   if(configPromise)return configPromise;
   configPromise=(async function(){
-    var response=await fetch(BASE,{method:'GET',cache:'no-store'});
+    var response=await fetch(BASE+(PREVIEW?'?preview=1':''),{method:'GET',cache:'no-store'});
     if(!response.ok)throw fail('PROTECTION_CONFIG_UNAVAILABLE','PROTECTION_CONFIG_UNAVAILABLE');
     var result=await response.json();
     if(!result||!['protected','legacy','not_ready'].includes(result.mode))
       throw fail('PROTECTION_CONFIG_INVALID','PROTECTION_CONFIG_INVALID');
     config=result;configTime=Date.now();return config;
   })().catch(function(e){
-    if(!STAGING_LEGACY_FALLBACK)throw e;
+    if(!STAGING_LEGACY_FALLBACK||PREVIEW)throw e;
     // During staging only. Production will fail closed with the explicit flag.
     console.warn('RBH intake protection is in legacy staging mode',e&&e.code||'CONFIG_UNAVAILABLE');
     return {mode:'legacy',ready:false};
@@ -126,5 +127,5 @@ async function submit(payload,sb){
   return sb.rpc('submit_report',{payload:payload});
 }
 window.RBHIntake={submit:submit,getConfig:getConfig,
-  isStagingLegacy:function(){return STAGING_LEGACY_FALLBACK;}};
+  isStagingLegacy:function(){return STAGING_LEGACY_FALLBACK;},isPreview:function(){return PREVIEW;}};
 })();
