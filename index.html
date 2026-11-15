@@ -1095,7 +1095,7 @@
     }catch(e){console.error('Draft restore unavailable',e);}
     finally{draftRestorePending=false;}
   }
-  function resetAfterQueued(){
+  function resetAfterQueued(preserveDraft){
     form.style.display='';
     document.getElementById('offlinePending').hidden=true;
     document.getElementById('success').classList.remove('show');
@@ -1106,7 +1106,7 @@
     if(injuryWarn)injuryWarn.classList.remove('show');
     syncInjuryState();fillObservedNow(true);
     var status=document.getElementById('offlineDraftStatus');status.hidden=true;
-    if(Q)Q.clearDraft().catch(function(e){console.warn('Could not clear draft',e);});
+    if(Q&&!preserveDraft)Q.clearDraft().catch(function(e){console.warn('Could not clear draft',e);});
     window.scrollTo({top:0,behavior:'smooth'});
   }
   function showQueued(){
@@ -1169,7 +1169,7 @@
                 if(!snap)throw new Error('DRAFT_SNAPSHOT_UNAVAILABLE');
                 await Q.saveDraft(Object.assign({},snap,{files:saved.files}));
                 await Q.deleteRecord(record.id);
-                resetAfterQueued();await restoreDraftFromDevice();await renderOutbox();
+                resetAfterQueued(true);await restoreDraftFromDevice();await renderOutbox();
               }catch(e){window.alert(offlineLang('Could not restore this report; the queued copy is unchanged.','No se pudo recuperar el reporte; la copia en espera no cambió.'));}
             },false));
             item.appendChild(outboxItemButton(offlineLang('Delete unsent copy','Borrar copia no enviada'),async function(){
@@ -1227,7 +1227,7 @@
           'No se pudo guardar este borrador. No cierre la página. Revise el almacenamiento.'));
       }
     });
-    document.getElementById('offlinePendingNew').addEventListener('click',resetAfterQueued);
+    document.getElementById('offlinePendingNew').addEventListener('click',function(){resetAfterQueued(false);});
     document.getElementById('offlinePendingRetry').addEventListener('click',function(){Q.flush().catch(function(e){console.warn(e);});});
   }
   async function submitReport(type){
