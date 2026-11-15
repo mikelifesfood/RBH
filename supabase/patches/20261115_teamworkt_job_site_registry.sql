@@ -154,7 +154,21 @@ BEGIN
 
   v_site_code := nullif(btrim(coalesce(payload->>'site_code','')), '');
   IF v_site_code IS NOT NULL THEN
-    IF v_site_code !~ '^[a-f0-9]{32}    report_type,description,hazard_category,potential_severity,
+    IF v_site_code !~ '^[a-f0-9]{32}$' THEN
+      RAISE EXCEPTION 'INVALID_OR_INACTIVE_SITE_CODE';
+    END IF;
+    SELECT s.id,s.name INTO v_site_id,v_site_name
+      FROM public.job_sites s
+      JOIN public.teamworkt_installation_context ctx
+        ON ctx.singleton IS TRUE AND ctx.organization_id=s.organization_id
+     WHERE s.public_code=v_site_code AND s.is_active IS TRUE;
+    IF v_site_id IS NULL THEN
+      RAISE EXCEPTION 'INVALID_OR_INACTIVE_SITE_CODE';
+    END IF;
+  END IF;
+
+  INSERT INTO public.reports (
+    report_type,description,hazard_category,potential_severity,
     people_involved,immediate_action,suggested_fix,
     reporter_name,reporter_role,reporter_contact,language,
     job_site,site_location,observed_at,involves_injury,job_site_id
@@ -172,36 +186,3 @@ BEGIN
   RETURN jsonb_build_object('id',new_id,'ref_no',new_ref);
 END;
 $function$
- THEN
-      RAISE EXCEPTION 'INVALID_OR_INACTIVE_SITE_CODE';
-    END IF;
-    SELECT s.id,s.name INTO v_site_id,v_site_name
-      FROM public.job_sites s
-      JOIN public.teamworkt_installation_context ctx
-        ON ctx.singleton IS TRUE AND ctx.organization_id=s.organization_id
-     WHERE s.public_code=v_site_code AND s.is_active IS TRUE;
-    IF v_site_id IS NULL THEN
-      RAISE EXCEPTION 'INVALID_OR_INACTIVE_SITE_CODE';
-    END IF;
-  END IF;
-
-  INSERT INTO public.reports (
-    report_type,description,hazard_category,potential_severity,
-    people_involved,immediate_action,suggested_fix,
-    reporter_name,reporter_role,reporter_contact,language,
-    job_site,site_location,observed_at,involves_injury
-  ) VALUES (
-    btrim(payload->>'report_type'),btrim(payload->>'description'),
-    nullif(payload->>'hazard_category',''),nullif(payload->>'potential_severity',''),
-    nullif(payload->>'people_involved',''),nullif(payload->>'immediate_action',''),
-    nullif(payload->>'suggested_fix',''),nullif(payload->>'reporter_name',''),
-    nullif(payload->>'reporter_role',''),nullif(payload->>'reporter_contact',''),
-    coalesce(nullif(payload->>'language',''),'en'),
-    nullif(payload->>'job_site',''),nullif(payload->>'site_location',''),
-    v_observed,v_injury
-  )
-  RETURNING id,ref_no INTO new_id,new_ref;
-  RETURN jsonb_build_object('id',new_id,'ref_no',new_ref);
-END;
-$function$
-
