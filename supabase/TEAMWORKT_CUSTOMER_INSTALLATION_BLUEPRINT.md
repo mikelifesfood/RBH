@@ -70,3 +70,30 @@ This draft makes no changes to the RBH application's live tenant, users, test da
 - Keep anonymous submission as a first-class requirement; rate limiting and verification must not impose an employee account requirement.
 
 **Implementation status:** Product architecture and QR workflow are confirmed. This document update makes no live database or frontend changes; job-site registry, QR poster generation, and Turnstile backend enforcement still require implementation and testing.
+
+
+## Confirmed product delivery: PWA-first, with genuine offline reporting
+
+This section is a confirmed requirement for the **next handoff document** and future architecture planning. It is not yet implemented in the RBH pilot.
+
+- Each customer receives its own independent mobile-friendly, installable TeamWorkt Safety **Progressive Web App**; there is no App Store or Play Store requirement for the initial commercial release.
+- The public reporting site must remain accessible through job-site-specific or company-wide QR codes without employee login. A worker may scan a code directly into the browser, without being asked to install the PWA.
+- When the relevant site/form has been loaded previously, the app should support report drafting while offline. An entirely new device cannot reliably open an uncached website offline just by scanning the QR code.
+- Store pending report drafts and photos in IndexedDB, cache the necessary interface with a service worker, and use an idempotent submission queue (client-generated submission ID with server-enforced uniqueness) to prevent duplicate reports and duplicate notifications.
+- Distinguish visibly between **Saved locally / Not submitted**, **Synchronizing**, **Submitted and acknowledged by server**, and **Retry needed**. Never tell users that a report was successfully submitted merely because it is stored on the device.
+- Do not depend on iPhone background sync running while the app is closed. Retry when reopened, returned to foreground, or when connectivity is detected while active. Provide explicit manual retry and draft recovery.
+- Offline storage is not guaranteed forever; browser storage can be deleted or evicted. Communicate unsent status and offer reasonable recovery safeguards.
+- Protect uploaded evidence and personal data in local storage; do not cache authenticated sensitive records indiscriminately. Signout must clear sensitive cached session data as appropriate.
+- Keep Brevo email as the primary notification delivery mechanism; add optional supported Web Push for installed PWAs with user permission, alongside the in-app notification center.
+- For a future native mobile application, a single customer-facing app could discover and connect securely to separate customer Supabase projects. A shared app does **not** require shared customer data hosting, and native development is deferred.
+
+## Solo-installation schema cleanup — verified pilot actions
+
+- **Removed:** `public.organization_admin_invites`. It was empty and had no active application or Edge Function references, triggers, dependent views, or inbound foreign keys. Applied with a guarded `DROP TABLE ... RESTRICT`; migration tracked in `supabase/patches/20261114_teamworkt_drop_unused_org_admin_invites.sql`.
+- **Retained intentionally:** `organizations` (single-company configuration and default organization association); `organization_memberships` (used by admin provisioning and platform reporting); `platform_admins` (still used by the dashboard), `admin_user_events` (admin audit trail), `app_feedback` (existing feedback/admin functions). These require a coordinated feature-removal/code update before any further table deletion.
+- **Retained:** `report_notification_events` (email send tracking), `report_workflow_restarts` (restart audit/history), and all incident/corrective-action/evidence tables. Two backend-only RLS tables intentionally have no browser policies.
+- **Not yet changed:** five existing RBH-specific `organization_id` column defaults on `reports`, `report_attachments`, `report_notes`, `report_audit`, and `app_feedback`. They must be replaced with per-installation settings or explicit trusted assignments in the reusable customer baseline; do not strip the defaults from live RBH before reviewing all writers.
+- **Remaining work:** archive/refactor the now-obsolete platform-wide admin UI and tables only after their source-code and provisioning dependencies are removed or replaced. Do not attempt blanket table drops in the live pilot.
+- **Operational gate:** run browser-based regression tests for the current RBH site (including fresh anonymous report, investigation upload for old reports, assignments, evidence verification, report PDF export, email and in-app notifications). Database-only tests do not replace this.
+
+No plan upgrade is authorized. Supabase leaked-password protection is unavailable on the RBH plan; document the limitation and use other supported authentication safeguards.
