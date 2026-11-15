@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>RBH Insulation | Safety Reporting Poster</title>
+<style>
+:root{font-family:Arial,Helvetica,sans-serif;color:#171717;background:#efeeeb}
+*{box-sizing:border-box}
+body{margin:0}
+.toolbar{max-width:780px;margin:18px auto;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 16px;flex-wrap:wrap;font-size:14px}
+button{background:#a1182c;border:0;color:#fff;padding:12px 19px;border-radius:7px;font-weight:700;font-size:15px;cursor:pointer}
+button:focus-visible,a:focus-visible{outline:3px solid #1769aa;outline-offset:3px}
+.paper{width:min(100% - 32px,760px);min-height:940px;margin:0 auto 28px;background:white;box-shadow:0 7px 35px #0002;border:1px solid #dedede;padding:48px 54px 38px;text-align:center;display:flex;flex-direction:column;align-items:center}
+.brand{font-size:21px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.rule{height:7px;background:#a1182c;width:100%;margin:24px 0 42px}
+h1{font-size:48px;letter-spacing:-.035em;line-height:1.05;margin:0 0 15px}
+.lead{font-size:23px;line-height:1.4;margin:0 0 24px;max-width:540px}
+.qrframe{border:3px solid #1a1a1a;padding:8px;background:#fff;width:min(100%,360px);aspect-ratio:1;display:flex;align-items:center;justify-content:center}
+#qr{width:100%;height:100%;display:block;shape-rendering:crispEdges}
+.steps{font-size:23px;font-weight:750;line-height:1.38;margin:30px auto 18px;max-width:520px}
+.link{font-size:15px;overflow-wrap:anywhere;line-height:1.4}
+.link a{color:#7f1524;text-decoration:underline}
+.notice{margin-top:auto;padding-top:32px;font-size:17px;line-height:1.45;max-width:570px}
+.notice strong{color:#a1182c}
+.footer{border-top:1px solid #ddd;margin-top:22px;padding-top:14px;font-size:13px;color:#545454;width:100%}
+@media(max-width:570px){.paper{padding:24px 22px;min-height:760px}.rule{margin:16px 0 26px}h1{font-size:34px}.lead,.steps{font-size:19px}.brand{font-size:16px}.qrframe{max-width:300px}.notice{font-size:15px}}
+@page{size:letter portrait;margin:0}
+@media print{html,body{background:#fff;margin:0}.toolbar{display:none}.paper{border:0;box-shadow:none;width:100%;height:11in;min-height:0;margin:0;padding:0.62in 0.7in 0.4in;break-inside:avoid;print-color-adjust:exact;-webkit-print-color-adjust:exact}h1{font-size:45px}.qrframe{width:3.65in}.notice{padding-top:20px}}
+</style>
+</head>
+<body>
+<div class="toolbar"><span>RBH Safety · Company-wide QR poster · US Letter</span><button type="button" onclick="window.print()">Print / Save PDF</button></div>
+<main class="paper" aria-label="RBH company-wide safety reporting poster">
+<div class="brand">RBH Insulation</div>
+<div class="rule"></div>
+<h1>SEE SOMETHING?<br>REPORT IT.</h1>
+<p class="lead">Injuries, near misses, and safety concerns matter. Help keep everyone safe.</p>
+<div class="qrframe"><svg id="qr" viewBox="0 0 37 37" xmlns="http://www.w3.org/2000/svg" aria-label="QR code linking to the RBH Safety Report form" role="img"><rect width="37" height="37" fill="white"/></svg></div>
+<p class="steps">1. Open your phone's camera<br>2. Scan the QR code<br>3. Complete the safety report</p>
+<p class="link">Or visit: <a href="https://mikelifesfood.github.io/RBH/" id="reportUrl">mikelifesfood.github.io/RBH/</a></p>
+<p class="notice"><strong>Emergency?</strong> Call 911 and notify your supervisor first. Submit a report when it is safe to do so.<br><br>No account or sign-in is required to report. You can choose whether to identify yourself on the form.</p>
+<div class="footer">RBH Insulation · Company-wide safety reporting · English / Español available on the form</div>
+</main>
+<script>
+/* Offline-safe static QR matrix generated for the fixed public reporting URL above.
+   37x37, error correction M, four-module quiet zone. No outside QR service or keys.
+   If the destination changes, regenerate the matrix as well as the visible URL. */
+(function(){
+  'use strict';
+  const rows='0000000000,0000000000,0000000000,0000000000,01fc3d67f0,01048e4410,0174dab5d0,0174dc45d0,0174bed5d0,01056e3410,01fd5557f0,000007d000,012d830a00,00c9f7dc90,003ea02fe0,0008a40a60,006dd1bcb0,0069b23800,014661d0f0,00aadc93a0,01a47d9820,002bb34e90,013c981f30,004b48fb30,015e971f40,0001a8b170,01fcddd520,0105a911e0,0174f7df30,01759437e0,01746c01d0,0104269020,01fd869aa0,0000000000,0000000000,0000000000,0000000000'.split(',');
+  const svg=document.getElementById('qr'),ns='http://www.w3.org/2000/svg';
+  for(let y=0;y<rows.length;y++){
+    const bits=BigInt('0x'+rows[y]);
+    for(let x=0;x<37;x++)if((bits>>BigInt(36-x))&1n){
+      const rect=document.createElementNS(ns,'rect');
+      rect.setAttribute('x',String(x));rect.setAttribute('y',String(y));
+      rect.setAttribute('width','1');rect.setAttribute('height','1');rect.setAttribute('fill','#111');
+      svg.appendChild(rect);
+    }
+  }
+})();
+</script>
+</body>
+</html>
