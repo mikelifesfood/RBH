@@ -4,6 +4,19 @@ Pilot: RBH Insulation
 Repo: `mikelifesfood/RBH`, branch `main`  
 Supabase: `owhkxguiavgxzwvbxevj`
 
+## Priority UI fix — confirmed report incorrectly showed saved-draft banner (Nov 15)
+
+Owner confirmed **protected preview report #52 received a server reference**, but iPhone Safari still showed the green **"Draft saved on this device — not submitted."** message and a **Submitted — report #52** card under Saved Reports. This is a misleading local UI state, not evidence that the confirmed report failed to submit.
+
+Implemented fix on `main`:
+- `index.html` shows the green *draft* notice only while offline **and** a real unsent form draft exists; returning online hides it.
+- On successful enqueue/receipt, invalidate and drain any in-progress autosave before clearing the local draft. Do not let a prior photo-saving promise recreate or redisplay a submitted draft.
+- `offlineOutbox` and the Saved Reports shortcut are hidden when there are **no outstanding** reports/drafts. Sent receipts stay in the browser's minimal local history for recoverability but no longer appear as pending drafts. Never delete actual pending reports.
+- Any unsent/verification-failed report still appears regardless of connectivity until acknowledged; an offline unsubmitted draft remains recoverable.
+- `sw.js` cache version `rbh-public-shell-v15-20261115` rolls out the corrected public shell.
+- Source syntax and five simulated draft state/race cases passed (online autosave hidden, offline unsent visible, reconnect hidden, submit hidden, late autosave cannot re-show).
+- Owner iPhone visual retest is required: open current preview online and refresh; submitted #52 should show its confirmation but **no green draft notice or submitted receipt in Saved Reports**. Create a new offline draft to ensure that notice still appears, then reconnect/submit and verify it disappears. **Do not clear Safari site data.**
+
 ## Current delivery status — STAGED, NOT YET ENFORCED
 - Implemented and deployed Supabase Edge Function **`submit-public-report`**, version **4**, `verify_jwt=false` (public request must perform its own verification). The function calls Cloudflare **Siteverify** server-side and checks `success`, challenge age (<=300 seconds), hostname and action `rbh_public_report`.
 - SQL migration **`supabase/patches/20261115_teamworkt_build7_intake_rate_limit.sql`** applied: restricted atomic rate limiting, private quota table with RLS, receipt lookup for idempotent retries, manual counter cleanup. Neither anon nor normal authenticated staff can call these internal service-role RPCs.
