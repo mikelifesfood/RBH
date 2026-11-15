@@ -70,6 +70,17 @@ The setting affects **only email A — new report**. Existing assignment/workflo
 
 **Verification status:** Database RPC defaults, individual/off settings, invalid values and read-only user denial passed transactional tests (rolled back, so the live setting remains grouped). Browser settings UI and actual Brevo grouped/individual delivery need owner-driven end-to-end tests. No new test email was deliberately sent as part of this update.
 
+## November 15, 2026 — Live RBH email setting tests
+
+**Two eligible active profiles confirmed:** Admin `mikevignery@hotmail.com` and Safety Manager `vignery12@gmail.com`, same RBH organization.
+
+- **Grouped, test report #44** (`9c021b61-4e40-477d-8b15-8e3f43f4a1bb`): two notification audit events marked `sent`; **same Brevo provider message ID** for both intended recipients. Provider acceptance confirmed; inbox arrival not independently confirmed.
+- **Individual, test report #45** (`62b8a5fb-12cc-482c-81cb-76691a36b30d`): two events marked `sent`; **different Brevo provider message IDs**, one per recipient. Provider acceptance confirmed; inbox arrival not independently confirmed.
+- **Off, test report #46** (`237e085b-099c-4fb7-8ec9-5b9e89115252`): report saved; zero email events. Edge Function logs explicitly show `New-report email disabled by company Admin setting` and successful HTTP 200 response.
+- **Restored default:** RBH `report_email_settings.delivery_mode='grouped'`, verified after tests.
+- All three new reports are labeled **TEST ONLY** and describe fictional, non-injury concerns. They were retained for test/audit traceability. No data was purged.
+- **Still unverified:** independent confirmation that emails reached recipients' inboxes, and a browser interaction test using the Admin dropdown. Backend routing and provider acceptance tests passed.
+
 ## Verification checklist for next build
 - [ ] New anonymous report sends a single grouped intake email to current active Admin/Safety Manager recipients; no Supervisor or Read Only inclusion.
 - [ ] Injury flag preserves recipients but changes visible priority treatment.
