@@ -135,6 +135,7 @@ async function sendOne(id){
     if(record.files.length)await uploadAttachments(sb,record);
     record.status='sent';record.error=null;record.receivedAt=Date.now();
     record.files=[];record.payload=null;record.done=[];
+    record.display={reportType:(record.display&&record.display.reportType)||'Report'}; // discard sensitive local draft after receipt
     await saveRecord(record);
   }catch(error){
     record=await getRecord(id)||record;
