@@ -14,6 +14,9 @@
   var isStandalone=(window.matchMedia&&matchMedia('(display-mode: standalone)').matches) ||
     navigator.standalone===true;
   var isPublicForm=!!document.getElementById('reportForm');
+  // Only authorized staff dashboard pages should advertise installation.
+  // Public reporting still uses the service worker and offline warning.
+  var isDashboardPage=/\/dashboard\.html$/.test(window.location.pathname)&&!isPublicForm;
 
   if('serviceWorker' in navigator && window.isSecureContext){
     window.addEventListener('load',function(){
@@ -23,7 +26,7 @@
   }
 
   function installCardVisible(){
-    return !dismissed&&!isStandalone&&(!!deferredPrompt||isIOS);
+    return isDashboardPage&&!dismissed&&!isStandalone&&(!!deferredPrompt||isIOS);
   }
   function refreshInstall(){
     if(installCard) installCard.hidden=!installCardVisible();
@@ -67,7 +70,8 @@
   }
 
   window.addEventListener('beforeinstallprompt',function(event){
-    if(isStandalone)return;
+    // No install UI or promotion for anonymous public reporting.
+    if(!isDashboardPage||isStandalone)return;
     event.preventDefault();
     deferredPrompt=event;
     refreshInstall();
@@ -103,7 +107,7 @@
   }
 
   function init(){
-    createInstallControls();
+    if(isDashboardPage)createInstallControls();
     if(isPublicForm)wireOfflineNotice();
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
