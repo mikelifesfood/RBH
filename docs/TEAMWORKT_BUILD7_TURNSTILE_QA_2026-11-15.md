@@ -5,7 +5,7 @@ Repo: `mikelifesfood/RBH`, branch `main`
 Supabase: `owhkxguiavgxzwvbxevj`
 
 ## Current delivery status — STAGED, NOT YET ENFORCED
-- Implemented and deployed Supabase Edge Function **`submit-public-report`**, version **3**, `verify_jwt=false` (public request must perform its own verification). The function calls Cloudflare **Siteverify** server-side and checks `success`, challenge age (<=300 seconds), hostname and action `rbh_public_report`.
+- Implemented and deployed Supabase Edge Function **`submit-public-report`**, version **4**, `verify_jwt=false` (public request must perform its own verification). The function calls Cloudflare **Siteverify** server-side and checks `success`, challenge age (<=300 seconds), hostname and action `rbh_public_report`.
 - SQL migration **`supabase/patches/20261115_teamworkt_build7_intake_rate_limit.sql`** applied: restricted atomic rate limiting, private quota table with RLS, receipt lookup for idempotent retries, manual counter cleanup. Neither anon nor normal authenticated staff can call these internal service-role RPCs.
 - Frontend `turnstile-intake.js` is integrated with the normal public form and `offline-queue.js`. The existing uploaded-photo flow (after report reference) and private upload token remain. Challenges are presented **only online and when protected mode is active**. The user can cancel and retain the queued report/photos. Turnstile tokens are not stored locally, and each queued report uses a new challenge when necessary.
 - Online-only fallback in `index.html` also passes through the same protection module; staff dashboard unchanged.
@@ -53,7 +53,7 @@ After real preview tests are documented:
 
 ## Verification already completed (code/mock/database)
 - SQL migration applied; a transaction-scoped test confirmed quota `2` rejects attempt `3` and missing UUID returns no receipt. Anonymous and authenticated roles have no EXECUTE on rate limiter or receipt lookup; service_role does.
-- Edge deployed v3. JS syntax passed. Mock scenarios: staging default legacy, preview protected, enforcement protected, missing credentials fail closed for preview, valid token succeeds, invalid token/hostname/action/origin fail, rate-limited requests return HTTP 429, idempotent replay reuses existing receipt without another Siteverify call.
+- Edge deployed v4. JS syntax passed. Mock scenarios: staging default legacy, preview protected, enforcement protected, missing credentials fail closed for preview, valid token succeeds, invalid token/hostname/action/origin fail, rate-limited requests return HTTP 429, idempotent replay reuses existing receipt without another Siteverify call.
 - Client module mocked: legacy chooses existing RPC; protected mode triggers widget and calls Edge; failed verification does not fall back to insecure direct RPC. Offline queue integration uses original idempotent submission keys and retains existing photo upload flow.
 - Supabase security advisor remains aware of public `submit_report` SECURITY DEFINER (intentional **until cutover**), and warns about service-private RLS tables with no browser policies (intentional). No new anonymous grants were added.
 - **Not yet real-life verified:** actual Cloudflare widget in iPhone Safari, actual remote Edge GET/POST (runtime verification inaccessible without account configuration/live test), token challenge UX and deliveries with real keys. Do not label production secure.
