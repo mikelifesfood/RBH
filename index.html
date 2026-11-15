@@ -1030,6 +1030,7 @@
     document.getElementById('againBtn').onclick=function(){
       var b=form.querySelector('button.submit'); b.disabled=false; b.textContent=t('btn_submit');
       form.reset(); files=[]; render(); clearErr(); hideSendErr(); setFileStatus('');
+      if(validatedQrSite){site.value=validatedQrSite.address||validatedQrSite.name;site.readOnly=true;renderQrSiteContext();}
       if(injuryWarn) injuryWarn.classList.remove('show'); syncInjuryState(); fillObservedNow(true);
       s.classList.remove('show'); form.style.display='';
       window.scrollTo({top:0,behavior:'smooth'});
