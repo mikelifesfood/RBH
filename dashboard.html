@@ -1391,6 +1391,20 @@
     .priority-picker{max-width:100%}
   }
 
+  /* Admin Settings: three equal desktop cards; stack on narrow screens. */
+  .admin-settings-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:stretch}
+  .admin-settings-grid > .admin-info,
+  .admin-settings-grid > .admin-records-archive{min-width:0;margin:0;padding:18px;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:0}
+  .admin-settings-grid .archive-copy{min-width:0;max-width:none}
+  .admin-settings-grid .archive-export-action{width:100%;min-width:0;margin-top:auto;padding-top:18px;align-items:stretch}
+  .admin-settings-grid .archive-export-btn{display:block;max-width:100%;width:100%;white-space:normal;text-align:center;line-height:1.35}
+  .admin-settings-grid #reportEmailPreferences label{min-width:0;width:100%}
+  .admin-settings-grid #reportEmailPreferences .report-email-select-wrap{min-width:0;width:100%;max-width:100%}
+  .admin-settings-grid #reportEmailPreferences #saveReportEmailMode{max-width:100%;width:100%;white-space:normal}
+  .admin-settings-grid #reportEmailPreferences > div{min-width:0}
+  .admin-settings-grid .archive-includes{margin-bottom:0}
+  @media(max-width:900px){.admin-settings-grid{grid-template-columns:minmax(0,1fr)}}
+
 </style>
 </head>
 <body>
@@ -1560,6 +1574,7 @@
         <section class="view" id="view-users" hidden>
           <div class="section-head"><div><h2>Admin</h2><p>Manage application roles and dashboard access.</p></div></div>
           <div class="admin-settings-heading"><h3>Admin Settings</h3><p>Manage company reporting, notifications, and records.</p></div>
+          <div class="admin-settings-grid">
           <div class="admin-info" id="reportEmailPreferences">
             <h3>New report email notifications</h3>
             <p>Choose how active Admins and Safety Managers receive the initial email when a report is submitted. Assignment, investigation, corrective action, and in-app alerts are not changed by this setting.</p>
@@ -1597,6 +1612,7 @@
               <button class="archive-export-btn" id="exportCompanyArchive" type="button">Export company records (.zip)</button>
               <div class="archive-export-status" id="exportCompanyArchiveStatus" aria-live="polite"></div>
             </div>
+          </div>
           </div>
           <div class="admin-settings-heading user-settings-heading"><h3>User Settings</h3><p>Manage dashboard access, user roles, and account history.</p></div>
           <div class="admin-info"><h3>Role-based access</h3><p>New dashboard users start as Read Only until an Admin assigns the appropriate role. Access can be updated at any time by another Admin.</p></div>
