@@ -899,7 +899,7 @@
         await persistDraft(true); // Wait for IndexedDB photo bytes to be verified before reporting success.
       }catch(e){
         console.error('Photo persistence failed',e);
-        setFileStatus(t('photo_optimized')+' — '+offlineLang(
+        setFileStatus(offlineLang(
           'WARNING: Photo was NOT saved on this device. Keep this page open and try Save draft.',
           'ATENCIÓN: La foto NO se guardó en este dispositivo. Mantenga esta página abierta y vuelva a guardar el borrador.'),true);
         return;
@@ -907,7 +907,10 @@
     }
     if(rejected.length) setFileStatus(rejected[0]+' '+t('file_too_large'),true);
     else if(hitLimit) setFileStatus(t('file_limit'),true);
-    else if(optimized) setFileStatus(t('photo_optimized'),false);
+    else if(files.length) setFileStatus(offlineLang(
+      files.length+' attachment'+(files.length===1?'':'s')+' saved on this device — not submitted.',
+      files.length+' archivo'+(files.length===1?'':'s')+' guardado'+(files.length===1?'':'s')+' en este dispositivo — no enviado'+(files.length===1?'':'s')+'.'
+    )+(optimized?' · '+t('photo_optimized'):''),false);
     else setFileStatus('');
   }
   var cameraBtn=document.getElementById('cameraBtn'), chooseBtn=document.getElementById('chooseBtn');
