@@ -292,6 +292,13 @@
   }
   @media(prefers-reduced-motion:reduce){.type,.seg label,.connection-summary-action{transition:none!important}}
 
+  /* Shown only when this public form was intentionally opened from the staff dashboard. */
+  .staff-return{background:var(--paper);border-bottom:1px solid var(--line)}
+  .staff-return[hidden]{display:none!important}
+  .staff-return-inner{max-width:960px;margin:0 auto;padding:10px 16px}
+  .staff-return button{font:700 13px var(--sans);color:var(--ink);background:var(--surface);border:1px solid var(--line-strong);border-radius:9px;padding:10px 14px;cursor:pointer;min-height:42px}
+  .staff-return button:hover,.staff-return button:focus-visible{border-color:var(--red);color:var(--red)}
+  .succ-actions .staff-return-success{width:100%;margin-top:6px}
 </style>
 </head>
 <body>
@@ -308,6 +315,11 @@
     </div>
   </div>
 </header>
+<div class="staff-return" id="staffReturnBar" hidden>
+  <div class="staff-return-inner">
+    <button id="staffReturnTop" type="button" data-en="← Back to Dashboard" data-es="← Volver al panel">← Back to Dashboard</button>
+  </div>
+</div>
 
 <div class="titlebar">
   <div class="titlebar-inner">
@@ -575,6 +587,7 @@
     <div class="succ-actions">
       <button class="btn2 primary" id="copyBtn" type="button" data-i18n="btn_copy">Copy report summary</button>
       <button class="btn2" id="againBtn" type="button" data-i18n="btn_again">Submit another report</button>
+      <button class="btn2 staff-return-success" id="staffReturnSuccess" type="button" data-en="Back to Dashboard" data-es="Volver al panel" hidden>Back to Dashboard</button>
     </div>
   </section>
 
@@ -1528,6 +1541,68 @@
       sendErr.classList.add('show');
     }
   }
+
+  /* Returning to the staff dashboard is available only from an explicit
+     dashboard-opened form, never the normal anonymous QR/public journey.
+     Navigation never bypasses dashboard authentication. */
+  var staffReturnRequested=(function(){
+    try{
+      var params=new URLSearchParams(window.location.search);
+      return params.get("from")==="dashboard"&&!params.has("site")&&!params.has("site_code");
+    }catch(e){return false;}
+  })();
+  if(staffReturnRequested){
+    document.getElementById("staffReturnBar").hidden=false;
+    document.getElementById("staffReturnSuccess").hidden=false;
+  }
+  async function returnToStaffDashboard(){
+    if(!staffReturnRequested)return;
+    var buttonTop=document.getElementById("staffReturnTop");
+    var buttonSuccess=document.getElementById("staffReturnSuccess");
+    if(buttonTop.disabled||buttonSuccess.disabled)return;
+    buttonTop.disabled=true;buttonSuccess.disabled=true;
+    try{
+      if(navigator.onLine===false){
+        window.alert(offlineLang("The dashboard needs an internet connection. Your form and any queued reports remain on this device. Reconnect before returning.","El panel necesita conexión a internet. El formulario y los reportes en espera permanecen en este dispositivo. Conéctese antes de volver."));
+        return;
+      }
+      if(activeQueuedId&&Q){
+        var rows=await Q.list();
+        var inQueue=rows.find(function(row){return row.id===activeQueuedId;});
+        if(inQueue&&inQueue.status==="sending"){
+          window.alert(offlineLang("This report is still sending. Please wait for a server confirmation before returning.","Este reporte aún se está enviando. Espere la confirmación del servidor antes de volver."));
+          return;
+        }
+        if(inQueue&&inQueue.status!=="sent"&&!window.confirm(offlineLang(
+          "This report is still saved or pending on this device, NOT submitted. Return to Dashboard? Reopen the reporting form later to retry sending it.",
+          "Este reporte sigue guardado o pendiente en este dispositivo, NO enviado. ¿Volver al panel? Abra el formulario más tarde para reintentar el envío."
+        )))return;
+      }
+      if(form.style.display!=="none"&&!draftSaveSuppressed&&hasDraftContent(currentDraft())){
+        if(!window.confirm(offlineLang(
+          "Save your unfinished report and photos as a draft on this device, then return to Dashboard? The report will NOT be submitted.",
+          "¿Guardar el reporte y las fotos como borrador en este dispositivo y volver al panel? El reporte NO se enviará."
+        )))return;
+        if(!Q){
+          window.alert(offlineLang("Draft storage is unavailable. Stay on this form so your information isn't lost.","No está disponible el almacenamiento de borradores. Permanezca en el formulario para no perder sus datos."));
+          return;
+        }
+        clearTimeout(draftSaveTimer);
+        await draftSaveInFlight;
+        await persistDraft(true);
+        var savedDraft=await Q.getDraft();
+        if(!savedDraft||!hasDraftContent(savedDraft))throw new Error("DRAFT_NOT_PERSISTED");
+      }
+      window.location.assign(new URL("./dashboard.html",window.location.href).href);
+    }catch(e){
+      console.error("Return to dashboard was blocked to protect report data",e);
+      window.alert(offlineLang("Your report could not be saved safely. Stay on this form and try Save Draft before returning.","No se pudo guardar el reporte de forma segura. Permanezca aquí e intente Guardar borrador antes de volver."));
+    }finally{
+      buttonTop.disabled=false;buttonSuccess.disabled=false;
+    }
+  }
+  document.getElementById("staffReturnTop").addEventListener("click",returnToStaffDashboard);
+  document.getElementById("staffReturnSuccess").addEventListener("click",returnToStaffDashboard);
 
   function showSuccess(type, ref, failed){
     draftGeneration++;draftSaveSuppressed=true;
