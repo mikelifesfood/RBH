@@ -91,20 +91,15 @@
       if(offline){
         var spanish=document.documentElement.lang==='es';
         notice.textContent=spanish
-          ?'Sin conexión: este formulario es solo para consulta. No se guardan borradores ni fotos; no complete ni envíe un reporte hasta tener internet.'
-          :'Offline — view only. This version does not save drafts or photos. Do not fill in or submit a report until you reconnect.';
+          ?'Sin conexión: puede guardar un borrador o poner el reporte y sus fotos en espera en este dispositivo. NO se enviará hasta recuperar la conexión y abrir la aplicación.'
+          :'Offline — you can save a draft or queue a report and photos on this device. NOT submitted yet. They will retry when you reconnect and reopen the app.';
       }
     }
     status();
     window.addEventListener('online',status);
     window.addEventListener('offline',status);
-    form.addEventListener('submit',function(event){
-      if(navigator.onLine!==false)return;
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      status();
-      notice.scrollIntoView({behavior:'smooth',block:'center'});
-    },true);
+    // Build 5: the report form now securely queues submissions in IndexedDB.
+    // Do not block the submit event here; the queue module handles offline state.
   }
 
   function init(){
