@@ -46,6 +46,13 @@ These are existing code/prototype features; verify the behavior end-to-end befor
 - **Verified:** transaction-scoped admin RPC set/read for Grouped, Individual and Off, invalid option rejection, Read Only user rejection (rollback preserved no setting row). **Not yet verified:** browser interactions and actual inbox delivery in Grouped and Individual modes; owner should use fictional report(s) to test. No intentional test email issued in this build.
 - **Scope clarification:** company-level individual/grouped/off only affects initial intake emails. Future per-event toggles, workflow email policies or individual user opt-outs are separate enhancements and should be approved explicitly.
 
+## November 15 — Priority fix: misleading local draft after confirmed report #52
+
+- Owner's iPhone showed **Report received #52** and a simultaneous green **Draft saved on this device — not submitted**, plus a completed receipt under Saved Reports. The green draft banner was stale UI, not proof the report was unsent.
+- `index.html`: the draft banner is visible **only offline with a real unsent draft**, hides on reconnect, and is cleared on enqueue and confirmed receipt. Autosave generation/suppression guards prevent outstanding photo/draft saves from recreating the banner after the report is queued. When no pending/review/uploading records remain, the Saved Reports panel and jump link hide; successfully submitted receipt records are retained as minimal local history but no longer appear as unsent items. Reporting API, photo retry and Turnstile code unchanged.
+- `sw.js` updated to **`rbh-public-shell-v15-20261115`** so the public offline shell can pick up the fix. JS syntax and five simulated online/offline/race scenarios passed. The fix still needs the owner's iPhone visual retest.
+- No Supabase, Edge Function, role, QR code, Storage, or Brevo changes. Never clear Safari storage during the retest because that could destroy unsent reports.
+
 ## November 15 — Build 7 Turnstile Managed (owner approval; security staged, NOT active)
 
 Owner approved Turnstile Managed, backend verification, rate limiting and offline report integration, reversing the previous temporary hold. **Development and staged deployment completed, but credential provisioning and live cutover are required before this is real bot protection.**
