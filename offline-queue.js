@@ -174,7 +174,8 @@ async function sendOne(id){
     if(!record.reportId){
       record.status='sending';record.error=null;await saveRecord(record);
       var payload=Object.assign({},record.payload,{client_submission_key:record.id,offline_upload_token:record.uploadToken});
-      var res=window.RBHIntake?await window.RBHIntake.submit(payload,sb):await sb.rpc('submit_report',{payload:payload});
+      if(!window.RBHIntake||typeof window.RBHIntake.submit!=='function')throw new Error('PROTECTION_NOT_CONFIGURED');
+      var res=await window.RBHIntake.submit(payload,sb);
       if(res.error)throw res.error;
       if(!res.data||!res.data.id||!res.data.ref_no)throw new Error('SERVER_RECEIPT_MISSING');
       record.reportId=res.data.id;record.refNo=res.data.ref_no;
