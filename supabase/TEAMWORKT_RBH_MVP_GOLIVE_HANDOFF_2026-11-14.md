@@ -46,6 +46,19 @@ These are existing code/prototype features; verify the behavior end-to-end befor
 - **Verified:** transaction-scoped admin RPC set/read for Grouped, Individual and Off, invalid option rejection, Read Only user rejection (rollback preserved no setting row). **Not yet verified:** browser interactions and actual inbox delivery in Grouped and Individual modes; owner should use fictional report(s) to test. No intentional test email issued in this build.
 - **Scope clarification:** company-level individual/grouped/off only affects initial intake emails. Future per-event toggles, workflow email policies or individual user opt-outs are separate enhancements and should be approved explicitly.
 
+## November 15 — Build 7 Turnstile Managed (owner approval; security staged, NOT active)
+
+Owner approved Turnstile Managed, backend verification, rate limiting and offline report integration, reversing the previous temporary hold. **Development and staged deployment completed, but credential provisioning and live cutover are required before this is real bot protection.**
+
+- SQL migration `supabase/patches/20261115_teamworkt_build7_intake_rate_limit.sql` **applied** to RBH Supabase: private service-only atomic quotas, safe idempotent receipt lookup, cleanup RPC. Anon/authenticated cannot call these helpers; service role can.
+- Supabase Edge Function `submit-public-report` **deployed v3** with `verify_jwt=false`: validates Cloudflare Siteverify, expected hostname `mikelifesfood.github.io`, action `rbh_public_report`, token age, original report payload, receipt replay and DB quotas. Uses only private Edge secrets and server-side role for submission.
+- Public `turnstile-intake.js` **added**; `offline-queue.js`, `index.html` and `sw.js` updated. Reports and local photos remain stored during offline/verification failure; tokens never enter IndexedDB. Existing online-only fallback also uses the integration. `sw.js` cache now `rbh-public-shell-v14-20261115`, public form still has **no Add to Home Screen promotion**.
+- **Non-disruptive preview**: when the two Cloudflare keys are set, `https://mikelifesfood.github.io/RBH/?build7_preview=1` exercises the protected submission while normal public links remain legacy. Without credentials, preview reports cannot be sent and remain saved. Public normal reporting remains unchanged.
+- **Required owner setup**: create a Cloudflare Turnstile **Managed** widget for `mikelifesfood.github.io`; store public sitekey `TURNSTILE_SITE_KEY` and private secret `TURNSTILE_SECRET_KEY` directly in **RBH Supabase Edge Function Secrets**; leave `TURNSTILE_ENFORCE=false` or unset for preview. Do not send secret through chat.
+- **Final enforcement ON HOLD for credential + QA gate**: after real-device preview, owner sets `TURNSTILE_ENFORCE=true`; verify mode and live success, then apply `supabase/patches/20261115_teamworkt_build7_cutover_NOT_APPLIED.sql` to revoke anonymous direct `submit_report(jsonb)`; change frontend legacy fallback flag to false, deploy updated shell, and retest. Emergency rollback is source-controlled but **NOT applied**.
+- **Important security caveat**: the existing direct anonymous `submit_report` is still callable, and the new limiter only protects the new Edge path. Therefore **RBH is not yet protected from bots and remains demo/pilot only**.
+- Test checklist, URLs, exact secrets setup, mock test results and cutover sequence: `docs/TEAMWORKT_BUILD7_TURNSTILE_QA_2026-11-15.md`. No Brevo, dashboard role, job-site, photo access or authentication changes were made in Build 7.
+
 ## November 15 — Build 6 follow-up: dashboard-only Home Screen installation
 
 **Owner decision:** Public anonymous reporting must remain browser/QR accessible without encouraging an app install. Only the authorized staff Dashboard should display TeamWorkt's installation prompt.
