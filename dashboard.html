@@ -5164,7 +5164,7 @@
         var ownerId=(reviewOwnerSelect&&reviewOwnerSelect.value)||r.report_owner_user_id||currentUserId();
         if(!ownerId){toast("Choose a Report Owner before starting the investigation.","err");return;}
         var ownerWasChanged=String(r.report_owner_user_id||"")!==String(ownerId);
-        var shouldNotifyAfterAdvance=String(ownerId)!==currentUserId()&&(ownerWasChanged||String(r.status||"")==="new");
+        var shouldNotifyAfterAdvance=ownerWasChanged||String(r.status||"")==="new";
         if(r.involves_injury){
           if(canVerify()){
             if(!(await persistRegulatoryReview(false))) return;
@@ -5319,8 +5319,8 @@
       btn.disabled=true; btn.textContent="No change"; return;
     }
     if(nextId===currentUserId()){
-      note.textContent="You are changing the Report Owner to yourself. The change will be saved when you confirm, but no handoff email will be sent.";
-      btn.disabled=false; btn.textContent="Confirm owner change"; return;
+      note.textContent="You are changing the Report Owner to yourself. A one-time assignment email will be sent when you confirm.";
+      btn.disabled=false; btn.textContent="Confirm change & send email"; return;
     }
     note.textContent="Changing the Report Owner to "+name+" will save the handoff and immediately send that person an email when you confirm.";
     btn.disabled=false; btn.textContent="Confirm change & send email";
@@ -5348,7 +5348,7 @@
     if(nextId===String(r.report_owner_user_id||"")){updateReportOwnerModalState();return;}
     _ownerSave.disabled=true; var old=_ownerSave.textContent; _ownerSave.textContent="Saving…";
     try{
-      var notifyEmail=nextId!==currentUserId();
+      var notifyEmail=true;
       var result=await persistReportOwner(r,nextId,notifyEmail);
       closeReportOwnerModal();
       var owner=reportOwnerName(r)||"Report Owner";
@@ -7158,9 +7158,7 @@
     return !!(r&&isManager());
   }
   function canWorkInvestigation(r){
-    if(!r||isResolvedReport(r)) return false;
-    if(isManager()) return true;
-    return currentRole==="supervisor" && isInvestigatorAssignedToMe(r);
+    return !!(r&&!isResolvedReport(r)&&isManager());
   }
   function canWorkCorrectiveAction(r){
     if(!r||isResolvedReport(r)) return false;
@@ -7169,7 +7167,7 @@
   }
   function hasOperationalAccess(r){
     if(isManager()) return true;
-    return currentRole==="supervisor" && (isInvestigatorAssignedToMe(r)||isActionAssignedToMe(r));
+    return currentRole==="supervisor" && isActionAssignedToMe(r);
   }
   function canEditStep(r,n){
     if(!r||isResolvedReport(r)) return false;
@@ -7184,7 +7182,7 @@
       return true;
     }
     if(currentRole!=="supervisor") return false;
-    if(n>=1&&n<=3) return isInvestigatorAssignedToMe(r);
+    if(n>=1&&n<=3) return false;
     if(n===4) return isActionAssignedToMe(r);
     return false;
   }
