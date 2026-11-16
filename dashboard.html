@@ -1731,6 +1731,19 @@
             <p id="reportEmailModeStatus" role="status" aria-live="polite" style="margin-top:10px">Loading company email setting…</p>
             <p style="margin-top:6px">Off also suppresses high-priority injury intake emails. Reports remain saved and visible in the dashboard. No recipient roles are added or removed.</p>
           </div>
+          <div class="admin-info" id="weeklyDigestPreferences">
+            <h3>Weekly Safety Pulse digest</h3>
+            <p>A weekly summary of overdue corrective actions, work waiting for verification, and last week's new reports, closed reports, and completed actions. Emails include totals and a dashboard link, never incident details, names, or attachments.</p>
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:13px">
+              <label style="display:inline-flex;align-items:center;gap:9px;font-size:14px;font-weight:700"><input id="weeklyDigestEnabled" type="checkbox" disabled> Enable weekly digest for this company</label>
+              <button id="saveWeeklyDigest" type="button" class="archive-export-btn" disabled>Save digest setting</button>
+              <button id="previewWeeklyDigest" type="button" class="archive-export-btn" disabled>Preview counts</button>
+            </div>
+            <p style="margin-top:9px;color:var(--ink-2);font-size:13px"><b>Schedule:</b> Monday at 8:00 a.m. (America/New_York) &nbsp; <b>Recipients:</b> active Admins and Safety Managers</p>
+            <p id="weeklyDigestStatus" role="status" aria-live="polite" style="margin-top:9px">Loading digest setting…</p>
+            <div id="weeklyDigestPreview" hidden aria-live="polite" style="margin-top:12px;padding:14px;border:1px solid var(--line);border-radius:var(--r);background:var(--canvas-2)"></div>
+            <p style="margin-top:8px;font-size:12.5px;color:var(--muted)">The delivery service is not enabled during pilot testing. Saving an opt-in preference will not send emails until the release gate is completed.</p>
+          </div>
           <div class="admin-records-archive" id="companyReportingPoster">
             <div class="archive-copy">
               <h3>Company safety reporting QR poster</h3>
@@ -8153,6 +8166,67 @@
   function openSidebar(){ if(sidebarEl) sidebarEl.classList.add("open"); if(sbBackdrop) sbBackdrop.classList.add("show"); }
   function closeSidebar(){ if(sidebarEl) sidebarEl.classList.remove("open"); if(sbBackdrop) sbBackdrop.classList.remove("show"); }
 
+
+  async function loadWeeklyDigestSettings(){
+    var enabled=$("weeklyDigestEnabled"), save=$("saveWeeklyDigest"), preview=$("previewWeeklyDigest"), status=$("weeklyDigestStatus"), panel=$("weeklyDigestPreview");
+    if(!enabled||!save||!preview||!status||currentRole!=="admin")return;
+    enabled.disabled=true; save.disabled=true; preview.disabled=true; panel.hidden=true;
+    status.textContent="Loading weekly digest settings…";
+    try{
+      var res=await sb.rpc("rbh_get_safety_pulse_digest_settings");
+      if(res.error)throw res.error;
+      var setting=res.data||{};
+      enabled.checked=setting.enabled===true;
+      enabled.disabled=false; save.disabled=false; preview.disabled=false;
+      status.textContent=(enabled.checked?"Company preference: On.":"Company preference: Off.")+
+        (setting.delivery_ready===true?" Scheduled delivery is available.":" Live delivery remains disabled during the pilot.");
+    }catch(ex){
+      console.error("weekly digest settings",ex);
+      status.textContent="Unable to load digest settings. Refresh to try again.";
+    }
+  }
+  var weeklyDigestSave=$("saveWeeklyDigest");
+  if(weeklyDigestSave) weeklyDigestSave.addEventListener("click",async function(){
+    if(currentRole!=="admin")return;
+    var enabled=$("weeklyDigestEnabled"),status=$("weeklyDigestStatus"),button=$("saveWeeklyDigest");
+    if(!enabled||!status||!button)return;
+    button.disabled=true; enabled.disabled=true; status.textContent="Saving weekly digest preference…";
+    try{
+      var res=await sb.rpc("rbh_set_safety_pulse_digest_settings",{p_enabled:!!enabled.checked});
+      if(res.error)throw res.error;
+      var setting=res.data||{};
+      status.textContent=(setting.enabled?"Digest preference enabled.":"Digest preference disabled.")+
+        (setting.delivery_ready?" Scheduled sending is active.":" No emails will send until pilot release approval.");
+      toast("Weekly digest preference saved","ok");
+    }catch(ex){
+      console.error("save digest preference",ex);
+      status.textContent="Could not save this setting. Please try again.";
+      toast("Could not save digest preference","err");
+    }finally{button.disabled=false;enabled.disabled=false;}
+  });
+  var weeklyDigestPreviewBtn=$("previewWeeklyDigest");
+  if(weeklyDigestPreviewBtn) weeklyDigestPreviewBtn.addEventListener("click",async function(){
+    if(currentRole!=="admin")return;
+    var button=$("previewWeeklyDigest"),panel=$("weeklyDigestPreview"),status=$("weeklyDigestStatus");
+    if(!button||!panel)return;
+    button.disabled=true;button.textContent="Loading preview…";
+    try{
+      var res=await sb.rpc("rbh_preview_safety_pulse_digest");
+      if(res.error)throw res.error;
+      var d=res.data||{};
+      function n(value){return Number(value||0).toLocaleString();}
+      panel.hidden=false;
+      panel.innerHTML='<b>Preview · '+esc(d.period_start||"")+" to "+esc(d.period_end||"")+'</b>'+
+        '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin-top:12px">'+
+        [['Overdue actions',d.overdue_actions],['Waiting for review',d.awaiting_review],
+        ['New reports',d.new_reports],['Closed reports',d.closed_reports],
+        ['Completed actions',d.completed_actions],['Eligible recipients',d.eligible_recipients]]
+        .map(function(item){return '<div style="background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:11px"><b style="display:block;font-size:23px">'+n(item[1])+'</b><span style="font-size:12px;color:var(--muted)">'+esc(item[0])+'</span></div>';}).join("")+
+        '</div><p style="margin:10px 0 0;font-size:12px;color:var(--muted)">Preview only. Current open-action counts are as of '+esc(d.as_of||"")+'. No emails were sent.</p>';
+    }catch(ex){console.error("weekly digest preview",ex); if(status)status.textContent="Unable to preview digest. Try again after refreshing the dashboard.";}
+    finally{button.disabled=false;button.textContent="Preview counts";}
+  });
+
   async function loadReportEmailMode(){
     var sel=$("reportEmailMode"),save=$("saveReportEmailMode"),status=$("reportEmailModeStatus");
     if(!sel||!save||!status||currentRole!=="admin") return;
@@ -8306,7 +8380,7 @@
     if(name==="mywork") renderMyWork();
     if(name==="actions") renderActions();
     if(name==="platform") loadPlatformDashboard();
-    if(name==="users"){ loadUsers(); loadAdminUserEvents(); loadReportEmailMode(); loadJobSites(); }
+    if(name==="users"){ loadUsers(); loadAdminUserEvents(); loadReportEmailMode(); loadWeeklyDigestSettings(); loadJobSites(); }
     if(name==="home") renderHomeSnapshot();
     refreshHelpCoachContext();
     closeSidebar();
