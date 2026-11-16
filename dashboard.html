@@ -1333,6 +1333,12 @@
   .ca-stage-current .ca-stage-state{background:var(--brand-tint);border-color:var(--brand-line);color:var(--brand)}
   .ca-stage-blocked .ca-stage-state{background:var(--brand-tint);border-color:var(--brand-line);color:var(--brand)}
 
+  .ca-phase-next{margin:0 0 14px;color:var(--ink-2);font-size:13px;line-height:1.5}
+  .ca-return-form{margin-top:10px;border:1px solid var(--line);border-radius:var(--r);padding:8px 10px}
+  .ca-return-form summary{cursor:pointer;font-weight:700;color:var(--brand);padding:4px 0}
+  .ca-return-form[open] summary{margin-bottom:8px}
+  .ca-return-form .multi-action-request-changes{margin-top:8px}
+  .ca-return-form textarea{width:100%;margin-top:4px}
   .ca-lifecycle{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:2px 0 16px}
   .ca-life-item{
     display:flex;align-items:center;gap:9px;border:1px solid var(--line);border-radius:var(--r);
@@ -3582,57 +3588,55 @@
 
       '<section class="wizard-panel ca-unified-stage" data-wizard-step="3" data-ca-stage="plan" hidden>'+
         '<div class="wizard-step-head"><span class="wizard-step-badge">3</span><div class="wizard-step-copy"><h3>Corrective Actions</h3><p>Use the investigation to decide whether anything still needs to be corrected.</p></div></div>'+
+          '<div class="ca-lifecycle" data-ca-lifecycle role="group" aria-label="Corrective action phases">'+
+            '<div class="ca-life-item next" data-ca-life="3"><span class="ca-life-dot">1</span><div class="ca-life-copy"><b>Plan &amp; assign</b><span>Define the fix and owner</span></div></div>'+
+            '<div class="ca-life-item next" data-ca-life="4"><span class="ca-life-dot">2</span><div class="ca-life-copy"><b>Complete work</b><span>Document what was done</span></div></div>'+
+            '<div class="ca-life-item next" data-ca-life="5"><span class="ca-life-dot">3</span><div class="ca-life-copy"><b>Review &amp; verify</b><span>Manager checks the work</span></div></div>'+
+          '</div>'+
         '<div class="ca-decision" data-ca-decision>'+
-          '<div class="ca-decision-head"><b>Does anything still need to be corrected?</b><span>Choose the option that matches what the investigation found. Do not choose “No” just because the immediate issue was handled if an underlying hazard, process, equipment, training, or work-practice issue still remains.</span></div>'+
+          '<div class="ca-decision-head"><b>Is there anything left to fix or prevent from happening again?</b><span>If the problem could happen again, choose Yes even if the immediate issue was handled.</span></div>'+
           '<div class="ca-decision-grid">'+
-            '<button class="ca-decision-choice yes" type="button" data-ca-decision-choice="required"><b>Yes — something still needs to be fixed</b><span>Choose this when something still needs to be fixed, changed, repaired, trained, communicated, or assigned.</span><small>Examples: replace damaged equipment; change a work practice; provide training; install a guard or barrier.</small></button>'+
-            '<button class="ca-decision-choice no" type="button" data-ca-decision-choice="not_required"><b>No — nothing else needs to be fixed</b><span>Choose this only when nothing remains to correct after the investigation.</span><small>Examples: the issue was fully corrected immediately and no underlying problem remains; the same issue is already covered by an existing active corrective action.</small></button>'+
+            '<button class="ca-decision-choice yes" type="button" data-ca-decision-choice="required"><b>Yes, add a fix</b><small>Example: Replace a damaged guard before using the machine again.</small></button>'+
+            '<button class="ca-decision-choice no" type="button" data-ca-decision-choice="not_required"><b>No, document why</b><small>Example: An existing action already covers the same issue.</small></button>'+
           '</div>'+
           '<div class="ca-decision-summary" data-ca-decision-summary hidden><div class="ca-decision-summary-copy"><b data-ca-decision-summary-title>Corrective action required</b><span data-ca-decision-summary-copy>Something still needs to be corrected.</span></div><button class="ca-change-decision" type="button" data-ca-change-decision>Change decision</button></div>'+
           '<div class="ca-no-action-panel" data-ca-no-action-panel hidden>'+
-            '<h4>Explain why nothing else needs to be fixed</h4><p>This is a documented safety decision, not a skip. The final Close step will still require a deliberate closure.</p>'+
+            '<h4>Explain why nothing else needs to be fixed</h4><p>Record your reason here. A manager can close the report on the next step.</p>'+
             '<label class="inv-l">Reason<select data-ca-no-action-reason><option value="">— Choose a reason —</option><option value="corrected_immediately">Corrected immediately — nothing remains to fix</option><option value="no_unsafe_condition">Investigation found no unsafe condition requiring correction</option><option value="existing_action">Already covered by another active corrective action</option><option value="duplicate_or_previously_addressed">Duplicate / previously addressed</option><option value="other">Other</option></select></label>'+
             '<label class="inv-l">Brief explanation<textarea data-ca-no-action-note placeholder="Explain why nothing else needs to be fixed."></textarea><span class="field-guidance compact">Example: “Cone was repositioned outside the equipment path during the initial response. Investigation found no remaining hazard or recurring condition.”</span></label>'+
             '<div class="wizard-required" data-ca-no-action-error></div>'+
-            '<div class="ca-no-action-actions" data-ca-no-action-next><div class="next-step-ready-copy"><b>Ready for the next step</b><span>Your decision is documented. Continue to the final Close step.</span></div><button class="wizard-primary" type="button" data-ca-no-action-continue>Continue to Close →</button></div>'+
+            '<div class="ca-no-action-actions" data-ca-no-action-next><div class="next-step-ready-copy"><b>Ready for the next step</b><span>Your decision is documented. Continue to the final Close step.</span></div><button class="wizard-primary" type="button" data-ca-no-action-continue>Save reason and continue to Close →</button></div>'+
           '</div>'+
         '</div>'+
         '<div data-ca-plan-workspace hidden>'+
-          '<div class="ca-lifecycle" data-ca-lifecycle>'+
-            '<div class="ca-life-item next" data-ca-life="3"><span class="ca-life-dot">1</span><div class="ca-life-copy"><b>Plan &amp; assign</b><span>Define the fix and owner</span></div></div>'+
-            '<div class="ca-life-item next" data-ca-life="4"><span class="ca-life-dot">2</span><div class="ca-life-copy"><b>Complete work</b><span>Document what was done</span></div></div>'+
-            '<div class="ca-life-item next" data-ca-life="5"><span class="ca-life-dot">3</span><div class="ca-life-copy"><b>Verify</b><span>Approve or request changes</span></div></div>'+
-          '</div>'+
-          '<div class="ca-stage-heading"><span class="ca-stage-num">1</span><div><b>Plan &amp; assign</b><p>Create one action for each different fix, owner, or deadline.</p></div><span class="ca-stage-state" data-ca-stage-state>Next</span></div>'+
+        '<p class="ca-phase-next"><b>Next:</b> After assignment, each person finds their work in My Work. Add one action for each fix, assignee, or deadline.</p>'+
           '<div class="multi-action-list" data-corrective-action-plan><div class="multi-action-loading">Loading corrective-action plan…</div></div>'+
           '<div class="multi-action-add-wrap"><button class="multi-action-add" type="button" data-add-corrective-action>+ Add another corrective action</button></div>'+
           '<div class="wizard-required" data-required="3"></div>'+
-          '<div class="wizard-footer" data-next-step-footer="action-plan"><div class="wizard-footer-copy"><b data-next-step-title>Complete the action plan</b><span data-next-step-message>Fill in every required field. You can save a draft and return home at any time.</span></div><div class="wizard-footer-actions"><button class="wizard-save action-plan-save" data-step-save="3" type="button">Save draft &amp; return home</button><span class="action-plan-saved section-saved" hidden>Saved ✓</span><button class="wizard-primary" data-step-complete="3" type="button">Assign actions →</button></div></div>'+
+          '<div class="wizard-footer" data-next-step-footer="action-plan"><div class="wizard-footer-copy"><b data-next-step-title>Complete the action plan</b><span data-next-step-message>Fill in every required field. You can save a draft and return home at any time.</span></div><div class="wizard-footer-actions"><button class="wizard-save action-plan-save" data-step-save="3" type="button">Save draft and exit</button><span class="action-plan-saved section-saved" hidden>Saved ✓</span><button class="wizard-primary" data-step-complete="3" type="button">Assign actions →</button></div></div>'+
         '</div>'+
       '</section>'+
 
       '<section class="wizard-panel ca-unified-stage" data-wizard-step="4" data-ca-stage="complete" hidden>'+
         '<div class="wizard-step-head"><span class="wizard-step-badge">3</span><div class="wizard-step-copy"><h3>Corrective Actions</h3><p>Complete the assigned work. Actions already submitted or verified stay out of the way.</p></div></div>'+
-        '<div class="ca-lifecycle" data-ca-lifecycle>'+
+        '<div class="ca-lifecycle" data-ca-lifecycle role="group" aria-label="Corrective action phases">'+
           '<div class="ca-life-item next" data-ca-life="3"><span class="ca-life-dot">1</span><div class="ca-life-copy"><b>Plan &amp; assign</b><span>Define the fix and owner</span></div></div>'+
           '<div class="ca-life-item next" data-ca-life="4"><span class="ca-life-dot">2</span><div class="ca-life-copy"><b>Complete work</b><span>Document what was done</span></div></div>'+
-          '<div class="ca-life-item next" data-ca-life="5"><span class="ca-life-dot">3</span><div class="ca-life-copy"><b>Verify</b><span>Approve or request changes</span></div></div>'+
+          '<div class="ca-life-item next" data-ca-life="5"><span class="ca-life-dot">3</span><div class="ca-life-copy"><b>Review &amp; verify</b><span>Manager checks the work</span></div></div>'+
         '</div>'+
-        '<div class="ca-stage-heading"><span class="ca-stage-num">2</span><div><b>Complete work</b><p>Record what was completed for each action that still needs attention.</p></div><span class="ca-stage-state" data-ca-stage-state>Next</span></div>'+
-        '<div class="ca-focus-note"><b>Only unfinished or returned actions are shown</b>Send each action for review when its work is complete. The review step opens after every action is ready. If a reviewer sends an action back later, only that returned action comes back here.</div>'+
+        '<p class="ca-phase-next"><b>Next:</b> Send each completed action for review. A manager can review submitted actions from My Work.</p>'+
         '<div class="multi-action-completion-list" data-multi-action-completion></div>'+
         '<div class="action-workflow" data-action-completion></div>'+
       '</section>'+
 
       '<section class="wizard-panel ca-unified-stage" data-wizard-step="5" data-ca-stage="verify" hidden>'+
         '<div class="wizard-step-head"><span class="wizard-step-badge">3</span><div class="wizard-step-copy"><h3>Corrective Actions</h3><p>Review only the actions waiting for a decision. Verified actions stay complete and out of the way.</p></div></div>'+
-        '<div class="ca-lifecycle" data-ca-lifecycle>'+
+        '<div class="ca-lifecycle" data-ca-lifecycle role="group" aria-label="Corrective action phases">'+
           '<div class="ca-life-item next" data-ca-life="3"><span class="ca-life-dot">1</span><div class="ca-life-copy"><b>Plan &amp; assign</b><span>Define the fix and owner</span></div></div>'+
           '<div class="ca-life-item next" data-ca-life="4"><span class="ca-life-dot">2</span><div class="ca-life-copy"><b>Complete work</b><span>Document what was done</span></div></div>'+
-          '<div class="ca-life-item next" data-ca-life="5"><span class="ca-life-dot">3</span><div class="ca-life-copy"><b>Verify</b><span>Approve or request changes</span></div></div>'+
+          '<div class="ca-life-item next" data-ca-life="5"><span class="ca-life-dot">3</span><div class="ca-life-copy"><b>Review &amp; verify</b><span>Manager checks the work</span></div></div>'+
         '</div>'+
-        '<div class="ca-stage-heading"><span class="ca-stage-num">3</span><div><b>Verify work</b><p>Approve each completed action or return only the action that needs more work.</p></div><span class="ca-stage-state" data-ca-stage-state>Next</span></div>'+
-        '<div class="ca-focus-note"><b>Review and decide</b>Each submitted action is ready for an authorized reviewer. Verify complete actions, or send back only the action that needs more work. Returned actions go back to their assigned corrective-action owner.</div>'+
+        '<p class="ca-phase-next"><b>Next:</b> Verify the work or send it back to the person assigned. Once every action is verified, continue to Close.</p>'+
         '<div class="multi-action-verification-list" data-multi-action-verification-stage hidden></div>'+
         '<div class="action-workflow" data-action-verification></div>'+
       '</section>'+
@@ -3952,13 +3956,15 @@
       detail.querySelectorAll('[data-ca-life="'+n+'"]').forEach(function(life){
         life.classList.remove("done","current","blocked","next");
         life.classList.add(uiState);
+        if(uiState==="current"||uiState==="blocked") life.setAttribute("aria-current","step");
+        else life.removeAttribute("aria-current");
         var dot=life.querySelector(".ca-life-dot");
         if(dot) dot.textContent=uiState==="done"?"✓":String(n-2);
         var copy=life.querySelector(".ca-life-copy span");
         if(copy){
           if(n===3) copy.textContent=uiState==="done"?"Plan assigned":(uiState==="current"?"Finish required fields":"Define the fix and owner");
           if(n===4) copy.textContent=uiState==="done"?"Work ready":(uiState==="blocked"?"Owner must update returned work":(uiState==="current"?"Complete the actions shown":"Document what was done"));
-          if(n===5) copy.textContent=uiState==="done"?"All actions verified":(uiState==="current"?"Review actions waiting for a decision":"Approve or request changes");
+          if(n===5) copy.textContent=uiState==="done"?"All actions verified":"Manager checks the work";
         }
       });
     });
@@ -4053,10 +4059,9 @@
     if(n===1) return {save:null,complete:"Start investigation →"};
     if(n===2) return {save:null,complete:null};
     if(n===3){
-      if(correctiveActionDecisionValue(r)==="required") return {save:"Save draft & return home",complete:"Assign actions →"};
       return {save:null,complete:null};
     }
-    if(n===4){ if(r.action_status==="awaiting_verification"||r.action_status==="verified") return {save:null,complete:null}; return {save:"Save draft & return home",complete:r.action_status==="changes_requested"?"Send again for review →":"Send for review →"}; }
+    if(n===4){ if(r.action_status==="awaiting_verification"||r.action_status==="verified") return {save:null,complete:null}; return {save:"Save draft & return home",complete:r.action_status==="changes_requested"?"Resubmit for review →":"Send for review →"}; }
     if(n===5){
       /* Multi-action verification is intentionally decision-based, not assigned.
          Each submitted corrective action has its own Verify / Send back controls,
@@ -4525,7 +4530,10 @@
       if(canEditStep(r,3)&&actionDecisionState.choice==="required"&&!actionPlanState.loading){
         ready=validateCorrectiveActionPlan(true).length===0;
       }
-      setNextStepFooterState(actionPlanNextFooter,ready,"Ready for the next step","Every corrective action has the required details. Assign the actions to open Complete Work.","Complete the action plan","Fill in every required field. You can save a draft and return home at any time.");
+      var assign=actionPlanNextFooter.querySelector('[data-step-complete="3"]');
+      var count=actionPlanState.actions.length;
+      if(assign) assign.textContent=count?"Assign "+count+" action"+(count===1?"":"s")+" →":"Assign actions →";
+      setNextStepFooterState(actionPlanNextFooter,ready,"Ready for the next step","Each assignee will find their work in My Work.","Complete the action plan","Fill in every required field. You can save a draft and return home at any time.");
     }
 
     async function persistInvestigation(showToast,advanceReopen){
@@ -4696,7 +4704,10 @@
       // Verify is also the final Step 3 review surface. Keep every current-cycle
       // corrective action visible here so the reviewer can see the full set,
       // including actions already verified and any action that was sent back.
-      var rows=allRows.slice().sort(function(a,b){return Number(a.action_number||0)-Number(b.action_number||0);});
+      var statusOrder={awaiting_verification:0,changes_requested:1,verified:3};
+      var rows=allRows.slice().sort(function(a,b){
+        return (statusOrder[a.status]??2)-(statusOrder[b.status]??2)||Number(a.action_number||0)-Number(b.action_number||0);
+      });
       var verifiedCount=allRows.filter(function(a){return String(a.status||"")==="verified";}).length;
       var awaitingCount=allRows.filter(function(a){return String(a.status||"")==="awaiting_verification";}).length;
       var returnedCount=allRows.filter(function(a){return String(a.status||"")==="changes_requested";}).length;
@@ -4721,14 +4732,13 @@
           if(canReview){
             review='<div class="multi-action-verifier-note"><b>Ready for review</b>Review the completed work and evidence below. No reviewer needs to be assigned. Verify it as complete, or send this action back for changes.</div>'+
               '<div class="mav-review">'+
-                '<label class="inv-l">Verification notes <span style="font-weight:400;color:var(--muted)">(optional when approving)</span>'+
-                  '<textarea data-child-verification-note="'+esc(a.id)+'" placeholder="What did you verify? If requesting changes, explain exactly what still needs to be done.">'+esc(a.verification_note||"")+'</textarea>'+
-                '</label>'+
-                '<div class="wizard-required" data-child-verification-required="'+esc(a.id)+'">Add a reviewer note explaining the requested changes.</div>'+
-                '<div class="multi-action-verification-actions">'+
-                  '<button class="multi-action-request-changes" type="button" data-child-request-changes="'+esc(a.id)+'">Send back for changes</button>'+
-                  '<button class="wizard-primary" type="button" data-child-verify-action="'+esc(a.id)+'">Verify as complete</button>'+
-                '</div>'+
+                '<label class="inv-l">Approval note (optional)<textarea data-child-verification-note="'+esc(a.id)+'" placeholder="What did you verify?"></textarea></label>'+
+                '<div class="multi-action-verification-actions"><button class="wizard-primary" type="button" data-child-verify-action="'+esc(a.id)+'">Verify as complete</button></div>'+
+                '<details class="ca-return-form"><summary>Send back for changes</summary>'+
+                  '<label class="inv-l">What needs to change? (required)<textarea data-child-return-note required></textarea></label>'+
+                  '<div class="wizard-required" data-child-verification-required="'+esc(a.id)+'">Explain what needs to change before sending this back.</div>'+
+                  '<button class="multi-action-request-changes" type="button" data-child-request-changes="'+esc(a.id)+'">Send back to '+esc(owner)+'</button>'+
+                '</details>'+
               '</div>';
           } else {
             review='<div class="multi-action-verifier-note"><b>Review required</b>An authorized reviewer must review the completed work and either verify it or send it back for changes.</div>';
@@ -4795,7 +4805,7 @@
       if(!multiActionCompletionEl) return;
       multiActionCompletionEl.hidden=false;
       var allRows=actionPlanState.actions.filter(function(a){return !!a.id&&correctiveActionInCurrentCycle(a,r);});
-      var rows=allRows.filter(function(a){return ["awaiting_verification","verified"].indexOf(String(a.status||"not_started"))<0;});
+      var rows=allRows.filter(function(a){return ["awaiting_verification","verified"].indexOf(String(a.status||"not_started"))<0;}).sort(function(a,b){return Number(b.status==="changes_requested")-Number(a.status==="changes_requested");});
       if(!rows.length){
         var hasReviewable=allRows.some(function(a){return ["awaiting_verification","verified"].indexOf(String(a.status||""))>=0;});
         multiActionCompletionEl.innerHTML=hasReviewable?
@@ -4817,7 +4827,7 @@
           work='<div class="multi-action-completion-note"><b>Ready for review</b>'+esc(a.completion_note||"Completion submitted.")+(a.completed_at?'<div class="action-meta">Submitted '+esc(fmtDate(a.completed_at))+(completedBy?' by '+esc(completedBy):'')+'</div>':'')+'</div>';
         } else if(editable){
           work=(status==="changes_requested"&&a.verification_note?'<div class="ops-alert"><b>Changes requested</b>'+esc(a.verification_note)+'</div>':'')+
-            '<div class="mac-work"><div class="action-missing-list"><b>Required:</b> Describe what was completed. Add any supporting evidence below before submitting. Evidence is optional unless your company requires it.</div><label class="inv-l">What was completed?<textarea data-child-completion-note="'+esc(a.id)+'" placeholder="Describe what was completed and anything the reviewer should know.">'+esc(a.completion_note||"")+'</textarea></label></div>';
+            '<div class="mac-work"><div class="action-missing-list"><b>Required:</b> Describe what was completed. Add any supporting evidence below before submitting. Evidence is optional unless your company requires it.</div><label class="inv-l">What did you do?<textarea data-child-completion-note="'+esc(a.id)+'" placeholder="Describe what was completed and anything the reviewer should know.">'+esc(a.completion_note||"")+'</textarea></label></div>';
         } else {
           work='<div class="multi-action-completion-note"><b>Assigned owner</b>'+esc(owner)+' must complete this corrective action before it can move to review.</div>';
         }
@@ -4827,7 +4837,7 @@
           '<div class="ca-action-summary-meta"><span><b>Assigned to:</b> '+esc(owner)+'</span><span><b>Due:</b> '+esc(due)+'</span><span><b>Priority:</b> '+esc(priority)+'</span><span><b>Type:</b> '+esc(control)+'</span></div>'+
           work+
           '<div class="evidence-panel" data-action-evidence data-corrective-action-id="'+esc(a.id)+'"></div>'+
-          (editable?'<div class="multi-action-completion-actions multi-action-submit-after-evidence"><button class="wizard-primary" type="button" data-submit-child-completion="'+esc(a.id)+'">'+(status==="changes_requested"?'Send again for review →':'Send for review →')+'</button></div>':'')+
+          (editable?'<div class="multi-action-completion-actions multi-action-submit-after-evidence"><button class="wizard-primary" type="button" data-submit-child-completion="'+esc(a.id)+'">'+(status==="changes_requested"?'Resubmit for review →':'Send for review →')+'</button></div>':'')+
         '</div>';
       }).join("");
       Array.prototype.slice.call(multiActionCompletionEl.querySelectorAll("[data-action-evidence][data-corrective-action-id]")).forEach(function(panel){
@@ -4885,13 +4895,13 @@
         var missingHtml='<div class="action-missing-list" data-action-missing'+(missing.length?'':' hidden')+'>'+(missing.length?'<b>Still needed:</b> '+esc(missing.join(", "))+'.':'')+'</div>';
         var priorityButtons='<div class="priority-picker" data-priority-picker>'+["low","medium","high"].map(function(value){var label=value.charAt(0).toUpperCase()+value.slice(1);return '<button class="priority-option'+(a.priority===value?' selected':'')+'" type="button" data-priority-value="'+value+'"'+disabled+'>'+label+'</button>';}).join("")+'<input class="priority-value-input" type="hidden" data-action-field="priority" value="'+esc(a.priority||"")+'"'+disabled+'></div>';
         var fields='<div class="multi-action-fields">'+
-            '<label class="inv-l">What needs to be fixed?<textarea data-action-field="description" placeholder="Describe the specific fix or change needed."'+disabled+'>'+esc(a.description||"")+'</textarea><span class="field-guidance compact">Be specific enough that the assigned person knows exactly what to do.</span><div class="multi-action-translation" data-action-translation hidden></div></label>'+ 
+            '<label class="inv-l">What needs to be done?<textarea data-action-field="description" placeholder="Example: Replace the broken guard on the loading dock gate."'+disabled+'>'+esc(a.description||"")+'</textarea><span class="field-guidance compact">Be specific enough that the assigned person knows exactly what to do.</span><div class="multi-action-translation" data-action-translation hidden></div></label>'+ 
             '<div class="multi-action-compact-row">'+
-              '<label class="inv-l">Assigned to<select data-action-field="owner_user_id"'+disabled+'>'+assignmentOptions(a.owner_user_id||"")+'</select><span class="field-guidance compact">Who owns this action?</span></label>'+ 
+              '<label class="inv-l">Assigned to<select data-action-field="owner_user_id"'+disabled+'>'+assignmentOptions(a.owner_user_id||"")+'</select><span class="field-guidance compact">Who will do this work?</span></label>'+ 
               '<label class="inv-l">Due date<input type="date" data-action-field="due_date" value="'+esc(a.due_date||"")+'"'+disabled+'><span class="field-guidance compact">When should this be finished?</span></label>'+
               '<div class="inv-l priority-field"><span>Priority</span>'+priorityButtons+'<span class="field-guidance compact">How urgent is this action?</span></div>'+
             '</div>'+
-            '<label class="inv-l">Type of fix<select data-action-field="control_type"'+disabled+'><option value="">— Select type of fix —</option><option value="elimination"'+(a.control_type==="elimination"?' selected':'')+'>Elimination — remove the hazard</option><option value="substitution"'+(a.control_type==="substitution"?' selected':'')+'>Substitution — replace the hazard</option><option value="engineering"'+(a.control_type==="engineering"?' selected':'')+'>Engineering control — isolate people from the hazard</option><option value="administrative"'+(a.control_type==="administrative"?' selected':'')+'>Administrative / work practice — change how work is performed</option><option value="ppe"'+(a.control_type==="ppe"?' selected':'')+'>PPE — protect the worker</option><option value="other"'+(a.control_type==="other"?' selected':'')+'>Other</option></select><span class="field-guidance compact">Choose the option that best describes how this fix reduces the hazard.</span></label>'+ 
+            '<label class="inv-l">Type of fix<select data-action-field="control_type"'+disabled+'><option value="">— Select type of fix —</option><option value="elimination"'+(a.control_type==="elimination"?' selected':'')+'>Elimination — remove the hazard</option><option value="substitution"'+(a.control_type==="substitution"?' selected':'')+'>Substitution — replace the hazard</option><option value="engineering"'+(a.control_type==="engineering"?' selected':'')+'>Engineering control — isolate people from the hazard</option><option value="administrative"'+(a.control_type==="administrative"?' selected':'')+'>Change how work is done (administrative / work practice)</option><option value="ppe"'+(a.control_type==="ppe"?' selected':'')+'>PPE — protect the worker</option><option value="other"'+(a.control_type==="other"?' selected':'')+'>Other</option></select><span class="field-guidance compact">Choose the option that best describes how this fix reduces the hazard.</span></label>'+ 
           '</div>';
         var planMeta=live?'<div class="ca-action-summary-meta"><span><b>Assigned to:</b> '+esc(owner)+'</span><span><b>Due:</b> '+esc(due)+'</span><span><b>Priority:</b> '+esc(priority)+'</span><span><b>Type:</b> '+esc(control)+'</span></div>':'';
         var planBody=live?(planMeta+'<details class="action-plan-details"><summary>'+((!editable||locked)?'View plan details':'View / edit plan details')+'</summary>'+fields+'</details>'):fields;
@@ -5199,7 +5209,7 @@
         var changesAction=actionPlanState.actions.find(function(x){return String(x.id||"")===String(changesId||"");});
         if(!changesAction||!canVerifyCorrectiveAction(changesAction)){toast("You do not have verification permission for this corrective action.","err");return;}
         var changesCard=changesBtn.closest("[data-child-verification-card]");
-        var changesNoteEl=changesCard&&changesCard.querySelector("[data-child-verification-note]");
+        var changesNoteEl=changesCard&&changesCard.querySelector("[data-child-return-note]");
         var changesNote=(changesNoteEl&&changesNoteEl.value.trim())||"";
         var changesReq=changesCard&&changesCard.querySelector("[data-child-verification-required]");
         if(!changesNote){
@@ -5311,7 +5321,7 @@
         setWizardStep(detail,r,4,true);
         syncStepEditability();
         var emails=(result&&result.emailResults)||[], failed=emails.filter(function(x){return !x || (!x.sent&&!x.skipped);}), unavailable=emails.filter(function(x){return x&&x.skipped&&(x.reason==="NO_DASHBOARD_ASSIGNEE"||x.reason==="NO_ASSIGNEE_EMAIL");});
-        if(failed.length){console.error("multi-action assignment notification failures",failed);toast("Actions assigned, but "+failed.length+" email notification"+(failed.length===1?"":"s")+" could not be sent.","err");}
+        if(failed.length){console.error("multi-action assignment notification failures",failed);toast("Actions assigned, but "+failed.length+" email notification"+(failed.length===1?"":"s")+" could not be sent. The assigned work is available in My Work.","err");}
         else if(unavailable.length){toast("Actions assigned. "+unavailable.length+" owner"+(unavailable.length===1?" has":"s have")+" no available assignment email.","ok");}
         else toast("Corrective actions assigned — owner notifications sent","ok");
       }catch(ex){console.error(ex);if(ex&&ex.message!=="PLAN_INCOMPLETE")toast("Could not assign the corrective actions.","err");}finally{if(complete3.isConnected)complete3.disabled=!canEditStep(r,3);} });
@@ -7754,17 +7764,17 @@
     var reportLine='Report #'+String(r.ref_no||r.id)+(r.report_type?' · '+r.report_type:'')+(r.job_site?' · '+r.job_site:'');
     var statusClass='mas-status-'+status;
 
-    var html='<div class="focused-action-head"><div><div class="home-kicker">'+esc(reportLine)+'</div><h2>Corrective Action #'+esc(a.action_number||"")+'</h2><p>This page is only for this corrective action. Updates save to the same action shown in the main incident workflow.</p></div><div class="focused-action-status"><span class="multi-action-status '+esc(statusClass)+'">'+esc(actionLabel(status))+'</span></div></div>'+
+    var html='<div class="focused-action-head"><div><div class="home-kicker">'+esc(reportLine)+'</div><h2>Corrective Action #'+esc(a.action_number||"")+'</h2></div><div class="focused-action-status"><span class="multi-action-status '+esc(statusClass)+'">'+esc(actionLabel(status))+'</span></div></div>'+
       '<div class="focused-action-body">';
 
     if(status==="changes_requested"){
       html+='<div class="focused-action-callout returned"><b>Changes requested</b>'+esc(a.verification_note||"The reviewer requested an update to this corrective action.")+'</div>';
     } else if(status==="awaiting_verification"){
-      html+='<div class="focused-action-callout waiting"><b>Ready for review</b>'+(canVerify?'Review the completed work and evidence below. No reviewer assignment is required.':'Your work is ready for an authorized reviewer. You do not need to do anything unless it is sent back.')+'</div>';
+      html+='<div class="focused-action-callout waiting"><b>Ready for review</b>'+(canVerify?'Review the completed work and evidence below. No reviewer assignment is required.':'Waiting for manager review. If it is sent back, it will reappear in My Work.')+'</div>';
     } else if(status==="verified"){
       html+='<div class="focused-action-complete"><b>Verified</b>This corrective action is complete and no longer needs work.</div>';
     } else if(isMine){
-      html+='<div class="focused-action-callout"><b>This is your assigned action</b>Complete only the work shown on this page. Other corrective actions for this incident stay out of the way.</div>';
+      html+='<div class="focused-action-callout"><b>This is your assigned action</b>When the work is done, describe what you did and send it to a manager for review.</div>';
     } else {
       html+='<div class="focused-action-callout"><b>Focused action view</b>You are viewing this corrective action by itself. Only the assigned owner or an authorized manager can update the completion work.</div>';
     }
@@ -7775,10 +7785,10 @@
 
     if(["not_started","in_progress","changes_requested"].indexOf(status)>=0){
       html+='<section class="focused-action-section focused-action-work"><h3>'+(status==="changes_requested"?'Update completed work':'Complete this action')+'</h3>'+
-        '<label for="focusedCompletionNote">What was completed?</label><textarea id="focusedCompletionNote" '+(canComplete?'':'disabled')+' placeholder="Describe exactly what was done to complete this corrective action.">'+esc(a.completion_note||"")+'</textarea>'+
+        '<label for="focusedCompletionNote">What did you do?</label><textarea id="focusedCompletionNote" '+(canComplete?'':'disabled')+' placeholder="Describe exactly what was done to complete this corrective action.">'+esc(a.completion_note||"")+'</textarea>'+
         '<p class="focused-action-help">Required before sending for review. Be specific enough that a reviewer can understand what changed.</p>'+
         '<div class="evidence-panel" id="focusedActionEvidence"></div>'+
-        (canComplete?'<div class="focused-action-actions"><button class="wizard-primary" id="focusedSubmitAction" type="button">'+(status==="changes_requested"?'Send again for review →':'Send for review →')+'</button></div>':'<div class="focused-action-readonly">This action is assigned to '+esc(owner)+'. You can review it here, but you cannot submit work for this owner.</div>')+
+        (canComplete?'<div id="focusedCompletionError" class="wizard-required" role="alert"></div><div class="focused-action-actions"><button class="wizard-primary" id="focusedSubmitAction" type="button">'+(status==="changes_requested"?'Resubmit for review →':'Send for review →')+'</button></div>':'<div class="focused-action-readonly">This action is assigned to '+esc(owner)+'. You can review it here, but you cannot submit work for this owner.</div>')+
         '</section>';
     } else {
       html+='<section class="focused-action-section"><h3>Completed work</h3>'+
@@ -7790,10 +7800,14 @@
     if(status==="awaiting_verification"){
       html+='<section class="focused-action-section focused-action-review"><h3>Verification</h3>';
       if(canVerify){
-        html+='<label for="focusedVerificationNote">Verification notes <span style="font-weight:400;color:var(--muted)">(optional when approving)</span></label>'+
-          '<textarea id="focusedVerificationNote" placeholder="What did you verify? If sending this back, explain exactly what still needs to be done.">'+esc(a.verification_note||"")+'</textarea>'+
-          '<div class="wizard-required" id="focusedVerificationRequired">Add a reviewer note explaining the requested changes.</div>'+
-          '<div class="focused-action-actions"><button class="multi-action-request-changes" id="focusedRequestChanges" type="button">Send back for changes</button><button class="wizard-primary" id="focusedVerifyAction" type="button">Verify as complete</button></div>';
+        html+='<label for="focusedVerificationNote">Approval note (optional)</label>'+
+          '<textarea id="focusedVerificationNote" placeholder="What did you verify?"></textarea>'+
+          '<div class="focused-action-actions"><button class="wizard-primary" id="focusedVerifyAction" type="button">Verify as complete</button></div>'+
+          '<details class="ca-return-form"><summary>Send back for changes</summary>'+
+            '<label for="focusedReturnNote">What needs to change? (required)</label><textarea id="focusedReturnNote" required></textarea>'+
+            '<div class="wizard-required" id="focusedVerificationRequired">Explain what needs to change before sending this back.</div>'+
+            '<button class="multi-action-request-changes" id="focusedRequestChanges" type="button">Send back to '+esc(owner)+'</button>'+
+          '</details>';
       } else {
         html+='<div class="focused-action-readonly">An authorized reviewer will verify this action or send it back with a specific note. No reviewer needs to be assigned.</div>';
       }
@@ -7811,8 +7825,9 @@
 
     var submit=$("focusedSubmitAction");
     if(submit) submit.addEventListener("click",async function(){
-      var ta=$("focusedCompletionNote"), note=(ta&&ta.value.trim())||"";
-      if(!note){toast("Describe what was completed before sending this action for review.","err");if(ta)ta.focus();return;}
+      var ta=$("focusedCompletionNote"), note=(ta&&ta.value.trim())||"", error=$("focusedCompletionError");
+      error.classList.remove("show");
+      if(!note){error.textContent="Describe what you did before sending this action for review.";error.classList.add("show");ta.focus();return;}
       submit.disabled=true; var old=submit.textContent; submit.textContent="Submitting…";
       try{
         await assertOpenResourceFresh();
@@ -7825,7 +7840,7 @@
         if(!emailResult||(!emailResult.sent&&!emailResult.skipped&&emailResult.ok===false)) console.error("focused verification-request email failed",emailResult);
         renderFocusedCorrectiveAction();
         toast("Corrective Action #"+String(a.action_number||"")+" sent for review","ok");
-      }catch(ex){console.error(ex);toast("Could not submit this corrective action.","err");}
+      }catch(ex){console.error(ex);error.textContent="Could not confirm submission. Your note is still here. Check the action status before retrying.";error.classList.add("show");}
       finally{if(submit.isConnected){submit.disabled=false;submit.textContent=old;}}
     });
 
@@ -7851,7 +7866,7 @@
     var changes=$("focusedRequestChanges");
     if(changes) changes.addEventListener("click",async function(){
       if(!focusedActionCanVerify(a,r)){toast("You do not have verification permission for this corrective action.","err");return;}
-      var noteEl=$("focusedVerificationNote"), note=(noteEl&&noteEl.value.trim())||"", req=$("focusedVerificationRequired");
+      var noteEl=$("focusedReturnNote"), note=(noteEl&&noteEl.value.trim())||"", req=$("focusedVerificationRequired");
       if(!note){if(req)req.classList.add("show");toast("Explain what still needs to be changed before sending this action back.","err");if(noteEl)noteEl.focus();return;}
       if(req) req.classList.remove("show");
       changes.disabled=true; var old=changes.textContent; changes.textContent="Sending back…";
@@ -8495,7 +8510,7 @@
       if(completed){var cb=r.action_completed_by&&profileById[String(r.action_completed_by)]?profileName(profileById[String(r.action_completed_by)]):'';h+='<div class="action-meta">'+esc(completed)+(cb?' by '+esc(cb):'')+'</div>';}
       h+='<div class="evidence-panel" data-action-evidence></div>';
       if(canEditStep(r,4)&&status!=="verified"){
-        var primary=(status==="awaiting_verification")?'':(status==="changes_requested"?'Send again for review →':'Send for review →');
+        var primary=(status==="awaiting_verification")?'':(status==="changes_requested"?'Resubmit for review →':'Send for review →');
         h+='<div class="wizard-footer"><div class="wizard-footer-copy">Save a draft and return home, or send the completed work to a reviewer.</div><div class="wizard-footer-actions"><button class="wizard-save btn-save-completion" data-step-save="4" type="button">Save draft &amp; return home</button><span class="completion-saved section-saved" hidden>Saved ✓</span>'+(primary?'<button class="wizard-primary btn-complete" data-step-complete="4" type="button">'+primary+'</button>':'')+'</div></div>';
       }
     } else {
@@ -8827,7 +8842,7 @@
       '<div class="evidence-head"><div><b>'+esc(heading)+'</b><span>Photos or files that show what was fixed. Evidence stays with this corrective action throughout completion and review.</span></div><span class="evidence-count">'+countLabel+'</span></div>'+
       '<div class="evidence-files" data-evidence-files>'+(arr.length?'<span class="evidence-empty">Loading evidence…</span>':'<span class="evidence-empty">'+esc(emptyLabel)+'</span>')+'</div>'+
       (priorEvidence.length?'<details class="evidence-history"><summary>Earlier workflow evidence ('+priorEvidence.length+')</summary><div class="evidence-files" data-prior-evidence-files><span class="evidence-empty">Loading preserved evidence…</span></div></details>':'')+
-      (canManage?'<div class="evidence-upload"><input class="evidence-file-input" type="file" multiple accept="image/*,.pdf,.doc,.docx"><button class="evidence-pick" type="button">Add evidence</button><span class="evidence-selected">Files save automatically after selection.</span><div class="evidence-help">Up to 5 files at a time, 10 MB each. Remove is available for mistakes; every removal is recorded in Activity.</div></div>':'');
+      (canManage?'<div class="evidence-upload"><input class="evidence-file-input" type="file" multiple accept="image/*,.pdf,.doc,.docx"><button class="evidence-pick" type="button">Add photos or files</button><span class="evidence-selected">Files save automatically after selection.</span><div class="evidence-help">Up to 5 files at a time, 10 MB each. Remove is available for mistakes; every removal is recorded in Activity.</div></div>':'');
 
     async function renderEvidenceFiles(items,target){
       if(!target||!items.length) return;
