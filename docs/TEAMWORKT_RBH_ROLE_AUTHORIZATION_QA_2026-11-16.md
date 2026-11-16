@@ -32,3 +32,14 @@ Provision distinct test Auth accounts via the deployed Admin-only `admin-provisi
 - GitHub: added this documentation only.
 - Supabase: **no persistent change**.
 - Frontend, Edge Functions, hosting: **no change**.
+
+## Additional November 16 authorization test using explicitly approved account
+- User authorized testing with `vignery12@gmail.com`. The account exists in `auth.users` and is an active RBH profile. Do not publish identifiers or credentials.
+- Starting profile role: `read_only`. Its organization membership role was `safety_manager`, **inconsistent with its application profile**. Another RBH profile also has this class of mismatch. These require reconciliation in the canonical Admin provisioning/role-management path, without silently changing the other account.
+- Transactionally simulated all four roles on that specific user using `SET LOCAL ROLE authenticated` and JWT subject context. Every test rolled back the role and report changes; the named profile remains `read_only` and membership remains `safety_manager` as originally found.
+- On an existing open report: Admin and Safety Manager successfully entered `rbh_set_report_owner`; Supervisor and Read Only returned `MANAGER_ROLE_REQUIRED`.
+- On an existing open report, empty corrective action plan: Admin and Safety Manager passed the permission gate and returned `AT_LEAST_ONE_CORRECTIVE_ACTION_REQUIRED`; Supervisor and Read Only returned `CORRECTIVE_ACTION_PLAN_NOT_AUTHORIZED`.
+- Verification RPC with missing action ID: Admin and Safety Manager passed the permission gate and returned `CORRECTIVE_ACTION_NOT_FOUND`; Supervisor and Read Only returned `VERIFICATION_MANAGER_REQUIRED`.
+- All simulated roles saw the existing 18 same-organization reports; this is consistent with the current all-staff report-view RLS and is not evidence of cross-organization access.
+- **Not tested end-to-end:** real user sessions after role changes, UI permission and navigation, Supervisor's positive assigned-action completion and evidence upload, change-request/resubmission/verification/closure sequence, role-management via Admin Edge Function, and cross-tenant isolation. There were no active actions in the existing RBH data on November 16 (only three actions, all on closed reports), so positive Supervisor completion requires an isolated synthetic action lifecycle.
+- No persistent Supabase configuration or records changed during these tests. Role acceptance remains partially verified, not fully signed off.
