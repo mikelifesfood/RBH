@@ -917,6 +917,9 @@
   .close-details summary{cursor:pointer;font-weight:700;color:var(--ink-2)}
   .close-blockers .close-check{justify-content:space-between;flex-wrap:wrap}
   .close-receipt h3{margin:0 0 4px;font-size:20px}
+  .close-add-form{display:grid;gap:10px;margin-top:12px}
+  .close-add-form .inv-l{margin:0}
+  .close-add-form textarea{min-height:88px}
   .ca-confirm-dialog p,.ca-confirm-dialog ul{margin:8px 0}
   .ca-confirm-dialog ul{padding-left:20px}
   .ca-confirm-dialog .ca-handoff-actions{margin-top:16px}
@@ -4225,9 +4228,13 @@
     var blocked=blockers.length?'<section class="close-blockers" aria-label="What’s left"><b>What’s left before closing</b><div class="close-checklist">'+blockers.map(function(item){
       return '<div class="close-check missing"><span>'+esc(item[0])+'</span>'+item[1]+'</div>';
     }).join("")+'</div></section>':'';
+    var addAction=canEdit&&["under_review","assigned","corrective_action"].includes(r.status)&&((childSummary&&childSummary.total<25)||(!childSummary&&noAdditional));
+    var addButton=addAction?'<button class="wizard-save" type="button" data-close-add-action>Add corrective action</button>':"";
     var button=ready&&canEdit?'<button class="wizard-close" type="button" data-step-complete="6">Close report</button>':'';
     var footer=ready?'<div class="wizard-footer next-step-ready"><div class="wizard-footer-copy"><b>Ready to close</b><span>'+(canEdit?'Close the report once you’ve finished reviewing it.':'An Admin or Safety Manager can close this report.')+'</span></div><div class="wizard-footer-actions">'+button+'</div></div>':'';
-    el.innerHTML=blocked+footer+details;
+    el.innerHTML=blocked+footer+(addButton?'<div class="ca-handoff-actions">'+addButton+'</div>':'')+details;
+    var add=el.querySelector("[data-close-add-action]");
+    if(add) add.addEventListener("click",function(){openCloseAddAction(r,detail);});
     el.querySelectorAll("[data-close-action]").forEach(function(button){
       button.addEventListener("click",function(){
         var action=(allCorrectiveActions||[]).find(function(item){return String(item.id)===button.dataset.closeAction;});
@@ -4238,6 +4245,67 @@
     if(regulatory) regulatory.addEventListener("click",function(){openRegulatoryFollowupModal(r,detail);});
     var btn=el.querySelector('[data-step-complete="6"]');
     if(btn) btn.addEventListener("click",function(){openReportCloseConfirmation(r,detail,auditEl);});
+  }
+  function openCloseAddAction(r,detail){
+    if(!canEditStep(r,6)||document.querySelector(".close-add-dialog[open]")) return;
+    var requestId=crypto.randomUUID(), dialog=document.createElement("dialog");
+    dialog.className="ca-confirm-dialog close-add-dialog";
+    dialog.setAttribute("aria-labelledby","closeAddActionTitle");
+    dialog.innerHTML='<h2 id="closeAddActionTitle">Add corrective action</h2><p>Report #'+esc(r.ref_no||r.id)+' stays open until this action is verified. Previously verified work stays complete.</p>'+
+      '<form class="close-add-form">'+
+        '<label class="inv-l">What needs to be done?<textarea name="description" required autofocus></textarea></label>'+
+        '<label class="inv-l">Assigned to<select name="owner" required>'+assignmentOptions("")+'</select></label>'+
+        '<label class="inv-l">Due date<input type="date" name="due" required></label>'+
+        '<label class="inv-l">Priority<select name="priority" required><option value="">Select priority</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label>'+
+        '<label class="inv-l">Type of fix<select name="control" required><option value="">Select type of fix</option><option value="elimination">Remove the hazard</option><option value="substitution">Replace the hazard</option><option value="engineering">Separate people from the hazard</option><option value="administrative">Change how work is done</option><option value="ppe">Protect workers with PPE</option><option value="other">Other</option></select></label>'+
+        '<div class="wizard-required" role="alert" data-add-error></div>'+
+        '<div class="ca-handoff-actions"><button class="wizard-save" type="button" data-add-cancel>Cancel</button><button class="wizard-primary" type="submit">Assign corrective action</button></div>'+
+      '</form>';
+    var form=dialog.querySelector("form"), submit=form.querySelector('[type="submit"]'), cancel=form.querySelector("[data-add-cancel]"), error=form.querySelector("[data-add-error]");
+    dialog.addEventListener("close",function(){dialog.remove();},{once:true});
+    dialog.addEventListener("cancel",function(event){if(submit.disabled) event.preventDefault();});
+    cancel.addEventListener("click",function(){dialog.close();});
+    form.addEventListener("submit",async function(event){
+      event.preventDefault();
+      if(submit.disabled) return;
+      var fields=new FormData(form), description=String(fields.get("description")||"").trim();
+      if(!description){
+        error.textContent="Describe what needs to be done."; error.classList.add("show"); form.elements.description.focus(); return;
+      }
+      var controls=Array.from(form.elements);
+      controls.forEach(function(control){control.disabled=true;});
+      error.classList.remove("show"); submit.textContent="Assigning…";
+      var action;
+      try{
+        await assertOpenResourceFresh();
+        var result=await sb.rpc("rbh_add_corrective_action_before_close",{
+          p_report_id:r.id,p_action_id:requestId,p_description:description,p_owner_user_id:fields.get("owner"),
+          p_due_date:fields.get("due"),p_priority:fields.get("priority"),p_control_type:fields.get("control")
+        });
+        if(result.error) throw result.error;
+        action=result.data;
+      }catch(ex){
+        console.error(ex);
+        error.textContent=ex&&ex.message==="STALE_RECORD"?"The report changed. Cancel and refresh before adding work.":"Could not assign the action. Check the details and try again.";
+        error.classList.add("show");
+        controls.forEach(function(control){control.disabled=false;});
+        submit.textContent="Assign corrective action"; return;
+      }
+      dialog.close();
+      var closeButton=detail.querySelector('[data-step-complete="6"]');
+      if(closeButton) closeButton.disabled=true;
+      sendCorrectiveActionAssignmentEmail(r,action).then(function(email){
+        if(!email||(!email.sent&&!email.skipped)) toast("The action is assigned. The assignment email could not be sent.","err");
+      });
+      try{
+        await detail._refreshAfterCloseAction();
+        toast("Action #"+action.action_number+" assigned. Verify it before closing the report.","ok");
+      }catch(ex){
+        console.error(ex);
+        toast("The action was assigned. Refresh the report to see it.","err");
+      }
+    });
+    document.body.appendChild(dialog); dialog.showModal();
   }
   function openReportCloseConfirmation(r,detail,auditEl){
     if(!canEditStep(r,6)||!canClose(r)){toast("Complete the required checks before closing this report.","err");return;}
@@ -5031,6 +5099,13 @@
       Object.keys(rr.data||{}).forEach(function(k){r[k]=rr.data[k];});
       refreshIncidentSummary(r);
     }
+    detail._refreshAfterCloseAction=async function(){
+      await refreshReportAfterPlanActivation();
+      await loadCorrectiveActionPlan();
+      setActiveOpenResource("report",r.id,r.id);
+      setWizardStep(detail,r,4,true);
+      loadAudit(r.id,auditEl); renderMyWork(); renderActions(); renderHomeSnapshot();
+    };
     async function emailActivatedCorrectiveActions(actions){
       var results=[];
       for(var i=0;i<(actions||[]).length;i++) results.push(await sendCorrectiveActionAssignmentEmail(r,actions[i]));
