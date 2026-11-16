@@ -1,3 +1,32 @@
+## Scheduler readiness build — November 16, 2026
+
+**Status: infrastructure and deterministic checks complete; live scheduled delivery NOT authorized.**
+
+### Implemented
+- Enabled `pg_cron` extension alongside already installed `pg_net`; confirmed **zero** `rbh-weekly-safety-pulse` scheduled jobs.
+- Deployed protected Edge Function `safety-pulse-weekly-digest` **version 2**.
+- Extracted `core.ts` with deterministic, IANA-aware Monday 08:00-08:14 logic and eligibility checks. Invalid timezone configurations fail closed.
+- Hardened company scanning with stable pagination; active-company validation; scoped and paginated recipient queries; and a fresh check of company opt-in/release and each recipient's role, active status, email, and effective organization before an attempted send.
+- Added 15-second Brevo timeout, with claimed-but-ambiguous attempts **never automatically retried**.
+- Confirmed unique index on `(organization_id, week_start, recipient_user_id)` in `safety_pulse_digest_deliveries`.
+- Confirmed `authenticated` and `anon` cannot insert delivery records; authenticated role cannot invoke the privileged digest snapshot RPC; RLS is on for settings, test-deliveries and weekly-deliveries tables.
+- Created `tests/digest-scheduler-readiness.test.mjs`; ran locally with Node 22 using `--experimental-strip-types`: **7 tests passed, 0 failed** (winter/summer, spring/fall DST transitions, US/UK timezones, window boundaries, roles, inactive/deleted/blank-email recipients, cross-organization effective membership).
+- Created unexecuted `docs/weekly-digest-scheduler-activation.md` playbook with Vault secret setup, the scheduler SQL for future approval, RBH-only release gate, and emergency rollback.
+
+### Verified live state
+- RBH `enabled = false`, `delivery_ready = false`.
+- No digest scheduler job exists.
+- No weekly digest delivery audit rows exist.
+- No scheduler dispatch credential was provisioned as part of this build.
+- Existing controlled Admin test-email acceptance remains passed.
+
+### Remaining release gates
+1. Production-equivalent **two-tenant integration test**, including RBH vs a separate disposable company and inactive/role-changed recipients. Pure eligibility tests passed but this is NOT a live cross-tenant end-to-end test.
+2. Controlled **scheduler invocation** integration test (including duplicate calls, failed/ambiguous Brevo responses, and released/disabled transitions), using test recipients only; test without contacting any real weekly recipients.
+3. Privileged secret provisioning in Supabase Edge Function Secrets and Vault. No secrets in the repository.
+4. Review Supabase Security Advisor separately for unrelated pre-existing findings. Two digest audit tables intentionally have RLS enabled without read policies, because only service-role access is needed.
+5. Obtain explicit RBH approval for scheduled delivery before creating a cron job or switching `delivery_ready` true. The Admin opt-in toggle alone never activates production weekly email.
+
 ## Controlled email acceptance — PASSED (November 16, 2026)
 - RBH Admin completed all five Admin configuration/preview checks: Off default, preview counts, save On persistence, save Off persistence.
 - One controlled test email was requested at 2026-11-16 19:49:21 UTC (2:49 p.m. America/New_York).
