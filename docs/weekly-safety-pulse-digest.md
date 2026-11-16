@@ -23,6 +23,25 @@
 - There have been no digest delivery attempts.
 - Existing report and assignment emails are unchanged.
 
+## Controlled Admin email test (November 16, 2026)
+- The Admin > Notifications > Weekly Safety Pulse digest card includes **Send test email to my account**. Requires an explicit confirmation.
+- The new `safety-pulse-digest-test` Supabase Edge Function has JWT validation enabled and independently verifies the caller with Supabase Auth, active Admin role, and that their RBH profile email matches their Auth email.
+- The function rejects client-supplied recipient addresses and always sends **only** to the signed-in Admin email. No test sends automatically.
+- Preview totals come from `rbh_preview_safety_pulse_digest()` under the caller's own auth context.
+- Sends through existing Brevo credentials, with the subject prefixed `[TEST]`; no incident descriptions or personal data in the email.
+- The service records each request in `safety_pulse_digest_test_deliveries`, with a 10-minute per-account duplicate guard and provider result status. The test table is not exposed to anonymous or authenticated data API roles.
+- This test does **not** change `enabled`, `delivery_ready`, or install a scheduler; the production weekly worker remains disabled.
+- At deployment, no test requests or weekly delivery attempts had been recorded.
+
+### Browser acceptance test
+1. Refresh Admin > Notifications. Confirm the opt-in remains Off.
+2. Click **Send test email to my account** and approve the browser confirmation displaying your signed-in email address.
+3. Confirm the UI states **Brevo accepted**; then check the inbox (and spam) for `[TEST] Weekly Safety Pulse`.
+4. Confirm the subject, sender, layout, five metrics, period, and dashboard link. Email contains no incident names, descriptions, or attachments.
+5. Check the test-delivery audit and provider message status; a successful provider acceptance is not proof of inbox delivery.
+6. Verify no company weekly-send flag changed. Repeat during the 10-minute window to confirm a cooldown response. Do not conduct an actual second send.
+7. After passing, the next release gate is scheduled-delivery authorization and end-to-end role/tenant checks.
+
 ## Before release
 1. As RBH Admin, open the dashboard Admin tab and confirm the digest is Off, the preview renders, and the numbers match the existing data. Verify roles other than Admin cannot change the preference.
 2. Test opt-in On / Off persistence; leave Off after testing unless explicitly approving delivery.
