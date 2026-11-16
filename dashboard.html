@@ -4839,6 +4839,14 @@
       var awaitingCount=allRows.filter(function(a){return String(a.status||"")==="awaiting_verification";}).length;
       var returnedCount=allRows.filter(function(a){return String(a.status||"")==="changes_requested";}).length;
       var allVerified=allRows.length>0&&verifiedCount===allRows.length;
+      // Keep the ready-to-close button mounted while unrelated UI refreshes run.
+      // Replacing it between pointerdown and click can swallow the first click.
+      var verifiedRenderKey=allVerified?JSON.stringify(rows.map(function(a){
+        return [a.id,a.status,a.updated_at,a.verification_note,a.completion_note,a.verified_at,a.owner_user_id,a.due_date];
+      })):null;
+      if(verifiedRenderKey && multiActionVerificationStage._verifiedRenderKey===verifiedRenderKey
+          && multiActionVerificationStage.querySelector("[data-all-actions-verified]")) return;
+      multiActionVerificationStage._verifiedRenderKey=verifiedRenderKey;
       var cardsHtml=rows.map(function(a){
         var status=String(a.status||"not_started");
         var owner=a.owner_user_id&&profileById[String(a.owner_user_id)]?profileName(profileById[String(a.owner_user_id)]):"Not assigned";
@@ -5091,7 +5099,11 @@
       applyFilters(); renderMetrics();
       refreshRecordWorkflow(r,detail);
       var current=parseInt(detail.dataset.wizardStep||"0",10)||recommendedWizardStep(r), rec=recommendedWizardStep(r);
-      if(!wizardStepAccessible(r,current) || (current===6 && rec<6)) setWizardStep(detail,r,rec,true);
+      // A late background refresh must not undo an explicit Continue to Close.
+      // If any action becomes unverified, leaving Close remains mandatory.
+      var currentSummary=syncCorrectiveActionSummary();
+      var allActionsVerified=!!(currentSummary&&currentSummary.total>0&&currentSummary.verified===currentSummary.total);
+      if(!wizardStepAccessible(r,current) || (current===6 && rec<6 && !allActionsVerified)) setWizardStep(detail,r,rec,true);
     }
     async function refreshReportAfterPlanActivation(){
       var rr=await sb.from("reports").select("*").eq("id",r.id).single();
