@@ -367,14 +367,21 @@
   .incident-summary .is-desc{margin:7px 0 0;font-size:15px;line-height:1.5;max-width:90ch;overflow-wrap:anywhere}
   .is-badges{display:flex;gap:6px;flex-wrap:wrap}
   .incident-options{position:relative;z-index:21;max-width:100%;margin-left:auto}
-  .incident-options>summary{cursor:pointer;color:var(--ink-2);font-size:13px;font-weight:700;padding:8px 10px}
-  .incident-language-tools{position:absolute;right:0;top:100%;width:min(290px,calc(100vw - 40px));display:grid;gap:10px;padding:12px;border:1px solid var(--line);border-radius:var(--r);background:var(--paper);box-shadow:0 8px 24px rgba(0,0,0,.12)}
-  .incident-language-tools label{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:650;color:var(--ink-2)}
-  .incident-language-tools label[for="incidentLanguage"]{justify-content:space-between}
-  .incident-language-tools select{width:auto;min-height:36px;padding:6px 10px;font-size:13px;appearance:auto}
+  .incident-options>summary{list-style:none;display:flex;align-items:center;gap:9px;min-height:36px;padding:6px 10px;border:1px solid var(--line-strong);border-radius:var(--r);background:var(--paper);cursor:pointer;color:var(--ink-2);font-size:13px;font-weight:700}
+  .incident-options>summary::-webkit-details-marker{display:none}
+  .incident-options>summary::after{content:"";width:6px;height:6px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:translateY(-2px) rotate(45deg)}
+  .incident-options[open]>summary::after{transform:translateY(2px) rotate(225deg)}
+  .incident-options>summary:hover,.incident-options[open]>summary{background:var(--canvas-2)}
+  .incident-language-tools{position:absolute;right:0;top:calc(100% + 6px);width:min(290px,calc(100vw - 40px));padding:4px 12px;border:1px solid var(--line);border-radius:var(--r);background:var(--paper);box-shadow:0 8px 24px rgba(0,0,0,.12)}
+  .incident-language-tools .incident-option-row{box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:48px;padding:6px 2px;color:var(--ink-2);font-size:13px;font-weight:650}
+  .incident-language-tools .incident-option-row + .incident-option-row{border-top:1px solid var(--line)}
+  .incident-language-tools select{width:auto;min-height:34px;padding:5px 30px 5px 9px;font-size:13px;cursor:pointer}
   .pdf-language-select{width:auto;min-height:36px;padding:6px 32px 6px 10px;font-size:13px}
-  .incident-owner-change{justify-self:start;border:0;background:#eef6fc;color:#245f8f;border-radius:var(--r);padding:8px 10px;font-size:13px;font-weight:700;cursor:pointer}
-  .incident-owner-change:hover{background:#dcecf8}
+  .incident-owner-change{border:0;background:transparent;text-align:left;cursor:pointer}
+  .incident-owner-change span:last-child{color:#245f8f;font-weight:750}
+  .incident-owner-change:hover,.incident-option-row[for="incidentGuidanceToggle"]:hover{background:var(--canvas)}
+  .incident-option-row[for="incidentGuidanceToggle"]{cursor:pointer}
+  .incident-option-row input[type="checkbox"]{width:16px;height:16px;margin:0 6px;accent-color:var(--ink)}
   .report-owner-step-card{margin:14px 0 16px;padding:14px 16px;border:1px solid #b9d7f0;border-radius:var(--r-lg);background:#eef6fc}
   .report-owner-step-card b{display:block;color:#245f8f;font-size:14px;margin-bottom:3px}
   .report-owner-step-card p{margin:0 0 10px;color:var(--ink-2);font-size:12.5px;line-height:1.45}
@@ -580,7 +587,6 @@
     .guidance-toggle{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:6px 12px;color:var(--muted);font-size:12.5px;font-weight:650;cursor:pointer;user-select:none}
   .guidance-toggle:hover{border-color:var(--ink);color:var(--ink)}
   .guidance-toggle input{width:15px;height:15px;margin:0;accent-color:var(--ink);cursor:pointer}
-  .incident-guidance-toggle{flex:0 0 auto}
   .wizard-shell.guidance-hidden .field-guidance,.wizard-shell.guidance-hidden .wizard-step-copy p,.wizard-shell.guidance-hidden .wizard-footer-copy,.wizard-shell.guidance-hidden .action-help{display:none!important}
   .wizard-required{display:none;border:1px solid var(--brand-line);background:var(--brand-tint);color:var(--brand);border-radius:var(--r);padding:10px 12px;font-size:13px;font-weight:650;margin:10px 0}
   .wizard-required.show{display:block}
@@ -1656,11 +1662,11 @@
               <details class="incident-options" id="incidentOptions">
                 <summary>Report options</summary>
                 <div class="incident-language-tools">
-                  <label for="incidentLanguage">Read report in
+                  <label class="incident-option-row" for="incidentLanguage">Read report in
                     <select id="incidentLanguage"><option value="en">English</option><option value="es">Español</option></select>
                   </label>
-                  <button class="incident-owner-change" id="incidentOwnerChange" type="button" hidden>Change owner</button>
-                  <label class="incident-guidance-toggle" for="incidentGuidanceToggle"><input type="checkbox" id="incidentGuidanceToggle"><span>Show guidance</span></label>
+                  <button class="incident-option-row incident-owner-change" id="incidentOwnerChange" type="button" aria-label="Change report owner" hidden><span>Report owner</span><span>Change</span></button>
+                  <label class="incident-option-row" for="incidentGuidanceToggle"><span>Show guidance</span><input type="checkbox" id="incidentGuidanceToggle"></label>
                 </div>
               </details>
             </div>
