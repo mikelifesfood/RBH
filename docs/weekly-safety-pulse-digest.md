@@ -1,3 +1,14 @@
+## Controlled email acceptance — PASSED (November 16, 2026)
+- RBH Admin completed all five Admin configuration/preview checks: Off default, preview counts, save On persistence, save Off persistence.
+- One controlled test email was requested at 2026-11-16 19:49:21 UTC (2:49 p.m. America/New_York).
+- Supabase Edge Function `safety-pulse-digest-test` returned HTTP 200; the test-delivery audit insert succeeded (HTTP 201) and update succeeded (HTTP 204).
+- `safety_pulse_digest_test_deliveries` audit ID 1 reports `sent`, has a Brevo SMTP message identifier, and no error. The user confirmed receipt and approved the metrics, layout, and dashboard link.
+- No direct Brevo provider-dashboard event logs were available through the installed connector. The SMTP provider acceptance is established by the message ID, successful function response, and inbox confirmation; it is not an independently reviewed Brevo activity-log entry.
+- Production weekly digest preference remained Off and `delivery_ready=false`. No weekly digest delivery records exist.
+- **Closed:** controlled digest test email.
+- **Open:** secure scheduler configuration, production release gate approval, idempotency/DST/tenant regression checks, and scheduled-cycle acceptance.
+- Do not activate scheduler or `delivery_ready` until these remaining gates are reviewed.
+
 # Weekly Safety Pulse digest — RBH pilot handoff
 
 ## Approved defaults (November 16, 2026)
