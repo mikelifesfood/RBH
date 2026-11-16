@@ -4514,7 +4514,7 @@
       }
       var assign=actionPlanNextFooter.querySelector('[data-step-complete="3"]');
       var count=actionPlanState.actions.length;
-      if(assign) assign.textContent=count?"Assign "+count+" action"+(count===1?"":"s")+" →":"Assign actions →";
+      if(assign&&assign.textContent!=="Assigning…") assign.textContent=count?"Assign "+count+" action"+(count===1?"":"s")+" →":"Assign actions →";
       setNextStepFooterState(actionPlanNextFooter,ready,"Ready for the next step","Each assignee will find their work in My Work.","Complete the action plan","Fill in every required field. You can save a draft and return home at any time.");
     }
 
@@ -4975,19 +4975,19 @@
       var wasActivated=planHasBeenActivated();
       var save=await sb.rpc("rbh_save_corrective_action_plan",{p_report_id:r.id,p_actions:correctiveActionPayload()});
       if(save.error) throw save.error;
-      await loadCorrectiveActionPlan();
-      var activation=null, emailResults=[];
+      var activation=null, emailPromise=Promise.resolve([]);
       if(assign || wasActivated){
         activation=await sb.rpc("rbh_activate_corrective_action_plan",{p_report_id:r.id});
         if(activation.error) throw activation.error;
         await refreshReportAfterPlanActivation();
         await loadCorrectiveActionPlan();
-        refreshIncidentSummary(r);
-        emailResults=await emailActivatedCorrectiveActions((activation.data&&activation.data.actions)||actionPlanState.actions);
+        emailPromise=emailActivatedCorrectiveActions((activation.data&&activation.data.actions)||actionPlanState.actions);
+      } else {
+        await loadCorrectiveActionPlan();
       }
       loadAudit(r.id,auditEl); refreshOverdue(r,wrap); refreshRecordWorkflow(r,detail); renderMetrics(); renderHomeSnapshot(); renderMyWork(); renderActions();
       if(showToast) toast(wasActivated?"Active action plan updated":"Action plan saved","ok");
-      return {ok:true,activation:activation&&activation.data,emailResults:emailResults};
+      return {ok:true,activation:activation&&activation.data,emailPromise:emailPromise};
     }
 
     caDecisionChoices.forEach(function(btn){
@@ -5145,17 +5145,16 @@
         if(res.error) throw res.error;
         await loadCorrectiveActionPlan();
         var submittedAction=actionPlanState.actions.find(function(x){return String(x.id||"")===String(a.id||"");})||a;
-        var verificationEmail=await sendCorrectiveActionVerificationRequestedEmail(r,submittedAction);
         loadAudit(r.id,auditEl); renderHomeSnapshot(); renderMyWork(); renderActions(); refreshRecordWorkflow(r,detail);
         setWizardStep(detail,r,4,true);
         showCorrectiveHandoff("Action #"+a.action_number+" sent for review",
           "<p>A manager can verify it or send it back to the assignee.</p>",[],focusedActionCanVerify(submittedAction,r)?submittedAction:null,true);
-        if(!verificationEmail || (!verificationEmail.sent&&!verificationEmail.skipped&&verificationEmail.ok===false)){
-          console.error("action verification-request email failed",verificationEmail);
-          toast("Corrective Action #"+a.action_number+" was sent for review, but the review email could not be sent.","err");
-        } else {
-          toast("Corrective Action #"+a.action_number+" sent for review","ok");
-        }
+        sendCorrectiveActionVerificationRequestedEmail(r,submittedAction).then(function(email){
+          if(!email||(!email.sent&&!email.skipped&&email.ok===false)){
+            console.error("action verification-request email failed",email);
+            toast("Action #"+a.action_number+" is ready for review. The review email could not be sent.","err");
+          }
+        });
       }catch(ex){console.error(ex);toast("Could not submit this corrective action.","err");}
       finally{if(btn.isConnected)btn.disabled=false;}
     });
@@ -5191,7 +5190,7 @@
           var verifyRes=await sb.rpc("rbh_verify_corrective_action",{p_action_id:verifyAction.id,p_verification_note:verifyNote});
           if(verifyRes.error) throw verifyRes.error;
           await loadCorrectiveActionPlan();
-          await loadNotifications(true);
+          loadNotifications(true).catch(function(ex){console.error("notification refresh",ex);});
           loadAudit(r.id,auditEl); renderHomeSnapshot(); renderMyWork(); renderActions(); refreshRecordWorkflow(r,detail);
           var verifySummary=correctiveActionSummary(r);
           if(verifySummary&&verifySummary.verified===verifySummary.total){
@@ -5233,20 +5232,18 @@
           if(changesRes.error) throw changesRes.error;
           await loadCorrectiveActionPlan();
           var refreshedChangesAction=actionPlanState.actions.find(function(x){return String(x.id||"")===String(changesAction.id||"");})||changesAction;
-          var changesEmail=await sendCorrectiveActionChangesRequestedEmail(r,refreshedChangesAction);
-          await loadNotifications(true);
+          loadNotifications(true).catch(function(ex){console.error("notification refresh",ex);});
           loadAudit(r.id,auditEl); renderHomeSnapshot(); renderMyWork(); renderActions(); refreshRecordWorkflow(r,detail);
           var changesSummary=correctiveActionSummary(r);
           if(changesSummary&&changesSummary.awaiting>0) setWizardStep(detail,r,5,true);
           else setWizardStep(detail,r,4,true);
-          if(!changesEmail || (!changesEmail.sent&&!changesEmail.skipped&&changesEmail.ok===false)){
-            console.error("action changes-requested email failed",changesEmail);
-            toast("Changes were requested for Corrective Action #"+changesAction.action_number+", but the owner email could not be sent.","err");
-          } else if(changesSummary&&changesSummary.awaiting>0){
-            toast("Corrective Action #"+changesAction.action_number+" sent back — continue reviewing the remaining actions","ok");
-          } else {
-            toast("Corrective Action #"+changesAction.action_number+" sent back — only returned work is shown now","ok");
-          }
+          toast("Action #"+changesAction.action_number+" sent back for changes","ok");
+          sendCorrectiveActionChangesRequestedEmail(r,refreshedChangesAction).then(function(email){
+            if(!email||(!email.sent&&!email.skipped&&email.ok===false)){
+              console.error("action changes-requested email failed",email);
+              toast("The action was sent back. The owner email could not be sent.","err");
+            }
+          });
         }catch(ex){console.error(ex);toast("Could not request changes for this corrective action.","err");}
         finally{if(changesBtn.isConnected)changesBtn.disabled=false;}
       }
@@ -5275,6 +5272,8 @@
 
     var complete1=detail.querySelector('[data-step-complete="1"]'); if(complete1) complete1.addEventListener("click",async function(){
       if(!canEditStep(r,1)){toast("You do not have permission to start this investigation.","err");return;} complete1.disabled=true;
+      var previousLabel=complete1.textContent;
+      complete1.textContent="Starting investigation…";
       try{
         var ownerId=(reviewOwnerSelect&&reviewOwnerSelect.value)||r.report_owner_user_id||currentUserId();
         if(!ownerId){toast("Choose a Report Owner before starting the investigation.","err");return;}
@@ -5290,16 +5289,17 @@
         if(ownerWasChanged) await persistReportOwner(r,ownerId,false);
         if(r.status==="new") await updateStatus(r.id,"under_review",wrap,activeReopenStep(r)?2:null);
         else if(activeReopenStep(r)===1) await updateStatus(r.id,r.status,wrap,2);
-        var ownerEmail=null;
-        if(shouldNotifyAfterAdvance) ownerEmail=await sendReportOwnerAssignmentEmail(r);
-        refreshRecordWorkflow(r,detail); setWizardStep(detail,r,2,true); syncStepEditability(); loadAudit(r.id,auditEl);
+        refreshRecordWorkflow(r,detail); setWizardStep(detail,r,2,true); loadAudit(r.id,auditEl);
         var ownerName=reportOwnerName(r)||"Report Owner";
-        if(ownerEmail&&ownerEmail.sent) toast("Investigation started — "+ownerName+" owns the report and was notified by email","ok");
-        else if(ownerEmail&&!ownerEmail.sent&&!ownerEmail.skipped){ console.error("report owner notification failed",ownerEmail); toast("Investigation started — "+ownerName+" owns the report, but the handoff email could not be sent.","err"); }
-        else if(ownerEmail&&ownerEmail.skipped){ toast("Investigation started — "+ownerName+" owns the report. No handoff email was sent.","ok"); }
-        else toast("Investigation started — "+ownerName+" owns the report","ok");
+        toast("Investigation started — "+ownerName+" owns the report","ok");
+        if(shouldNotifyAfterAdvance) sendReportOwnerAssignmentEmail(r).then(function(email){
+          if(!email||(!email.sent&&!email.skipped)){
+            console.error("report owner notification failed",email);
+            toast("The investigation started. The report owner email could not be sent.","err");
+          }
+        });
       }
-      catch(ex){console.error(ex);toast("Could not start the investigation.","err");} finally{if(complete1.isConnected)complete1.disabled=!canEditStep(r,1);} });
+      catch(ex){console.error(ex);toast("Could not start the investigation.","err");} finally{if(complete1.isConnected){complete1.disabled=!canEditStep(r,1);complete1.textContent=previousLabel;}} });
 
     var complete2=detail.querySelector('[data-step-complete="2"]'); if(complete2) complete2.addEventListener("click",async function(){
       if(!canEditStep(r,2)){toast("Only the assigned investigator or an Admin/Safety Manager can complete Investigation.","err");return;}
@@ -5311,7 +5311,11 @@
       });
       if(firstMissing){firstMissing.focus();return;}
       complete2.disabled=true;
-      try{await waitForInvestigationEvidenceUpload();await persistInvestigation(false,true);setWizardStep(detail,r,3,true);syncStepEditability();toast("Investigation complete — continue to Corrective Actions","ok");}catch(ex){console.error(ex);toast("Could not complete Investigation.","err");}finally{if(complete2.isConnected)complete2.disabled=!canEditStep(r,2);} });
+      var previousLabel=complete2.textContent;
+      complete2.textContent="Saving investigation…";
+      try{await waitForInvestigationEvidenceUpload();await persistInvestigation(false,true);setWizardStep(detail,r,3,true);toast("Investigation complete — continue to Corrective Actions","ok");}
+      catch(ex){console.error(ex);toast("Could not complete Investigation.","err");}
+      finally{if(complete2.isConnected){complete2.disabled=!canEditStep(r,2);complete2.textContent=previousLabel;}} });
 
     var complete3=detail.querySelector('[data-step-complete="3"]'); if(complete3) complete3.addEventListener("click",async function(){
       if(!canEditStep(r,3)){toast("Only the assigned investigator or an Admin/Safety Manager can assign the corrective actions.","err");return;}
@@ -5319,13 +5323,14 @@
       if(actionPlanState.loading){toast("The corrective-action plan is still loading.","err");return;}
       var miss=validateCorrectiveActionPlan(true), req=detail.querySelector('[data-required="3"]');
       if(miss.length){if(req){req.textContent="Still required: "+miss.join(", ")+".";req.classList.add("show");}toast("Complete the required fields for every corrective action first.","err");return;} if(req)req.classList.remove("show"); complete3.disabled=true;
+      var previousLabel=complete3.textContent;
+      complete3.textContent="Assigning…";
       try{
         var result=await persistActionPlan(false,true);
         renderActionWorkflow(r,detail.querySelector("[data-action-completion]"),auditEl,detail,"complete");
         renderActionWorkflow(r,detail.querySelector("[data-action-verification]"),auditEl,detail,"verify");
         setWizardStep(detail,r,4,true);
         syncStepEditability();
-        var emails=(result&&result.emailResults)||[], failed=emails.filter(function(x){return !x || (!x.sent&&!x.skipped);}), unavailable=emails.filter(function(x){return x&&x.skipped&&(x.reason==="NO_DASHBOARD_ASSIGNEE"||x.reason==="NO_ASSIGNEE_EMAIL");});
         var assigned=actionPlanState.actions.filter(function(a){return a.id&&correctiveActionInCurrentCycle(a,r);});
         var mine=assigned.filter(function(a){return String(a.owner_user_id||"")===currentUserId()&&["not_started","in_progress","changes_requested"].indexOf(a.status)>=0;});
         var receipt='<ul>'+assigned.map(function(a){
@@ -5334,12 +5339,16 @@
           var owner=String(a.owner_user_id||"")===currentUserId()?"you":focusedActionOwnerName(a);
           return '<li>Action #'+esc(a.action_number)+' assigned to '+esc(owner)+(due?' · Due '+esc(due):'')+'</li>';
         }).join("")+'</ul><p>Assignees can find their work in My Work.</p>';
-        if(failed.length||unavailable.length) receipt+='<p>Some assignment emails could not be delivered. The assignments are saved.</p>';
         showCorrectiveHandoff(assigned.length===1?"Corrective action assigned":"Corrective actions assigned",receipt,mine,null,false);
-        if(failed.length){console.error("multi-action assignment notification failures",failed);toast("Actions assigned, but "+failed.length+" email notification"+(failed.length===1?"":"s")+" could not be sent. The assigned work is available in My Work.","err");}
-        else if(unavailable.length){toast("Actions assigned. "+unavailable.length+" owner"+(unavailable.length===1?" has":"s have")+" no available assignment email.","ok");}
-        else toast("Corrective actions assigned — owner notifications sent","ok");
-      }catch(ex){console.error(ex);if(ex&&ex.message!=="PLAN_INCOMPLETE")toast("Could not assign the corrective actions.","err");}finally{if(complete3.isConnected)complete3.disabled=!canEditStep(r,3);} });
+        result.emailPromise.then(function(emails){
+          var failed=emails.filter(function(x){return !x||(!x.sent&&!x.skipped);});
+          var unavailable=emails.filter(function(x){return x&&x.skipped&&(x.reason==="NO_DASHBOARD_ASSIGNEE"||x.reason==="NO_ASSIGNEE_EMAIL");});
+          if(failed.length||unavailable.length){
+            if(failed.length) console.error("multi-action assignment notification failures",failed);
+            toast("The assignments are saved in My Work. Some assignment emails could not be sent.","err");
+          }
+        }).catch(function(ex){console.error(ex);toast("The assignments are saved in My Work. Could not confirm the assignment emails.","err");});
+      }catch(ex){console.error(ex);if(ex&&ex.message!=="PLAN_INCOMPLETE")toast("Could not assign the corrective actions.","err");}finally{if(complete3.isConnected){complete3.disabled=!canEditStep(r,3);if(!complete3.disabled&&complete3.textContent==="Assigning…")complete3.textContent=previousLabel;}} });
 
     renderActionWorkflow(r,detail.querySelector("[data-action-completion]"),auditEl,detail,"complete");
     renderActionWorkflow(r,detail.querySelector("[data-action-verification]"),auditEl,detail,"verify");
@@ -7898,8 +7907,6 @@
         if(res.error) throw res.error;
         await refreshFocusedCorrectiveActionData(a.id,r.id);
         var fresh=activeFocusedAction||a;
-        var emailResult=await sendCorrectiveActionVerificationRequestedEmail(r,fresh);
-        if(!emailResult||(!emailResult.sent&&!emailResult.skipped&&emailResult.ok===false)) console.error("focused verification-request email failed",emailResult);
         focusedSubmissionReceiptId=String(a.id);
         renderFocusedCorrectiveAction();
         var receiptButton=$("focusedOpenReview")||$("focusedReceiptBack");
@@ -7907,7 +7914,12 @@
           receiptButton.focus();
           showCorrectiveConfirmation(receiptButton.closest(".ca-handoff"));
         }
-        toast("Corrective Action #"+String(a.action_number||"")+" sent for review","ok");
+        sendCorrectiveActionVerificationRequestedEmail(r,fresh).then(function(email){
+          if(!email||(!email.sent&&!email.skipped&&email.ok===false)){
+            console.error("focused verification-request email failed",email);
+            toast("The action is ready for review. The review email could not be sent.","err");
+          }
+        });
       }catch(ex){console.error(ex);error.textContent="Could not confirm submission. Your note is still here. Check the action status before retrying.";error.classList.add("show");}
       finally{if(submit.isConnected){submit.disabled=false;submit.textContent=old;}}
     });
@@ -7924,8 +7936,8 @@
         var res=await sb.rpc("rbh_verify_corrective_action",{p_action_id:a.id,p_verification_note:note});
         if(res.error) throw res.error;
         await refreshFocusedCorrectiveActionData(a.id,r.id);
-        await loadNotifications(true);
         renderFocusedCorrectiveAction();
+        loadNotifications(true).catch(function(ex){console.error("notification refresh",ex);});
         toast("Corrective Action #"+String(a.action_number||"")+" verified","ok");
       }catch(ex){console.error(ex);toast("Could not verify this corrective action.","err");}
       finally{if(verify.isConnected){verify.disabled=false;verify.textContent=old;}}
@@ -7946,10 +7958,14 @@
         if(res.error) throw res.error;
         await refreshFocusedCorrectiveActionData(a.id,r.id);
         var fresh=activeFocusedAction||a;
-        var emailResult=await sendCorrectiveActionChangesRequestedEmail(r,fresh);
-        if(!emailResult||(!emailResult.sent&&!emailResult.skipped&&emailResult.ok===false)) console.error("focused changes-requested email failed",emailResult);
-        await loadNotifications(true);
         renderFocusedCorrectiveAction();
+        loadNotifications(true).catch(function(ex){console.error("notification refresh",ex);});
+        sendCorrectiveActionChangesRequestedEmail(r,fresh).then(function(email){
+          if(!email||(!email.sent&&!email.skipped&&email.ok===false)){
+            console.error("focused changes-requested email failed",email);
+            toast("The action was sent back. The owner email could not be sent.","err");
+          }
+        });
         toast("Corrective Action #"+String(a.action_number||"")+" sent back for changes","ok");
       }catch(ex){console.error(ex);toast("Could not request changes for this corrective action.","err");}
       finally{if(changes.isConnected){changes.disabled=false;changes.textContent=old;}}
