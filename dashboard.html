@@ -357,23 +357,23 @@
   .card-detail{border-top:1px solid var(--line);padding:16px 18px 18px 22px;background:var(--canvas)}
 
   /* ---------- 11. Incident workspace ---------- */
-  .incident-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px}
-  .incident-title h2{font-weight:850;font-stretch:var(--condensed);font-size:36px;line-height:1;margin:2px 0 6px}
-  .incident-title p{margin:0;color:var(--muted);font-size:13.5px}
-  .incident-summary{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:16px 18px;margin-bottom:10px;position:relative;overflow:hidden}
-  .incident-summary::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--chrome)}
-  .incident-summary .is-desc{font-size:15.5px;line-height:1.6;margin-top:10px;max-width:90ch}
+  .incident-header{margin-bottom:12px}
+  .incident-header-row{display:flex;align-items:flex-start;justify-content:space-between;gap:8px 16px;flex-wrap:wrap}
+  #incidentBack{background:transparent;border:0;padding:4px 0;min-height:32px;text-decoration:underline;text-underline-offset:3px}
+  .incident-title{min-width:0;flex:1 1 300px}
+  .incident-title-line{display:flex;align-items:center;gap:6px 12px;flex-wrap:wrap}
+  .incident-title h2{font-weight:850;font-stretch:var(--condensed);font-size:36px;line-height:1.1;margin:0;overflow-wrap:anywhere}
+  .incident-title p{margin:6px 0 0;color:var(--muted);font-size:13.5px}
+  .incident-summary .is-desc{margin:7px 0 0;font-size:15px;line-height:1.5;max-width:90ch;overflow-wrap:anywhere}
   .is-badges{display:flex;gap:6px;flex-wrap:wrap}
-  .incident-language-tools{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:4px 2px;margin-bottom:14px}
+  .incident-options{position:relative;z-index:21;max-width:100%;margin-left:auto}
+  .incident-options>summary{cursor:pointer;color:var(--ink-2);font-size:13px;font-weight:700;padding:8px 10px}
+  .incident-language-tools{position:absolute;right:0;top:100%;width:min(290px,calc(100vw - 40px));display:grid;gap:10px;padding:12px;border:1px solid var(--line);border-radius:var(--r);background:var(--paper);box-shadow:0 8px 24px rgba(0,0,0,.12)}
   .incident-language-tools label{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:650;color:var(--ink-2)}
-  .incident-language-tools select,.pdf-language-select{width:auto;min-height:36px;padding:6px 32px 6px 10px;font-size:13px}
-  .incident-owner-tool{display:flex;align-items:center;gap:8px;min-height:38px;padding:5px 8px 5px 10px;border:1px solid var(--line);border-radius:999px;background:var(--paper)}
-  .incident-owner-tool[hidden]{display:none!important}
-  .incident-owner-label{font-size:11.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.35px}
-  .incident-owner-person{display:flex;align-items:baseline;gap:5px;min-width:0}
-  .incident-owner-person strong{font-size:13px;color:var(--ink);white-space:nowrap}
-  .incident-owner-person span{font-size:11.5px;color:var(--muted);max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .incident-owner-change{border:0;background:#eef6fc;color:#245f8f;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:800;cursor:pointer}
+  .incident-language-tools label[for="incidentLanguage"]{justify-content:space-between}
+  .incident-language-tools select{width:auto;min-height:36px;padding:6px 10px;font-size:13px;appearance:auto}
+  .pdf-language-select{width:auto;min-height:36px;padding:6px 32px 6px 10px;font-size:13px}
+  .incident-owner-change{justify-self:start;border:0;background:#eef6fc;color:#245f8f;border-radius:var(--r);padding:8px 10px;font-size:13px;font-weight:700;cursor:pointer}
   .incident-owner-change:hover{background:#dcecf8}
   .report-owner-step-card{margin:14px 0 16px;padding:14px 16px;border:1px solid #b9d7f0;border-radius:var(--r-lg);background:#eef6fc}
   .report-owner-step-card b{display:block;color:#245f8f;font-size:14px;margin-bottom:3px}
@@ -397,7 +397,7 @@
   .report-owner-modal-note{margin:0 0 14px;color:var(--muted);font-size:13px;line-height:1.5}
   .report-owner-email-note{margin:10px 0 0;padding:10px 12px;border:1px solid #b9d7f0;border-radius:10px;background:#eef6fc;color:#245f8f;font-size:12.5px;line-height:1.45}
   .report-owner-email-note.neutral{border-color:#d8d4cd;background:#f6f5f2;color:#5e5a55}
-  .incident-language-state{font-size:12.5px;color:var(--muted);margin-left:auto}
+  .incident-language-state{margin-top:6px;font-size:12.5px;color:var(--muted)}
   .incident-language-state.loading{font-weight:700;color:var(--brand)}
   .pdf-language-wrap{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)}
   .translation-preview{margin-top:8px;border-left:3px solid var(--ink);background:var(--canvas);border-radius:0 var(--r) var(--r) 0;padding:9px 12px;font-size:13px;line-height:1.5;color:var(--ink)}
@@ -544,29 +544,20 @@
 
   .wizard-shell{display:grid;gap:14px}
   .wizard-shell>div:empty{display:none}
-  .wizard-process{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 16px;position:sticky;top:max(var(--rbh-topbar-height,64px),64px);z-index:19}
-  .wizard-process-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:12px}
-  .wizard-process-copy b{display:block;font-size:15px;margin-bottom:2px}
-  .wizard-process-copy span{display:block;color:var(--muted);font-size:13px;line-height:1.35}
-  .wizard-top-actions{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
-  /* Six-step track: flat segments, state carried by fill */
-  .process-flow{display:flex;align-items:stretch;gap:3px;width:100%;overflow-x:auto;padding:0 0 2px;scrollbar-width:thin}
-  .process-step{position:relative;min-width:118px;flex:1 1 0;border:0;margin:0;clip-path:none;color:var(--muted);background:var(--canvas-2);padding:9px 10px 10px;text-align:left;font-weight:700;font-size:12.5px;line-height:1.2;cursor:pointer;border-radius:0;transition:filter .15s}
-  .process-step:first-child{border-radius:var(--r) 0 0 var(--r);clip-path:none;margin-left:0}
-  .process-step:last-child{border-radius:0 var(--r) var(--r) 0}
-  .process-step .ps-num{display:block;font-size:11px;font-weight:600;opacity:.8;margin-bottom:3px}
-  .process-step .ps-check{font-size:11px;margin-right:4px}
-  .process-step.ps-done{background:var(--ok-tint);color:var(--ok)}
-  .process-step.ps-current{background:var(--brand-tint);color:var(--ink);box-shadow:inset 0 0 0 1px var(--brand-line),inset 4px 0 0 var(--brand)}
+  .wizard-process{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:6px 10px;position:sticky;top:max(var(--rbh-topbar-height,64px),64px);z-index:19}
+  .wizard-process-note{margin:6px 0 0;color:var(--muted);font-size:13px;line-height:1.4}
+  .wizard-top-actions{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap;margin-top:8px}
+  .process-flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+  .process-step{border:0;border-radius:var(--r);background:transparent;color:var(--muted);padding:7px 8px;min-height:36px;text-align:left;font:inherit;font-weight:700;font-size:12.5px;cursor:pointer}
+  .process-step .ps-num{margin-right:4px}
+  .process-step.ps-done{color:var(--ok)}
+  .process-step.ps-current{background:var(--brand-tint);color:var(--ink)}
   .process-step.ps-blocked{background:var(--brand);color:#fff}
-  .process-step.ps-future{background:var(--canvas-2);color:var(--muted)}
-  .process-step.ps-na{background:var(--canvas);color:var(--faint)}
-  .process-step.ps-viewing{box-shadow:inset 0 -3px 0 var(--brand)}
-  .process-step.ps-current .ps-num{color:var(--brand);opacity:1}
-  .process-step.ps-current.ps-viewing{box-shadow:inset 0 0 0 1px var(--brand-line),inset 4px 0 0 var(--brand),inset 0 -3px 0 var(--brand)}
-  .process-step:disabled{cursor:not-allowed}
-  .process-step:not(:disabled):hover{filter:brightness(.95)}
-  .process-step.ps-current:not(:disabled):hover{filter:none}
+  .process-step[aria-current="step"]{box-shadow:inset 0 -2px 0 var(--brand)}
+  .process-step:disabled{cursor:default}
+  .process-step:not(:disabled):hover{background:var(--canvas-2)}
+  .process-step.ps-current:not(:disabled):hover{background:var(--brand-tint)}
+  .process-step.ps-blocked:not(:disabled):hover{background:var(--brand)}
   .wizard-panel{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:20px 22px}
   .wizard-step-head{display:flex;align-items:flex-start;gap:14px;padding-bottom:14px;margin-bottom:16px;border-bottom:1px solid var(--line)}
   .wizard-step-badge{width:40px;height:40px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;flex:0 0 auto;background:var(--chrome);color:#fff;font-size:18px;font-weight:850;font-stretch:var(--condensed)}
@@ -1155,7 +1146,7 @@
   }
   @media(max-width:800px){
     .incident-body .d-rows{grid-template-columns:1fr}
-    .incident-header{flex-direction:column}.back-link{order:-1}
+    .back-link{order:-1}
     .notification-panel{right:10px;top:calc(max(var(--rbh-topbar-height,64px),64px) + 6px);width:calc(100vw - 20px);max-height:72vh}
     .notification-list{max-height:calc(72vh - 78px)}
   }
@@ -1177,12 +1168,12 @@
     body{overflow-x:hidden}
     .content{padding:14px 12px}
     #view-incident,.incident-header,.incident-summary,.incident-body,.wizard-shell,.wizard-process,.wizard-panel,.record-support{min-width:0;max-width:100%}
-    .incident-header{gap:10px;margin-bottom:12px}
+    .incident-title{flex-basis:100%}
+    .incident-language-tools select{max-width:135px}
     .incident-title h2{font-size:30px}
     .back-link{padding:8px 12px;font-size:13px}
-    .incident-summary{padding:13px 14px}
     .incident-summary .is-desc{font-size:14.5px;line-height:1.5}
-    .incident-language-tools{align-items:stretch;flex-direction:column}.incident-language-tools>label{justify-content:space-between}.incident-language-state{margin-left:0}.incident-owner-tool{border-radius:var(--r);justify-content:space-between}.incident-owner-person{margin-left:auto}.incident-owner-person span{display:none}.incident-guidance-toggle{align-self:flex-end}
+
     .badge{font-size:11.5px;padding:4px 8px}
     .toolbar .search{min-width:0;flex:1 1 100%}
     .toolbar select{flex:1}
@@ -1192,18 +1183,12 @@
     .task-card{grid-template-columns:1fr;padding:14px 14px 14px 18px}
     .task-due{grid-column:1;grid-row:auto;text-align:left}
 
-    /* one current-step block instead of the six-step track */
     .wizard-shell{gap:12px}
-    .wizard-process{position:static;padding:10px;border-radius:var(--r-lg)}
-    .wizard-process-head{display:grid;grid-template-columns:1fr;gap:9px;margin:0}
-    .wizard-process-copy{min-width:0;width:100%;background:var(--brand-tint);color:var(--ink);padding:12px 14px;border-radius:var(--r);clip-path:none;border:1px solid var(--brand-line);border-left:4px solid var(--brand)}
-    .wizard-process-copy b{font-size:15px;line-height:1.25;margin:0;color:var(--ink)}
-    .wizard-process-copy span{font-size:12.5px;line-height:1.35;margin-top:3px;color:var(--ink-2)}
-    .process-flow{display:none!important}
-    .wizard-top-actions{display:grid;grid-template-columns:1fr;gap:7px;width:100%;justify-content:stretch}
-    .wizard-top-actions button{width:100%;min-height:46px;flex:none!important}
+    .wizard-process{position:static;padding:6px}
+    .process-step{min-height:44px;padding:5px;font-size:12px;overflow-wrap:anywhere}
+    .wizard-top-actions{justify-content:flex-start}
     .wizard-panel{padding:14px}
-    .wizard-step-head{display:none}
+    .wizard-step-head{padding-bottom:8px;margin-bottom:12px}
     .wizard-task{margin:0 0 12px}
     .inv-grid,.inv-row,.assignment-grid,.support-grid{display:grid!important;grid-template-columns:1fr!important;gap:12px!important}
     .inv-l{min-width:0}
@@ -1648,21 +1633,25 @@
 
         <section class="view" id="view-incident" hidden>
           <div class="incident-header">
-            <div class="incident-title"><div class="home-kicker">Incident workspace</div><h2 id="incidentTitle">Report</h2><p id="incidentMeta"></p></div>
             <button class="back-link" id="incidentBack" type="button">← Back to Safety Inbox</button>
-          </div>
-          <div class="incident-summary" id="incidentSummary"></div>
-          <div class="incident-language-tools" id="incidentLanguageTools">
-            <label for="incidentLanguage">Read report in
-              <select id="incidentLanguage"><option value="en">English</option><option value="es">Español</option></select>
-            </label>
-            <span class="incident-language-state" id="incidentLanguageState"></span>
-            <div class="incident-owner-tool" id="incidentOwnerTool" hidden>
-              <span class="incident-owner-label">Report owner</span>
-              <span class="incident-owner-person"><strong id="incidentOwnerName">Unassigned</strong><span id="incidentOwnerEmail"></span></span>
-              <button class="incident-owner-change" id="incidentOwnerChange" type="button">Change owner</button>
+            <div class="incident-header-row">
+              <div class="incident-title">
+                <div class="incident-title-line"><h2 id="incidentTitle">Report</h2><div class="is-badges" id="incidentBadges"></div></div>
+                <p id="incidentMeta"></p>
+              </div>
+              <details class="incident-options" id="incidentOptions">
+                <summary>Report options</summary>
+                <div class="incident-language-tools">
+                  <label for="incidentLanguage">Read report in
+                    <select id="incidentLanguage"><option value="en">English</option><option value="es">Español</option></select>
+                  </label>
+                  <button class="incident-owner-change" id="incidentOwnerChange" type="button" hidden>Change owner</button>
+                  <label class="incident-guidance-toggle" for="incidentGuidanceToggle"><input type="checkbox" id="incidentGuidanceToggle"><span>Show guidance</span></label>
+                </div>
+              </details>
             </div>
-            <label class="guidance-toggle incident-guidance-toggle" for="incidentGuidanceToggle"><input type="checkbox" id="incidentGuidanceToggle"><span>Show guidance</span></label>
+            <div class="incident-summary" id="incidentSummary"><p class="is-desc"></p></div>
+            <div class="incident-language-state" id="incidentLanguageState" role="status" hidden></div>
           </div>
           <div class="incident-body" id="incidentBody"></div>
         </section>
@@ -2156,23 +2145,17 @@
 
   function canChangeReportOwner(r){ return !!(r&&isManager()&&!isResolvedReport(r)); }
   function refreshIncidentOwnerHeader(r){
-    var tool=$("incidentOwnerTool"), nameEl=$("incidentOwnerName"), emailEl=$("incidentOwnerEmail"), change=$("incidentOwnerChange");
-    if(!tool) return;
-    var owner=reportOwnerProfile(r), shouldShow=!!(r&&r.report_owner_user_id);
-    tool.hidden=!shouldShow;
-    if(!shouldShow) return;
-    if(nameEl) nameEl.textContent=owner?profileName(owner):"Unassigned";
-    if(emailEl) emailEl.textContent=owner&&owner.email?owner.email:"";
-    if(change){ change.hidden=!canChangeReportOwner(r); change.disabled=!canChangeReportOwner(r); }
+    var change=$("incidentOwnerChange");
+    if(change) change.hidden=change.disabled=!canChangeReportOwner(r);
   }
   function refreshIncidentMeta(r){
     if(!r||!$("incidentMeta")) return;
     var meta=[];
     if(r.job_site) meta.push(r.job_site);
-    if(reportOwnerName(r)) meta.push("Owner: "+reportOwnerName(r));
+    meta.push("Owner: "+(reportOwnerName(r)||(r.report_owner_user_id?"Unavailable":"Unassigned")));
     if(ENABLE_INVESTIGATOR_ASSIGNMENT_UI&&investigatorName(r)) meta.push("Investigator: "+investigatorName(r));
     if(assigneeName(r)) meta.push("Action owner: "+assigneeName(r));
-    meta.push(fmtDate(r.created_at));
+    meta.push("Submitted "+fmtDate(r.created_at));
     $("incidentMeta").textContent=meta.join(" · ");
   }
   async function persistReportOwner(r,nextId,notifyEmail){
@@ -2304,7 +2287,8 @@
     el.className="incident-language-state"+(state==="loading"?" loading":"");
     if(state==="loading") el.textContent=(lang==="es"?"Traduciendo…":"Translating…");
     else if(state==="error") el.textContent=(lang==="es"?"No se pudo traducir; se muestra el texto original.":"Translation unavailable; showing original text.");
-    else el.textContent=(lang==="es"?"Original: ":"Original: ")+languageName(r&&r.language||"en",lang)+(lang==="es"?" · Vista: ":" · Viewing: ")+languageName(lang,lang);
+    else el.textContent=normalizeLanguageCode(r&&r.language||"en")===lang?"":"Original: "+languageName(r&&r.language||"en",lang)+(lang==="es"?" · Vista: ":" · Viewing: ")+languageName(lang,lang);
+    el.hidden=!el.textContent;
   }
   function applyReportLanguageToOpenIncident(r,lang,tx){
     if(!r||!$("incidentBody")) return; lang=normalizeLanguageCode(lang); tx=tx||{};
@@ -3541,9 +3525,9 @@
     add("language", r.language||"en");
     var guidanceOn=workflowGuidanceEnabled();
     return '<div class="wizard-shell'+(guidanceOn?'':' guidance-hidden')+'">'+
-      '<div class="record-progress" data-record-progress></div>'+
       '<div data-resolved-banner></div>'+
       '<div data-urgent-triage>'+urgentTriageHtml(r)+'</div>'+
+      '<div class="record-progress" data-record-progress></div>'+
 
       '<section class="wizard-panel" data-wizard-step="1" hidden>'+
         '<div class="wizard-step-head"><span class="wizard-step-badge">1</span><div class="wizard-step-copy"><h3>Review the report</h3><p>Confirm what was submitted, then choose what happens next.</p></div></div>'+
@@ -3567,7 +3551,7 @@
       '</section>'+
 
       '<section class="wizard-panel" data-wizard-step="2" hidden>'+
-        '<div class="wizard-step-head"><span class="wizard-step-badge">2</span><div class="wizard-step-copy"><h3>Investigation</h3><p>Document what the investigation found and why it happened.</p></div></div>'+
+        '<div class="wizard-step-head"><div class="wizard-step-copy"><h3>Investigation</h3><p>Document what the investigation found and why it happened.</p></div></div>'+
 
         '<label class="inv-l" for="investigationFindings"><span>What did you find? <small class="investigation-required-label">Required</small></span><textarea id="investigationFindings" class="inv-findings" required aria-describedby="investigationFindingsExample investigationFindingsError"></textarea><span class="field-guidance" id="investigationFindingsExample">Example: “The extension cord crossed the loading aisle.”</span><span class="investigation-field-error" id="investigationFindingsError" role="alert" hidden>Describe what you found.</span></label><div class="translation-preview" data-translation-field="investigation_findings" hidden></div>'+
         '<label class="inv-l" for="investigationCause"><span>What allowed it to happen? <small class="investigation-required-label">Required</small></span><textarea id="investigationCause" class="inv-root" required aria-describedby="investigationCauseExample investigationCauseError"></textarea><span class="field-guidance" id="investigationCauseExample">Example: “There was no outlet near the work area, and the setup checklist didn’t cover cord routing.”</span><span class="investigation-field-error" id="investigationCauseError" role="alert" hidden>Describe what allowed it to happen.</span></label><div class="translation-preview" data-translation-field="root_cause" hidden></div>'+
@@ -3984,25 +3968,23 @@
       var closePending=def.visible===4 && activeVisible===3 && state==="current" && !isResolvedReport(r);
       if(closePending) state="needed";
       var cls=state==="done"?"ps-done":(state==="current"?(blocked?"ps-blocked":"ps-current"):(state==="na"?"ps-na":"ps-future"));
-      if(def.visible===activeVisible && state!=="current") cls+=" ps-viewing";
       var accessible=def.visible===3?def.steps.some(function(n){return wizardStepAccessible(r,n);}):wizardStepAccessible(r,def.internal);
       if(closePending) accessible=false;
-      var icon=state==="done"?'<span class="ps-check">✓</span>':'';
-      return '<button type="button" class="process-step '+cls+'" data-wizard-nav="'+def.internal+'"'+(accessible?'':' disabled')+'><span class="ps-num">STEP '+def.visible+'</span>'+icon+esc(def.title)+'</button>';
+      return '<button type="button" class="process-step '+cls+'" data-wizard-nav="'+def.internal+'"'+(def.visible===activeVisible?' aria-current="step"':'')+(accessible?'':' disabled')+'><span class="ps-num"'+(state==="done"?' aria-label="Completed"':'')+'>'+(state==="done"?'✓':def.visible)+'</span>'+esc(def.title)+'</button>';
     }).join("");
     var labels=wizardActionLabels(r,active);
     var topSave=labels.save?'<button class="wizard-save" type="button" data-wizard-top-save>'+esc(labels.save)+'</button>':'';
     var topPrimary=active!==1&&labels.complete?'<button class="wizard-primary" type="button" data-wizard-top-complete>'+esc(labels.complete)+'</button>':'';
     var resolved=isResolvedReport(r);
-    var currentText=resolved?'Closed report review':((activeState&&activeState.state==="done")?'Reviewing a completed step':('Step '+activeVisible+' of 4'));
-    var helpText=resolved?'Read-only record. Completed information is grouped by stage below. Click a green step to jump to it. Notes can still be added.':((activeState&&activeState.state==="done"&&active<6)?'Completed step — read only. Add a note for a clarification, or restart the workflow if a material correction is required.':wizardHelp(active,r));
+    var note=!resolved&&activeState&&activeState.state==="done"&&active<6?"Viewing a completed step.":"";
+    if(!resolved&&!note&&(active===4||active===5)) note=wizardHelp(active,r);
+    var actions=topSave||topPrimary?'<div class="wizard-top-actions">'+topSave+topPrimary+'</div>':'';
     el.className="wizard-process";
-    el.innerHTML='<div class="wizard-process-head"><div class="wizard-process-copy"><b>'+esc(currentText)+(resolved?'':' · '+esc(wizardLongTitle(active)))+'</b><span>'+esc(helpText)+'</span></div><div class="wizard-top-actions">'+topSave+topPrimary+'</div></div><div class="process-flow">'+arrows+'</div><div class="reg-persistent-host" data-reg-persistent-host>'+persistentRegulatoryBannerHtml(r,active)+'</div>';
+    el.innerHTML='<nav class="process-flow" aria-label="Report progress">'+arrows+'</nav>'+(note?'<p class="wizard-process-note">'+esc(note)+'</p>':'')+actions+'<div class="reg-persistent-host" data-reg-persistent-host>'+persistentRegulatoryBannerHtml(r,active)+'</div>';
     updateCorrectiveLifecycle(detail,r);
   }
 
   function wizardShortTitle(n){ return ({1:"Review",2:"Investigation",3:"Corrective Actions",4:"Corrective Actions",5:"Corrective Actions",6:"Close"})[n]||"Step"; }
-  function wizardLongTitle(n){ return ({1:"Review Report",2:"Investigation",3:"Corrective Actions · Plan & Assign",4:"Corrective Actions · Complete Work",5:"Corrective Actions · Verify Work",6:"Close Report"})[n]||"Record"; }
   function wizardHelp(n,r){
     var map={1:"Review the submission, then acknowledge it for investigation or close it with a documented reason.",2:"Document what happened and why it happened.",3:"Decide whether anything still needs to be corrected. If yes, create and assign the actions. If no, document why.",4:"Record what was completed for each action and submit it for review.",5:"Review each submitted action and either verify it or clearly request changes.",6:"Confirm everything is complete and close the report."};
     var childSummary=correctiveActionSummary(r);
@@ -4085,7 +4067,7 @@
     var panel=detail.querySelector('[data-wizard-step="'+n+'"]');
     window.setTimeout(function(){
       var heading=panel?panel.querySelector(".wizard-step-copy h3"):null;
-      var mobileHeading=detail.querySelector(".wizard-process-copy b");
+      var mobileHeading=detail.querySelector('[data-wizard-nav][aria-current="step"]');
       var focusTarget=(heading&&heading.offsetParent!==null)?heading:mobileHeading;
       if(!focusTarget) return;
       focusTarget.setAttribute("tabindex","-1");
@@ -4118,7 +4100,7 @@
     /* Move accessibility/keyboard focus to the newly active step without changing scroll position. */
     window.setTimeout(function(){
       var heading=panel?panel.querySelector(".wizard-step-copy h3"):null;
-      var mobileHeading=detail.querySelector(".wizard-process-copy b");
+      var mobileHeading=detail.querySelector('[data-wizard-nav][aria-current="step"]');
       var focusTarget=(heading&&heading.offsetParent!==null)?heading:mobileHeading;
       if(!focusTarget) return;
       focusTarget.setAttribute("tabindex","-1");
@@ -4210,7 +4192,7 @@
       if(!canClose(r)){ toast(correctiveNoActionDocumented(r)?"Complete the required close checks before closing the record.":"Finish and verify every corrective action before closing the record.","err"); return; }
       if(!window.confirm("Close this report? This is the final workflow action. The report will become read-only unless it is reopened.")) return;
       btn.disabled=true; var old=btn.textContent; btn.textContent="Closing…";
-      try{ await updateStatus(r.id,"closed",null); $("incidentSummary").innerHTML='<div class="is-badges">'+incidentBadgeHtml(r)+'</div><div class="is-desc">'+esc(r.description||"No description provided.")+'</div>'; loadAudit(r.id,auditEl); renderMyWork(); renderActions(); applyFilters(); showView("home"); toast("Report #"+(r.ref_no||r.id)+" closed","ok"); }
+      try{ await updateStatus(r.id,"closed",null); refreshIncidentSummary(r); loadAudit(r.id,auditEl); renderMyWork(); renderActions(); applyFilters(); showView("home"); toast("Report #"+(r.ref_no||r.id)+" closed","ok"); }
       catch(ex){ console.error(ex); toast("Could not close the record.","err"); }
       finally{ if(btn.isConnected){btn.disabled=false;btn.textContent=old;} }
     });
@@ -4946,7 +4928,7 @@
       actionPlanState.loading=false; actionPlanState.loaded=true; renderCorrectiveActionPlan();
       if(!actionDecisionState.choice) actionDecisionState.choice=correctiveActionDecisionValue(r);
       renderCorrectiveActionDecision();
-      if(activeIncident && String(activeIncident.id)===String(r.id)) $("incidentSummary").innerHTML='<div class="is-badges">'+incidentBadgeHtml(r)+'</div><div class="is-desc">'+esc(r.description||"No description provided.")+'</div>';
+      if(activeIncident && String(activeIncident.id)===String(r.id)) refreshIncidentSummary(r);
       applyFilters(); renderMetrics();
       refreshRecordWorkflow(r,detail);
       var current=parseInt(detail.dataset.wizardStep||"0",10)||recommendedWizardStep(r), rec=recommendedWizardStep(r);
@@ -4956,7 +4938,7 @@
       var rr=await sb.from("reports").select("*").eq("id",r.id).single();
       if(rr.error) throw rr.error;
       Object.keys(rr.data||{}).forEach(function(k){r[k]=rr.data[k];});
-      $("incidentSummary").innerHTML='<div class="is-badges">'+incidentBadgeHtml(r)+'</div><div class="is-desc">'+esc(r.description||"No description provided.")+'</div>';
+      refreshIncidentSummary(r);
     }
     async function emailActivatedCorrectiveActions(actions){
       var results=[];
@@ -4986,7 +4968,7 @@
         if(activation.error) throw activation.error;
         await refreshReportAfterPlanActivation();
         await loadCorrectiveActionPlan();
-        $("incidentSummary").innerHTML='<div class="is-badges">'+incidentBadgeHtml(r)+'</div><div class="is-desc">'+esc(r.description||"No description provided.")+'</div>';
+        refreshIncidentSummary(r);
         emailResults=await emailActivatedCorrectiveActions((activation.data&&activation.data.actions)||actionPlanState.actions);
       }
       loadAudit(r.id,auditEl); refreshOverdue(r,wrap); refreshRecordWorkflow(r,detail); renderMetrics(); renderHomeSnapshot(); renderMyWork(); renderActions();
@@ -5435,7 +5417,18 @@
     setTimeout(function(){if(sel)sel.focus();},40);
   }
   function closeReportOwnerModal(){ $("reportOwnerBackdrop").classList.remove("open"); reportOwnerModalReport=null; }
-  var _ownerChange=$("incidentOwnerChange"); if(_ownerChange) _ownerChange.addEventListener("click",function(){ if(activeIncident) openReportOwnerModal(activeIncident); });
+  var _ownerChange=$("incidentOwnerChange"); if(_ownerChange) _ownerChange.addEventListener("click",function(){ if(activeIncident){ $("incidentOptions").open=false; openReportOwnerModal(activeIncident); } });
+  var incidentOptions=$("incidentOptions");
+  document.addEventListener("click",function(e){
+    if(incidentOptions.open&&!incidentOptions.contains(e.target)) incidentOptions.open=false;
+  });
+  incidentOptions.addEventListener("keydown",function(e){
+    if(e.key==="Escape"&&incidentOptions.open){
+      e.stopPropagation();
+      incidentOptions.open=false;
+      incidentOptions.querySelector("summary").focus();
+    }
+  });
   var _ownerSelect=$("reportOwnerSelect"); if(_ownerSelect) _ownerSelect.addEventListener("change",updateReportOwnerModalState);
   var _ownerCancel=$("reportOwnerCancel"); if(_ownerCancel) _ownerCancel.addEventListener("click",closeReportOwnerModal);
   var _ownerBackdrop=$("reportOwnerBackdrop"); if(_ownerBackdrop) _ownerBackdrop.addEventListener("click",function(e){if(e.target===_ownerBackdrop)closeReportOwnerModal();});
@@ -7382,13 +7375,18 @@
     out+=actionBadgeHtml(r);
     if(!suppressParentStatusBadge(r)) out+='<span class="badge '+st.c+'">'+esc(st.l)+'</span>'; return out;
   }
+  function refreshIncidentSummary(r){
+    $("incidentBadges").innerHTML=incidentBadgeHtml(r);
+    $("incidentSummary").querySelector(".is-desc").textContent=reviewValue(r,"description",activeIncidentLanguage||preferredReadingLanguage(),{})||"No description provided.";
+  }
   function openIncident(r, from){
     if(!r) return; activeIncident=r; activeIncidentLanguage=preferredReadingLanguage(); lastOperationalView=from||((document.getElementById('view-mywork')&&!document.getElementById('view-mywork').hidden)?'mywork':((document.getElementById('view-actions')&&!document.getElementById('view-actions').hidden)?'actions':'records'));
     storeIncident(r,lastOperationalView);
+    $("incidentOptions").open=false;
     var back=$("incidentBack"); if(back) back.textContent=lastOperationalView==="mywork"?"← Back to My Work":(lastOperationalView==="actions"?"← Back to Corrective Actions":"← Back to Safety Inbox");
     $("incidentTitle").textContent="#"+(r.ref_no||r.id)+" · "+(r.report_type||"Safety report");
     refreshIncidentMeta(r);
-    $("incidentSummary").innerHTML='<div class="is-badges">'+incidentBadgeHtml(r)+'</div><div class="is-desc">'+esc(r.description||"No description provided.")+'</div>';
+    refreshIncidentSummary(r);
     refreshIncidentOwnerHeader(r);
     var langSel=$("incidentLanguage"); if(langSel){ langSel.value=activeIncidentLanguage; }
     setIncidentLanguageState(r,activeIncidentLanguage,"loading");
@@ -8520,7 +8518,7 @@
         if(activeReopenStep(r)) patch.reopen_workflow_step=5;
         var res=await sb.from("reports").update(patch).eq("id",r.id); if(res.error)throw res.error;
         Object.keys(patch).forEach(function(k){r[k]=patch[k];});
-        $("incidentSummary").innerHTML='<div class="is-badges">'+incidentBadgeHtml(r)+'</div><div class="is-desc">'+esc(r.description||"No description provided.")+'</div>';
+        refreshIncidentSummary(r);
         renderActionWorkflow(r,detail.querySelector("[data-action-completion]"),auditEl,detail,"complete");
         renderActionWorkflow(r,detail.querySelector("[data-action-verification]"),auditEl,detail,"verify");
         loadAudit(r.id,auditEl); renderHomeSnapshot(); renderMyWork(); refreshRecordWorkflow(r,detail); setWizardStep(detail,r,5,true);
