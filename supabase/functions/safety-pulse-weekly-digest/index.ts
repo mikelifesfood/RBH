@@ -57,6 +57,7 @@ Deno.serve(async (req:Request) => {
       const {data:profiles,error:profileError}=await svc.from("profiles")
         .select("id,email,full_name,app_role,is_active,access_deleted_at,organization_id,current_organization_id")
         .in("app_role",["admin","safety_manager"]).eq("is_active",true)
+        .or("organization_id.eq."+orgId+",current_organization_id.eq."+orgId)
         .is("access_deleted_at",null);
       if(profileError){console.error("Digest recipients query failed",orgId,profileError);failed++;continue;}
       const recipients=(profiles||[]).filter(p=>
