@@ -544,20 +544,29 @@
 
   .wizard-shell{display:grid;gap:14px}
   .wizard-shell>div:empty{display:none}
-  .wizard-process{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:6px 10px;position:sticky;top:max(var(--rbh-topbar-height,64px),64px);z-index:19}
-  .wizard-process-note{margin:6px 0 0;color:var(--muted);font-size:13px;line-height:1.4}
-  .wizard-top-actions{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap;margin-top:8px}
-  .process-flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
-  .process-step{border:0;border-radius:var(--r);background:transparent;color:var(--muted);padding:7px 8px;min-height:36px;text-align:left;font:inherit;font-weight:700;font-size:12.5px;cursor:pointer}
-  .process-step .ps-num{margin-right:4px}
-  .process-step.ps-done{color:var(--ok)}
-  .process-step.ps-current{background:var(--brand-tint);color:var(--ink)}
+  .wizard-process{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 16px;position:sticky;top:max(var(--rbh-topbar-height,64px),64px);z-index:19}
+  .wizard-process-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:12px}
+  .wizard-process-copy b{display:block;font-size:15px;margin-bottom:2px}
+  .wizard-process-copy span{display:block;color:var(--muted);font-size:13px;line-height:1.35}
+  .wizard-top-actions{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+  /* Six-step track: flat segments, state carried by fill */
+  .process-flow{display:flex;align-items:stretch;gap:3px;width:100%;overflow-x:auto;padding:0 0 2px;scrollbar-width:thin}
+  .process-step{position:relative;min-width:118px;flex:1 1 0;border:0;margin:0;clip-path:none;color:var(--muted);background:var(--canvas-2);padding:9px 10px 10px;text-align:left;font-weight:700;font-size:12.5px;line-height:1.2;cursor:pointer;border-radius:0;transition:filter .15s}
+  .process-step:first-child{border-radius:var(--r) 0 0 var(--r);clip-path:none;margin-left:0}
+  .process-step:last-child{border-radius:0 var(--r) var(--r) 0}
+  .process-step .ps-num{display:block;font-size:11px;font-weight:600;opacity:.8;margin-bottom:3px}
+  .process-step .ps-check{font-size:11px;margin-right:4px}
+  .process-step.ps-done{background:var(--ok-tint);color:var(--ok)}
+  .process-step.ps-current{background:var(--brand-tint);color:var(--ink);box-shadow:inset 0 0 0 1px var(--brand-line),inset 4px 0 0 var(--brand)}
   .process-step.ps-blocked{background:var(--brand);color:#fff}
-  .process-step[aria-current="step"]{box-shadow:inset 0 -2px 0 var(--brand)}
-  .process-step:disabled{cursor:default}
-  .process-step:not(:disabled):hover{background:var(--canvas-2)}
-  .process-step.ps-current:not(:disabled):hover{background:var(--brand-tint)}
-  .process-step.ps-blocked:not(:disabled):hover{background:var(--brand)}
+  .process-step.ps-future{background:var(--canvas-2);color:var(--muted)}
+  .process-step.ps-na{background:var(--canvas);color:var(--faint)}
+  .process-step.ps-viewing{box-shadow:inset 0 -3px 0 var(--brand)}
+  .process-step.ps-current .ps-num{color:var(--brand);opacity:1}
+  .process-step.ps-current.ps-viewing{box-shadow:inset 0 0 0 1px var(--brand-line),inset 4px 0 0 var(--brand),inset 0 -3px 0 var(--brand)}
+  .process-step:disabled{cursor:not-allowed}
+  .process-step:not(:disabled):hover{filter:brightness(.95)}
+  .process-step.ps-current:not(:disabled):hover{filter:none}
   .wizard-panel{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:20px 22px}
   .wizard-step-head{display:flex;align-items:flex-start;gap:14px;padding-bottom:14px;margin-bottom:16px;border-bottom:1px solid var(--line)}
   .wizard-step-badge{width:40px;height:40px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;flex:0 0 auto;background:var(--chrome);color:#fff;font-size:18px;font-weight:850;font-stretch:var(--condensed)}
@@ -1184,9 +1193,14 @@
     .task-due{grid-column:1;grid-row:auto;text-align:left}
 
     .wizard-shell{gap:12px}
-    .wizard-process{position:static;padding:6px}
-    .process-step{min-height:44px;padding:5px;font-size:12px;overflow-wrap:anywhere}
-    .wizard-top-actions{justify-content:flex-start}
+    .wizard-process{position:static;padding:10px;border-radius:var(--r-lg)}
+    .wizard-process-head{display:grid;grid-template-columns:1fr;gap:9px;margin:0}
+    .wizard-process-copy{min-width:0;width:100%;background:var(--brand-tint);color:var(--ink);padding:12px 14px;border-radius:var(--r);clip-path:none;border:1px solid var(--brand-line);border-left:4px solid var(--brand)}
+    .wizard-process-copy b{font-size:15px;line-height:1.25;margin:0;color:var(--ink)}
+    .wizard-process-copy span{font-size:12.5px;line-height:1.35;margin-top:3px;color:var(--ink-2)}
+    .process-flow{display:none!important}
+    .wizard-top-actions{display:grid;grid-template-columns:1fr;gap:7px;width:100%;justify-content:stretch}
+    .wizard-top-actions button{width:100%;min-height:46px;flex:none!important}
     .wizard-panel{padding:14px}
     .wizard-step-head{padding-bottom:8px;margin-bottom:12px}
     .wizard-task{margin:0 0 12px}
@@ -3968,23 +3982,25 @@
       var closePending=def.visible===4 && activeVisible===3 && state==="current" && !isResolvedReport(r);
       if(closePending) state="needed";
       var cls=state==="done"?"ps-done":(state==="current"?(blocked?"ps-blocked":"ps-current"):(state==="na"?"ps-na":"ps-future"));
+      if(def.visible===activeVisible && state!=="current") cls+=" ps-viewing";
       var accessible=def.visible===3?def.steps.some(function(n){return wizardStepAccessible(r,n);}):wizardStepAccessible(r,def.internal);
       if(closePending) accessible=false;
-      return '<button type="button" class="process-step '+cls+'" data-wizard-nav="'+def.internal+'"'+(def.visible===activeVisible?' aria-current="step"':'')+(accessible?'':' disabled')+'><span class="ps-num"'+(state==="done"?' aria-label="Completed"':'')+'>'+(state==="done"?'✓':def.visible)+'</span>'+esc(def.title)+'</button>';
+      var icon=state==="done"?'<span class="ps-check">✓</span>':'';
+      return '<button type="button" class="process-step '+cls+'" data-wizard-nav="'+def.internal+'"'+(def.visible===activeVisible?' aria-current="step"':'')+(accessible?'':' disabled')+'><span class="ps-num">STEP '+def.visible+'</span>'+icon+esc(def.title)+'</button>';
     }).join("");
     var labels=wizardActionLabels(r,active);
     var topSave=labels.save?'<button class="wizard-save" type="button" data-wizard-top-save>'+esc(labels.save)+'</button>':'';
     var topPrimary=active!==1&&labels.complete?'<button class="wizard-primary" type="button" data-wizard-top-complete>'+esc(labels.complete)+'</button>':'';
     var resolved=isResolvedReport(r);
-    var note=!resolved&&activeState&&activeState.state==="done"&&active<6?"Viewing a completed step.":"";
-    if(!resolved&&!note&&(active===4||active===5)) note=wizardHelp(active,r);
-    var actions=topSave||topPrimary?'<div class="wizard-top-actions">'+topSave+topPrimary+'</div>':'';
+    var currentText=resolved?'Closed report review':((activeState&&activeState.state==="done")?'Reviewing a completed step':('Step '+activeVisible+' of 4'));
+    var helpText=resolved?'Read-only record. Completed information is grouped by stage below. Click a green step to jump to it. Notes can still be added.':((activeState&&activeState.state==="done"&&active<6)?'Completed step — read only. Add a note for a clarification, or restart the workflow if a material correction is required.':wizardHelp(active,r));
     el.className="wizard-process";
-    el.innerHTML='<nav class="process-flow" aria-label="Report progress">'+arrows+'</nav>'+(note?'<p class="wizard-process-note">'+esc(note)+'</p>':'')+actions+'<div class="reg-persistent-host" data-reg-persistent-host>'+persistentRegulatoryBannerHtml(r,active)+'</div>';
+    el.innerHTML='<div class="wizard-process-head"><div class="wizard-process-copy"><b>'+esc(currentText)+(resolved?'':' · '+esc(wizardLongTitle(active)))+'</b><span>'+esc(helpText)+'</span></div><div class="wizard-top-actions">'+topSave+topPrimary+'</div></div><div class="process-flow">'+arrows+'</div><div class="reg-persistent-host" data-reg-persistent-host>'+persistentRegulatoryBannerHtml(r,active)+'</div>';
     updateCorrectiveLifecycle(detail,r);
   }
 
   function wizardShortTitle(n){ return ({1:"Review",2:"Investigation",3:"Corrective Actions",4:"Corrective Actions",5:"Corrective Actions",6:"Close"})[n]||"Step"; }
+  function wizardLongTitle(n){ return ({1:"Review Report",2:"Investigation",3:"Corrective Actions · Plan & Assign",4:"Corrective Actions · Complete Work",5:"Corrective Actions · Verify Work",6:"Close Report"})[n]||"Record"; }
   function wizardHelp(n,r){
     var map={1:"Review the submission, then acknowledge it for investigation or close it with a documented reason.",2:"Document what happened and why it happened.",3:"Decide whether anything still needs to be corrected. If yes, create and assign the actions. If no, document why.",4:"Record what was completed for each action and submit it for review.",5:"Review each submitted action and either verify it or clearly request changes.",6:"Confirm everything is complete and close the report."};
     var childSummary=correctiveActionSummary(r);
@@ -4067,7 +4083,7 @@
     var panel=detail.querySelector('[data-wizard-step="'+n+'"]');
     window.setTimeout(function(){
       var heading=panel?panel.querySelector(".wizard-step-copy h3"):null;
-      var mobileHeading=detail.querySelector('[data-wizard-nav][aria-current="step"]');
+      var mobileHeading=detail.querySelector(".wizard-process-copy b");
       var focusTarget=(heading&&heading.offsetParent!==null)?heading:mobileHeading;
       if(!focusTarget) return;
       focusTarget.setAttribute("tabindex","-1");
@@ -4100,7 +4116,7 @@
     /* Move accessibility/keyboard focus to the newly active step without changing scroll position. */
     window.setTimeout(function(){
       var heading=panel?panel.querySelector(".wizard-step-copy h3"):null;
-      var mobileHeading=detail.querySelector('[data-wizard-nav][aria-current="step"]');
+      var mobileHeading=detail.querySelector(".wizard-process-copy b");
       var focusTarget=(heading&&heading.offsetParent!==null)?heading:mobileHeading;
       if(!focusTarget) return;
       focusTarget.setAttribute("tabindex","-1");
