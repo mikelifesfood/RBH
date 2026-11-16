@@ -634,9 +634,9 @@
   .ca-decision-head b{font-size:17px;color:var(--ink)}
   .ca-decision-head span{font-size:13.5px;color:var(--muted);line-height:1.45}
   .ca-decision-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .ca-decision-choice{appearance:none;text-align:left;border:1px solid var(--line-strong);border-radius:var(--r-lg);background:var(--paper);padding:16px;cursor:pointer;min-height:154px;display:grid;align-content:start;gap:8px;transition:border-color .15s,box-shadow .15s,background .15s}
+  .ca-decision-choice{appearance:none;text-align:left;border:1px solid var(--line-strong);border-radius:var(--r-lg);background:var(--paper);padding:14px 16px;cursor:pointer;display:grid;align-content:start;gap:5px;transition:border-color .15s,box-shadow .15s,background .15s}
   .ca-decision-choice:hover:not(:disabled){border-color:var(--ink);box-shadow:0 3px 12px rgba(20,20,20,.07)}
-  .ca-decision-choice.selected{border:2px solid var(--ink);padding:15px;background:var(--canvas)}
+  .ca-decision-choice.selected{border:2px solid var(--ink);padding:13px 15px;background:var(--canvas)}
   .ca-decision-choice.no.selected{border-color:var(--brand);background:var(--brand-tint)}
   .ca-decision-choice:disabled{cursor:default;opacity:1}
   .ca-decision-choice b{font-size:15px;line-height:1.3;color:var(--ink)}
@@ -659,7 +659,7 @@
   .ca-no-action-actions.next-step-ready .next-step-ready-copy{display:block}
   .ca-no-action-summary{margin-top:12px;border:1px solid var(--ok-line);background:var(--ok-tint);color:var(--ok);border-radius:var(--r);padding:11px 13px;font-size:13px;line-height:1.45}
   .ca-no-action-summary b{display:block;margin-bottom:3px}
-  @media(max-width:760px){.ca-decision-grid{grid-template-columns:1fr}.ca-decision-choice{min-height:0}.ca-no-action-actions{justify-content:stretch;flex-direction:column;align-items:stretch}.ca-no-action-actions button{width:100%}}
+  @media(max-width:760px){.ca-decision-grid{grid-template-columns:1fr}.ca-no-action-actions{justify-content:stretch;flex-direction:column;align-items:stretch}.ca-no-action-actions button{width:100%}}
 
   /* corrective actions inside the workflow */
   .assignment-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -910,6 +910,12 @@
   .ca-handoff p,.ca-handoff ul{margin:5px 0}
   .ca-handoff ul{padding-left:20px}
   .ca-handoff-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .ca-confirm-dialog{width:min(450px,calc(100% - 32px));max-height:calc(100% - 32px);overflow:auto;box-sizing:border-box;padding:20px;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--paper);color:var(--ink);box-shadow:0 12px 36px rgba(0,0,0,.22)}
+  .ca-confirm-dialog::backdrop{background:rgba(0,0,0,.38)}
+  .ca-confirm-dialog h2{margin:0;font-size:20px}
+  .ca-confirm-dialog p,.ca-confirm-dialog ul{margin:8px 0}
+  .ca-confirm-dialog ul{padding-left:20px}
+  .ca-confirm-dialog .ca-handoff-actions{margin-top:16px}
   .live-record-notices{display:grid;gap:10px;margin:0 0 14px}
   .live-record-notice{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;border:1px solid var(--line);border-left:4px solid #4E87B2;background:#F2F7FB;border-radius:var(--r);padding:12px 14px;color:var(--ink-2);font-size:13.5px;line-height:1.45}
   .live-record-notice b{display:block;color:var(--ink);font-size:14px;margin-bottom:2px}
@@ -5099,22 +5105,26 @@
     if(actionPlanList) actionPlanList.addEventListener("input",function(e){ var req=detail.querySelector('[data-required="3"]'); if(req)req.classList.remove("show"); refreshPlanCardFieldProgress(e.target.closest("[data-action-card]")); syncPlanNextStepState(); });
     if(actionPlanList) actionPlanList.addEventListener("change",function(e){ var req=detail.querySelector('[data-required="3"]'); if(req)req.classList.remove("show"); refreshPlanCardFieldProgress(e.target.closest("[data-action-card]")); syncPlanNextStepState(); });
     var caHandoff=detail.querySelector("[data-ca-handoff]");
-    function showCorrectiveHandoff(title,body,mine,review,backToWork){
+    function showCorrectiveHandoff(title,body,mine,review,backToWork,legacyReview){
       var backView=backToWork||lastOperationalView==="mywork"?"mywork":(lastOperationalView==="actions"?"actions":"records");
       var backLabel=backView==="mywork"?"Back to My Work":(backView==="actions"?"Back to Corrective Actions":"Back to Safety Inbox");
       var next=mine.length===1?'<button class="wizard-primary" type="button" data-ca-open="'+esc(mine[0].id)+'">Open my action</button>':
-        (review?'<button class="wizard-primary" type="button" data-ca-open="'+esc(review.id)+'">Review submitted work</button>':'');
+        (review?'<button class="wizard-primary" type="button" data-ca-open="'+esc(review.id)+'">Review submitted work</button>':
+        (legacyReview?'<button class="wizard-primary" type="button" data-ca-review>Review submitted work</button>':''));
       if(mine.length>1){backView="mywork";backLabel="Open My Work";}
       caHandoff.innerHTML='<div role="status"><b>'+esc(title)+'</b>'+body+'</div><div class="ca-handoff-actions">'+next+
         '<button class="'+(next?"wizard-save":"wizard-primary")+'" type="button" data-ca-back="'+esc(backView)+'">'+esc(backLabel)+'</button></div>';
       caHandoff.hidden=false;
+      showCorrectiveConfirmation(caHandoff);
     }
+    detail._showCorrectiveHandoff=showCorrectiveHandoff;
     caHandoff.addEventListener("click",function(e){
       var open=e.target.closest("[data-ca-open]"), back=e.target.closest("[data-ca-back]");
       if(open){
         var action=actionPlanState.actions.find(function(a){return String(a.id)===open.dataset.caOpen;});
         if(action) openFocusedCorrectiveAction(action,"mywork");
       } else if(back) showView(back.dataset.caBack);
+      else if(e.target.closest("[data-ca-review]")&&isManager()) setWizardStep(detail,r,5,true);
     });
     if(multiActionCompletionEl) multiActionCompletionEl.addEventListener("click",async function(e){
       var reviewBtn=e.target.closest("[data-go-to-verification]");
@@ -7725,6 +7735,41 @@
     a.verifier_user_id=null;
     return true;
   }
+  function showCorrectiveConfirmation(receipt){
+    if(!receipt||!receipt.getClientRects().length||document.querySelector(".ca-confirm-dialog[open]")) return;
+    var message=receipt.querySelector('[role="status"]'), actions=receipt.querySelector(".ca-handoff-actions");
+    if(!message||!actions) return;
+    var content=message.cloneNode(true);
+    content.removeAttribute("role");
+    var title=document.createElement("h2");
+    title.id="caConfirmationTitle";
+    title.textContent=content.querySelector("b").textContent;
+    content.querySelector("b").replaceWith(title);
+    var dialog=document.createElement("dialog");
+    dialog.className="ca-confirm-dialog";
+    dialog.setAttribute("aria-labelledby",title.id);
+    dialog.appendChild(content);
+    var footer=document.createElement("div");
+    footer.className="ca-handoff-actions";
+    var stay=document.createElement("button");
+    stay.type="button"; stay.className="wizard-save"; stay.textContent="Stay here"; stay.autofocus=true;
+    stay.addEventListener("click",function(){dialog.close();});
+    footer.appendChild(stay);
+    actions.querySelectorAll("button").forEach(function(button){
+      var choice=document.createElement("button");
+      choice.type="button"; choice.className=button.className; choice.textContent=button.textContent;
+      choice.addEventListener("click",function(){
+        dialog.close();
+        if(button.isConnected) button.click();
+      });
+      footer.appendChild(choice);
+    });
+    dialog.appendChild(footer);
+    dialog.addEventListener("close",function(){dialog.remove();},{once:true});
+    if(typeof dialog.showModal!=="function") return;
+    document.body.appendChild(dialog);
+    dialog.showModal();
+  }
   function focusedActionOwnerName(a){
     var p=a&&a.owner_user_id?profileById[String(a.owner_user_id)]:null;
     return p?profileName(p):"Not assigned";
@@ -7858,7 +7903,10 @@
         focusedSubmissionReceiptId=String(a.id);
         renderFocusedCorrectiveAction();
         var receiptButton=$("focusedOpenReview")||$("focusedReceiptBack");
-        if(receiptButton) receiptButton.focus();
+        if(receiptButton){
+          receiptButton.focus();
+          showCorrectiveConfirmation(receiptButton.closest(".ca-handoff"));
+        }
         toast("Corrective Action #"+String(a.action_number||"")+" sent for review","ok");
       }catch(ex){console.error(ex);error.textContent="Could not confirm submission. Your note is still here. Check the action status before retrying.";error.classList.add("show");}
       finally{if(submit.isConnected){submit.disabled=false;submit.textContent=old;}}
@@ -8578,7 +8626,9 @@
         refreshIncidentSummary(r);
         renderActionWorkflow(r,detail.querySelector("[data-action-completion]"),auditEl,detail,"complete");
         renderActionWorkflow(r,detail.querySelector("[data-action-verification]"),auditEl,detail,"verify");
-        loadAudit(r.id,auditEl); renderHomeSnapshot(); renderMyWork(); refreshRecordWorkflow(r,detail); setWizardStep(detail,r,5,true);
+        loadAudit(r.id,auditEl); renderHomeSnapshot(); renderMyWork(); refreshRecordWorkflow(r,detail); setWizardStep(detail,r,4,true);
+        if(detail._showCorrectiveHandoff) detail._showCorrectiveHandoff("Corrective action sent for review",
+          "<p>A manager can verify it or send it back to the assignee.</p>",[],null,true,isManager());
 
         // The workflow submission is already saved before email is attempted. Email failure never rolls it back.
         var notify=await sendActionVerificationRequestedEmail(r);
