@@ -380,6 +380,12 @@
   .report-owner-step-card p{margin:0 0 10px;color:var(--ink-2);font-size:12.5px;line-height:1.45}
   .report-owner-step-card label{display:grid;gap:6px;font-size:12.5px;font-weight:700;color:var(--ink-2)}
   .report-owner-step-card select{background:var(--paper)}
+  .review-owner-summary{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px}
+  .review-owner-summary b{margin:0}
+  .review-text-action,.review-footer .noaction-btn{background:transparent;color:var(--ink-2);text-decoration:underline;text-underline-offset:3px}
+  .review-text-action{border:0;border-radius:6px;padding:6px 8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700}
+  .review-screening-blocker{color:var(--ink);font-size:13px}
+  .review-screening-blocker .review-text-action{padding-left:0}
   .report-owner-modal-note{margin:0 0 14px;color:var(--muted);font-size:13px;line-height:1.5}
   .report-owner-email-note{margin:10px 0 0;padding:10px 12px;border:1px solid #b9d7f0;border-radius:10px;background:#eef6fc;color:#245f8f;font-size:12.5px;line-height:1.45}
   .report-owner-email-note.neutral{border-color:#d8d4cd;background:#f6f5f2;color:#5e5a55}
@@ -2364,7 +2370,7 @@
       roles:["admin","safety_manager"],
       steps:[
         {title:"Open the new report",text:"Go to Safety Inbox and open the report that needs review. Read the original report and any attached photos before deciding what happens next.",view:"records",target:"#list"},
-        {title:"Choose the Report Owner",text:"In Step 1, confirm who will be responsible for moving the report through the workflow. The dropdown is only a proposed assignment until you start the investigation.",target:"#incidentBody .review-owner-select",note:"Changing the Step 1 dropdown does not send an email."},
+        {title:"Choose the Report Owner",text:"In Step 1, confirm who will be responsible for moving the report through the workflow. The dropdown is only a proposed assignment until you start the investigation.",target:"#incidentBody [data-report-owner-step]",note:"Changing the Step 1 dropdown does not send an email."},
         {title:"Complete injury screening when needed",text:"If the report involves an injury, complete the regulatory screening before advancing. The app records the internal screening and follow-up; it does not submit a report to Cal/OSHA.",target:"#incidentBody [data-urgent-triage]"},
         {title:"Start the investigation",text:"Choose Start investigation. The selected Report Owner is committed only after the report successfully advances. If you selected another person, that person receives the handoff email after Step 2 opens.",target:"#incidentBody [data-step-complete=\"1\"]"},
         {title:"Document what happened and why",text:"In Investigation, answer both questions: What happened? and Why did it happen? Keep the answers factual. Investigation evidence is optional when it helps explain the finding.",target:"#incidentBody .inv-findings"},
@@ -3519,11 +3525,12 @@
   function detailHtml(r){
     var rows=[], lang=activeIncidentLanguage||preferredReadingLanguage();
     function add(field,val){ if(val!=null && String(val).trim()!=="") rows.push('<div class="d-row" data-report-field="'+esc(field)+'"><div class="d-label">'+esc(reportLabel(field,lang))+'</div><div class="d-val">'+esc(reviewValue(r,field,lang,{}))+'</div></div>'); }
-    add("description", r.description); add("hazard_category", r.hazard_category); add("potential_severity", r.potential_severity); add("involves_injury", r.involves_injury?"Yes":"No");
+    add("description", r.description); add("job_site", r.job_site); add("site_location", r.site_location);
+    add("observed_at", r.observed_at?fmtDate(r.observed_at):""); add("created_at", fmtDate(r.created_at));
+    add("hazard_category", r.hazard_category); add("potential_severity", r.potential_severity); add("involves_injury", r.involves_injury?"Yes":"No");
     add("people_involved", r.people_involved); add("immediate_action", r.immediate_action); add("suggested_fix", r.suggested_fix);
-    add("job_site", r.job_site); add("site_location", r.site_location); add("observed_at", r.observed_at?fmtDate(r.observed_at):"");
     add("reporter_name", r.reporter_name||"Anonymous"); add("reporter_role", r.reporter_role); add("reporter_contact", r.reporter_contact);
-    add("language", r.language||"en"); add("created_at", fmtDate(r.created_at));
+    add("language", r.language||"en");
     var guidanceOn=workflowGuidanceEnabled();
     return '<div class="wizard-shell'+(guidanceOn?'':' guidance-hidden')+'">'+
       '<div class="record-progress" data-record-progress></div>'+
@@ -3532,21 +3539,23 @@
 
       '<section class="wizard-panel" data-wizard-step="1" hidden>'+
         '<div class="wizard-step-head"><span class="wizard-step-badge">1</span><div class="wizard-step-copy"><h3>Review the report</h3><p>Confirm what was submitted, then choose what happens next.</p></div></div>'+
-        '<div class="wizard-task"><b>Start here</b><span>Review the report and attachments. If an injury is involved, complete the serious-event screen. Then either start an investigation or close the report with a documented reason.</span></div>'+
-        '<span class="field-guidance">This step is intentionally simple: review what was submitted, then choose what happens next.</span>'+
+        '<div class="wizard-task"><b>Start here</b><span>Read what was reported and check any attached photos or files.</span></div>'+
         investigatorAssignmentCardHtml(r)+
-        '<div class="report-owner-step-card" data-report-owner-step><b>Report owner</b><p>The person responsible for moving this report through the workflow. If you do not change this field, the report will be assigned to you when you start the investigation. Changing this dropdown does not send an email. If you choose someone else, they are notified only after you click Start investigation.</p><label>Assign report to<select class="review-owner-select">'+reportOwnerOptions(r.report_owner_user_id||(isManager()?currentUserId():""))+'</select></label></div>'+
         '<div class="d-rows">'+rows.join("")+'</div>'+
         '<div class="d-atts" data-atts></div>'+
         regulatoryReviewHtml(r)+
+        '<div class="report-owner-step-card" data-report-owner-step>'+
+          '<div class="review-owner-summary"><b>Report owner: <span data-review-owner-name></span></b><button type="button" class="review-text-action" data-review-owner-change aria-expanded="false" aria-controls="reviewOwnerField" aria-label="Change report owner" hidden>Change</button></div>'+
+          '<p>This person moves the whole report forward.</p><div id="reviewOwnerField" hidden><p>Your selection takes effect when you start the investigation.</p><label>Assign report to<select class="review-owner-select">'+reportOwnerOptions(r.report_owner_user_id||(isManager()?currentUserId():""))+'</select></label></div>'+
+        '</div>'+
         '<div class="wizard-footer review-footer" data-next-step-footer="review">'+
-          '<div class="wizard-footer-copy"><b>Ready for a decision</b><span>Start an investigation if this report needs follow-up, or close it now when no investigation is needed.</span></div>'+
+          '<div class="wizard-footer-copy"><div class="review-screening-blocker" data-review-screening-blocker hidden><span data-review-screening-message role="status"></span><button type="button" class="review-text-action" data-review-screening-jump>Go to injury screening</button></div></div>'+
           '<div class="wizard-footer-actions review-footer-actions">'+
-            '<button class="wizard-save noaction-btn" type="button" data-noaction-btn>Close report — no investigation needed</button>'+
+            '<button class="wizard-save noaction-btn" type="button" data-noaction-btn>Close without investigation</button>'+
             '<button class="wizard-primary" data-step-complete="1" type="button">Start investigation →</button>'+
           '</div>'+
         '</div>'+
-        '<div class="gate-msg" data-role-gate>This account can view this incident but does not have permission to update it.</div>'+
+        '<div class="gate-msg" data-role-gate>You can view this report. An Admin or Safety Manager starts the investigation.</div>'+
       '</section>'+
 
       '<section class="wizard-panel" data-wizard-step="2" hidden>'+
@@ -3975,7 +3984,7 @@
     }).join("");
     var labels=wizardActionLabels(r,active);
     var topSave=labels.save?'<button class="wizard-save" type="button" data-wizard-top-save>'+esc(labels.save)+'</button>':'';
-    var topPrimary=labels.complete?'<button class="wizard-primary" type="button" data-wizard-top-complete>'+esc(labels.complete)+'</button>':'';
+    var topPrimary=active!==1&&labels.complete?'<button class="wizard-primary" type="button" data-wizard-top-complete>'+esc(labels.complete)+'</button>':'';
     var resolved=isResolvedReport(r);
     var currentText=resolved?'Closed report review':((activeState&&activeState.state==="done")?'Reviewing a completed step':('Step '+activeVisible+' of 4'));
     var helpText=resolved?'Read-only record. Completed information is grouped by stage below. Click a green step to jump to it. Notes can still be added.':((activeState&&activeState.state==="done"&&active<6)?'Completed step — read only. Add a note for a clarification, or restart the workflow if a material correction is required.':wizardHelp(active,r));
@@ -4283,13 +4292,32 @@
     detail.dataset.wizardStep=String(initialWizardStep(r));
     var auditEl=detail.querySelector("[data-audit]");
     var gate=detail.querySelector("[data-role-gate]");
-    var canEdit=canEditReport(r);
-    if(!canEdit && gate) gate.classList.add("show");
+    if(!isManager() && !isResolvedReport(r) && gate) gate.classList.add("show");
     var reviewOwnerSelect=detail.querySelector(".review-owner-select");
     if(reviewOwnerSelect){
       if(!r.report_owner_user_id && isManager() && currentUserId()) reviewOwnerSelect.value=currentUserId();
       reviewOwnerSelect.disabled=!isManager()||!canEditStep(r,1);
     }
+
+    var reviewOwnerName=detail.querySelector("[data-review-owner-name]");
+    var reviewOwnerChange=detail.querySelector("[data-review-owner-change]");
+    var reviewOwnerField=detail.querySelector("#reviewOwnerField");
+    function syncReviewOwner(editable){
+      var ownerId=editable&&reviewOwnerSelect?reviewOwnerSelect.value:r.report_owner_user_id;
+      reviewOwnerName.textContent=ownerId&&ownerId===currentUserId()?"You":(ownerId&&profileById[ownerId]?profileName(profileById[ownerId]):"Unassigned");
+      reviewOwnerChange.hidden=!editable;
+      if(!editable){
+        reviewOwnerField.hidden=true;
+        reviewOwnerChange.setAttribute("aria-expanded","false");
+      }
+    }
+    reviewOwnerChange.addEventListener("click",function(){
+      if(!canEditStep(r,1)) return;
+      reviewOwnerField.hidden=!reviewOwnerField.hidden;
+      reviewOwnerChange.setAttribute("aria-expanded",String(!reviewOwnerField.hidden));
+      if(!reviewOwnerField.hidden) reviewOwnerSelect.focus();
+    });
+    reviewOwnerSelect.addEventListener("change",function(){syncReviewOwner(canEditStep(r,1));});
 
     var investigatorCard=detail.querySelector("[data-investigator-card]"), investigatorSelect=investigatorCard?investigatorCard.querySelector(".inv-investigator"):null, investigatorSave=investigatorCard?investigatorCard.querySelector(".investigator-save"):null, investigatorSelf=investigatorCard?investigatorCard.querySelector(".investigator-self"):null, investigatorSaved=investigatorCard?investigatorCard.querySelector(".investigator-saved"):null, investigatorChip=investigatorCard?investigatorCard.querySelector("[data-investigator-chip]"):null, investigatorPermission=investigatorCard?investigatorCard.querySelector("[data-investigator-permission]"):null;
     function syncInvestigatorUi(){
@@ -4412,10 +4440,34 @@
     var actionPlanList=detail.querySelector("[data-corrective-action-plan]"), actionPlanAdd=detail.querySelector("[data-add-corrective-action]"), actionPlanOverviews=detail.querySelectorAll("[data-corrective-action-overview]"), multiActionCompletionEl=detail.querySelector("[data-multi-action-completion]"), multiActionVerificationStage=detail.querySelector("[data-multi-action-verification-stage]");
     var caDecisionRoot=detail.querySelector("[data-ca-decision]"), caPlanWorkspace=detail.querySelector("[data-ca-plan-workspace]"), caDecisionChoices=detail.querySelectorAll("[data-ca-decision-choice]"), caDecisionSummary=detail.querySelector("[data-ca-decision-summary]"), caDecisionSummaryTitle=detail.querySelector("[data-ca-decision-summary-title]"), caDecisionSummaryCopy=detail.querySelector("[data-ca-decision-summary-copy]"), caChangeDecision=detail.querySelector("[data-ca-change-decision]"), caNoActionPanel=detail.querySelector("[data-ca-no-action-panel]"), caNoActionReason=detail.querySelector("[data-ca-no-action-reason]"), caNoActionNote=detail.querySelector("[data-ca-no-action-note]"), caNoActionError=detail.querySelector("[data-ca-no-action-error]"), caNoActionContinue=detail.querySelector("[data-ca-no-action-continue]"), caNoActionNext=detail.querySelector("[data-ca-no-action-next]");
     var reviewNextFooter=detail.querySelector('[data-next-step-footer="review"]'), investigationNextFooter=detail.querySelector('[data-next-step-footer="investigation"]'), actionPlanNextFooter=detail.querySelector('[data-next-step-footer="action-plan"]');
+    var reviewScreeningBlocker=detail.querySelector("[data-review-screening-blocker]");
+    var reviewScreeningMessage=detail.querySelector("[data-review-screening-message]");
+    var reviewScreeningJump=detail.querySelector("[data-review-screening-jump]");
+    function reviewScreeningIssue(){
+      if(!regStatus) return "";
+      if(!regStatus.value) return "Choose an injury screening result before continuing.";
+      if((regStatus.value==="yes"||regStatus.value==="pending")&&!regAwareness.value) return "Enter when the company first learned the injury could be serious.";
+      if(!caloshaScreenComplete(r)) return "Save the injury screening, or select Start investigation to save it and continue.";
+      if(!regulatoryFollowupResolved(r)) return "Resolve injury follow-up before closing without investigation.";
+      return "";
+    }
+    reviewScreeningJump.addEventListener("click",function(){
+      if(!regCard) return;
+      var target=!regStatus.value?regStatus:((regStatus.value==="yes"||regStatus.value==="pending")&&!regAwareness.value?regAwareness:regSave);
+      if(target) target.focus();
+    });
+    if(regCard){
+      regCard.addEventListener("change",syncReviewNextFooter);
+      regCard.addEventListener("input",syncReviewNextFooter);
+    }
     function syncReviewNextFooter(){
       if(!reviewNextFooter) return;
       var editable=canEditStep(r,1);
       reviewNextFooter.hidden=!editable;
+      syncReviewOwner(editable);
+      var screeningIssue=editable?reviewScreeningIssue():"";
+      reviewScreeningMessage.textContent=screeningIssue;
+      reviewScreeningBlocker.hidden=!screeningIssue;
       reviewNextFooter.classList.toggle("next-step-ready",editable&&caloshaScreenComplete(r));
     }
     syncReviewNextFooter();
