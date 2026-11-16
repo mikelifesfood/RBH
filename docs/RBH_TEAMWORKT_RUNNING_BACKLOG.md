@@ -19,6 +19,7 @@ _Last reviewed: November 16, 2026. Living working list. Change statuses as tasks
 
 ## P0 — Before selling TeamWorkt Safety to other companies
 
+- [ ] **PWA web push notifications (P0 for PWA launch / commercial readiness)**: Not yet implemented. The existing bell/notification center polls in-app notifications while the dashboard is running, and `sw.js` handles offline caching but contains no Push API listener or notification-click handling. Build browser permission onboarding by explicit user action; per-user/per-device Push API subscription management, VAPID credentials (stored as backend secrets), signed-in tenant-scoped subscription storage and RLS, server-side delivery for report assignment, corrective-action assignment, completion needing review, send-back, and urgent new reports as authorized; notification click deep-link into the correct record; safe generic lock-screen copy without confidential incident details; opt-out/unsubscribe and invalid-subscription cleanup; duplicate-send/rate-limit protection. Test Chrome/Edge desktop and Android, plus iPhone/iPad **installed Home Screen PWA** support with permission requested from user interaction, and test notifications when the app is closed/backgrounded. Preserve email and in-app notifications as a fallback. The public anonymous report form must never request push permission. Verify expected delivery and access for Admin, Safety Manager, Supervisor, and Read Only roles.
 - [ ] **Private reusable TeamWorkt master**: Separate customer-independent source, branded defaults, and RBH-specific settings from the deployable baseline.
 - [ ] **Repeatable tenant onboarding/provisioning**: Clean migrations, seeds/defaults, secrets, email sender setup, job sites, Admin invitations, domain/hosting workflow, and reproducible setup instructions.
 - [ ] **Tenant/data isolation**: Cross-company tests for RLS, Supabase privileged functions, roles, report attachments, signed URLs, service endpoints, email recipients, and administrative context.
@@ -32,6 +33,7 @@ _Last reviewed: November 16, 2026. Living working list. Change statuses as tasks
 - [ ] **Repeat-hazard / job-site trends**: Group repeat report types and sites, include practical drill-downs in Safety Pulse/Analytics; avoid unsupported risk scores.
 - [ ] **Analytics polish**: Better site comparisons, filtering, historical trends, and responsive presentation where end-user value justifies it.
 - [ ] **Customer-facing Admin polish**: Review organization-specific labels/defaults, onboarding copy, settings discoverability, and mobile layout based on real customer feedback.
+- [ ] **Optional push-preference enhancements after initial PWA push MVP**: Per-event user choices, quiet hours, digest-style grouping and advanced settings after basic delivery is stable.
 - [ ] **Notifications/admin controls future review**: Review business demand for additional notification granularity rather than alter the tested initial-report grouped/individual/off modes or assignment emails without a requirement.
 
 ## HOLD — Do not activate/build now
