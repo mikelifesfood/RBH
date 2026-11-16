@@ -8355,7 +8355,7 @@
         body:JSON.stringify(payload||{})
       });
       var data=await resp.json().catch(function(){return {};});
-      if(!resp.ok) return {ok:false,error:data.error||("HTTP_"+resp.status),detail:data.detail||""};
+      if(!resp.ok) return {ok:false,error:resp.status===401?"AUTH_REQUIRED":(data.error||("HTTP_"+resp.status)),detail:data.detail||""};
       return data||{ok:true};
     }catch(ex){
       console.error("admin manage user",ex);
