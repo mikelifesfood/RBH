@@ -17,6 +17,7 @@ const json = (body:unknown, status=200) => new Response(JSON.stringify(body), {
 const htmlEscape = (v:unknown) => String(v??"").replace(/[&<>"']/g, c=>({
   "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
 }[c] || c));
+// Compute wall-clock time independently for each company's IANA time zone.
 const mondayMorning = (timezone:string, now:Date) => {
   const p=new Intl.DateTimeFormat("en-US",{
     timeZone:timezone, weekday:"short",hour:"2-digit",minute:"2-digit",hourCycle:"h23"
@@ -25,6 +26,12 @@ const mondayMorning = (timezone:string, now:Date) => {
   return get("weekday")==="Mon" && Number(get("hour"))===8 && Number(get("minute"))<15;
 };
 type Row = Record<string,unknown>;
+type Person = {id:string;email:string|null;full_name:string|null;app_role:string;is_active:boolean;
+  access_deleted_at:string|null;organization_id:string|null;current_organization_id:string|null};
+const eligibleRecipient=(p:Person,orgId:string)=>
+  ["admin","safety_manager"].includes(p.app_role) && p.is_active===true &&
+  !p.access_deleted_at && String(p.current_organization_id||p.organization_id||"")===orgId &&
+  !!String(p.email||"").trim();
 Deno.serve(async (req:Request) => {
   if(req.method!=="POST") return json({error:"METHOD_NOT_ALLOWED"},405);
   // This function does not accept user JWTs as dispatch authorization.
@@ -39,6 +46,7 @@ Deno.serve(async (req:Request) => {
     const {data:companies,error:companyError}=await svc.from("safety_pulse_digest_settings")
       .select("organization_id,enabled,delivery_ready,timezone,weekday,local_hour,local_minute")
       .eq("enabled",true).eq("delivery_ready",true)
+      .order("organization_id",{ascending:true})
       .range(page*100,(page+1)*100-1);
     if(companyError) return json({error:"CONFIGURATION_READ_FAILED"},500);
     if(!companies?.length)break;
@@ -53,17 +61,27 @@ Deno.serve(async (req:Request) => {
       });
       if(statsError){console.error("Digest snapshot failed",orgId,statsError);failed++;continue;}
       const weekStart=String(stats.week_start);
-      const {data:organization}=await svc.from("organizations").select("name").eq("id",orgId).single();
-      const {data:profiles,error:profileError}=await svc.from("profiles")
-        .select("id,email,full_name,app_role,is_active,access_deleted_at,organization_id,current_organization_id")
-        .in("app_role",["admin","safety_manager"]).eq("is_active",true)
-        .or("organization_id.eq."+orgId+",current_organization_id.eq."+orgId)
-        .is("access_deleted_at",null);
-      if(profileError){console.error("Digest recipients query failed",orgId,profileError);failed++;continue;}
-      const recipients=(profiles||[]).filter(p=>
-        String(p.current_organization_id||p.organization_id||"")===orgId &&
-        !!String(p.email||"").trim()
-      );
+      const {data:organization,error:organizationError}=await svc.from("organizations")
+        .select("name,status").eq("id",orgId).single();
+      if(organizationError || organization?.status!=="active"){
+        console.warn("Digest skipped inactive organization",orgId);continue;
+      }
+      // Page recipients instead of silently truncating at PostgREST's default
+      // limit (typically 1000). Bound each query to this organization.
+      const recipients:Person[]=[];
+      let recipientLookupFailed=false;
+      for(let offset=0;offset<100000;offset+=200){
+        const {data:profiles,error:profileError}=await svc.from("profiles")
+          .select("id,email,full_name,app_role,is_active,access_deleted_at,organization_id,current_organization_id")
+          .in("app_role",["admin","safety_manager"]).eq("is_active",true)
+          .or("organization_id.eq."+orgId+",current_organization_id.eq."+orgId)
+          .is("access_deleted_at",null)
+          .order("id",{ascending:true}).range(offset,offset+199);
+        if(profileError){console.error("Digest recipients query failed",orgId,profileError);recipientLookupFailed=true;break;}
+        recipients.push(...((profiles||[]) as Person[]).filter(p=>eligibleRecipient(p,orgId)));
+        if(!profiles || profiles.length<200)break;
+      }
+      if(recipientLookupFailed){failed++;continue;}
       const num=(k:string)=>Number((stats as Row)[k]||0).toLocaleString("en-US");
       const companyName=String(organization?.name||"Your company");
       const subject="Weekly Safety Pulse | "+companyName;
@@ -83,6 +101,18 @@ Deno.serve(async (req:Request) => {
         '<p style="margin-top:20px"><a href="'+htmlEscape(dashboardUrl)+'">Open the safety dashboard</a></p>'+
         '<p style="font-size:12px;color:#677085">This is a summary only. Sign in to view report details.</p></div>';
       for(const person of recipients){
+        // Revalidate the company and recipient just before a send, to avoid
+        // using a stale recipient list if a role, organization or status changed.
+        const {data:stillConfigured,error:configError}=await svc.from("safety_pulse_digest_settings")
+          .select("enabled,delivery_ready").eq("organization_id",orgId).single();
+        if(configError || !stillConfigured?.enabled || !stillConfigured?.delivery_ready){
+          console.warn("Digest release or opt-in revoked",orgId);break;
+        }
+        const {data:latest,error:latestError}=await svc.from("profiles")
+          .select("id,email,full_name,app_role,is_active,access_deleted_at,organization_id,current_organization_id")
+          .eq("id",person.id).maybeSingle();
+        if(latestError || !latest || !eligibleRecipient(latest as Person,orgId) ||
+            String(latest.email).trim().toLowerCase()!==String(person.email).trim().toLowerCase()) continue;
         // Unique row claims a recipient/week before any email call.
         // Failed or ambiguous sends are not automatically retried, avoiding duplicates.
         const {data:claim,error:claimError}=await svc.from("safety_pulse_digest_deliveries")
@@ -92,11 +122,14 @@ Deno.serve(async (req:Request) => {
         if(claimError){if(claimError.code!=="23505")console.error("Digest claim failed",claimError);continue;}
         claimed++;
         try{
+          // This timeout leaves ambiguous requests claimed; we NEVER resend
+          // automatically when a response may have been lost.
           const response=await fetch("https://api.brevo.com/v3/smtp/email",{
-            method:"POST",headers:{"api-key":brevoKey,"content-type":"application/json",accept:"application/json"},
+            method:"POST",signal:AbortSignal.timeout(15000),
+            headers:{"api-key":brevoKey,"content-type":"application/json",accept:"application/json"},
             body:JSON.stringify({
               sender:{name:senderName,email:senderEmail},
-              to:[{email:String(person.email).trim(),name:person.full_name||undefined}],
+              to:[{email:String(latest.email).trim(),name:latest.full_name||undefined}],
               subject,htmlContent:html,
               textContent:"Weekly Safety Pulse\n"+companyName+"\nWeek of "+weekStart+
                 " through "+String(stats.week_end)+"\n\n"+plain+"\n\nOpen the dashboard: "+dashboardUrl,
