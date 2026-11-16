@@ -1477,6 +1477,18 @@
     .priority-picker{max-width:100%}
   }
 
+  /* Admin navigation: accessible tab buttons; only the active category is visible. */
+  .admin-tab-nav{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:16px 0 24px;padding:5px;border:1px solid var(--line);border-radius:12px;background:var(--canvas-2)}
+  .admin-tab{appearance:none;flex:1 1 auto;min-width:160px;min-height:44px;padding:11px 15px;border:1px solid transparent;border-radius:9px;background:transparent;color:var(--ink-2);font:inherit;font-size:13px;font-weight:750;text-align:center;cursor:pointer;white-space:normal;line-height:1.35}
+  .admin-tab:hover{background:var(--paper);color:var(--ink)}
+  .admin-tab[aria-selected="true"]{background:var(--paper);border-color:var(--line-strong);color:var(--ink);box-shadow:0 2px 7px rgba(0,0,0,.06)}
+  .admin-tab:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+  .admin-tab-panel[hidden]{display:none!important}
+  .admin-tab-panel{min-width:0}
+  .admin-tab-panel > .admin-settings-heading{margin-top:0}
+  @media(max-width:740px){.admin-tab-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.admin-tab{min-width:0;padding:11px 7px}}
+  @media(max-width:390px){.admin-tab-nav{grid-template-columns:1fr}}
+
   /* Admin Settings: three equal desktop cards; stack on narrow screens. */
   .admin-settings-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:stretch}
   .admin-settings-grid > .admin-info,
@@ -1711,8 +1723,15 @@
 
         <section class="view" id="view-users" hidden>
           <div class="section-head"><div><h2>Admin</h2><p>Manage application roles and dashboard access.</p></div></div>
-          <div class="admin-settings-heading"><h3>Admin Settings</h3><p>Manage company reporting, notifications, and records.</p></div>
-          <div class="admin-settings-grid">
+          <div class="admin-tab-nav" role="tablist" aria-label="Admin settings">
+            <button type="button" class="admin-tab" id="adminTabUsers" role="tab" aria-controls="adminPanelUsers" aria-selected="true" data-admin-tab="users">Users &amp; Activity</button>
+            <button type="button" class="admin-tab" id="adminTabNotifications" role="tab" aria-controls="adminPanelNotifications" aria-selected="false" tabindex="-1" data-admin-tab="notifications">Notifications</button>
+            <button type="button" class="admin-tab" id="adminTabReporting" role="tab" aria-controls="adminPanelReporting" aria-selected="false" tabindex="-1" data-admin-tab="reporting">Reporting &amp; Records</button>
+            <button type="button" class="admin-tab" id="adminTabSites" role="tab" aria-controls="adminPanelSites" aria-selected="false" tabindex="-1" data-admin-tab="sites">Job Sites &amp; QR Codes</button>
+          </div>
+          <div class="admin-tab-panel" id="adminPanelNotifications" role="tabpanel" aria-labelledby="adminTabNotifications" data-admin-panel="notifications" hidden>
+            <div class="admin-settings-heading"><h3>Notifications</h3><p>Manage company email notifications and the weekly digest.</p></div>
+            <div class="admin-settings-grid">
           <div class="admin-info" id="reportEmailPreferences">
             <h3>New report email notifications</h3>
             <p>Choose how active Admins and Safety Managers receive the initial email when a report is submitted. Assignment, investigation, corrective action, and in-app alerts are not changed by this setting.</p>
@@ -1744,6 +1763,11 @@
             <div id="weeklyDigestPreview" hidden aria-live="polite" style="margin-top:12px;padding:14px;border:1px solid var(--line);border-radius:var(--r);background:var(--canvas-2)"></div>
             <p style="margin-top:8px;font-size:12.5px;color:var(--muted)">The delivery service is not enabled during pilot testing. Saving an opt-in preference will not send emails until the release gate is completed.</p>
           </div>
+            </div>
+          </div>
+          <div class="admin-tab-panel" id="adminPanelReporting" role="tabpanel" aria-labelledby="adminTabReporting" data-admin-panel="reporting" hidden>
+            <div class="admin-settings-heading"><h3>Reporting &amp; Records</h3><p>Company reporting posters and secure records exports.</p></div>
+            <div class="admin-settings-grid">
           <div class="admin-records-archive" id="companyReportingPoster">
             <div class="archive-copy">
               <h3>Company safety reporting QR poster</h3>
@@ -1764,7 +1788,9 @@
               <div class="archive-export-status" id="exportCompanyArchiveStatus" aria-live="polite"></div>
             </div>
           </div>
+            </div>
           </div>
+          <div class="admin-tab-panel" id="adminPanelSites" role="tabpanel" aria-labelledby="adminTabSites" data-admin-panel="sites" hidden>
           <div class="admin-settings-heading"><h3>Job Sites &amp; QR Codes</h3><p>Create job sites and print a unique safety reporting poster for each one. Only Admins can manage sites.</p></div>
           <div class="admin-info" id="jobSiteAdmin">
             <h3>Manage job sites</h3>
@@ -1777,7 +1803,9 @@
             <p id="jobSiteStatus" role="status" aria-live="polite" style="margin-top:10px">Loading job sites…</p>
             <div id="jobSiteList" class="jobsite-list"></div>
           </div>
-          <div class="admin-settings-heading user-settings-heading"><h3>User Settings</h3><p>Manage dashboard access, user roles, and account history.</p></div>
+          </div>
+          <div class="admin-tab-panel" id="adminPanelUsers" role="tabpanel" aria-labelledby="adminTabUsers" data-admin-panel="users">
+          <div class="admin-settings-heading user-settings-heading"><h3>Users &amp; Activity</h3><p>Manage dashboard access, user roles, and account history.</p></div>
           <div class="admin-info"><h3>Role-based access</h3><p>New dashboard users start as Read Only until an Admin assigns the appropriate role. Access can be updated at any time by another Admin.</p></div>
           <div class="role-legend">
             <div class="role-card"><b>Admin</b><span>Full operational access plus user roles and account activation.</span></div>
@@ -1823,8 +1851,7 @@
             <div class="feedback-summary" id="feedbackSummary"></div>
             <div class="feedback-admin-list" id="feedbackAdminList"><div class="state">Open Admin to load feedback.</div></div>
           </div>
-
-        
+          </div>
         </section>
 
       </div>
@@ -8365,6 +8392,40 @@
     }
   });
 
+  // Tabs only control visibility; existing forms, listeners and permissions remain intact.
+  var activeAdminTab="users";
+  function selectAdminTab(tab,focus){
+    var button=document.querySelector('#view-users [data-admin-tab="'+tab+'"]');
+    if(!button)return;
+    activeAdminTab=tab;
+    document.querySelectorAll("#view-users [data-admin-tab]").forEach(function(el){
+      var selected=el.getAttribute("data-admin-tab")===tab;
+      el.setAttribute("aria-selected",selected?"true":"false");
+      el.tabIndex=selected?0:-1;
+    });
+    document.querySelectorAll("#view-users [data-admin-panel]").forEach(function(el){
+      el.hidden=el.getAttribute("data-admin-panel")!==tab;
+    });
+    if(focus)button.focus();
+  }
+  var adminTabs=document.querySelector("#view-users .admin-tab-nav");
+  if(adminTabs){
+    adminTabs.addEventListener("click",function(e){
+      var button=e.target.closest("[data-admin-tab]");
+      if(button)selectAdminTab(button.getAttribute("data-admin-tab"),false);
+    });
+    adminTabs.addEventListener("keydown",function(e){
+      if(["ArrowLeft","ArrowRight","Home","End"].indexOf(e.key)<0)return;
+      var tabs=Array.prototype.slice.call(adminTabs.querySelectorAll("[data-admin-tab]"));
+      var current=tabs.indexOf(document.activeElement);
+      if(current<0)return;
+      e.preventDefault();
+      var next=e.key==="Home"?0:e.key==="End"?tabs.length-1:(current+(e.key==="ArrowRight"?1:-1)+tabs.length)%tabs.length;
+      selectAdminTab(tabs[next].getAttribute("data-admin-tab"),true);
+    });
+    selectAdminTab(activeAdminTab,false);
+  }
+
   function showView(name){
     if(name!=="incident"&&name!=="myaction"){ stopRecordPresence(); clearActiveOpenResource(); }
     if(name==="users" && currentRole!=="admin") name="home";
@@ -8380,7 +8441,7 @@
     if(name==="mywork") renderMyWork();
     if(name==="actions") renderActions();
     if(name==="platform") loadPlatformDashboard();
-    if(name==="users"){ loadUsers(); loadAdminUserEvents(); loadReportEmailMode(); loadWeeklyDigestSettings(); loadJobSites(); }
+    if(name==="users"){ selectAdminTab(activeAdminTab,false); loadUsers(); loadAdminUserEvents(); loadReportEmailMode(); loadWeeklyDigestSettings(); loadJobSites(); }
     if(name==="home") renderHomeSnapshot();
     refreshHelpCoachContext();
     closeSidebar();
