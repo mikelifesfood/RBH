@@ -2066,7 +2066,7 @@
     if(s.indexOf("critical")===0)return"sv-critical"; if(s.indexOf("serious")===0)return"sv-serious";
     if(s.indexOf("moderate")===0)return"sv-moderate"; return"sv-minor"; }
   function sevShort(s){ return (s||"").split(/[\s\u2014-]/)[0]; }
-  function fmtDate(v){ if(!v)return""; try{return new Date(v).toLocaleString();}catch(e){return v;} }
+  function fmtDate(v){ if(!v)return""; try{ var dateText=String(v); if(/^\d{4}-\d{2}-\d{2}$/.test(dateText)) return new Date(dateText+"T12:00:00").toLocaleDateString(); return new Date(v).toLocaleString(); }catch(e){return v;} }
   function statusOptions(sel){ return STATUS_KEYS.map(function(k){ return '<option value="'+k+'"'+(k===sel?" selected":"")+'>'+STATUS[k].l+'</option>'; }).join(""); }
 
   /* ---------- Viewer language + translation ---------- */
@@ -9401,7 +9401,7 @@
     setTimeout(function(){ t.classList.remove("show"); setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); },250); },3000);
   }
 
-  function shortDate(v){ if(!v) return ""; try{ return new Date(v).toLocaleDateString(); }catch(e){ return v; } }
+  function shortDate(v){ if(!v) return ""; try{ var dateText=String(v); return (/^\d{4}-\d{2}-\d{2}$/.test(dateText)?new Date(dateText+"T12:00:00"):new Date(v)).toLocaleDateString(); }catch(e){ return v; } }
 
   function setActiveChip(chip){ document.querySelectorAll(".chip").forEach(function(c){ c.classList.toggle("active", c.getAttribute("data-chip")===chip); }); }
   function setQuickFilter(chip){
