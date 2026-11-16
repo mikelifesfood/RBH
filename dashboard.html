@@ -928,6 +928,11 @@
   .live-record-notice b{display:block;color:var(--ink);font-size:14px;margin-bottom:2px}
   .live-record-notice.stale{border-left-color:var(--brand);background:var(--brand-tint);color:var(--brand)}
   .live-record-notice.stale b{color:var(--brand)}
+  .live-record-notice.presence{align-items:center;border-color:#CEE0EC;border-left-color:#4E87B2;background:#F2F7FB;padding:13px 16px}
+  .live-record-notice.presence .live-record-notice-copy{display:flex;align-items:flex-start;gap:11px}
+  .live-presence-dot{flex:0 0 auto;width:10px;height:10px;margin-top:5px;border-radius:50%;background:#4685AD;box-shadow:0 0 0 4px #DFEEF7}
+  .live-record-notice.presence b{margin-bottom:3px}
+  .live-record-notice.presence span{display:block;color:var(--ink-2)}
   .live-record-notice-copy{min-width:0}
   .live-record-notice-actions{flex:0 0 auto;display:flex;align-items:center;gap:8px}
   .live-record-refresh{border:0;border-radius:999px;background:var(--ink);color:#fff;font-weight:800;padding:9px 13px;cursor:pointer;white-space:nowrap}
@@ -2647,7 +2652,7 @@
     var others=(remotePresenceRows||[]).filter(function(row){return String(row.user_id||"")!==currentUserId();});
     if(others.length){
       var names=presenceNames(others), target=activeOpenResource.type==="corrective_action"?"this action":"this report";
-      html+='<p class="live-record-presence">'+esc(names+(others.length===1?" also has ":" also have ")+target+" open.")+'</p>';
+      html+='<div class="live-record-notice presence" role="status"><div class="live-record-notice-copy"><span class="live-presence-dot" aria-hidden="true"></span><div><b>Someone else is viewing this '+(activeOpenResource.type==="corrective_action"?"corrective action":"report")+'.</b><span>'+esc(names+(others.length===1?" also has ":" also have ")+target+" open.")+' Changes made by others may require a refresh before you continue.</span></div></div></div>';
     }
     host.innerHTML=html; host.hidden=!html;
     var refresh=host.querySelector("[data-refresh-open-resource]"); if(refresh) refresh.addEventListener("click",refreshActiveOpenResource);
