@@ -391,6 +391,9 @@
   .review-text-action{border:0;border-radius:6px;padding:6px 8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700}
   .review-screening-blocker{color:var(--ink);font-size:13px}
   .review-screening-blocker .review-text-action{padding-left:0}
+  .investigation-required-label{margin-left:6px;color:var(--muted);font-size:12px;font-weight:600}
+  .investigation-field-error{color:#a12826;font-size:13px}
+  [data-wizard-step="2"] textarea[aria-invalid="true"]{border-color:#a12826}
   .report-owner-modal-note{margin:0 0 14px;color:var(--muted);font-size:13px;line-height:1.5}
   .report-owner-email-note{margin:10px 0 0;padding:10px 12px;border:1px solid #b9d7f0;border-radius:10px;background:#eef6fc;color:#245f8f;font-size:12.5px;line-height:1.45}
   .report-owner-email-note.neutral{border-color:#d8d4cd;background:#f6f5f2;color:#5e5a55}
@@ -2378,7 +2381,7 @@
         {title:"Choose the Report Owner",text:"In Step 1, confirm who will be responsible for moving the report through the workflow. The dropdown is only a proposed assignment until you start the investigation.",target:"#incidentBody [data-report-owner-step]",note:"Changing the Step 1 dropdown does not send an email."},
         {title:"Complete injury screening when needed",text:"If the report involves an injury, complete the regulatory screening before advancing. The app records the internal screening and follow-up; it does not submit a report to Cal/OSHA.",target:"#incidentBody [data-urgent-triage]"},
         {title:"Start the investigation",text:"Choose Start investigation. The selected Report Owner is committed only after the report successfully advances. If you selected another person, that person receives the handoff email after Step 2 opens.",target:"#incidentBody [data-step-complete=\"1\"]"},
-        {title:"Document what happened and why",text:"In Investigation, answer both questions: What happened? and Why did it happen? Keep the answers factual. Investigation evidence is optional when it helps explain the finding.",target:"#incidentBody .inv-findings"},
+        {title:"Document what happened and why",text:"In Investigation, describe what you found and what allowed it to happen. Keep both answers factual. Investigation evidence is optional when it helps explain the finding.",target:"#incidentBody .inv-findings"},
         {title:"Decide whether anything still needs correction",text:"Finish the investigation and use Step 3 to decide whether additional corrective action is required. If Yes, create and assign the action plan. If No, document the reason and explanation before continuing to Close.",target:"#incidentBody [data-ca-decision]"}
       ]
     },
@@ -3565,12 +3568,12 @@
 
       '<section class="wizard-panel" data-wizard-step="2" hidden>'+
         '<div class="wizard-step-head"><span class="wizard-step-badge">2</span><div class="wizard-step-copy"><h3>Investigation</h3><p>Document what the investigation found and why it happened.</p></div></div>'+
-        '<div class="wizard-task"><b>Two questions before continuing</b><span>Keep this simple and factual. Supporting evidence is optional, but recommended when it helps explain what happened.</span></div>'+
-        '<label class="inv-l">What happened?<textarea class="inv-findings" placeholder="What did the investigation determine actually happened?"></textarea><span class="field-guidance">Describe the sequence of events or condition you found. This can be different from the original report.</span></label><div class="translation-preview" data-translation-field="investigation_findings" hidden></div>'+
-        '<label class="inv-l">Why did it happen?<textarea class="inv-root" placeholder="What caused or allowed this issue to happen?"></textarea><span class="field-guidance">Describe the underlying condition, process, equipment issue, training gap, or other reason that allowed it to happen.</span></label><div class="translation-preview" data-translation-field="root_cause" hidden></div>'+
+
+        '<label class="inv-l" for="investigationFindings"><span>What did you find? <small class="investigation-required-label">Required</small></span><textarea id="investigationFindings" class="inv-findings" required aria-describedby="investigationFindingsExample investigationFindingsError"></textarea><span class="field-guidance" id="investigationFindingsExample">Example: “The extension cord crossed the loading aisle.”</span><span class="investigation-field-error" id="investigationFindingsError" role="alert" hidden>Describe what you found.</span></label><div class="translation-preview" data-translation-field="investigation_findings" hidden></div>'+
+        '<label class="inv-l" for="investigationCause"><span>What allowed it to happen? <small class="investigation-required-label">Required</small></span><textarea id="investigationCause" class="inv-root" required aria-describedby="investigationCauseExample investigationCauseError"></textarea><span class="field-guidance" id="investigationCauseExample">Example: “There was no outlet near the work area, and the setup checklist didn’t cover cord routing.”</span><span class="investigation-field-error" id="investigationCauseError" role="alert" hidden>Describe what allowed it to happen.</span></label><div class="translation-preview" data-translation-field="root_cause" hidden></div>'+
         '<div class="evidence-panel investigation-evidence-panel" data-investigation-evidence></div>'+
-        '<div class="wizard-required" data-required="2">Answer both investigation questions before continuing.</div>'+
-        '<div class="wizard-footer" data-next-step-footer="investigation"><div class="wizard-footer-copy"><b data-next-step-title>Finish the investigation when ready</b><span data-next-step-message>Answer both questions. You can save a draft and return home at any time.</span></div><div class="wizard-footer-actions"><button class="wizard-save root-save" data-step-save="2" type="button">Save draft &amp; return home</button><span class="root-saved section-saved" hidden>Saved ✓</span><button class="wizard-primary" data-step-complete="2" type="button">Finish investigation →</button></div></div>'+
+
+        '<div class="wizard-footer" data-next-step-footer="investigation"><div class="wizard-footer-copy"><b data-next-step-title>Save your findings</b><span data-next-step-message>Answer both questions to continue, or save a draft to finish later.</span></div><div class="wizard-footer-actions"><button class="wizard-save root-save" data-step-save="2" type="button">Save draft and exit</button><span class="root-saved section-saved" hidden>Draft saved</span><button class="wizard-primary" data-step-complete="2" type="button">Save and continue to corrective actions →</button></div></div>'+
       '</section>'+
 
       '<section class="wizard-panel ca-unified-stage" data-wizard-step="3" data-ca-stage="plan" hidden>'+
@@ -4044,7 +4047,7 @@
     if(st&&st.state==="done" && n!==6) return {save:(n===2||n===3?"Save draft & return home":null),complete:null};
     if(!isCurrent && n!==6) return {save:null,complete:null};
     if(n===1) return {save:null,complete:"Start investigation →"};
-    if(n===2) return {save:"Save draft & return home",complete:"Finish investigation →"};
+    if(n===2) return {save:null,complete:null};
     if(n===3){
       if(correctiveActionDecisionValue(r)==="required") return {save:"Save draft & return home",complete:"Assign actions →"};
       return {save:null,complete:null};
@@ -4505,7 +4508,7 @@
     }
     function syncInvestigationNextStepState(){
       var ready=!!(canEditStep(r,2)&&invFindings&&invRoot&&invFindings.value.trim()&&invRoot.value.trim());
-      setNextStepFooterState(investigationNextFooter,ready,"Ready for the next step","Both investigation questions are complete. Finish the investigation to continue.","Finish the investigation when ready","Answer both questions. You can save a draft and return home at any time.");
+      setNextStepFooterState(investigationNextFooter,ready,"Ready for the next step","Your answers are ready to save.","Save your findings","Answer both questions to continue, or save a draft to finish later.");
     }
     function syncNoActionNextStepState(){
       if(!caNoActionNext) return;
@@ -4529,7 +4532,7 @@
       if(advanceReopen && activeReopenStep(r)) patch.reopen_workflow_step=3;
       var changed={}; Object.keys(patch).forEach(function(k){if(String(r[k]??"")!==String(patch[k]??""))changed[k]=patch[k];});
       if(Object.keys(changed).length){var res=await sb.from("reports").update(changed).eq("id",r.id);if(res.error)throw res.error;Object.keys(changed).forEach(function(k){r[k]=changed[k];});}
-      refreshRecordWorkflow(r,detail); loadAudit(r.id,auditEl); if(showToast) toast("Investigation saved","ok"); return true;
+      refreshRecordWorkflow(r,detail); loadAudit(r.id,auditEl); if(showToast) toast("Investigation draft saved","ok"); return true;
     }
     async function persistCorrectiveActionDecision(decision,reason,note){
       await assertOpenResourceFresh();
@@ -5092,8 +5095,17 @@
     }
     detail._syncStepEditability=syncStepEditability;
 
-    if(invFindings) invFindings.addEventListener("input",syncInvestigationNextStepState);
-    if(invRoot) invRoot.addEventListener("input",syncInvestigationNextStepState);
+    function setInvestigationFieldError(field,invalid){
+      detail.querySelector("#"+field.id+"Error").hidden=!invalid;
+      if(invalid) field.setAttribute("aria-invalid","true");
+      else field.removeAttribute("aria-invalid");
+    }
+    [invFindings,invRoot].forEach(function(field){
+      field.addEventListener("input",function(){
+        if(field.value.trim()) setInvestigationFieldError(field,false);
+        syncInvestigationNextStepState();
+      });
+    });
     if(actionPlanList) actionPlanList.addEventListener("input",function(e){ var req=detail.querySelector('[data-required="3"]'); if(req)req.classList.remove("show"); refreshPlanCardFieldProgress(e.target.closest("[data-action-card]")); syncPlanNextStepState(); });
     if(actionPlanList) actionPlanList.addEventListener("change",function(e){ var req=detail.querySelector('[data-required="3"]'); if(req)req.classList.remove("show"); refreshPlanCardFieldProgress(e.target.closest("[data-action-card]")); syncPlanNextStepState(); });
     if(multiActionCompletionEl) multiActionCompletionEl.addEventListener("click",async function(e){
@@ -5272,11 +5284,14 @@
 
     var complete2=detail.querySelector('[data-step-complete="2"]'); if(complete2) complete2.addEventListener("click",async function(){
       if(!canEditStep(r,2)){toast("Only the assigned investigator or an Admin/Safety Manager can complete Investigation.","err");return;}
-      var req=detail.querySelector('[data-required="2"]'), missing=[];
-      if(!invFindings.value.trim()) missing.push("what happened");
-      if(!invRoot.value.trim()) missing.push("why it happened");
-      if(missing.length){if(req){req.textContent="Still required: "+missing.join(" and ")+".";req.classList.add("show");}toast("Answer both investigation questions before continuing.","err");return;}
-      if(req)req.classList.remove("show"); complete2.disabled=true;
+      var firstMissing=null;
+      [invFindings,invRoot].forEach(function(field){
+        var missing=!field.value.trim();
+        setInvestigationFieldError(field,missing);
+        if(missing&&!firstMissing) firstMissing=field;
+      });
+      if(firstMissing){firstMissing.focus();return;}
+      complete2.disabled=true;
       try{await waitForInvestigationEvidenceUpload();await persistInvestigation(false,true);setWizardStep(detail,r,3,true);syncStepEditability();toast("Investigation complete — continue to Corrective Actions","ok");}catch(ex){console.error(ex);toast("Could not complete Investigation.","err");}finally{if(complete2.isConnected)complete2.disabled=!canEditStep(r,2);} });
 
     var complete3=detail.querySelector('[data-step-complete="3"]'); if(complete3) complete3.addEventListener("click",async function(){
@@ -8627,7 +8642,7 @@
       '<div class="evidence-head"><div><b>Investigation evidence <span style="font-weight:400;color:var(--muted)">(optional)</span></b><span>Add photos, documents, statements, or other information that supports what the investigation found.</span></div><span class="evidence-count">'+countLabel+'</span></div>'+ 
       '<div class="evidence-files" data-investigation-evidence-files>'+(current.length?'<span class="evidence-empty">Loading evidence…</span>':'<span class="evidence-empty">No investigation evidence added yet.</span>')+'</div>'+ 
       (prior.length?'<details class="evidence-history"><summary>Earlier investigation evidence ('+prior.length+')</summary><div class="evidence-files" data-prior-investigation-evidence-files><span class="evidence-empty">Loading preserved evidence…</span></div></details>':'')+
-      (canManage?'<div class="evidence-upload"><input class="evidence-file-input" type="file" multiple accept="image/*,.pdf,.doc,.docx,.txt"><button class="evidence-pick" type="button">Add investigation evidence</button><span class="evidence-selected">Files save automatically after selection.</span><div class="evidence-help">Optional. Up to 5 files at a time, 10 MB each.</div></div>':'');
+      (canManage?'<div class="evidence-upload"><input class="evidence-file-input" type="file" multiple accept="image/*,.pdf,.doc,.docx,.txt"><button class="evidence-pick" type="button">Add photos or files (optional)</button><span class="evidence-selected">Files save automatically after selection.</span><div class="evidence-help">Optional. Up to 5 files at a time, 10 MB each.</div></div>':'');
 
     async function renderFiles(items,target){
       if(!target||!items.length) return;
