@@ -3,6 +3,7 @@
 // scheduler, and explicitly releases each company's delivery_ready flag.
 // Runs only in the company's Monday 08:00-08:14 local-time window.
 import { createClient } from "npm:@supabase/supabase-js@2.117.2";
+import { isScheduledWindow, eligibleRecipient, type DigestPerson } from "./core.ts";
 
 const url = Deno.env.get("SUPABASE_URL") || "";
 const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -17,21 +18,7 @@ const json = (body:unknown, status=200) => new Response(JSON.stringify(body), {
 const htmlEscape = (v:unknown) => String(v??"").replace(/[&<>"']/g, c=>({
   "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
 }[c] || c));
-// Compute wall-clock time independently for each company's IANA time zone.
-const mondayMorning = (timezone:string, now:Date) => {
-  const p=new Intl.DateTimeFormat("en-US",{
-    timeZone:timezone, weekday:"short",hour:"2-digit",minute:"2-digit",hourCycle:"h23"
-  }).formatToParts(now);
-  const get=(type:string)=>p.find(x=>x.type===type)?.value||"";
-  return get("weekday")==="Mon" && Number(get("hour"))===8 && Number(get("minute"))<15;
-};
 type Row = Record<string,unknown>;
-type Person = {id:string;email:string|null;full_name:string|null;app_role:string;is_active:boolean;
-  access_deleted_at:string|null;organization_id:string|null;current_organization_id:string|null};
-const eligibleRecipient=(p:Person,orgId:string)=>
-  ["admin","safety_manager"].includes(p.app_role) && p.is_active===true &&
-  !p.access_deleted_at && String(p.current_organization_id||p.organization_id||"")===orgId &&
-  !!String(p.email||"").trim();
 Deno.serve(async (req:Request) => {
   if(req.method!=="POST") return json({error:"METHOD_NOT_ALLOWED"},405);
   // This function does not accept user JWTs as dispatch authorization.
@@ -53,7 +40,7 @@ Deno.serve(async (req:Request) => {
     for(const config of companies){
       checked++;
       if(config.weekday!==1 || config.local_hour!==8 || config.local_minute!==0)continue;
-      try {if(!mondayMorning(config.timezone,now))continue;}
+      try {if(!isScheduledWindow(config.timezone,now,config.weekday,config.local_hour,config.local_minute))continue;}
       catch(e){console.error("Invalid digest timezone",config.organization_id,e);continue;}
       const orgId=String(config.organization_id);
       const {data:stats,error:statsError}=await svc.rpc("rbh_digest_service_snapshot",{
@@ -68,7 +55,7 @@ Deno.serve(async (req:Request) => {
       }
       // Page recipients instead of silently truncating at PostgREST's default
       // limit (typically 1000). Bound each query to this organization.
-      const recipients:Person[]=[];
+      const recipients:DigestPerson[]=[];
       let recipientLookupFailed=false;
       for(let offset=0;offset<100000;offset+=200){
         const {data:profiles,error:profileError}=await svc.from("profiles")
@@ -78,7 +65,7 @@ Deno.serve(async (req:Request) => {
           .is("access_deleted_at",null)
           .order("id",{ascending:true}).range(offset,offset+199);
         if(profileError){console.error("Digest recipients query failed",orgId,profileError);recipientLookupFailed=true;break;}
-        recipients.push(...((profiles||[]) as Person[]).filter(p=>eligibleRecipient(p,orgId)));
+        recipients.push(...((profiles||[]) as DigestPerson[]).filter(p=>eligibleRecipient(p,orgId)));
         if(!profiles || profiles.length<200)break;
       }
       if(recipientLookupFailed){failed++;continue;}
@@ -111,7 +98,7 @@ Deno.serve(async (req:Request) => {
         const {data:latest,error:latestError}=await svc.from("profiles")
           .select("id,email,full_name,app_role,is_active,access_deleted_at,organization_id,current_organization_id")
           .eq("id",person.id).maybeSingle();
-        if(latestError || !latest || !eligibleRecipient(latest as Person,orgId) ||
+        if(latestError || !latest || !eligibleRecipient(latest as DigestPerson,orgId) ||
             String(latest.email).trim().toLowerCase()!==String(person.email).trim().toLowerCase()) continue;
         // Unique row claims a recipient/week before any email call.
         // Failed or ambiguous sends are not automatically retried, avoiding duplicates.
