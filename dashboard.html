@@ -4390,7 +4390,7 @@
       refreshUrgentTriage(detail,r);
       if(regSaved){regSaved.hidden=false;setTimeout(function(){regSaved.hidden=true;},2200);}
       if(changed) loadAudit(r.id,auditEl);
-      if(reviewNextFooter) reviewNextFooter.classList.toggle("next-step-ready",canEditStep(r,1)&&caloshaScreenComplete(r));
+      syncReviewNextFooter();
       if(showToast) toast("Regulatory follow-up saved","ok");
       return true;
     }
@@ -4412,7 +4412,13 @@
     var actionPlanList=detail.querySelector("[data-corrective-action-plan]"), actionPlanAdd=detail.querySelector("[data-add-corrective-action]"), actionPlanOverviews=detail.querySelectorAll("[data-corrective-action-overview]"), multiActionCompletionEl=detail.querySelector("[data-multi-action-completion]"), multiActionVerificationStage=detail.querySelector("[data-multi-action-verification-stage]");
     var caDecisionRoot=detail.querySelector("[data-ca-decision]"), caPlanWorkspace=detail.querySelector("[data-ca-plan-workspace]"), caDecisionChoices=detail.querySelectorAll("[data-ca-decision-choice]"), caDecisionSummary=detail.querySelector("[data-ca-decision-summary]"), caDecisionSummaryTitle=detail.querySelector("[data-ca-decision-summary-title]"), caDecisionSummaryCopy=detail.querySelector("[data-ca-decision-summary-copy]"), caChangeDecision=detail.querySelector("[data-ca-change-decision]"), caNoActionPanel=detail.querySelector("[data-ca-no-action-panel]"), caNoActionReason=detail.querySelector("[data-ca-no-action-reason]"), caNoActionNote=detail.querySelector("[data-ca-no-action-note]"), caNoActionError=detail.querySelector("[data-ca-no-action-error]"), caNoActionContinue=detail.querySelector("[data-ca-no-action-continue]"), caNoActionNext=detail.querySelector("[data-ca-no-action-next]");
     var reviewNextFooter=detail.querySelector('[data-next-step-footer="review"]'), investigationNextFooter=detail.querySelector('[data-next-step-footer="investigation"]'), actionPlanNextFooter=detail.querySelector('[data-next-step-footer="action-plan"]');
-    if(reviewNextFooter) reviewNextFooter.classList.toggle("next-step-ready",canEditStep(r,1)&&caloshaScreenComplete(r));
+    function syncReviewNextFooter(){
+      if(!reviewNextFooter) return;
+      var editable=canEditStep(r,1);
+      reviewNextFooter.hidden=!editable;
+      reviewNextFooter.classList.toggle("next-step-ready",editable&&caloshaScreenComplete(r));
+    }
+    syncReviewNextFooter();
     var actionDecisionState={choice:correctiveActionDecisionValue(r),expanded:!correctiveActionDecisionValue(r)};
     var actionPlanState={actions:[],loading:true,loaded:false,translationToken:0};
     detail._correctivePlanState=actionPlanState;
@@ -5022,7 +5028,7 @@
       }
       renderCorrectiveActionDecision();
       if(reviewOwnerSelect) reviewOwnerSelect.disabled=!isManager()||!canEditStep(r,1);
-      if(reviewNextFooter) reviewNextFooter.classList.toggle("next-step-ready",canEditStep(r,1)&&caloshaScreenComplete(r));
+      syncReviewNextFooter();
       syncInvestigationNextStepState();
       syncPlanNextStepState();
       syncNoActionNextStepState();
