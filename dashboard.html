@@ -913,6 +913,10 @@
   .ca-confirm-dialog{width:min(450px,calc(100% - 32px));max-height:calc(100% - 32px);overflow:auto;box-sizing:border-box;padding:20px;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--paper);color:var(--ink);box-shadow:0 12px 36px rgba(0,0,0,.22)}
   .ca-confirm-dialog::backdrop{background:rgba(0,0,0,.38)}
   .ca-confirm-dialog h2{margin:0;font-size:20px}
+  .close-details{margin-top:14px}
+  .close-details summary{cursor:pointer;font-weight:700;color:var(--ink-2)}
+  .close-blockers .close-check{justify-content:space-between;flex-wrap:wrap}
+  .close-receipt h3{margin:0 0 4px;font-size:20px}
   .ca-confirm-dialog p,.ca-confirm-dialog ul{margin:8px 0}
   .ca-confirm-dialog ul{padding-left:20px}
   .ca-confirm-dialog .ca-handoff-actions{margin-top:16px}
@@ -4075,6 +4079,7 @@
     if(!detail) return;
     var panel=detail.querySelector('[data-wizard-step="'+n+'"]');
     window.setTimeout(function(){
+      if(!detail.isConnected||Number(detail.dataset.wizardStep)!==n) return;
       var heading=panel?panel.querySelector(".wizard-step-copy h3"):null;
       var mobileHeading=detail.querySelector(".wizard-process-copy b");
       var focusTarget=(heading&&heading.offsetParent!==null)?heading:mobileHeading;
@@ -4191,20 +4196,87 @@
       [r.action_status==="verified","Corrective action verified"]
     ]);
     if(r.involves_injury) checks.push([regulatoryFollowupResolved(r),"Injury regulatory follow-up resolved"]);
-    var list=checks.map(function(x){return '<div class="close-check '+(x[0]?'ok':'missing')+'"><b>'+(x[0]?'✓':'!')+'</b><span>'+esc(x[1])+'</span></div>';}).join("");
-    if(closed){ el.innerHTML='<div class="ops-alert"><b>Report complete</b>This incident is closed. The full history remains available below.</div><div class="close-checklist">'+list+'</div>'; return; }
-    var ready=canClose(r), button=ready&&canEditStep(r,6)?'<button class="wizard-close" type="button" data-step-complete="6">Close report</button>':'';
-    el.innerHTML='<div class="close-checklist">'+list+'</div>'+(ready?'<div class="wizard-footer next-step-ready"><div class="wizard-footer-copy"><b>Ready to close</b><span>All required steps are complete. Close the report to finish the workflow and preserve the full history.</span></div><div class="wizard-footer-actions">'+button+'</div></div>':'<div class="wizard-required show">Complete the missing checklist items before this record can be closed.</div><div class="wizard-footer"><div class="wizard-footer-copy">The Close button will appear when every required item above is complete.</div><div class="wizard-footer-actions"></div></div>');
-    var btn=el.querySelector('[data-step-complete="6"]');
-    if(btn) btn.addEventListener("click",async function(){
-      if(!canEditStep(r,6)){ toast("Only an Admin or Safety Manager can close the record.","err"); return; }
-      if(!canClose(r)){ toast(correctiveNoActionDocumented(r)?"Complete the required close checks before closing the record.":"Finish and verify every corrective action before closing the record.","err"); return; }
-      if(!window.confirm("Close this report? This is the final workflow action. The report will become read-only unless it is reopened.")) return;
-      btn.disabled=true; var old=btn.textContent; btn.textContent="Closing…";
-      try{ await updateStatus(r.id,"closed",null); refreshIncidentSummary(r); loadAudit(r.id,auditEl); renderMyWork(); renderActions(); applyFilters(); showView("home"); toast("Report #"+(r.ref_no||r.id)+" closed","ok"); }
-      catch(ex){ console.error(ex); toast("Could not close the record.","err"); }
-      finally{ if(btn.isConnected){btn.disabled=false;btn.textContent=old;} }
+    var completed=checks.filter(function(check){return check[0];}).map(function(check){
+      return '<div class="close-check ok"><b aria-hidden="true">✓</b><span>'+esc(check[1])+'</span></div>';
+    }).join("");
+    var details=completed?'<details class="close-details"><summary>Closure details</summary><div class="close-checklist">'+completed+'</div></details>':'';
+    if(closed){el.innerHTML=details;return;}
+    var ready=canClose(r), canEdit=canEditStep(r,6), blockers=[];
+    if(!ready){
+      if(r.involves_injury&&!regulatoryFollowupResolved(r)){
+        blockers.push(['Resolve injury regulatory follow-up.',canVerify()?'<button type="button" class="wizard-save" data-close-regulatory>Open injury follow-up</button>':'']);
+      }
+      if(childSummary){
+        var actions=(allCorrectiveActions||[]).filter(function(action){
+          return String(action.report_id)===String(r.id)&&correctiveActionInCurrentCycle(action,r)&&action.status!=="verified";
+        });
+        actions.forEach(function(action){
+          var label="Action #"+action.action_number+(action.status==="awaiting_verification"?" needs manager review.":(action.status==="changes_requested"?" was sent back for changes.":" still needs completion."));
+          blockers.push([label,'<button type="button" class="wizard-save" data-close-action="'+esc(action.id)+'">Open Action #'+esc(action.action_number)+'</button>']);
+        });
+        if(!actions.length&&childSummary.verified!==childSummary.total) blockers.push(["Finish and verify the remaining corrective actions.",""]);
+      } else {
+        checks.filter(function(check){return !check[0]&&check[1]!=="Injury regulatory follow-up resolved";}).forEach(function(check){
+          blockers.push(["Still needed: "+check[1]+".",""]);
+        });
+      }
+      if(!blockers.length) blockers.push(["Complete the remaining workflow requirements before closing.",""]);
+    }
+    var blocked=blockers.length?'<section class="close-blockers" aria-label="What’s left"><b>What’s left before closing</b><div class="close-checklist">'+blockers.map(function(item){
+      return '<div class="close-check missing"><span>'+esc(item[0])+'</span>'+item[1]+'</div>';
+    }).join("")+'</div></section>':'';
+    var button=ready&&canEdit?'<button class="wizard-close" type="button" data-step-complete="6">Close report</button>':'';
+    var footer=ready?'<div class="wizard-footer next-step-ready"><div class="wizard-footer-copy"><b>Ready to close</b><span>'+(canEdit?'Close the report once you’ve finished reviewing it.':'An Admin or Safety Manager can close this report.')+'</span></div><div class="wizard-footer-actions">'+button+'</div></div>':'';
+    el.innerHTML=blocked+footer+details;
+    el.querySelectorAll("[data-close-action]").forEach(function(button){
+      button.addEventListener("click",function(){
+        var action=(allCorrectiveActions||[]).find(function(item){return String(item.id)===button.dataset.closeAction;});
+        if(action) openFocusedCorrectiveAction(action,lastOperationalView==="actions"?"actions":"mywork");
+      });
     });
+    var regulatory=el.querySelector("[data-close-regulatory]");
+    if(regulatory) regulatory.addEventListener("click",function(){openRegulatoryFollowupModal(r,detail);});
+    var btn=el.querySelector('[data-step-complete="6"]');
+    if(btn) btn.addEventListener("click",function(){openReportCloseConfirmation(r,detail,auditEl);});
+  }
+  function openReportCloseConfirmation(r,detail,auditEl){
+    if(!canEditStep(r,6)||!canClose(r)){toast("Complete the required checks before closing this report.","err");return;}
+    if(document.querySelector(".report-close-dialog[open]")) return;
+    var dialog=document.createElement("dialog");
+    dialog.className="ca-confirm-dialog report-close-dialog";
+    dialog.setAttribute("aria-labelledby","reportCloseDialogTitle");
+    dialog.setAttribute("aria-describedby","reportCloseDialogDescription");
+    dialog.innerHTML='<h2 id="reportCloseDialogTitle">Close Report #'+esc(r.ref_no||r.id)+'?</h2>'+
+      '<p id="reportCloseDialogDescription">The report will become read-only. Its history will still be available in the Safety Inbox.</p>'+
+      '<div class="wizard-required" role="alert" data-close-error></div>'+
+      '<div class="ca-handoff-actions"><button class="wizard-save" type="button" data-keep-open autofocus>Keep open</button><button class="wizard-close" type="button" data-confirm-close>Close report</button></div>';
+    var keep=dialog.querySelector("[data-keep-open]"), confirm=dialog.querySelector("[data-confirm-close]"), error=dialog.querySelector("[data-close-error]");
+    dialog.addEventListener("close",function(){dialog.remove();},{once:true});
+    dialog.addEventListener("cancel",function(event){if(confirm.disabled)event.preventDefault();});
+    keep.addEventListener("click",function(){dialog.close();});
+    confirm.addEventListener("click",async function(){
+      if(confirm.disabled) return;
+      keep.disabled=confirm.disabled=true;
+      confirm.textContent="Closing…";
+      error.classList.remove("show");
+      try{await updateStatus(r.id,"closed",null);}
+      catch(ex){
+        console.error(ex);
+        error.textContent=ex&&ex.message==="STALE_RECORD"?"The report changed. Choose Keep open and refresh the report before closing.":"Could not confirm closure. Check the report before retrying.";
+        error.classList.add("show");
+        keep.disabled=confirm.disabled=false;
+        confirm.textContent="Close report";
+        return;
+      }
+      dialog.close();
+      refreshIncidentSummary(r);
+      loadAudit(r.id,auditEl); renderMyWork(); renderActions(); applyFilters();
+      scrollAppToTop();
+      var receipt=detail.querySelector("[data-close-receipt-title]");
+      if(receipt) receipt.focus({preventScroll:true});
+    });
+    document.body.appendChild(dialog);
+    dialog.showModal();
   }
   function applyResolvedReviewMode(r,detail){
     if(!detail || !isResolvedReport(r)) return false;
@@ -4219,7 +4291,12 @@
       panel.querySelectorAll("input,textarea,select,button").forEach(function(control){ control.disabled=true; });
     });
     var banner=detail.querySelector("[data-resolved-banner]");
-    if(banner){
+    if(banner&&r.status==="closed"){
+      banner.innerHTML='<section class="ca-handoff close-receipt" aria-labelledby="closedReportTitle"><h3 id="closedReportTitle" data-close-receipt-title tabindex="-1">Report #'+esc(r.ref_no||r.id)+' closed</h3>'+
+        (r.closed_at?'<p>Closed '+esc(fmtDate(r.closed_at))+'</p>':'')+
+        '<p>The report is read-only. Its history is available below.</p><button class="wizard-save" type="button" data-close-inbox>Back to Safety Inbox</button></section>';
+      banner.querySelector("[data-close-inbox]").addEventListener("click",function(){showView("records");});
+    } else if(banner){
       var disposition=(r.status==="no_action"||r.status==="duplicate")?"This report was closed without corrective action.":"This incident is closed and the workflow is locked.";
       var canReopen=canReopenReport(r);
       var reopenHelp=canReopen?" Admins and Safety Managers can reopen this record if new information arises or it was closed in error.":"";
@@ -5167,8 +5244,8 @@
           toast("Every corrective action must be verified before continuing to Close.","err");
           return;
         }
+        renderCloseStep(r,detail.querySelector("[data-close-step]"),detail,auditEl);
         setWizardStep(detail,r,6,true);
-        toast("All corrective actions verified — ready for final closure","ok");
         return;
       }
 
