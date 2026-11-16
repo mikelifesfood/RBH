@@ -1763,7 +1763,13 @@
             <p style="margin-top:9px;color:var(--ink-2);font-size:13px"><b>Schedule:</b> Monday at 8:00 a.m. (America/New_York) &nbsp; <b>Recipients:</b> active Admins and Safety Managers</p>
             <p id="weeklyDigestStatus" role="status" aria-live="polite" style="margin-top:9px">Loading digest setting…</p>
             <div id="weeklyDigestPreview" hidden aria-live="polite" style="margin-top:12px;padding:14px;border:1px solid var(--line);border-radius:var(--r);background:var(--canvas-2)"></div>
-            <p style="margin-top:8px;font-size:12.5px;color:var(--muted)">The delivery service is not enabled during pilot testing. Saving an opt-in preference will not send emails until the release gate is completed.</p>
+            <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line)">
+              <b style="font-size:14px">Controlled email test</b>
+              <p style="margin:6px 0 10px;font-size:13px">Send a clearly labeled TEST digest to your signed-in Admin email only. This tests Brevo delivery but does not activate recurring emails.</p>
+              <button id="sendWeeklyDigestTest" type="button" class="archive-export-btn" disabled>Send test email to my account</button>
+              <p id="weeklyDigestTestStatus" role="status" aria-live="polite" style="margin-top:9px;font-size:13px">Sign in as an Admin to run a test.</p>
+            </div>
+            <p style="margin-top:8px;font-size:12.5px;color:var(--muted)">Weekly scheduled delivery remains disabled during pilot testing, even after a successful test email.</p>
           </div>
             </div>
           </div>
@@ -8200,6 +8206,8 @@
     var enabled=$("weeklyDigestEnabled"), save=$("saveWeeklyDigest"), preview=$("previewWeeklyDigest"), status=$("weeklyDigestStatus"), panel=$("weeklyDigestPreview");
     if(!enabled||!save||!preview||!status||currentRole!=="admin")return;
     enabled.disabled=true; save.disabled=true; preview.disabled=true; panel.hidden=true;
+    var testBtn=$("sendWeeklyDigestTest"),testStatus=$("weeklyDigestTestStatus");
+    if(testBtn)testBtn.disabled=true;
     status.textContent="Loading weekly digest settings…";
     try{
       var res=await sb.rpc("rbh_get_safety_pulse_digest_settings");
@@ -8207,6 +8215,8 @@
       var setting=res.data||{};
       enabled.checked=setting.enabled===true;
       enabled.disabled=false; save.disabled=false; preview.disabled=false;
+      if(testBtn)testBtn.disabled=false;
+      if(testStatus)testStatus.textContent="Test recipient: "+String((currentSession&&currentSession.user&&currentSession.user.email)||"your signed-in account")+".";
       status.textContent=(enabled.checked?"Company preference: On.":"Company preference: Off.")+
         (setting.delivery_ready===true?" Scheduled delivery is available.":" Live delivery remains disabled during the pilot.");
     }catch(ex){
@@ -8254,6 +8264,38 @@
         '</div><p style="margin:10px 0 0;font-size:12px;color:var(--muted)">Preview only. Current open-action counts are as of '+esc(d.as_of||"")+'. No emails were sent.</p>';
     }catch(ex){console.error("weekly digest preview",ex); if(status)status.textContent="Unable to preview digest. Try again after refreshing the dashboard.";}
     finally{button.disabled=false;button.textContent="Preview counts";}
+  });
+
+  var weeklyDigestTestBtn=$("sendWeeklyDigestTest");
+  if(weeklyDigestTestBtn) weeklyDigestTestBtn.addEventListener("click",async function(){
+    if(currentRole!=="admin"||!currentSession||!currentSession.access_token)return;
+    var button=$("sendWeeklyDigestTest"),status=$("weeklyDigestTestStatus");
+    var recipient=String((currentSession.user&&currentSession.user.email)||"");
+    if(!recipient){if(status)status.textContent="Your account has no verified email address.";return;}
+    if(!window.confirm("Send one TEST Weekly Safety Pulse digest to "+recipient+"?\n\nThis does not enable weekly delivery. You can send one test every ten minutes."))return;
+    button.disabled=true;
+    button.textContent="Sending test…";
+    if(status)status.textContent="Submitting one test email to Brevo…";
+    try{
+      var response=await fetch(SUPA_URL+"/functions/v1/safety-pulse-digest-test",{
+        method:"POST",
+        headers:{"Authorization":"Bearer "+currentSession.access_token,
+                 "apikey":SUPA_KEY,"Content-Type":"application/json"},
+        body:JSON.stringify({action:"send_test",confirm:true})
+      });
+      var result=await response.json().catch(function(){return {};});
+      if(!response.ok)throw new Error(result.error==="TEST_COOLDOWN"?"A test has already been requested in the past ten minutes.":
+        result.error==="AUTH_REQUIRED"||result.error==="INVALID_SESSION"?"Your session has expired. Sign in again.":
+        result.error==="TEST_EMAIL_NOT_CONFIGURED"?"Email test is not configured in Supabase.":
+        "Email test could not be sent ("+(result.error||response.status)+").");
+      if(status)status.textContent="Brevo accepted a TEST email to "+result.recipient+
+        ". Please confirm it arrives in your inbox. Weekly scheduled delivery remains Off.";
+      toast("Digest test accepted by Brevo","ok");
+    }catch(ex){
+      console.error("weekly digest test",ex);
+      if(status)status.textContent=ex&&ex.message?ex.message:"Could not send test email.";
+      toast("Digest test did not complete","err");
+    }finally{button.disabled=false;button.textContent="Send test email to my account";}
   });
 
   async function loadReportEmailMode(){
