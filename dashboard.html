@@ -379,10 +379,15 @@
   .report-owner-step-card b{display:block;color:#245f8f;font-size:14px;margin-bottom:3px}
   .report-owner-step-card p{margin:0 0 10px;color:var(--ink-2);font-size:12.5px;line-height:1.45}
   .report-owner-step-card label{display:grid;gap:6px;font-size:12.5px;font-weight:700;color:var(--ink-2)}
-  .report-owner-step-card select{background:var(--paper)}
+  .review-owner-picker{position:relative;display:block;width:min(100%,21rem)}
+  .review-owner-picker::after{content:"";position:absolute;right:16px;top:50%;width:8px;height:8px;border-right:2px solid var(--ink-2);border-bottom:2px solid var(--ink-2);transform:translateY(-70%) rotate(45deg);pointer-events:none}
+  .review-owner-picker .review-owner-select{background:var(--paper);padding-right:40px;cursor:pointer;text-overflow:ellipsis}
+  .review-owner-picker .review-owner-select:hover:not(:disabled){border-color:var(--ink-2)}
   .review-owner-summary{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px}
   .review-owner-summary b{margin:0}
-  .review-text-action,.review-footer .noaction-btn{background:transparent;color:var(--ink-2);text-decoration:underline;text-underline-offset:3px}
+  .review-text-action{background:transparent;color:var(--ink-2);text-decoration:underline;text-underline-offset:3px}
+  .review-footer .noaction-btn{background:#e8e9ec;border-color:#c4c8ce;color:var(--ink-2)}
+  .review-footer .noaction-btn:hover:not(:disabled){background:#dce0e5;border-color:#aeb4bd}
   .review-text-action{border:0;border-radius:6px;padding:6px 8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700}
   .review-screening-blocker{color:var(--ink);font-size:13px}
   .review-screening-blocker .review-text-action{padding-left:0}
@@ -3546,7 +3551,7 @@
         regulatoryReviewHtml(r)+
         '<div class="report-owner-step-card" data-report-owner-step>'+
           '<div class="review-owner-summary"><b>Report owner: <span data-review-owner-name></span></b><button type="button" class="review-text-action" data-review-owner-change aria-expanded="false" aria-controls="reviewOwnerField" aria-label="Change report owner" hidden>Change</button></div>'+
-          '<p>This person moves the whole report forward.</p><div id="reviewOwnerField" hidden><p>Your selection takes effect when you start the investigation.</p><label>Assign report to<select class="review-owner-select">'+reportOwnerOptions(r.report_owner_user_id||(isManager()?currentUserId():""))+'</select></label></div>'+
+          '<p>This person moves the whole report forward.</p><div id="reviewOwnerField" hidden><p>Your selection takes effect when you start the investigation.</p><label>Assign report to<span class="review-owner-picker"><select class="review-owner-select">'+reportOwnerOptions(r.report_owner_user_id||(isManager()?currentUserId():""))+'</select></span></label></div>'+
         '</div>'+
         '<div class="wizard-footer review-footer" data-next-step-footer="review">'+
           '<div class="wizard-footer-copy"><div class="review-screening-blocker" data-review-screening-blocker hidden><span data-review-screening-message role="status"></span><button type="button" class="review-text-action" data-review-screening-jump>Go to injury screening</button></div></div>'+
