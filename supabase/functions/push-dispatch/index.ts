@@ -8,7 +8,7 @@ const providerOk=(endpoint:string)=>{
   try{const u=new URL(endpoint),h=u.hostname.toLowerCase();
     return u.protocol==="https:"&&!u.username&&!u.password&&!u.port&&
       (h==="fcm.googleapis.com"||h==="updates.push.services.mozilla.com"||
-       h==="web.push.apple.com"||h==="api.push.apple.com"||h==="android.googleapis.com"||h.endsWith(".push.apple.com"));
+       h==="web.push.apple.com"||h==="api.push.apple.com"||h==="android.googleapis.com"||(h.endsWith(".push.apple.com")||h.endsWith(".notify.windows.com")||h.endsWith(".wns.windows.com")));
   }catch{return false;}
 };
 Deno.serve(async req=>{
