@@ -54,6 +54,12 @@ Deno.serve(async req=>{
     }
     return reply({configured:!!Deno.env.get("VAPID_PUBLIC_KEY"),publicKey:Deno.env.get("VAPID_PUBLIC_KEY")||null,activeDevices:(data||[]).length,deviceRegistered});
   }
+  if(action==="disable_all"){
+    const {error}=await service.from("user_push_subscriptions")
+      .update({disabled_at:new Date().toISOString(),updated_at:new Date().toISOString()})
+      .eq("user_id",user.id).is("disabled_at",null);
+    return error?reply({error:"ALL_DEVICES_DISABLE_FAILED"},503):reply({ok:true});
+  }
   if(action==="register"||action==="disable"){
     if(!safeEndpoint(body.endpoint))return reply({error:"INVALID_PUSH_ENDPOINT"},400);
     const endpoint=String(body.endpoint);
