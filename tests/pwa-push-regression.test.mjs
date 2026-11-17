@@ -41,7 +41,7 @@ test('worker never displays untrusted title/body or opens untrusted URL',async()
   const n={data:{url:'https://attacker.example/'},close(){}};
   w.handlers.notificationclick({notification:n,waitUntil:v=>p=v});
   await p;
-  assert.deepEqual(w.opened,['https://rbh.example/dashboard.html']);
+  assert.deepEqual(w.opened,['https://rbh.example/dashboard.html#notifications']);
 });
 test('worker focuses an existing staff dashboard before opening a new window',async()=>{
   const w=worker();let focused=0,p;
