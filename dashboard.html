@@ -2990,6 +2990,11 @@
     startNotificationPolling();
     startLiveSync();
     restoreSavedView();
+    if(window.location.hash==="#notifications"){
+      openNotificationPanel();
+      try{ history.replaceState({},document.title,location.pathname+location.search); }catch(_){}
+    }
+    if(pendingPushKey){ var key=pendingPushKey; pendingPushKey=null; openPushNotification(key); }
   }
   sb.auth.getSession().then(function(res){ var s=res.data&&res.data.session; if(s) showApp(s); else showLogin(); });
   sb.auth.onAuthStateChange(function(_e,s){
@@ -3249,6 +3254,22 @@
     if(r) openIncident(r,notificationReturnView());
     else toast("That report is unavailable or you no longer have access to it.","err");
   }
+  var pendingPushKey=null;
+  async function openPushNotification(key){
+    if(!currentSession||!currentSession.user||!/^[a-f0-9]{32}$/.test(key))return;
+    await loadNotifications(true);
+    var n=userNotifications.find(function(x){return String(x.id).replace(/-/g,"").toLowerCase()===key;});
+    if(n) await openNotificationItem(n);
+    else openNotificationPanel(); // Inaccessible, reassigned or resolved: no data exposed.
+  }
+  if("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("message",function(event){
+    var data=event&&event.data;
+    if(!data||data.type!=="RBH_PUSH_OPEN"||typeof data.eventKey!=="string"||!/^[a-f0-9]{32}$/.test(data.eventKey))return;
+    pendingPushKey=data.eventKey;
+    if(currentSession&&appView.style.display==="block"){
+      var key=pendingPushKey;pendingPushKey=null;openPushNotification(key);
+    }
+  });
   function openNotificationPanel(){
     var p=$("notificationPanel"), b=$("notificationBell"); if(!p||!b) return;
     p.hidden=false; b.setAttribute("aria-expanded","true");
