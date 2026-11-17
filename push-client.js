@@ -76,15 +76,18 @@
     finally{busy=false;await refresh();}
   }
   async function beforeSignOut(all){
-    if(!sb||!available())return;
+    if(!sb)return;
     try{
-      var state=await currentSubscription();
-      if(state.subscription){
-        await call("disable",{endpoint:state.subscription.endpoint});
-        await state.subscription.unsubscribe();
+      if(all)await call("disable_all");
+      if(available()){
+        var state=await currentSubscription();
+        if(state.subscription){
+          if(!all)await call("disable",{endpoint:state.subscription.endpoint});
+          await state.subscription.unsubscribe();
+        }
       }
       registeredFor=null;
-    }catch(e){throw Error("Could not revoke this device's push subscription. Please retry before signing out.");}
+    }catch(e){throw Error("Could not revoke push notifications. Please retry before signing out.");}
   }
   function init(client){
     sb=client;
