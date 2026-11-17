@@ -78,12 +78,16 @@
   async function beforeSignOut(all){
     if(!sb)return;
     try{
-      if(all)await call("disable_all");
+      // Server revocation first: never block safe sign-out waiting for a worker.
+      await call(all?"disable_all":"disable_session");
       if(available()){
-        var state=await currentSubscription();
-        if(state.subscription){
-          if(!all)await call("disable",{endpoint:state.subscription.endpoint});
-          await state.subscription.unsubscribe();
+        var registration=await Promise.race([
+          navigator.serviceWorker.ready,
+          new Promise(function(resolve){setTimeout(function(){resolve(null);},1500);})
+        ]);
+        if(registration){
+          var subscription=await registration.pushManager.getSubscription();
+          if(subscription)try{await subscription.unsubscribe();}catch(_){}
         }
       }
       registeredFor=null;
