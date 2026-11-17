@@ -1,0 +1,112 @@
+// RBH / TeamWorkt PWA push dispatch: private service-role invocation only.
+// Not scheduled. Requires explicit global enable and valid VAPID secrets before sending.
+import { createClient } from "npm:@supabase/supabase-js@2.117.2";
+import webpush from "npm:web-push@3.6.7";
+const json=(value:unknown,status=200)=>new Response(JSON.stringify(value),{status,headers:{"Content-Type":"application/json","Cache-Control":"no-store"}});
+const allowed=new Set(["new_report","report_owner_assignment","action_assignment","corrective_action_assignment","corrective_action_verification_requested","corrective_action_changes_requested"]);
+const providerOk=(endpoint:string)=>{
+  try{const u=new URL(endpoint),h=u.hostname.toLowerCase();
+    return u.protocol==="https:"&&!u.username&&!u.password&&!u.port&&
+      (h==="fcm.googleapis.com"||h==="updates.push.services.mozilla.com"||
+       h==="web.push.apple.com"||h==="api.push.apple.com"||h==="android.googleapis.com"||h.endsWith(".push.apple.com"));
+  }catch{return false;}
+};
+Deno.serve(async req=>{
+  if(req.method!=="POST")return json({error:"METHOD_NOT_ALLOWED"},405);
+  const secret=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const token=(req.headers.get("Authorization")||"").replace(/^Bearer\s+/i,"").trim();
+  // Do not let ordinary signed-in users trigger delivery or enumerate outbox data.
+  if(!secret||!token||token!==secret)return json({error:"NOT_AUTHORIZED"},403);
+  const url=Deno.env.get("SUPABASE_URL");
+  if(!url)return json({error:"NOT_CONFIGURED"},503);
+  const service=createClient(url,secret,{auth:{persistSession:false,autoRefreshToken:false}});
+  const {data:settings,error:settingsError}=await service.from("push_delivery_settings").select("enabled").eq("id",true).maybeSingle();
+  if(settingsError||!settings?.enabled)return json({enabled:false,processed:0});
+  const publicKey=Deno.env.get("VAPID_PUBLIC_KEY"),privateKey=Deno.env.get("VAPID_PRIVATE_KEY"),subject=Deno.env.get("VAPID_SUBJECT");
+  if(!publicKey||!privateKey||!subject||!/^mailto:|^https:\/\//.test(subject))return json({error:"VAPID_NOT_CONFIGURED"},503);
+  try{webpush.setVapidDetails(subject,publicKey,privateKey);}
+  catch{return json({error:"VAPID_INVALID"},503);}
+  const {data:claims,error:claimError}=await service.rpc("teamworkt_push_claim",{p_limit:10});
+  if(claimError)return json({error:"QUEUE_UNAVAILABLE"},503);
+  const summary={processed:0,accepted:0,expired:0,cancelled:0,retry:0,failed:0};
+  for(const task of claims||[]){
+    summary.processed++;
+    const now=new Date().toISOString();
+    // Current source row and recipient must still authorize the notification.
+    const [{data:event},{data:device}]=await Promise.all([
+      service.from("report_user_notifications").select("id,organization_id,recipient_user_id,notification_type,report_id,corrective_action_id,resolved_at,created_at").eq("id",task.notification_id).maybeSingle(),
+      service.from("user_push_subscriptions").select("id,organization_id,user_id,endpoint,p256dh,auth_secret,disabled_at").eq("id",task.subscription_id).maybeSingle()
+    ]);
+    let permitted=!!event&&!!device&&!device.disabled_at&&
+      event.organization_id===task.organization_id&&device.organization_id===task.organization_id&&
+      event.recipient_user_id===device.user_id&&allowed.has(event.notification_type)&&!event.resolved_at&&
+      Date.now()-new Date(event.created_at).getTime()<48*60*60*1000&&
+      providerOk(device.endpoint);
+    let profile:any=null,report:any=null,action:any=null;
+    if(permitted){
+      const {data:p}=await service.from("profiles").select("id,is_active,access_deleted_at,app_role,organization_id,current_organization_id").eq("id",device.user_id).maybeSingle();
+      profile=p;
+      permitted=!!p&&p.is_active===true&&!p.access_deleted_at&&
+        (p.current_organization_id||p.organization_id)===event.organization_id;
+    }
+    if(permitted){
+      const {data:org}=await service.from("organizations").select("id,status").eq("id",event.organization_id).maybeSingle();
+      permitted=!!org&&!["inactive","suspended","deleted"].includes(String(org.status||"").toLowerCase());
+    }
+    if(permitted){
+      const {data:r}=await service.from("reports")
+        .select("id,organization_id,report_owner_user_id,assigned_user_id,status")
+        .eq("id",event.report_id).maybeSingle();
+      report=r;permitted=!!r&&r.organization_id===event.organization_id;
+    }
+    if(permitted&&event.corrective_action_id){
+      const {data:a}=await service.from("report_corrective_actions")
+        .select("id,organization_id,report_id,owner_user_id,verifier_user_id,status")
+        .eq("id",event.corrective_action_id).maybeSingle();
+      action=a;permitted=!!a&&a.organization_id===event.organization_id&&a.report_id===report.id;
+    }
+    if(permitted){
+      const uid=event.recipient_user_id;
+      const manager=["admin","safety_manager"].includes(String(profile.app_role||"").toLowerCase());
+      switch(event.notification_type){
+        case "new_report": permitted=manager;break;
+        case "report_owner_assignment": permitted=report.report_owner_user_id===uid;break;
+        case "action_assignment":
+          permitted=(action&&action.owner_user_id===uid)||report.assigned_user_id===uid;break;
+        case "corrective_action_assignment":
+        case "corrective_action_changes_requested":
+          permitted=!!action&&action.owner_user_id===uid;break;
+        case "corrective_action_verification_requested":
+          permitted=!!action&&(action.verifier_user_id===uid||report.report_owner_user_id===uid||manager);break;
+        default: permitted=false;
+      }
+    }
+    if(!permitted){
+      await service.from("push_delivery_outbox").update({status:"cancelled",last_error_code:"RECIPIENT_NOT_CURRENT",updated_at:now}).eq("id",task.id).eq("status","claimed");
+      summary.cancelled++;continue;
+    }
+    try{
+      const response=await webpush.sendNotification(
+        {endpoint:device.endpoint,keys:{p256dh:device.p256dh,auth:device.auth_secret}},
+        JSON.stringify({tag:event.id.replace(/-/g,"")}),{TTL:3600,urgency:"normal"}
+      );
+      await service.from("push_delivery_outbox").update({status:"accepted",last_http_status:response.statusCode,updated_at:now}).eq("id",task.id).eq("status","claimed");
+      await service.from("user_push_subscriptions").update({last_success_at:now,failure_count:0,updated_at:now}).eq("id",device.id);
+      summary.accepted++;
+    }catch(e){
+      const status=Number((e as {statusCode?:number})?.statusCode)||null;
+      const expired=status===404||status===410;
+      const transient=!status||status===408||status===429||status>=500;
+      const retry=transient&&task.attempts<5;
+      const outcome=expired?"expired":retry?"retry":"failed";
+      if(expired)await service.from("user_push_subscriptions").update({disabled_at:now,last_failure_at:now,updated_at:now}).eq("id",device.id);
+      else await service.from("user_push_subscriptions").update({last_failure_at:now,failure_count:1,updated_at:now}).eq("id",device.id);
+      await service.from("push_delivery_outbox").update({
+        status:outcome,last_http_status:status,last_error_code:expired?"ENDPOINT_GONE":retry?"TRANSIENT":"PROVIDER_REJECTED",
+        next_attempt_at:new Date(Date.now()+Math.min(60,2**task.attempts)*60000).toISOString(),updated_at:now
+      }).eq("id",task.id).eq("status","claimed");
+      summary[outcome as "expired"|"retry"|"failed"]++;
+    }
+  }
+  return json({enabled:true,...summary});
+});
