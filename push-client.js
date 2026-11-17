@@ -55,6 +55,14 @@
       if(permission!=="granted")throw Error("Notifications were not allowed. You can continue using RBH email and in-app alerts.");
       var status=await call("status");if(!status.configured||!status.publicKey)throw Error("Push setup is not yet configured.");
       var state=await currentSubscription();
+      if(state.subscription){
+        var current=await call("status",{endpoint:state.subscription.endpoint});
+        if(!current.deviceRegistered){
+          // A shared browser or old session must never reuse another account's endpoint.
+          await state.subscription.unsubscribe();
+          state.subscription=null;
+        }
+      }
       var subscription=state.subscription||await state.worker.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:decodeKey(status.publicKey)});
       var keys=subscription.toJSON().keys||{};
       await call("register",{endpoint:subscription.endpoint,subscription:{p256dh:keys.p256dh,auth:keys.auth}});
