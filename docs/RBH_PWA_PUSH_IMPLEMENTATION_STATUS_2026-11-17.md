@@ -3,6 +3,15 @@
 **Repository:** `mikelifesfood/RBH` — commits directly to `main`.
 **Supabase project:** `owhkxguiavgxzwvbxevj`.
 
+## November 17 update — all-staff opt-in readiness (NOT YET LIVE)
+- A test report generated a `new_report` in-app notification for an active RBH Admin who has two registered push devices. No push was queued because automatic dispatch was intentionally disabled — **not** because the user's phone failed.
+- Added `push_organization_settings` with **RBH Insulation disabled** by default, preserving global master switch disabled. Only explicitly enabled organizations can enqueue or dispatch.
+- Deployed `push-dispatch` v9 with `verify_jwt=false` and a strict named `sb_secret_` API-key check in the server handler, using `SUPABASE_SECRET_KEYS.rbh_push_dispatch`. No unauthenticated caller can claim queue items; the request must provide the dedicated key in its **`apikey` header**, not JWT Authorization.
+- Installed private database function `teamworkt_internal.rbh_dispatch_push_due()`, which reads the dedicated key from Supabase Vault `rbh_push_dispatch_key` at execution. **No scheduled job** and no automatic delivery active yet.
+- Required administrator setup: create a dedicated Supabase Secret key named `rbh_push_dispatch`, then store its value securely in Vault under `rbh_push_dispatch_key`. Never paste the key into chat, GitHub, or SQL.
+- After the Vault name is verified and an approved controlled workflow test passes, activate the RBH tenant gate, global gate and cron job. Older notifications created while OFF are intentionally not retroactively sent.
+- Verified: `global_enabled=false`, `rbh_enabled=false`, cron job count 0, queue count 0, two active device subscriptions. Tenant settings not readable/writable by signed-in staff. Push CI regression passed after updating key-auth assertions.
+
 ## Completed and deployed
 - Additive production database tables: `user_push_subscriptions`, `push_delivery_outbox`, `push_delivery_settings`; all new tables have RLS and no direct anon/authenticated grants. No existing reports, profiles, email notifications or attachments modified.
 - Database trigger enqueues only six supported `report_user_notifications` event types, only while global dispatch setting enabled; currently `enabled=false`. Server-only claim function uses `FOR UPDATE SKIP LOCKED` and deduplicated event/device keys.
