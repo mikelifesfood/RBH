@@ -1,6 +1,6 @@
 # RBH / TeamWorkt Safety — Running MVP Backlog
 
-_Last reviewed: November 16, 2026. Living working list. Change statuses as tasks are completed. Do not reopen passed tests without evidence of a regression._
+_Last reviewed: November 17, 2026. Living working list. Change statuses as tasks are completed. Do not reopen passed tests without evidence of a regression._
 
 ## Status definitions
 - **P0 · RBH go-live gate**: Required to sign off RBH's pilot.
@@ -11,6 +11,7 @@ _Last reviewed: November 16, 2026. Living working list. Change statuses as tasks
 
 ## P0 — Remaining RBH go-live acceptance and support
 
+- [ ] **PWA push notifications — next build, RBH pilot launch target this week**: Add signed-in device subscriptions, secure VAPID dispatch, user-controlled opt-in, six existing notification event types, role/tenant filtering, iPhone installed Home Screen PWA and desktop background delivery, safe click-through, invalid-device cleanup, and duplicate protections. Preserve the public reporting PWA and existing email/in-app alerts. Detailed handoff: `docs/RBH_PWA_PUSH_NOTIFICATIONS_HANDOFF.md`. Mark passed only after real device and tenant/permissions acceptance.
 - [ ] **Final expired-session browser regression**: Admin role management must display sign-in guidance after expired 401; code correction committed, actual browser regression not signed off.
 - [ ] **Final release walk-through / smoke test**: On current deployed build, verify Admin, Safety Manager, Supervisor and Read Only navigation, reports, My Work, corrective actions, closing, attachments, user management, notifications, and mobile/PWA at least once as a consolidated release acceptance (not a new feature build).
 - [ ] **Document rollback, recovery and operational monitoring**: Maintain a release checklist, incident response contacts, backup/restore test, Supabase/Brevo/Cloudflare service dependencies, and sign-off for RBH handover.
@@ -19,7 +20,7 @@ _Last reviewed: November 16, 2026. Living working list. Change statuses as tasks
 
 ## P0 — Before selling TeamWorkt Safety to other companies
 
-- [ ] **PWA web push notifications (P0 for PWA launch / commercial readiness)**: Not yet implemented. The existing bell/notification center polls in-app notifications while the dashboard is running, and `sw.js` handles offline caching but contains no Push API listener or notification-click handling. Build browser permission onboarding by explicit user action; per-user/per-device Push API subscription management, VAPID credentials (stored as backend secrets), signed-in tenant-scoped subscription storage and RLS, server-side delivery for report assignment, corrective-action assignment, completion needing review, send-back, and urgent new reports as authorized; notification click deep-link into the correct record; safe generic lock-screen copy without confidential incident details; opt-out/unsubscribe and invalid-subscription cleanup; duplicate-send/rate-limit protection. Test Chrome/Edge desktop and Android, plus iPhone/iPad **installed Home Screen PWA** support with permission requested from user interaction, and test notifications when the app is closed/backgrounded. Preserve email and in-app notifications as a fallback. The public anonymous report form must never request push permission. Verify expected delivery and access for Admin, Safety Manager, Supervisor, and Read Only roles.
+- [ ] **Reuse PWA push foundation for subsequent TeamWorkt tenants**: After RBH pilot passes, repeat the device subscription, isolation, push-rate limiting and delivery tests with a second company. See the detailed RBH handoff.
 - [ ] **Private reusable TeamWorkt master**: Separate customer-independent source, branded defaults, and RBH-specific settings from the deployable baseline.
 - [ ] **Repeatable tenant onboarding/provisioning**: Clean migrations, seeds/defaults, secrets, email sender setup, job sites, Admin invitations, domain/hosting workflow, and reproducible setup instructions.
 - [ ] **Tenant/data isolation**: Cross-company tests for RLS, Supabase privileged functions, roles, report attachments, signed URLs, service endpoints, email recipients, and administrative context.
