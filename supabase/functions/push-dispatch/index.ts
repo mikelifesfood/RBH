@@ -35,7 +35,7 @@ Deno.serve(async req=>{
     // Current source row and recipient must still authorize the notification.
     const [{data:event},{data:device}]=await Promise.all([
       service.from("report_user_notifications").select("id,organization_id,recipient_user_id,notification_type,report_id,corrective_action_id,resolved_at,created_at").eq("id",task.notification_id).maybeSingle(),
-      service.from("user_push_subscriptions").select("id,organization_id,user_id,endpoint,p256dh,auth_secret,disabled_at").eq("id",task.subscription_id).maybeSingle()
+      service.from("user_push_subscriptions").select("id,organization_id,user_id,auth_session_id,endpoint,p256dh,auth_secret,disabled_at").eq("id",task.subscription_id).maybeSingle()
     ]);
     let permitted=!!event&&!!device&&!device.disabled_at&&
       event.organization_id===task.organization_id&&device.organization_id===task.organization_id&&
@@ -43,6 +43,13 @@ Deno.serve(async req=>{
       Date.now()-new Date(event.created_at).getTime()<48*60*60*1000&&
       providerOk(device.endpoint);
     let profile:any=null,report:any=null,action:any=null;
+    if(permitted){
+      if(!device.auth_session_id){permitted=false;}
+      else{
+        const session=await service.rpc("teamworkt_push_session_active",{p_user_id:device.user_id,p_session_id:device.auth_session_id});
+        permitted=!session.error&&session.data===true;
+      }
+    }
     if(permitted){
       const {data:p}=await service.from("profiles").select("id,is_active,access_deleted_at,app_role,organization_id,current_organization_id").eq("id",device.user_id).maybeSingle();
       profile=p;
