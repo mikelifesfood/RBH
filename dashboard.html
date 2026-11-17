@@ -1925,6 +1925,12 @@
           <h4>Password reset email</h4><p>Send a secure password-reset link to your account email address.</p>
           <button class="profile-secondary" id="passwordReset" type="button">Email me a reset link</button>
         </div>
+        <div class="profile-card-section" id="rbhPushSettings" hidden>
+          <h4>Push notifications · this device</h4>
+          <p>Receive privacy-safe alerts about assigned safety work. You can opt in or disable this device at any time. Your email and in-app notifications remain available.</p>
+          <p class="field-help" id="rbhPushStatus" role="status" aria-live="polite">Checking device support…</p>
+          <div class="profile-action-row"><button class="profile-primary" id="rbhPushEnable" type="button" disabled>Enable push notifications</button><button class="profile-secondary" id="rbhPushDisable" type="button" hidden disabled>Disable notifications on this device</button></div>
+        </div>
         <div class="profile-card-section profile-danger-zone">
           <h4>Sessions</h4><p>Sign out of this browser, or sign out on all devices if another device should no longer have access.</p>
           <div class="profile-action-row"><button class="profile-secondary" id="signout" type="button">Sign out</button><button class="profile-danger" id="signoutAll" type="button">Sign out on all devices</button></div>
@@ -2101,6 +2107,7 @@
   </div>
 </div>
 
+<script src="./push-client.js?v=20261117-push-preflight"></script>
 <script>
 (function(){
   "use strict";
@@ -2975,6 +2982,7 @@
       }
     }catch(_e){}
     await loadProfiles();
+    if(window.RBHPush) window.RBHPush.init(sb);
     await loadPlatformContext();
     applyRoleUi();
     await loadReports();
@@ -3002,7 +3010,10 @@
     catch(ex){ err.textContent="Incorrect email or password."; err.classList.add("show"); }
     finally{ btn.disabled=false; btn.textContent="Sign in"; }
   });
-  var _signout=$("signout"); if(_signout) _signout.addEventListener("click", async function(){ await sb.auth.signOut(); });
+  var _signout=$("signout"); if(_signout) _signout.addEventListener("click", async function(){
+    try { if(window.RBHPush) await window.RBHPush.beforeSignOut(false); await sb.auth.signOut(); }
+    catch(e){toast(e&&e.message?e.message:"Unable to sign out safely. Please retry.","err");}
+  });
 
   /* ---------- data ---------- */
   async function loadReports(silent){
@@ -7301,7 +7312,7 @@
 
   var _signoutAll=$("signoutAll"); if(_signoutAll) _signoutAll.addEventListener("click",async function(){
     _signoutAll.disabled=true; _signoutAll.textContent="Signing out…";
-    try{ var res=await sb.auth.signOut({scope:"global"}); if(res&&res.error) throw res.error; }
+    try{ if(window.RBHPush) await window.RBHPush.beforeSignOut(true); var res=await sb.auth.signOut({scope:"global"}); if(res&&res.error) throw res.error; }
     catch(ex){ console.error("global signout",ex); toast("Could not sign out on all devices.","err"); _signoutAll.disabled=false; _signoutAll.textContent="Sign out on all devices"; }
   });
 
