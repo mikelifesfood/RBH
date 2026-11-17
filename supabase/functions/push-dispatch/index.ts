@@ -74,8 +74,14 @@ Deno.serve(async req=>{
     }
     if(permitted){
       const uid=event.recipient_user_id;
-      const manager=["admin","safety_manager"].includes(String(profile.app_role||"").toLowerCase());
-      switch(event.notification_type){
+      const role=String(profile.app_role||"").toLowerCase();
+      const manager=["admin","safety_manager"].includes(role);
+      const workRole=manager||role==="supervisor";
+      if(["closed","no_action","duplicate"].includes(String(report.status||"").toLowerCase()))permitted=false;
+      if(event.notification_type!=="new_report"&&!workRole)permitted=false;
+      if(!permitted){
+        // Preserve suppressed-item audit; never send stale or read-only work.
+      }else switch(event.notification_type){
         case "new_report": permitted=manager;break;
         case "report_owner_assignment": permitted=report.report_owner_user_id===uid;break;
         case "action_assignment":
