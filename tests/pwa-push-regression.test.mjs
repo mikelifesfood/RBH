@@ -83,7 +83,7 @@ test('sender is gated and rechecks live assignments and sessions',()=>{
   assert.match(sender,/teamworkt_push_session_active/);
   assert.match(sender,/report_owner_user_id===uid/);
   assert.match(sender,/action\.owner_user_id===uid/);
-  assert.match(sender,/profile\.is_active/); // verify profile current active checks remain present
+  assert.match(sender,/p\.is_active===true/); // verify profile current active checks remain present
   assert.match(outbox,/for update skip locked/);
   assert.match(outbox,/on conflict \(notification_id,subscription_id\) do nothing/);
   assert.match(outbox,/enabled=true/);
