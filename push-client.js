@@ -35,10 +35,10 @@
     if(ios()&&!standalone()){show("On iPhone or iPad, install the RBH staff dashboard to your Home Screen first, then enable notifications inside the installed app.");controls(false);return;}
     if(Notification.permission==="denied"){show("Notifications are blocked in device or browser settings. Allow them there to enable push.");controls(false);return;}
     try{
-      var status=await call("status");
       var state=await currentSubscription();
-      if(state.subscription){
-        show("This device has a browser push subscription. You may disable it below. Email and in-app alerts remain active.");
+      var status=await call("status",{endpoint:state.subscription?state.subscription.endpoint:null});
+      if(state.subscription&&status.deviceRegistered){
+        show("Push notifications are enabled on this device. Email and in-app alerts remain active.");
         if(enable){enable.hidden=true;}if(disable){disable.hidden=false;}controls(true);
       }else{
         show(status.configured?"Push is off on this device. Enable it to receive RBH Safety alerts even when the app is closed.":"Push setup is not yet available. Email and in-app alerts remain active.");
