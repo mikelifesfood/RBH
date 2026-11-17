@@ -68,8 +68,12 @@ Deno.serve(async req=>{
         (p.current_organization_id||p.organization_id)===event.organization_id;
     }
     if(permitted){
-      const {data:org}=await service.from("organizations").select("id,status").eq("id",event.organization_id).maybeSingle();
-      permitted=!!org&&!["inactive","suspended","deleted"].includes(String(org.status||"").toLowerCase());
+      const [{data:org},{data:pushTenant}]=await Promise.all([
+        service.from("organizations").select("id,status").eq("id",event.organization_id).maybeSingle(),
+        service.from("push_organization_settings").select("enabled").eq("organization_id",event.organization_id).maybeSingle()
+      ]);
+      permitted=!!org&&pushTenant?.enabled===true&&
+        !["inactive","suspended","deleted"].includes(String(org.status||"").toLowerCase());
     }
     if(permitted){
       const {data:r}=await service.from("reports")
