@@ -8,6 +8,8 @@ const ui=fs.readFileSync(new URL('../push-client.js',import.meta.url),'utf8');
 const dashboard=fs.readFileSync(new URL('../dashboard.html',import.meta.url),'utf8');
 const manager=fs.readFileSync(new URL('../supabase/functions/push-subscriptions/index.ts',import.meta.url),'utf8');
 const sender=fs.readFileSync(new URL('../supabase/functions/push-dispatch/index.ts',import.meta.url),'utf8');
+const selfTest=fs.readFileSync(new URL('../supabase/functions/push-test-device/index.ts',import.meta.url),'utf8');
+const testMigration=fs.readFileSync(new URL('../supabase/migrations/20261117_pwa_push_controlled_device_test.sql',import.meta.url),'utf8');
 const foundation=fs.readFileSync(new URL('../supabase/migrations/20261117_pwa_push_foundation_STAGED_NOT_APPLIED.sql',import.meta.url),'utf8');
 const outbox=fs.readFileSync(new URL('../supabase/migrations/20261117_pwa_push_outbox_claim.sql',import.meta.url),'utf8');
 
@@ -87,4 +89,20 @@ test('sender is gated and rechecks live assignments and sessions',()=>{
   assert.match(outbox,/for update skip locked/);
   assert.match(outbox,/on conflict \(notification_id,subscription_id\) do nothing/);
   assert.match(outbox,/enabled=true/);
+});
+
+test('controlled test only targets authenticated current device, rate limited, no global activation',()=>{
+  assert.match(selfTest,/auth\.getUser\(token\)/);
+  assert.match(selfTest,/\.eq\("user_id",userId\)/);
+  assert.match(selfTest,/\.eq\("organization_id",org\)/);
+  assert.match(selfTest,/\.eq\("auth_session_id",sessionId\)/);
+  assert.match(selfTest,/teamworkt_push_session_active/);
+  assert.match(selfTest,/teamworkt_push_claim_test/);
+  assert.match(selfTest,/webpush\.sendNotification/);
+  assert.match(testMigration,/interval '2 minutes'/);
+  assert.match(testMigration,/auth\.role\(\)/);
+  assert.match(testMigration,/revoke all on function public\.teamworkt_push_claim_test/);
+  assert.match(dashboard,/id="rbhPushTest"/);
+  assert.match(ui,/functions\.invoke\("push-test-device"/);
+  assert.ok(!selfTest.includes(".from(\"reports\")"));
 });
