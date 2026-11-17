@@ -1,4 +1,4 @@
-// RBH / TeamWorkt PWA push dispatch: private service-role invocation only.
+// RBH / TeamWorkt PWA push dispatch: dedicated sb_secret backend invocation only.
 // Not scheduled. Requires explicit global enable and valid VAPID secrets before sending.
 import { createClient } from "npm:@supabase/supabase-js@2.117.2";
 import webpush from "npm:web-push@3.6.7";
@@ -13,12 +13,23 @@ const providerOk=(endpoint:string)=>{
 };
 Deno.serve(async req=>{
   if(req.method!=="POST")return json({error:"METHOD_NOT_ALLOWED"},405);
+  // A dedicated modern Supabase secret key (not a JWT) authorizes scheduled calls.
+  // RBH API key name: rbh_push_dispatch. It never belongs in frontend code.
+  let configuredKey="";
+  try{
+    const keys=JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS")||"{}");
+    configuredKey=typeof keys.rbh_push_dispatch==="string"?keys.rbh_push_dispatch:"";
+  }catch{}
+  const suppliedKey=req.headers.get("apikey")||"";
+  if(!configuredKey||!suppliedKey||!suppliedKey.startsWith("sb_secret_")||suppliedKey.length!==configuredKey.length)
+    return json({error:"NOT_AUTHORIZED"},403);
+  const digest=async(s:string)=>new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s)));
+  const [providedHash,expectedHash]=await Promise.all([digest(suppliedKey),digest(configuredKey)]);
+  let diff=0;for(let i=0;i<providedHash.length;i++)diff|=providedHash[i]^expectedHash[i];
+  if(diff!==0)return json({error:"NOT_AUTHORIZED"},403);
   const secret=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  const token=(req.headers.get("Authorization")||"").replace(/^Bearer\s+/i,"").trim();
-  // Do not let ordinary signed-in users trigger delivery or enumerate outbox data.
-  if(!secret||!token||token!==secret)return json({error:"NOT_AUTHORIZED"},403);
   const url=Deno.env.get("SUPABASE_URL");
-  if(!url)return json({error:"NOT_CONFIGURED"},503);
+  if(!url||!secret)return json({error:"NOT_CONFIGURED"},503);
   const service=createClient(url,secret,{auth:{persistSession:false,autoRefreshToken:false}});
   const {data:settings,error:settingsError}=await service.from("push_delivery_settings").select("enabled").eq("id",true).maybeSingle();
   if(settingsError||!settings?.enabled)return json({enabled:false,processed:0});
