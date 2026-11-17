@@ -50,10 +50,11 @@
     if(busy)return;busy=true;controls(false);
     try{
       if(!available()||(ios()&&!standalone()))throw Error("Install the staff PWA or use a supported browser.");
-      var status=await call("status");if(!status.configured||!status.publicKey)throw Error("Push setup is not yet configured.");
-      // Permission is requested only from a direct click.
+      // On iOS and Chromium, request permission before any asynchronous network work
+      // so the user activation from this exact click is preserved.
       var permission=await Notification.requestPermission();
       if(permission!=="granted")throw Error("Notifications were not allowed. You can continue using RBH email and in-app alerts.");
+      var status=await call("status");if(!status.configured||!status.publicKey)throw Error("Push setup is not yet configured.");
       var state=await currentSubscription();
       var subscription=state.subscription||await state.worker.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:decodeKey(status.publicKey)});
       var keys=subscription.toJSON().keys||{};
