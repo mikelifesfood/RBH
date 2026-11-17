@@ -70,6 +70,7 @@ Deno.serve(async req=>{
         .eq("endpoint_sha256",sha).eq("user_id",user.id).eq("organization_id",org);
       return error?reply({error:"DEVICE_DISABLE_FAILED"},503):reply({ok:true});
     }
+    if(!Deno.env.get("VAPID_PUBLIC_KEY"))return reply({error:"PUSH_NOT_CONFIGURED"},503);
     const keys=body.subscription&&typeof body.subscription==="object"?body.subscription as Record<string,unknown>:{};
     // Subscription keys must come directly from browser PushSubscription.toJSON().
     const p256dh=typeof keys?.p256dh==="string"?keys.p256dh:"";
@@ -80,6 +81,12 @@ Deno.serve(async req=>{
     if(lookupError)return reply({error:"DEVICE_LOOKUP_FAILED"},503);
     if(existing&&(existing.user_id!==user.id||existing.organization_id!==org))
       return reply({error:"DEVICE_BELONGS_TO_ANOTHER_ACCOUNT"},409);
+    if(!existing){
+      const {count,error:countError}=await service.from("user_push_subscriptions")
+        .select("id",{count:"exact",head:true}).eq("user_id",user.id).is("disabled_at",null);
+      if(countError)return reply({error:"DEVICE_LIMIT_CHECK_FAILED"},503);
+      if((count||0)>=5)return reply({error:"DEVICE_LIMIT_REACHED"},409);
+    }
     const row={organization_id:org,user_id:user.id,auth_session_id:sessionId,endpoint,endpoint_sha256:sha,p256dh,auth_secret:authSecret,
       enabled_at:new Date().toISOString(),disabled_at:null,updated_at:new Date().toISOString(),failure_count:0};
     const result=existing
