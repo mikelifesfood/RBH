@@ -24,6 +24,13 @@ Deno.serve(async req=>{
   const verified=await auth.auth.getUser(token);
   if(verified.error||!verified.data.user||verified.data.user.is_anonymous)return reply({error:"AUTH_REQUIRED"},401);
   const user=verified.data.user;
+  // getUser verified the JWT; the session claim binds this device to an actual session.
+  let sessionId="";
+  try{
+    const payload=token.split(".")[1].replace(/-/g,"+").replace(/_/g,"/");
+    sessionId=String(JSON.parse(atob(payload+"=".repeat((4-payload.length%4)%4))).session_id||"");
+  }catch{}
+  if(!/^[a-f0-9-]{36}$/i.test(sessionId))return reply({error:"VALID_SESSION_REQUIRED"},401);
   const service=createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}});
   const {data:profile,error:profileError}=await service.from("profiles")
     .select("id,organization_id,current_organization_id,is_active,access_deleted_at")
@@ -37,10 +44,15 @@ Deno.serve(async req=>{
   try{body=await req.json();if(!body||typeof body!=="object"||Array.isArray(body))throw Error();}catch{return reply({error:"INVALID_JSON"},400);}
   const action=body.action;
   if(action==="status"){
-    const {data,error}=await service.from("user_push_subscriptions").select("endpoint_sha256,disabled_at")
+    const {data,error}=await service.from("user_push_subscriptions").select("endpoint_sha256,auth_session_id")
       .eq("user_id",user.id).eq("organization_id",org).is("disabled_at",null);
     if(error)return reply({error:"DEVICE_STATUS_UNAVAILABLE"},503);
-    return reply({configured:!!Deno.env.get("VAPID_PUBLIC_KEY"),publicKey:Deno.env.get("VAPID_PUBLIC_KEY")||null,activeDevices:(data||[]).length});
+    let deviceRegistered=false;
+    if(typeof body.endpoint==="string"&&safeEndpoint(body.endpoint)){
+      const hash=hex(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(body.endpoint)));
+      deviceRegistered=(data||[]).some(x=>x.endpoint_sha256===hash&&x.auth_session_id===sessionId);
+    }
+    return reply({configured:!!Deno.env.get("VAPID_PUBLIC_KEY"),publicKey:Deno.env.get("VAPID_PUBLIC_KEY")||null,activeDevices:(data||[]).length,deviceRegistered});
   }
   if(action==="register"||action==="disable"){
     if(!safeEndpoint(body.endpoint))return reply({error:"INVALID_PUSH_ENDPOINT"},400);
@@ -56,13 +68,13 @@ Deno.serve(async req=>{
     // Subscription keys must come directly from browser PushSubscription.toJSON().
     const p256dh=typeof keys?.p256dh==="string"?keys.p256dh:"";
     const authSecret=typeof keys?.auth==="string"?keys.auth:"";
-    if(p256dh.length<50||p256dh.length>150||authSecret.length<12||authSecret.length>100)return reply({error:"INVALID_PUSH_KEYS"},400);
+    if(!/^[A-Za-z0-9_-]{50,150}$/.test(p256dh)||!/^[A-Za-z0-9_-]{12,100}$/.test(authSecret))return reply({error:"INVALID_PUSH_KEYS"},400);
     const {data:existing,error:lookupError}=await service.from("user_push_subscriptions").select("id,user_id,organization_id")
       .eq("endpoint_sha256",sha).maybeSingle();
     if(lookupError)return reply({error:"DEVICE_LOOKUP_FAILED"},503);
     if(existing&&(existing.user_id!==user.id||existing.organization_id!==org))
       return reply({error:"DEVICE_BELONGS_TO_ANOTHER_ACCOUNT"},409);
-    const row={organization_id:org,user_id:user.id,endpoint,endpoint_sha256:sha,p256dh,auth_secret:authSecret,
+    const row={organization_id:org,user_id:user.id,auth_session_id:sessionId,endpoint,endpoint_sha256:sha,p256dh,auth_secret:authSecret,
       enabled_at:new Date().toISOString(),disabled_at:null,updated_at:new Date().toISOString(),failure_count:0};
     const result=existing
       ?await service.from("user_push_subscriptions").update(row).eq("id",existing.id).eq("user_id",user.id)
