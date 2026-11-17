@@ -80,13 +80,14 @@ test('browser cannot directly query endpoint table and server derives account fr
   assert.match(foundation,/unique\(notification_id,subscription_id\)/);
 });
 test('sender is gated and rechecks live assignments and sessions',()=>{
-  assert.match(sender,/req.headers.get("apikey")/);
+  assert.match(sender,/req\.headers\.get\("apikey"\)/);
   assert.match(sender,/SUPABASE_SECRET_KEYS/);
   assert.match(sender,/rbh_push_dispatch/);
   assert.match(sender,/NOT_AUTHORIZED/);
   assert.ok(!sender.includes('req.headers.get("Authorization")'));
   assert.match(sender,/if\(settingsError\|\|!settings\?\.enabled\)/);
   assert.match(sender,/teamworkt_push_session_active/);
+  assert.match(sender,/push_organization_settings/);
   assert.match(sender,/report_owner_user_id===uid/);
   assert.match(sender,/action\.owner_user_id===uid/);
   assert.match(sender,/p\.is_active===true/); // verify profile current active checks remain present
