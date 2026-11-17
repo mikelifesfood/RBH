@@ -1,0 +1,30 @@
+name: RBH PWA Push regression
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'sw.js'
+      - 'push-client.js'
+      - 'dashboard.html'
+      - 'supabase/functions/push-*/**'
+      - 'supabase/migrations/*pwa_push*'
+      - 'tests/pwa-push-regression.test.mjs'
+      - '.github/workflows/pwa-push-checks.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check browser and worker syntax
+        run: |
+          node --check sw.js
+          node --check push-client.js
+          node --input-type=module -e "import fs from 'node:fs';const html=fs.readFileSync('dashboard.html','utf8'); const s=[...html.matchAll(/<script(?![^>]*src=)[^>]*>([\s\S]*?)<\/script>/g)]; for(const x of s){ new (await import('node:vm')).Script(x[1]); }"
+      - name: Run PWA Push regression tests
+        run: node --test tests/pwa-push-regression.test.mjs
