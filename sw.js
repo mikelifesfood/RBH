@@ -111,12 +111,18 @@ self.addEventListener('notificationclick',event=>{
   event.notification.close();
   event.waitUntil((async()=>{
     const target=new URL('dashboard.html',SCOPE);
-    // Never follow a notification-supplied URL or identify report/action in a URL.
+    target.hash='notifications'; // Safe fallback: no report/action IDs in the URL.
+    const tag=event.notification&&event.notification.tag||'';
+    const eventId=/^rbh-([a-f0-9]{32})$/.exec(tag);
+    const notifyClient=client=>{
+      if(eventId&&client&&typeof client.postMessage==='function')
+        client.postMessage({type:'RBH_PUSH_OPEN',eventKey:eventId[1]});
+    };
     const windows=await self.clients.matchAll({type:'window',includeUncontrolled:true});
     const existing=windows.find(client=>{
       try{const u=new URL(client.url);return u.origin===SCOPE.origin&&u.pathname===target.pathname;}catch(_){return false;}
     });
-    if(existing){await existing.focus();return;}
-    if(self.clients.openWindow)await self.clients.openWindow(target.href);
+    if(existing){await existing.focus();notifyClient(existing);return;}
+    if(self.clients.openWindow){const opened=await self.clients.openWindow(target.href);notifyClient(opened);}
   })());
 });
