@@ -2,12 +2,12 @@
 (function(){
   "use strict";
   var sb=null,busy=false,registeredFor=null;
-  var box,info,enable,disable;
+  var box,info,enable,disable,test;
   function standalone(){return (window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)||navigator.standalone===true;}
   function ios(){return /iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);}
   function available(){return window.isSecureContext&&"serviceWorker" in navigator&&"PushManager" in window&&"Notification" in window;}
   function show(message){if(info)info.textContent=message;}
-  function controls(on){if(enable)enable.disabled=busy||!on;if(disable)disable.disabled=busy||!on;}
+  function controls(on){if(enable)enable.disabled=busy||!on;if(disable)disable.disabled=busy||!on;if(test)test.disabled=busy||!on;}
   function decodeKey(base64){
     var padded=base64.replace(/-/g,"+").replace(/_/g,"/")+"=".repeat((4-base64.length%4)%4);
     return Uint8Array.from(atob(padded),function(c){return c.charCodeAt(0);});
@@ -38,10 +38,10 @@
       var status=await call("status",{endpoint:state.subscription?state.subscription.endpoint:null});
       if(state.subscription&&status.deviceRegistered){
         show("Push notifications are enabled on this device. Email and in-app alerts remain active.");
-        if(enable){enable.hidden=true;}if(disable){disable.hidden=false;}controls(true);
+        if(enable){enable.hidden=true;}if(disable){disable.hidden=false;}if(test)test.hidden=false;controls(true);
       }else{
         show(status.configured?"Push is off on this device. Enable it to receive RBH Safety alerts even when the app is closed.":"Push setup is not yet available. Email and in-app alerts remain active.");
-        if(enable){enable.hidden=false;}if(disable){disable.hidden=true;}controls(!!status.configured);
+        if(enable){enable.hidden=false;}if(disable){disable.hidden=true;}if(test)test.hidden=true;controls(!!status.configured);
       }
     }catch(e){show("Could not check push settings. Your existing RBH alerts continue working.");controls(false);}
   }
@@ -83,6 +83,26 @@
     }catch(e){show("Could not disable push. Please try again before signing out.");}
     finally{busy=false;await refresh();}
   }
+  async function sendSelfTest(){
+    if(busy)return;busy=true;controls(false);
+    try{
+      var state=await currentSubscription();
+      if(!state.subscription)throw Error("Enable push on this device before sending a test.");
+      var session=await sb.auth.getSession();
+      if(!session.data||!session.data.session)throw Error("Please sign in again.");
+      var result=await sb.functions.invoke("push-test-device",{
+        body:{action:"send_test",endpoint:state.subscription.endpoint}
+      });
+      if(result.error){
+        var status=result.context&&result.context.status;
+        if(status===429)throw Error("For safety, wait two minutes between test notifications.");
+        throw Error("Test notification could not be delivered. Contact the RBH administrator.");
+      }
+      if(!result.data||result.data.accepted!==true)throw Error("Push provider did not accept the test.");
+      show("Test accepted by the push provider. Check this device's system notifications.");
+    }catch(e){show(e&&e.message?e.message:"Could not send test notification.");}
+    finally{busy=false;controls(true);}
+  }
   async function beforeSignOut(all){
     if(!sb)return;
     try{
@@ -109,10 +129,12 @@
     info=document.getElementById("rbhPushStatus");
     enable=document.getElementById("rbhPushEnable");
     disable=document.getElementById("rbhPushDisable");
+    test=document.getElementById("rbhPushTest");
     if(!box.dataset.wired){
       box.dataset.wired="1";
       enable.addEventListener("click",enablePush);
       disable.addEventListener("click",disablePush);
+      if(test)test.addEventListener("click",sendSelfTest);
     }
     refresh();
   }
