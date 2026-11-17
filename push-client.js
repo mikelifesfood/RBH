@@ -3,7 +3,6 @@
   "use strict";
   var sb=null,busy=false,registeredFor=null;
   var box,info,enable,disable;
-  var endpointUrl="https://owhkxguiavgxzwvbxevj.supabase.co/functions/v1/push-subscriptions";
   function standalone(){return (window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)||navigator.standalone===true;}
   function ios(){return /iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);}
   function available(){return window.isSecureContext&&"serviceWorker" in navigator&&"PushManager" in window&&"Notification" in window;}
@@ -18,12 +17,12 @@
     var session=await sb.auth.getSession();
     var token=session&&session.data&&session.data.session&&session.data.session.access_token;
     if(!token)throw Error("Your session has expired. Please sign in again.");
-    var response=await fetch(endpointUrl,{method:"POST",cache:"no-store",
-      headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},
-      body:JSON.stringify(Object.assign({action:action},payload||{}))});
-    var data=await response.json();
-    if(!response.ok)throw Error(data.error||"Push settings are unavailable.");
-    return data;
+    // supabase-js includes the project API key and live session JWT.
+    var result=await sb.functions.invoke("push-subscriptions",{
+      body:Object.assign({action:action},payload||{})
+    });
+    if(result.error)throw Error("Push settings are currently unavailable. Please try again.");
+    return result.data;
   }
   async function currentSubscription(){
     var worker=await navigator.serviceWorker.ready;
