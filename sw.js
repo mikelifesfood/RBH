@@ -91,14 +91,25 @@ self.addEventListener('fetch',event=>{
 self.addEventListener('push',event=>{
   event.waitUntil((async()=>{
     const dashboard=new URL('dashboard.html',SCOPE);
-    // The server sends only an opaque event tag. Ignore supplied title/body/URL.
-    let tag='rbh-safety-work';
+    // Only a fixed, versioned event-type catalogue can influence lock-screen copy.
+    // Ignore untrusted titles, descriptions and URLs, including report-specific details.
+    const messages=Object.freeze({
+      new_report:['New safety report','A safety report is ready for review.'],
+      report_owner_assignment:['Report assigned','A report has been assigned to you.'],
+      action_assignment:['Corrective action assigned','You have a corrective action to complete.'],
+      corrective_action_assignment:['Corrective action assigned','You have a corrective action to complete.'],
+      corrective_action_verification_requested:['Verification required','A corrective action is ready for review.'],
+      corrective_action_changes_requested:['Changes requested','Your corrective action needs attention.']
+    });
+    let tag='rbh-safety-work',copy=null;
     try{
       const data=event.data?event.data.json():null;
       if(data&&typeof data.tag==='string'&&/^[a-zA-Z0-9_-]{1,90}$/.test(data.tag))tag='rbh-'+data.tag;
+      if(data&&typeof data.type==='string'&&Object.prototype.hasOwnProperty.call(messages,data.type))
+        copy=messages[data.type];
     }catch(_){}
-    await self.registration.showNotification('RBH Safety',{
-      body:'You have a safety item requiring attention. Sign in to review.',
+    await self.registration.showNotification(copy?copy[0]:'RBH Safety',{
+      body:copy?copy[1]:'You have a safety item requiring attention. Sign in to review.',
       icon:new URL('icons/icon-192.png',SCOPE).href,
       badge:new URL('icons/icon-192.png',SCOPE).href,
       tag,
