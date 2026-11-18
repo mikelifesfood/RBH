@@ -8,6 +8,8 @@ const ui=fs.readFileSync(new URL('../push-client.js',import.meta.url),'utf8');
 const dashboard=fs.readFileSync(new URL('../dashboard.html',import.meta.url),'utf8');
 const manager=fs.readFileSync(new URL('../supabase/functions/push-subscriptions/index.ts',import.meta.url),'utf8');
 const sender=fs.readFileSync(new URL('../supabase/functions/push-dispatch/index.ts',import.meta.url),'utf8');
+const mailer=fs.readFileSync(new URL('../supabase/functions/send-action-assignment-email/index.ts',import.meta.url),'utf8');
+const selfAssignmentMigration=fs.readFileSync(new URL('../supabase/migrations/20261117_pwa_push_suppress_self_assignment.sql',import.meta.url),'utf8');
 const selfTest=fs.readFileSync(new URL('../supabase/functions/push-test-device/index.ts',import.meta.url),'utf8');
 const testMigration=fs.readFileSync(new URL('../supabase/migrations/20261117_pwa_push_controlled_device_test.sql',import.meta.url),'utf8');
 const foundation=fs.readFileSync(new URL('../supabase/migrations/20261117_pwa_push_foundation_STAGED_NOT_APPLIED.sql',import.meta.url),'utf8');
@@ -110,4 +112,44 @@ test('controlled test only targets authenticated current device, rate limited, n
   assert.match(dashboard,/id="rbhPushTest"/);
   assert.match(ui,/functions\.invoke\("push-test-device"/);
   assert.ok(!selfTest.includes(".from(\"reports\")"));
+});
+
+test('typed Web Push shows only fixed privacy-safe copy and ignores caller-provided title and body',async()=>{
+  const cases=[
+    ['new_report','New safety report','A safety report is ready for review.'],
+    ['report_owner_assignment','Report assigned','A report has been assigned to you.'],
+    ['action_assignment','Corrective action assigned','You have a corrective action to complete.'],
+    ['corrective_action_assignment','Corrective action assigned','You have a corrective action to complete.'],
+    ['corrective_action_verification_requested','Verification required','A corrective action is ready for review.'],
+    ['corrective_action_changes_requested','Changes requested','Your corrective action needs attention.']
+  ];
+  for(const [type,title,body] of cases){
+    const w=worker();let promise;
+    w.handlers.push({data:{json:()=>({type,tag:'00000000000000000000000000000001',title:'Sensitive data',body:'Private details',url:'https://attacker.example'})},waitUntil:v=>promise=v});
+    await promise;
+    assert.equal(w.notifications[0].title,title);
+    assert.equal(w.notifications[0].options.body,body);
+    assert.ok(!JSON.stringify(w.notifications[0]).includes('Sensitive data'));
+    assert.ok(!JSON.stringify(w.notifications[0]).includes('Private details'));
+  }
+  const w=worker();let promise;
+  w.handlers.push({data:{json:()=>({type:'malicious_custom',title:'Leaked injury',body:'Sensitive injury'})},waitUntil:v=>promise=v});
+  await promise;
+  assert.equal(w.notifications[0].title,'RBH Safety');
+  assert.equal(w.notifications[0].options.body,'You have a safety item requiring attention. Sign in to review.');
+  assert.match(sender,/type:event.notification_type/);
+  assert.match(sender,/allowed.has\(event.notification_type\)/);
+});
+test('self-assignment suppression retains in-app records and does not suppress action follow-ups',()=>{
+  assert.match(mailer,/reason: "SELF_ASSIGNMENT"/);
+  assert.match(mailer,/String\(report.report_owner_assigned_by \|\| ""\) === String\(owner.id\)/);
+  assert.match(mailer,/notificationType === "assignment" && String\(assignee.id\) === String\(userData.user.id\)/);
+  assert.ok(!mailer.includes('notificationType === "changes_requested" && String(assignee.id) === String(userData.user.id)'));
+  assert.match(selfAssignmentMigration,/auth.uid\(\)=new.recipient_user_id/);
+  assert.match(selfAssignmentMigration,/report_owner_assigned_by=new.recipient_user_id/);
+  assert.match(selfAssignmentMigration,/coalesce\(a.updated_by,a.activated_by\)=new.recipient_user_id/);
+  assert.match(selfAssignmentMigration,/on conflict \(notification_id,subscription_id\) do nothing/);
+  assert.ok(!selfAssignmentMigration.includes('delete from public.report_user_notifications'));
+  assert.match(sender,/report_owner_assigned_by,event.recipient_user_id/);
+  assert.match(sender,/action.updated_by\|\|action.activated_by,event.recipient_user_id/);
 });
