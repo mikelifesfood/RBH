@@ -58,3 +58,10 @@ After deploying, Supabase Advisor reports two new `rls_enabled_no_policy` INFO f
 
 ## Emergency controls
 Because no organizations are enabled, the new endpoints currently have no authorized write path. If ever enabled prematurely, set `staff_offline_settings.enabled=false` for that organization immediately. The additive objects are designed to remain inert; avoid dropping the ledger without an audit-retention review.
+
+## Follow-on isolated Edge hardening and validation (same date)
+- Updated only `manage-offline-action-evidence` to **v2**; `verify_jwt=true`, ACTIVE. New offline uploads reject zero-byte, oversized, and non-image files using an explicit JPEG/PNG/WebP/HEIC/HEIF MIME allowlist. Original `manage-action-evidence` remains at v13.
+- Confirmed exact deployed v2 source matches the feature-branch file; no offline tenants enabled, no offline actions committed, no offline evidence uploaded.
+- GitHub CI run **#44315920548** passed all protocol, real Chromium browser and Edge TypeScript jobs after the hardening syntax correction. Added further simulated lost-response evidence recovery regression in the next test commit; verify its latest CI separately.
+- Found no active `cron.job` matching Safety Pulse/digest in RBH's cron schema; recurring digest remains on hold.
+- Full RBH acceptance matrix is in `docs/RBH_PILOT_START_TO_FINISH_ACCEPTANCE_2026-11-18.md`.
