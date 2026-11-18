@@ -6,6 +6,7 @@ import base64
 import functools
 import http.server
 import socketserver
+import socket
 import threading
 import unittest
 from pathlib import Path
@@ -17,8 +18,16 @@ BASE = f"http://127.0.0.1:{PORT}"
 PASS = "long-demo-passphrase-2026"
 EMAIL = "offline-tester@example.invalid"
 PNG = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=")
+DASHBOARD_NETWORK_BLOCKED = threading.Event()
 class QuietHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *args): pass
+    def do_GET(self):
+        if DASHBOARD_NETWORK_BLOCKED.is_set() and self.path.startswith('/dashboard.html'):
+            # Simulate a real network failure rather than a 503 response.
+            self.connection.shutdown(socket.SHUT_RDWR)
+            self.connection.close()
+            return
+        super().do_GET()
 
 class OfflineBrowserTests(unittest.TestCase):
     @classmethod
@@ -44,6 +53,7 @@ class OfflineBrowserTests(unittest.TestCase):
         self.page.wait_for_function("!!window.TeamWorktStaffOfflineFoundation")
 
     def tearDown(self):
+        DASHBOARD_NETWORK_BLOCKED.clear()
         self.context.close()
 
     def enroll(self):
@@ -118,7 +128,7 @@ class OfflineBrowserTests(unittest.TestCase):
         self.page.wait_for_function("navigator.serviceWorker.controller !== null")
         # Loopback interfaces can be exempted from Chromium's offline emulation.
         # Abort the exact dashboard network request too so SW fallback is tested.
-        self.context.route("**/dashboard.html",lambda route: route.abort("internetdisconnected"))
+        DASHBOARD_NETWORK_BLOCKED.set()
         self.context.set_offline(True)
         self.page.goto(BASE+"/dashboard.html",wait_until="domcontentloaded")
         self.assertTrue(self.page.locator("#unlockForm").count(),
