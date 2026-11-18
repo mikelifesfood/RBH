@@ -22,7 +22,7 @@ function indexScope(){
 function buildIndex(){
   const u=state.identity,uid=u.userId,role=u.role;
   const isManager=role==='admin'||role==='safety_manager';
-  const current=state.reports.filter(r=>{
+  const eligible=state.reports.filter(r=>{
     if(!r||!r.id||r.organization_id!==u.organizationId)return false;
     if(['closed','no_action','duplicate'].includes(String(r.status)))return false;
     const assignments=state.actions.filter(a=>a.report_id===r.id&&!a.retired_at&&
@@ -31,7 +31,10 @@ function buildIndex(){
       String(r.assigned_user_id||'')===uid||assignments.some(a=>String(a.owner_user_id||'')===uid||
         String(a.verifier_user_id||'')===uid);
     return mine||(isManager&&r.status==='new');
-  }).slice(0,25);
+  });
+  // Only synchronize a minimal assigned subset, not the entire tenant database.
+  // Expose truncation so an offline staff member cannot assume all tasks are present.
+  const current=eligible.slice(0,25);
   const records=current.map(r=>{
     const actions=state.actions.filter(a=>a.report_id===r.id&&!a.retired_at&&
       Number(a.workflow_generation||0)===Number(r.workflow_restart_count||0))
@@ -56,7 +59,8 @@ function buildIndex(){
   });
   const now=Date.now();
   return {organizationId:u.organizationId,userId:u.userId,role,
-    syncedAt:new Date(now).toISOString(),expiresAt:new Date(now+TTL).toISOString(),records};
+    syncedAt:new Date(now).toISOString(),expiresAt:new Date(now+TTL).toISOString(),
+    eligibleCount:eligible.length,snapshotLimit:25,records};
 }
 function setStatus(message,isError){
   const el=$('rbhOfflineStatus');if(!el)return;el.textContent=message;el.style.color=isError?'#a62c36':'';
