@@ -72,6 +72,12 @@ BEGIN
   THEN RAISE EXCEPTION 'OFFLINE_ACCESS_REVOKED'; END IF;
 
   -- Serialize duplicate operation IDs, including retries after lost HTTP responses.
+  IF NOT EXISTS (
+    SELECT 1 FROM public.staff_offline_settings os
+    WHERE os.organization_id=coalesce(v_profile.current_organization_id,v_profile.organization_id)
+      AND os.enabled IS TRUE
+  ) THEN RAISE EXCEPTION 'STAFF_OFFLINE_NOT_ENABLED'; END IF;
+
   PERFORM pg_advisory_xact_lock(hashtextextended(v_uid::text||p_operation_id::text,0));
   SELECT * INTO v_prior
     FROM teamworkt_internal.staff_offline_operations
