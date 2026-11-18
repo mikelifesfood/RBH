@@ -7,11 +7,14 @@ const $=id=>document.getElementById(id);
 const store=()=>window.TeamWorktStaffOfflineFoundation;
 const WORKSPACE_STEP='workspace_index';
 const STEPS=[
-  ['review','Review / classification'],['investigation','Investigation / root cause'],
+  ['review','Review / classification'],['assignment','Owner / investigator assignment'],['investigation','Investigation / root cause'],
   ['action_plan','Corrective-action planning'],['action_completion','Action completion'],
   ['verification','Verification notes'],['changes_requested','Changes requested'],
   ['add_action_before_close','Additional corrective action'],['closure','Report closure preparation']
 ];
+const FIELD_IDS=['draftFindings','draftRootCause','draftCategory','draftSeverity',
+  'draftReportOwner','draftInvestigator','draftPlanDescription','draftPlanOwner',
+  'draftPlanDue','draftPlanPriority','draftDecision'];
 let context=null,record=null,restoreGeneration=0,editGeneration=0;
 let savedEditGeneration=0,saveRunning=false;
 function hasUnsavedEdits(){return editGeneration!==savedEditGeneration || !!$('draftPhotos')?.files?.length;}
@@ -28,11 +31,43 @@ function makeScope(){
   return {organizationId:context.organizationId,userId:context.userId,reportId:record.id,
     actionId:actionId||null,generation:Number(record.generation||0),step};
 }
+function appendPlannedAction(data={}){
+  const container=$('additionalPlannedActions');
+  if(container.children.length>=19)throw Error('MAX_DRAFT_ACTIONS_REACHED');
+  const card=document.createElement('fieldset');
+  card.className='record';
+  const legend=document.createElement('legend');legend.textContent='Additional corrective-action proposal';card.appendChild(legend);
+  const inputs=[
+    ['description','Description','textarea'],['owner','Proposed owner','text'],
+    ['dueDate','Proposed due date','date'],['priority','Proposed priority','priority']
+  ];
+  for(const [key,label,kind] of inputs){
+    const heading=document.createElement('label');heading.textContent=label;
+    const control=kind==='textarea'?document.createElement('textarea'):
+      kind==='priority'?document.createElement('select'):document.createElement('input');
+    if(kind==='text'||kind==='date')control.type=kind;
+    if(kind==='priority'){
+      for(const option of ['','low','medium','high','critical']){
+        const item=document.createElement('option');item.value=option;
+        item.textContent=option||'Not selected';control.appendChild(item);
+      }
+    }
+    control.dataset.plannedActionField=key;
+    control.setAttribute('aria-label',label);
+    control.value=String(data[key]||'');
+    heading.appendChild(control);card.appendChild(heading);
+  }
+  const remove=document.createElement('button');remove.type='button';remove.className='secondary';
+  remove.textContent='Remove this draft action';
+  remove.addEventListener('click',()=>{card.remove();editGeneration++;message('Draft action removed. Save on this device to keep this change.');});
+  card.appendChild(remove);container.appendChild(card);
+}
 function clearEditor(){
   restoreGeneration++;
   savedEditGeneration=editGeneration;
   $('editorPanel').hidden=true;$('draftPhotos').value='';
-  for(const name of ['draftNote','draftFindings','draftRootCause','draftPlanDescription','draftPlanOwner','draftPlanDue','draftPlanPriority','draftDecision'])$(name).value='';
+  for(const name of ['draftNote',...FIELD_IDS])$(name).value='';
+  $('additionalPlannedActions').replaceChildren();
   $('draftStep').replaceChildren();$('draftAction').replaceChildren();
   $('evidenceCount').textContent='';record=null;
 }
@@ -50,7 +85,7 @@ function selectOption(label,value){
 }
 function canPrepare(step,item){
   if(item.readOnly)return false;
-  if(['verification','changes_requested','closure','add_action_before_close'].includes(step))return item.role==='admin'||item.role==='safety_manager';
+  if(['assignment','verification','changes_requested','closure','add_action_before_close'].includes(step))return item.role==='admin'||item.role==='safety_manager';
   if(step==='action_completion')return item.actions.some(a=>a.canComplete);
   if(step==='review'||step==='investigation'||step==='action_plan')return item.canEditReport;
   return item.canEditReport;
@@ -74,7 +109,10 @@ async function updateEvidenceCount(){
 }
 function updateFieldsForStep(){
   const step=$('draftStep').value;
+  $('reviewFields').hidden=step!=='review';
+  $('assignmentFields').hidden=step!=='assignment';
   $('investigationFields').hidden=step!=='investigation';
+  $('addPlannedAction').hidden=step!=='action_plan';
   $('actionPlanFields').hidden=!['action_plan','add_action_before_close'].includes(step);
   $('verificationFields').hidden=!['verification','changes_requested'].includes(step);
   $('draftPhotos').disabled=!(step==='investigation'||step==='action_completion'||step==='verification'||step==='changes_requested');
@@ -86,16 +124,25 @@ function updateFieldsForStep(){
 }
 function readForm(){
   const fields={};
-  for(const name of ['draftFindings','draftRootCause','draftPlanDescription','draftPlanOwner','draftPlanDue','draftPlanPriority','draftDecision']){
-    fields[name]=$(name).value;
-  }
+  for(const name of FIELD_IDS)fields[name]=$(name).value;
+  fields.plannedActions=[{
+    description:fields.draftPlanDescription,owner:fields.draftPlanOwner,
+    dueDate:fields.draftPlanDue,priority:fields.draftPlanPriority
+  },...Array.from($('additionalPlannedActions').children).map(card=>{
+    const result={};
+    for(const input of card.querySelectorAll('[data-planned-action-field]'))
+      result[input.dataset.plannedActionField]=input.value;
+    return result;
+  })];
   return {note:$('draftNote').value,fields,offlineOnly:true};
 }
 function applyForm(data){
   $('draftNote').value=data&&typeof data.note==='string'?data.note:'';
   const fields=data&&data.fields||{};
-  for(const name of ['draftFindings','draftRootCause','draftPlanDescription','draftPlanOwner','draftPlanDue','draftPlanPriority','draftDecision']){
-    $(name).value=typeof fields[name]==='string'?fields[name]:'';
+  for(const name of FIELD_IDS)$(name).value=typeof fields[name]==='string'?fields[name]:'';
+  $('additionalPlannedActions').replaceChildren();
+  if(Array.isArray(fields.plannedActions)){
+    for(const action of fields.plannedActions.slice(1,20))appendPlannedAction(action);
   }
 }
 async function restoreDraft(){
@@ -174,6 +221,10 @@ $('unlockForm').addEventListener('submit',async event=>{
     message(err.message==='OFFLINE_DRAFT_CANNOT_DECRYPT'?'Incorrect passphrase or unavailable offline records.':err.message,true);
   }
 });
+$('addPlannedAction').addEventListener('click',()=>{
+  appendPlannedAction();editGeneration++;
+  message('New corrective-action proposal added. Save on this device before leaving.');
+});
 $('editorPanel').addEventListener('input',event=>{
   if(event.target&&event.target.id!=='draftStep'&&event.target.id!=='draftAction')editGeneration++;
 });
@@ -189,7 +240,11 @@ $('saveDraft').addEventListener('click',async()=>{
     draft.reportRevision=record.revision;
     draft.reopenCount=Number(record.reopenCount||0);
     draft.actionStatus=(record.actions.find(a=>a.id===scope.actionId)||{}).status||null;
-    if(!draft.note.trim()&&!Object.values(draft.fields).some(v=>v.trim())&&!$('draftPhotos').files.length)throw Error('Enter draft details or attach a photo before saving.');
+    const hasFields=Object.values(draft.fields).some(v=>
+      typeof v==='string'?!!v.trim():Array.isArray(v)&&v.some(a=>
+        Object.values(a).some(x=>String(x||'').trim())));
+    if(!draft.note.trim()&&!hasFields&&!$('draftPhotos').files.length)
+      throw Error('Enter draft details or attach a photo before saving.');
     const item=record,action=item.actions.find(a=>a.id===scope.actionId);
     const revision=scope.actionId?action?.revision:item.revision;
     if(!revision)throw Error('MISSING_SYNC_REVISION');
