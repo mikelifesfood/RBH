@@ -120,7 +120,10 @@ Deno.serve(async (req: Request) => {
   }
 
   if (!isUuid(reportId)) return json({ error: "INVALID_REPORT_ID" }, 400);
-  if (!["upload", "remove", "capabilities"].includes(action)) return json({ error: "INVALID_ACTION" }, 400);
+  // This endpoint is only for explicitly queued offline photos.
+  // Keep all original online and legacy actions on manage-action-evidence.
+  if(action!=="capabilities" && !(action==="upload"&&clientEvidenceId&&correctiveActionId))
+    return json({error:"OFFLINE_ONLY_ENDPOINT"},400);
   if (correctiveActionId && !isUuid(correctiveActionId)) {
     return json({ error: "INVALID_CORRECTIVE_ACTION_ID" }, 400);
   }
