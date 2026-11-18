@@ -6,6 +6,15 @@
 'use strict';
 const STEP_INDEX='workspace_index';
 const TTL=24*60*60*1000;
+const STAFF_MARKER_CACHE='rbh-staff-offline-device-v1';
+async function setDeviceOfflineEnrollment(enrolled){
+  if(!root.caches)return false;
+  const marker=new URL('./staff-offline-device-enabled',location.href).href;
+  const cache=await root.caches.open(STAFF_MARKER_CACHE);
+  if(enrolled)await cache.put(marker,new Response('1',{headers:{'Content-Type':'text/plain','Cache-Control':'no-store'}}));
+  else await cache.delete(marker);
+  return true;
+}
 const state={identity:null,reports:[],actions:[],client:null,panel:null,initialized:false,saving:false,enabled:false,initVersion:0};
 const api=()=>root.TeamWorktStaffOfflineFoundation;
 function $(id){return document.getElementById(id);}
@@ -119,9 +128,13 @@ async function prepare(){
     }
     await f.saveDraft(indexScope(),buildIndex(),new Date().toISOString());
     if(!locator)await f.registerAccountLocator(u.email,u.organizationId,u.userId);
+    let launchPrepared=false;
+    try{launchPrepared=await setDeviceOfflineEnrollment(true);}
+    catch(e){console.warn('RBH offline launch marker not available',e);}
     $('rbhOfflinePassphrase').value='';$('rbhOfflinePassphraseAgain').value='';
     setStatus('Assigned work is encrypted on this device. Drafts and evidence remain local until officially submitted online.'+
-      (persistent?' Persistent device storage is enabled.':' Storage persistence is not guaranteed by this browser; keep the app installed and confirm drafts are saved before leaving the worksite.'));
+      (persistent?' Persistent device storage is enabled.':' Storage persistence is not guaranteed by this browser; keep the app installed and confirm drafts are saved before leaving the worksite.')+
+      (launchPrepared?'':' Direct offline dashboard launch could not be prepared. Use the saved Offline Workspace link until this device supports it.'));
   }catch(e){
     f.lock();setStatus(e.message==='OFFLINE_DRAFT_CANNOT_DECRYPT'?'Your offline passphrase does not match this device’s existing drafts. Nothing was overwritten.':e.message,true);
   }finally{button.disabled=false;}
@@ -477,6 +490,7 @@ root.TeamWorktStaffOfflineUI=Object.freeze({
       // account workspace stored on this browser. Ignore missing local DB.
       try {await api()?.deleteAccountWorkspace(identity.organizationId,identity.userId);}
       catch(e){console.warn('Disabled RBH offline workspace cleanup failed',e);}
+      try{await setDeviceOfflineEnrollment(false);}catch(e){console.warn('Offline launch marker cleanup failed',e);}
       return;
     }
     createPanel();
@@ -499,6 +513,7 @@ root.TeamWorktStaffOfflineUI=Object.freeze({
     ++state.initVersion;state.enabled=false;
     api()?.lock();state.identity=null;state.reports=[];state.actions=[];state.client=null;
     if(old) await api().deleteAccountWorkspace(old.organizationId,old.userId);
+    try{await setDeviceOfflineEnrollment(false);}catch(e){console.warn('Offline launch marker cleanup failed',e);}
   },
   lock(){++state.initVersion;state.enabled=false;api()?.lock();state.identity=null;state.reports=[];state.actions=[];state.client=null;}
 });
