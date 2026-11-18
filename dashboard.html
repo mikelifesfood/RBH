@@ -22,9 +22,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" defer></script>
 <style>
 
   /* ==========================================================================
@@ -3025,11 +3025,21 @@
     await loadPlatformContext();
     applyRoleUi();
     await loadReports();
-    if(window.TeamWorktSeamlessOffline && currentSession && currentOrgId) await window.TeamWorktSeamlessOffline.init({userId:currentUserId(),organizationId:currentOrgId,email:currentSession.user.email,role:currentRole},allReports,allCorrectiveActions,sb);
-    await loadNotifications(true);
+    // Paint Home (or an explicitly requested report/action deep link) as soon as
+    // the operational data arrives. Offline setup and notification refresh do
+    // not need to hold the whole signed-in dashboard behind network/IndexedDB work.
+    restoreSavedView();
+    if(window.TeamWorktSeamlessOffline && currentSession && currentOrgId){
+      window.TeamWorktSeamlessOffline.init({
+        userId:currentUserId(),organizationId:currentOrgId,
+        email:currentSession.user.email,role:currentRole
+      },allReports,allCorrectiveActions,sb).catch(function(ex){
+        console.warn("RBH offline workspace initialization deferred",ex);
+      });
+    }
+    loadNotifications(true).catch(function(ex){console.warn("RBH notification refresh",ex);});
     startNotificationPolling();
     startLiveSync();
-    restoreSavedView();
     if(window.location.hash==="#notifications"){
       openNotificationPanel();
       try{ history.replaceState({},document.title,location.pathname+location.search); }catch(_){}
@@ -3099,19 +3109,18 @@
     try{
       var repQ=sb.from("reports").select("*").order("created_at",{ascending:false});
       if(currentOrgId) repQ=repQ.eq("organization_id", currentOrgId);
-      var rep=await repQ;
-      if(rep.error) throw rep.error;
-
       var caQ=sb.from("report_corrective_actions")
         .select("id,report_id,organization_id,workflow_generation,action_number,description,control_type,owner_user_id,due_date,priority,status,completion_note,completed_at,completed_by,verifier_user_id,verification_note,verified_at,verified_by,activated_at,activation_reopen_count,retired_at,created_at,updated_at")
         .is("retired_at",null);
       if(currentOrgId) caQ=caQ.eq("organization_id", currentOrgId);
-      var ca=await caQ;
-      if(ca.error) throw ca.error;
-
       var atQ=sb.from("report_attachments").select("*");
       if(currentOrgId) atQ=atQ.eq("organization_id", currentOrgId);
-      var at=await atQ;
+      // Independent, same-tenant reads run together rather than waiting for
+      // three serial network round trips on each initial load and refresh.
+      var results=await Promise.all([repQ,caQ,atQ]);
+      var rep=results[0],ca=results[1],at=results[2];
+      if(rep.error) throw rep.error;
+      if(ca.error) throw ca.error;
       if(at.error) throw at.error;
 
       var nextFingerprint=liveDataFingerprint(rep.data||[],ca.data||[],at.data||[]);
@@ -7599,19 +7608,22 @@
   async function loadPlatformContext(){
     isPlatformAdmin=false; currentOrgName=""; allOrgs=[];
     var user=currentSession&&currentSession.user;
-    if(user){
-      try{
-        var pa=await sb.from("platform_admins").select("user_id,role").eq("user_id",user.id).limit(1);
-        if(!pa.error) isPlatformAdmin=platformAdminExists(pa.data);
-      }catch(_e){}
-    }
     currentOrgId=(currentProfile&&(currentProfile.current_organization_id||currentProfile.organization_id))||null;
+    // These are unrelated lookups. A slow platform-admin check should not
+    // delay resolving the company name (or vice versa).
+    var contextTasks=[];
+    if(user){
+      contextTasks.push(sb.from("platform_admins").select("user_id,role").eq("user_id",user.id).limit(1));
+    }else contextTasks.push(Promise.resolve({data:[],error:null}));
     if(currentOrgId){
-      try{
-        var orgRes=await sb.from("organizations").select("id,name,slug,status,plan").eq("id",currentOrgId).maybeSingle();
-        if(!orgRes.error && orgRes.data){ currentOrgName=orgRes.data.name||""; allOrgs=[orgRes.data]; }
-      }catch(_e){}
-    }
+      contextTasks.push(sb.from("organizations").select("id,name,slug,status,plan").eq("id",currentOrgId).maybeSingle());
+    }else contextTasks.push(Promise.resolve({data:null,error:null}));
+    try{
+      var contextResults=await Promise.all(contextTasks);
+      var pa=contextResults[0],orgRes=contextResults[1];
+      if(!pa.error) isPlatformAdmin=platformAdminExists(pa.data);
+      if(!orgRes.error&&orgRes.data){currentOrgName=orgRes.data.name||"";allOrgs=[orgRes.data];}
+    }catch(_e){console.warn("RBH optional platform context unavailable",_e);}
     var hh=$("homeGreeting"); if(hh && currentOrgName) hh.textContent=currentOrgName+" Safety";
     refreshProfileCard();
   }
