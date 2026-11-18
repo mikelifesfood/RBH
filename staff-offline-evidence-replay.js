@@ -10,7 +10,7 @@ function attemptsScope(scope,evidenceId) {
   return {...scope,step:'evidence_attempt_'+evidenceId};
 }
 async function call(client,body){
-  const {data,error}=await client.functions.invoke('manage-action-evidence',{body});
+  const {data,error}=await client.functions.invoke('manage-offline-action-evidence',{body});
   if(error)throw Error(error.message||'UPLOAD_SERVER_UNAVAILABLE');
   return data||{};
 }
