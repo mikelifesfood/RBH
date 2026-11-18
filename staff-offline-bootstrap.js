@@ -472,6 +472,7 @@ root.TeamWorktStaffOfflineUI=Object.freeze({
       api()?.lock();
       await api()?.deleteAccountWorkspace(previous.organizationId,previous.userId).catch(
         e=>console.warn('Previous offline workspace cleanup failed',e));
+      try{await setDeviceOfflineEnrollment(false);}catch(e){console.warn('Previous offline launch marker cleanup failed',e);}
     }
     state.identity={...identity};state.client=client;
     state.reports=Array.isArray(reports)?reports:[];
