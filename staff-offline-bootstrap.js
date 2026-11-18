@@ -120,6 +120,8 @@ async function refresh(){
 async function wireFocusedDraft(report,action,textarea,step){
   if(!report||!action||!textarea||!api()?.isUnlocked()||!state.identity)return;
   if(!['action_completion','verification','changes_requested'].includes(step))return;
+  if(textarea.dataset.rbhOfflineWired==='yes')return;
+  textarea.dataset.rbhOfflineWired='yes';
   const scope=scopeFor(report,action,step);
   const revision=action.updated_at;
   const hint=document.createElement('p');
@@ -165,6 +167,67 @@ async function clearSubmittedDraft(report,action,step){
   try{await api().deleteDraft(scopeFor(report,action,step));}
   catch(e){console.warn('RBH local draft cleanup not verified',e);}
 }
+
+async function wireInvestigationDraft(report,findings,rootCause){
+  if(!report||!findings||!rootCause||!state.identity||!api()?.isUnlocked())return;
+  if(findings.disabled||rootCause.disabled||findings.dataset.rbhOfflineWired==='yes')return;
+  findings.dataset.rbhOfflineWired='yes';
+  const scope=scopeFor(report,null,'investigation'),revision=report.updated_at;
+  const hint=document.createElement('p');hint.className='field-help';hint.setAttribute('role','status');
+  hint.textContent='Investigation notes can be saved on this device.';
+  rootCause.insertAdjacentElement('afterend',hint);
+  try{
+    const saved=await api().readDraft(scope);
+    if(!findings.isConnected||!saved||!saved.data)return;
+    const fields=saved.data.fields||{};
+    if(saved.serverRevision===revision){
+      if(fields.draftFindings && !findings.value.trim())findings.value=fields.draftFindings;
+      if(fields.draftRootCause && !rootCause.value.trim())rootCause.value=fields.draftRootCause;
+      hint.textContent='Offline investigation draft available. Review before officially saving.';
+    }else{
+      hint.textContent='A local investigation draft exists, but the report changed. Review before re-entering notes.';
+      hint.style.color='#9b5712';
+      const btn=document.createElement('button');btn.className='wizard-save';btn.type='button';btn.textContent='Show older investigation draft';
+      btn.addEventListener('click',()=>{
+        const el=document.createElement('textarea');el.readOnly=true;
+        el.value='Findings:\\n'+(fields.draftFindings||'')+'\\n\\nRoot cause:\\n'+(fields.draftRootCause||'');
+        btn.insertAdjacentElement('afterend',el);btn.disabled=true;
+      });hint.insertAdjacentElement('afterend',btn);
+    }
+  }catch(e){hint.textContent='Local investigation draft could not be restored.';}
+  let timer=null;
+  const save=()=>{clearTimeout(timer);hint.textContent='Saving local draft…';timer=setTimeout(async()=>{
+    if(!findings.isConnected||!api()?.isUnlocked())return;
+    try{await api().saveDraft(scope,{note:'',fields:{draftFindings:findings.value,draftRootCause:rootCause.value},offlineOnly:true},revision);
+      hint.textContent='Saved on this device — not submitted.';}
+    catch(e){hint.textContent='Could not save investigation locally. Copy your work before leaving.';hint.style.color='#a62c36';}
+  },450);};
+  findings.addEventListener('input',save);rootCause.addEventListener('input',save);
+}
+function wireWizardActionDrafts(detail,report,actionsProvider){
+  if(!detail||!state.identity||!api()?.isUnlocked())return;
+  const scan=()=>{
+    if(!detail.isConnected)return;
+    const actions=actionsProvider()||[];
+    for(const field of detail.querySelectorAll('textarea[data-child-completion-note],textarea[data-child-verification-note],textarea[data-child-return-note]')){
+      if(field.dataset.rbhOfflineWired==='yes'||field.disabled)continue;
+      const completion=field.hasAttribute('data-child-completion-note');
+      const verification=field.hasAttribute('data-child-verification-note');
+      const card=field.closest('[data-child-completion-card],[data-child-verification-card]');
+      const id=completion?field.getAttribute('data-child-completion-note'):
+        (verification?field.getAttribute('data-child-verification-note'):card?.getAttribute('data-child-verification-card'));
+      const action=actions.find(a=>String(a.id)===String(id));
+      if(action)wireFocusedDraft(report,action,field,completion?'action_completion':(verification?'verification':'changes_requested'));
+    }
+  };
+  const observer=new MutationObserver(scan);
+  observer.observe(detail,{childList:true,subtree:true});
+  scan();
+  // When the incident view is detached, release its observer and DOM references.
+  const closeObserver=new MutationObserver(()=>{if(!detail.isConnected){observer.disconnect();closeObserver.disconnect();}});
+  closeObserver.observe(document.body,{childList:true,subtree:true});
+}
+
 root.TeamWorktStaffOfflineUI=Object.freeze({
   init(identity,reports,actions){
     if(!identity||!identity.userId||!identity.organizationId||!identity.email)return;
@@ -184,7 +247,7 @@ root.TeamWorktStaffOfflineUI=Object.freeze({
     state.actions=Array.isArray(actions)?actions:[];
     refresh();
   },
-  wireFocusedDraft,clearSubmittedDraft,
+  wireFocusedDraft,wireInvestigationDraft,wireWizardActionDrafts,clearSubmittedDraft,
   async hasOfflineWorkspace(){
     if(!state.identity||!api())return false;
     const locator=await api().resolveAccountLocator(state.identity.email);
