@@ -8510,7 +8510,29 @@
             toast("The action is ready for review. The review email could not be sent.","err");
           }
         });
-      }catch(ex){console.error(ex);error.textContent="Could not confirm submission. Your note is still here. Check the action status before retrying.";error.classList.add("show");}
+      }catch(ex){
+        console.error(ex);
+        // A connection can vanish after Safari reports navigator.onLine=true.
+        // Preserve the note in the encrypted outbox on a transport failure;
+        // never claim official submission without a Supabase receipt.
+        var transportFailure=navigator.onLine===false||/Failed to fetch|NetworkError|Load failed|network request|fetch failed|connection lost|ERR_INTERNET_DISCONNECTED/i.test(String(ex&&(ex.message||ex)||""));
+        if(transportFailure&&window.TeamWorktSeamlessOffline&&window.TeamWorktSeamlessOffline.isEnabled()){
+          try{
+            await window.TeamWorktSeamlessOffline.stage({
+              id:a.id,reportId:r.id,actionRevision:a.updated_at,reportRevision:r.updated_at,
+              actionStatus:a.status,generation:Number(r.workflow_restart_count||0),
+              reopenCount:Number(r.reopen_count||0),canSubmit:focusedActionCanComplete(a,r)
+            },"action_completion",note);
+            error.textContent="Connection lost. Saved securely on this device — it will retry when connected.";
+          }catch(localError){
+            if(String(localError&&localError.message)==="ACTION_HAS_PENDING_SUBMISSION")
+              error.textContent="Already queued on this device — waiting for synchronization.";
+            else error.textContent="Could not confirm submission. Your note is still here. Check the action status before retrying.";
+            console.warn("Offline fallback not confirmed",localError);
+          }
+        }else error.textContent="Could not confirm submission. Your note is still here. Check the action status before retrying.";
+        error.classList.add("show");
+      }
       finally{if(submit.isConnected){submit.disabled=false;submit.textContent=old;}}
     });
 
