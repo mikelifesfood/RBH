@@ -3001,7 +3001,12 @@
   }
   sb.auth.getSession().then(function(res){ var s=res.data&&res.data.session; if(s) showApp(s); else showLogin(); });
   sb.auth.onAuthStateChange(function(_e,s){
-    if(!s){ showLogin(); return; }
+    if(!s){
+      if(_e==="SIGNED_OUT" && window.TeamWorktStaffOfflineUI){
+        window.TeamWorktStaffOfflineUI.clearOnSignOut().catch(function(ex){console.warn("RBH offline signout cleanup failed",ex);});
+      }
+      showLogin(); return;
+    }
     var sameUser=currentSession&&currentSession.user&&s.user&&String(currentSession.user.id)===String(s.user.id);
     if(sameUser && appView.style.display==="block"){
       currentSession=s;
