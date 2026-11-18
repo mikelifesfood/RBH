@@ -244,7 +244,17 @@ async function init(identity,reports,actions,client){
  if(!same(state.identity,identity))return;
  state.enabled=!gate.error&&gate.data?.enabled===true&&gate.data?.protocolVersion===1;
  const panel=document.getElementById('rbhSeamlessPanel');
- if(!state.enabled){if(panel)panel.hidden=true;return;}
+ if(!state.enabled){
+  if(panel)panel.hidden=true;
+  // A confirmed server-side revocation must clear cached work. Never erase
+  // a pending queue merely because the network failed to return a verdict.
+  if(!gate.error&&gate.data?.enabled===false){
+   await eraseDevice(identity);
+   if(root.caches){const c=await caches.open('rbh-staff-offline-device-v1');
+    await c.delete(new URL('./staff-offline-device-enabled',location.href).href);}
+  }
+  return;
+ }
  try{
   await deviceKey(identity,true);
   await saveSnapshot(identity,reports,actions);
@@ -292,6 +302,8 @@ function wireAction(r,a,textarea,button,step){
  if(step==='action_completion'){
   const input=document.createElement('input');input.type='file';input.accept='image/*';input.multiple=true;
   input.setAttribute('aria-label','Add offline corrective-action photos');
+  const visibility=()=>{input.hidden=navigator.onLine!==false;};
+  visibility();root.addEventListener('online',visibility);root.addEventListener('offline',visibility);
   textarea.insertAdjacentElement('afterend',input);
   input.addEventListener('change',async()=>{try{for(const file of input.files)await addPhoto(entry,file);
    hint.textContent='Photos encrypted on device; they will upload before submission.';}
