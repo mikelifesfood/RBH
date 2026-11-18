@@ -283,7 +283,14 @@ $('lockButton').addEventListener('click',lock);
 $('eraseButton').addEventListener('click',async()=>{
   if(!context)return;
   if(!confirm('Erase ALL saved offline drafts, photos and snapshots for this RBH account on this device? This cannot be undone.'))return;
-  try{await store().deleteAccountWorkspace(context.organizationId,context.userId);lockWithoutPrompt();message('Offline account records erased from this device.');}
+  try{
+    await store().deleteAccountWorkspace(context.organizationId,context.userId);
+    if(window.caches){
+      const cache=await window.caches.open('rbh-staff-offline-device-v1');
+      await cache.delete(new URL('./staff-offline-device-enabled',location.href).href);
+    }
+    lockWithoutPrompt();message('Offline account records erased from this device.');
+  }
   catch(e){message('Could not erase all local records: '+e.message,true);}
 });
 window.addEventListener('beforeunload',event=>{
