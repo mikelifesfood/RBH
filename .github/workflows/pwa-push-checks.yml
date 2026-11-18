@@ -10,6 +10,16 @@ on:
       - 'supabase/migrations/*pwa_push*'
       - 'tests/pwa-push-regression.test.mjs'
       - '.github/workflows/pwa-push-checks.yml'
+  pull_request:
+    paths:
+      - 'sw.js'
+      - 'dashboard.html'
+      - 'supabase/functions/push-*/**'
+      - 'supabase/functions/notify-ownership/**'
+      - 'supabase/functions/manage-action-evidence/**'
+      - 'supabase/migrations/*ownership*'
+      - 'tests/pwa-push-regression.test.mjs'
+      - '.github/workflows/pwa-push-checks.yml'
   workflow_dispatch:
 permissions:
   contents: read
@@ -28,3 +38,11 @@ jobs:
           node --input-type=module -e "import fs from 'node:fs';const html=fs.readFileSync('dashboard.html','utf8'); const s=[...html.matchAll(/<script(?![^>]*src=)[^>]*>([\s\S]*?)<\/script>/g)]; for(const x of s){ new (await import('node:vm')).Script(x[1]); }"
       - name: Run PWA Push regression tests
         run: node --test tests/pwa-push-regression.test.mjs
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Check ownership email and push Edge Functions
+        run: |
+          deno check supabase/functions/notify-ownership/index.ts
+          deno check supabase/functions/push-dispatch/index.ts
+          deno check supabase/functions/manage-action-evidence/index.ts

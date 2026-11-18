@@ -3,7 +3,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.117.2";
 import webpush from "npm:web-push@3.6.7";
 const json=(value:unknown,status=200)=>new Response(JSON.stringify(value),{status,headers:{"Content-Type":"application/json","Cache-Control":"no-store"}});
-const allowed=new Set(["new_report","report_owner_assignment","action_assignment","corrective_action_assignment","corrective_action_verification_requested","corrective_action_changes_requested"]);
+const allowed=new Set(["new_report","report_owner_assignment","action_assignment","corrective_action_assignment","corrective_action_verification_requested","corrective_action_changes_requested","report_transfer_requested","report_transfer_declined","report_owner_transferred_from","corrective_action_reassigned_from"]);
 const providerOk=(endpoint:string)=>{
   try{const u=new URL(endpoint),h=u.hostname.toLowerCase();
     return u.protocol==="https:"&&!u.username&&!u.password&&!u.port&&
@@ -48,7 +48,11 @@ Deno.serve(async req=>{
       service.from("report_user_notifications").select("id,organization_id,recipient_user_id,notification_type,report_id,corrective_action_id,acknowledged_at,resolved_at,created_at").eq("id",task.notification_id).maybeSingle(),
       service.from("user_push_subscriptions").select("id,organization_id,user_id,auth_session_id,endpoint,p256dh,auth_secret,disabled_at").eq("id",task.subscription_id).maybeSingle()
     ]);
-    let permitted=!!event&&!!device&&!device.disabled_at&&
+    if(!event||!device){
+      await service.from("push_delivery_outbox").update({status:"cancelled",last_error_code:"NOTIFICATION_OR_DEVICE_MISSING",updated_at:now}).eq("id",task.id).eq("status","claimed");
+      summary.cancelled++;continue;
+    }
+    let permitted=!device.disabled_at&&
       event.organization_id===task.organization_id&&device.organization_id===task.organization_id&&
       event.recipient_user_id===device.user_id&&allowed.has(event.notification_type)&&!event.acknowledged_at&&!event.resolved_at&&
       Date.now()-new Date(event.created_at).getTime()<48*60*60*1000&&
@@ -99,11 +103,40 @@ Deno.serve(async req=>{
       }else switch(event.notification_type){
         case "new_report": permitted=manager;break;
         case "report_owner_assignment": permitted=report.report_owner_user_id===uid;break;
+        case "report_transfer_requested": {
+          const {data:t}=await service.from("rbh_report_transfer_requests").select("id")
+            .eq("report_id",report.id).eq("to_user_id",uid).eq("status","pending")
+            .gt("expires_at",new Date().toISOString()).limit(1).maybeSingle();
+          permitted=manager&&!!t;break;
+        }
+        case "report_transfer_declined": {
+          const {data:t}=await service.from("rbh_report_transfer_requests").select("id")
+            .eq("report_id",report.id).eq("from_user_id",uid).eq("status","declined")
+            .order("decided_at",{ascending:false}).limit(1).maybeSingle();
+          permitted=manager&&!!t&&report.report_owner_user_id===uid;break;
+        }
+        case "report_owner_transferred_from": {
+          const [{data:transfer},{data:override}]=await Promise.all([
+            service.from("rbh_report_transfer_requests").select("id")
+              .eq("report_id",report.id).eq("from_user_id",uid).eq("status","accepted")
+              .order("decided_at",{ascending:false}).limit(1).maybeSingle(),
+            service.from("rbh_report_ownership_overrides").select("id")
+              .eq("report_id",report.id).eq("previous_owner_id",uid)
+              .order("created_at",{ascending:false}).limit(1).maybeSingle()
+          ]);
+          permitted=manager&&report.report_owner_user_id!==uid&&!!(transfer||override);break;
+        }
         case "action_assignment":
           permitted=(action&&action.owner_user_id===uid)||report.assigned_user_id===uid;break;
         case "corrective_action_assignment":
         case "corrective_action_changes_requested":
           permitted=!!action&&action.owner_user_id===uid;break;
+        case "corrective_action_reassigned_from": {
+          const {data:t}=await service.from("rbh_corrective_action_reassignments").select("id")
+            .eq("corrective_action_id",event.corrective_action_id).eq("old_owner_id",uid)
+            .order("created_at",{ascending:false}).limit(1).maybeSingle();
+          permitted=!!action&&workRole&&action.owner_user_id!==uid&&!!t;break;
+        }
         case "corrective_action_verification_requested":
           permitted=!!action&&(action.verifier_user_id===uid||report.report_owner_user_id===uid||manager);break;
         default: permitted=false;
@@ -116,7 +149,16 @@ Deno.serve(async req=>{
       if(event.notification_type==="report_owner_assignment"&&
         same(report.report_owner_assigned_by,event.recipient_user_id))permitted=false;
       if(event.notification_type==="corrective_action_assignment"&&action&&
-        same(action.updated_by||action.activated_by,event.recipient_user_id))permitted=false;
+        same(action.updated_by||action.activated_by,event.recipient_user_id)){
+        const {data:transfer}=await service.from("rbh_corrective_action_reassignments")
+          .select("id,created_at")
+          .eq("corrective_action_id",action.id)
+          .eq("new_owner_id",event.recipient_user_id)
+          .order("created_at",{ascending:false}).limit(1).maybeSingle();
+        const isExplicitTransfer=!!transfer&&
+          Math.abs(new Date(event.created_at).getTime()-new Date(transfer.created_at).getTime())<120000;
+        if(!isExplicitTransfer)permitted=false;
+      }
     }
     if(!permitted){
       await service.from("push_delivery_outbox").update({status:"cancelled",last_error_code:"RECIPIENT_NOT_CURRENT",updated_at:now}).eq("id",task.id).eq("status","claimed");

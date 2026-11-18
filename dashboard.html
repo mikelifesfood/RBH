@@ -1632,6 +1632,7 @@
               <span class="ac-d">Open the field reporting experience in a new tab.</span>
             </button>
           </div>
+          <div class="home-panel" id="ownershipInbox" hidden style="margin-bottom:16px"><div class="hp-head"><span class="hp-title">Report transfers awaiting your decision</span></div><div id="ownershipRequestList" class="attention-list"></div></div>
           <div class="home-stats" id="homeStats"></div>
           <div class="attention-grid">
             <div class="home-panel"><div class="hp-head"><span class="hp-title">Needs your attention</span><button class="hp-link" data-view="records" type="button">Open inbox</button></div><div id="homeAttention" class="attention-list"></div></div>
@@ -1963,14 +1964,34 @@
 <div class="modal-backdrop" id="reportOwnerBackdrop">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="reportOwnerHeading">
     <h3 id="reportOwnerHeading">Change report owner</h3>
-    <p class="msub">The Report Owner is responsible for moving this report forward and receives report-level workflow emails. Changing the owner does not change anyone's role, access, or editing permissions.</p>
+    <p class="msub" id="reportOwnerHelp">Only the current owner may offer a transfer. The recipient must accept before ownership and editing rights change. Admins can take control with an audit reason.</p>
     <div class="field"><label for="reportOwnerSelect">Report owner</label><select id="reportOwnerSelect"></select></div>
-    <div class="report-owner-email-note neutral" id="reportOwnerEmailNote" role="status">Select a different owner to review what will happen before anything is saved or emailed.</div>
+    <div class="field" id="reportOwnerReasonWrap" hidden><label for="reportOwnerReason">Reason for Admin takeover</label><textarea id="reportOwnerReason" maxlength="500" placeholder="Reason for taking control of this report"></textarea></div>
+    <div class="report-owner-email-note neutral" id="reportOwnerEmailNote" role="status">Review the ownership change before continuing.</div>
     <div class="login-err" id="reportOwnerErr"></div>
     <div class="modal-actions"><button class="btn-secondary" id="reportOwnerCancel" type="button">Cancel</button><button class="btn-primary" id="reportOwnerSave" type="button">Confirm owner change</button></div>
   </div>
 </div>
 
+<div class="modal-backdrop" id="ownershipActionBackdrop">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="ownershipActionHeading">
+    <h3 id="ownershipActionHeading">Reassign corrective action</h3>
+    <p class="msub">Only the current Report Owner may reassign an action. The previous owner becomes read only and the newly assigned employee receives an email and an opted-in push notification.</p>
+    <div class="field"><label for="ownershipActionSelect">Assign to</label><select id="ownershipActionSelect"></select></div>
+    <div class="field"><label for="ownershipActionReason">Reason for reassignment</label><textarea id="ownershipActionReason" maxlength="500" placeholder="Explain why this action is being reassigned"></textarea></div>
+    <div class="login-err" id="ownershipActionError"></div>
+    <div class="modal-actions"><button class="btn-secondary" id="ownershipActionCancel" type="button">Cancel</button><button class="btn-primary" id="ownershipActionSave" type="button">Confirm reassignment</button></div>
+  </div>
+</div>
+<div class="modal-backdrop" id="ownershipVerifierBackdrop">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="ownershipVerifierHeading">
+    <h3 id="ownershipVerifierHeading">Assign corrective-action verifier</h3>
+    <p class="msub">A completed corrective action requires an explicitly assigned Safety Manager or Admin to verify it. Assigning a verifier does not change who owns or completed the action.</p>
+    <div class="field"><label for="ownershipVerifierSelect">Verifier</label><select id="ownershipVerifierSelect"></select></div>
+    <div class="login-err" id="ownershipVerifierError"></div>
+    <div class="modal-actions"><button class="btn-secondary" id="ownershipVerifierCancel" type="button">Cancel</button><button class="btn-primary" id="ownershipVerifierSave" type="button">Assign verifier</button></div>
+  </div>
+</div>
 <div class="modal-backdrop" id="addUserBackdrop">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="addUserHeading">
     <h3 id="addUserHeading">Add dashboard user</h3>
@@ -2261,10 +2282,14 @@
     return sendCorrectiveActionWorkflowEmail(r,action,"changes_requested");
   }
 
-  function canChangeReportOwner(r){ return !!(r&&isManager()&&!isResolvedReport(r)); }
+  function canChangeReportOwner(r){ return !!(r&&isManager()&&!isResolvedReport(r)&&(!r.report_owner_user_id||isCurrentReportOwner(r)||currentRole==="admin")); }
   function refreshIncidentOwnerHeader(r){
     var change=$("incidentOwnerChange");
-    if(change) change.hidden=change.disabled=!canChangeReportOwner(r);
+    if(change){
+      change.hidden=change.disabled=!canChangeReportOwner(r);
+      var word=change.querySelector("span:last-child");
+      if(word)word.textContent=!r.report_owner_user_id?"Claim":isCurrentReportOwner(r)?"Transfer":"Take control";
+    }
   }
   function refreshIncidentMeta(r){
     if(!r||!$("incidentMeta")) return;
@@ -2281,26 +2306,36 @@
     nextId=String(nextId||"").trim();
     if(!nextId) throw new Error("REPORT_OWNER_REQUIRED");
     var selected=profileById[nextId];
-    if(!selected||selected.is_active===false||["admin","safety_manager"].indexOf(String(selected.app_role||""))<0) throw new Error("INVALID_REPORT_OWNER");
-    if(String(selected.organization_id||currentOrgId||"")!==String(r.organization_id||currentOrgId||"")) throw new Error("REPORT_OWNER_ORGANIZATION_MISMATCH");
-    var oldId=String(r.report_owner_user_id||"");
-    if(oldId===nextId){ refreshIncidentOwnerHeader(r); return {changed:false,sent:false}; }
+    if(!selected||selected.is_active===false||["admin","safety_manager"].indexOf(String(selected.app_role||""))<0)
+      throw new Error("INVALID_REPORT_OWNER");
+    if(String(selected.current_organization_id||selected.organization_id||currentOrgId||"")!==String(r.organization_id||currentOrgId||""))
+      throw new Error("REPORT_OWNER_ORGANIZATION_MISMATCH");
+    var oldId=String(r.report_owner_user_id||""),me=currentUserId();
+    if(oldId===nextId)return {changed:false};
     await assertOpenResourceFresh();
-    var res=await sb.rpc("rbh_set_report_owner",{p_report_id:r.id,p_owner_user_id:nextId});
-    if(res.error) throw res.error;
-    var d=res.data||{}; if(Array.isArray(d)) d=d[0]||{};
-    r.report_owner_user_id=d.report_owner_user_id||nextId;
-    r.report_owner_assigned_at=d.report_owner_assigned_at||new Date().toISOString();
-    r.report_owner_assigned_by=d.report_owner_assigned_by||currentUserId();
-    if(d.report_updated_at) r.updated_at=d.report_updated_at;
-    if(activeOpenResource&&String(activeOpenResource.reportId||"")===String(r.id)){
-      if(d.report_updated_at) activeOpenResource.reportUpdatedAt=String(d.report_updated_at);
-      activeOpenResource.capturedAt=safeIsoNow(); activeOpenResource.stale=false; activeOpenResource.changedBy=null;
+    if(oldId&&oldId===me){
+      var offer=await sb.rpc("rbh_request_report_transfer",{p_report_id:r.id,p_to_user_id:nextId});
+      if(offer.error)throw offer.error;
+      return {changed:false,pending:true,targetName:profileName(selected)};
     }
-    refreshIncidentOwnerHeader(r); refreshIncidentMeta(r); renderLiveRecordNotices();
-    renderHomeSnapshot(); applyFilters();
-    var email=null;
-    if(notifyEmail) email=await sendReportOwnerAssignmentEmail(r);
+    if(oldId&&currentRole==="admin"&&nextId===me){
+      var reason=String(($("reportOwnerReason")||{}).value||"").trim();
+      if(!reason)throw new Error("TAKEOVER_REASON_REQUIRED");
+      var takeover=await sb.rpc("rbh_admin_take_report",{p_report_id:r.id,p_reason:reason});
+      if(takeover.error)throw takeover.error;
+    }else if(!oldId&&nextId===me){
+      var claim=await sb.rpc("rbh_claim_unassigned_report",{p_report_id:r.id});
+      if(claim.error)throw claim.error;
+    }else if(!oldId&&currentRole==="admin"){
+      var initial=await sb.rpc("rbh_set_report_owner",{p_report_id:r.id,p_owner_user_id:nextId});
+      if(initial.error)throw initial.error;
+    }else throw new Error("REPORT_TRANSFER_NOT_ALLOWED");
+    r.report_owner_user_id=nextId;
+    r.report_owner_assigned_at=new Date().toISOString();
+    r.report_owner_assigned_by=me;
+    refreshIncidentOwnerHeader(r);refreshIncidentMeta(r);renderLiveRecordNotices();
+    renderHomeSnapshot();applyFilters();
+    var email=notifyEmail&&!oldId&&nextId!==me?await sendReportOwnerAssignmentEmail(r):null;
     return {changed:true,email:email};
   }
 
@@ -2948,7 +2983,7 @@
       var directActionReport=directAction&&allReports.find(function(x){ return String(x.id)===String(directAction.report_id); });
       clearRequestedWorkItemFromUrl();
       if(directAction&&directActionReport&&
-         (isManager()||currentUserId()&&String(directAction.owner_user_id||"")===currentUserId())){
+         (currentUserId()&&(String(directAction.owner_user_id||"")===currentUserId()||String(directAction.verifier_user_id||"")===currentUserId()))){
         openFocusedCorrectiveAction(directAction,"mywork");
         return;
       }
@@ -4142,9 +4177,9 @@
     if(currentRole==="supervisor" && n===1 && isInvestigatorAssignedToMe(r) && r.involves_injury && ["yes","no","pending"].indexOf(String(r.calosha_screening_status||""))<0) return "You own this investigation, but an Admin or Safety Manager must complete the regulatory screening before Review can advance.";
     if(currentRole==="supervisor" && n<=3 && !isInvestigatorAssignedToMe(r)) return "This investigation is owned by "+(investigatorName(r)||"another dashboard user")+". You can review this step, but only the assigned investigator can change it.";
     if(currentRole==="supervisor" && n===4 && !isActionAssignedToMe(r)) return "This corrective action is owned by "+(assigneeName(r)||"another dashboard user")+". You can review it, but only the assigned action owner can change it.";
-    if(n===5 && !canVerify()) return "This step is waiting for an Admin or Safety Manager to verify the work.";
-    if(n===5 && isManager()) return "Review the completed work and evidence, then verify it or request changes.";
-    if(n===6 && !canVerify()) return "An Admin or Safety Manager closes the report after verification.";
+    if(n===5 && !canPerformVerification(r)) return "This step is waiting for the assigned verifier to review the work.";
+    if(n===5 && canPerformVerification(r)) return "Review the completed work and evidence, then verify it or request changes.";
+    if(n===6 && !isCurrentReportOwner(r)) return "The current Report Owner closes the report after verification.";
     return map[n]||"Follow the guided steps.";
   }
   function recommendedWizardStep(r){
@@ -4925,15 +4960,13 @@
       return summary;
     }
     function canCompleteCorrectiveAction(a){
-      if(!a||isResolvedReport(r)) return false;
-      if(isManager()) return true;
-      return currentRole==="supervisor" && currentUserId() && String(a.owner_user_id||"")===currentUserId();
+      return !!(a&&!isResolvedReport(r)&&currentRole!=="read_only"&&currentUserId()&&String(a.owner_user_id||"")===currentUserId());
     }
     function canVerifyCorrectiveAction(a){
-      return !!(a&&!isResolvedReport(r)&&isManager());
+      return !!(a&&!isResolvedReport(r)&&isManager()&&currentUserId()&&String(a.verifier_user_id||"")===currentUserId());
     }
     async function releaseLegacyCorrectiveActionVerifier(a){
-      if(!a||!a.verifier_user_id||!isManager()) return true;
+      if(!a||!a.verifier_user_id||!isCurrentReportOwner(r)) return true;
       var res=await sb.rpc("rbh_set_corrective_action_verifier",{p_action_id:a.id,p_verifier_user_id:null});
       if(res.error) throw res.error;
       a.verifier_user_id=null;
@@ -4991,7 +5024,7 @@
         } else if(status==="awaiting_verification"){
           var canReview=canVerifyCorrectiveAction(a);
           if(canReview){
-            review='<div class="multi-action-verifier-note"><b>Ready for review</b>Review the completed work and evidence below. No reviewer needs to be assigned. Verify it as complete, or send this action back for changes.</div>'+
+            review='<div class="multi-action-verifier-note"><b>Ready for review</b>Review the completed work and evidence below. You are the assigned verifier. Verify it as complete, or send this action back for changes.</div>'+
               '<div class="mav-review">'+
                 '<label class="inv-l">Approval note (optional)<textarea data-child-verification-note="'+esc(a.id)+'" placeholder="What did you verify?"></textarea></label>'+
                 '<div class="multi-action-verification-actions"><button class="wizard-primary" type="button" data-child-verify-action="'+esc(a.id)+'">Verify as complete</button></div>'+
@@ -5002,7 +5035,9 @@
                 '</details>'+
               '</div>';
           } else {
-            review='<div class="multi-action-verifier-note"><b>Review required</b>An authorized reviewer must review the completed work and either verify it or send it back for changes.</div>';
+            review='<div class="multi-action-verifier-note"><b>Review required</b>'+
+              (a.verifier_user_id?'Only the assigned verifier can review this action.':'A verifier must be assigned before this action can be approved.')+'</div>'+
+              (isCurrentReportOwner(r)?'<button class="btn-secondary" type="button" data-assign-action-verifier="'+esc(a.id)+'">Assign / change verifier</button>':'');
           }
         } else if(status==="changes_requested"){
           review='<div class="ops-alert critical"><b>Changes requested</b>'+esc(a.verification_note||"The reviewer requested additional work.")+'</div>'+
@@ -5096,6 +5131,7 @@
           '<div class="mac-head"><div class="mac-title"><b>Corrective Action #'+esc(a.action_number||"")+'</b><span>Assigned action</span></div><span class="multi-action-status mas-status-'+esc(status)+'">'+esc(actionStatusLabel(status))+'</span></div>'+
           '<div class="mac-desc">'+esc(a.description||"No description recorded.")+'</div>'+
           '<div class="ca-action-summary-meta"><span><b>Assigned to:</b> '+esc(owner)+'</span><span><b>Due:</b> '+esc(due)+'</span><span><b>Priority:</b> '+esc(priority)+'</span><span><b>Type:</b> '+esc(control)+'</span></div>'+
+          (isCurrentReportOwner(r)&&["not_started","in_progress","changes_requested"].includes(status)?'<button class="btn-secondary" type="button" data-reassign-action="'+esc(a.id)+'" style="margin:9px 0">Reassign corrective action</button>':'')+
           work+
           '<div class="evidence-panel" data-action-evidence data-corrective-action-id="'+esc(a.id)+'"></div>'+
           (editable?'<div class="multi-action-completion-actions multi-action-submit-after-evidence"><button class="wizard-primary" type="button" data-submit-child-completion="'+esc(a.id)+'">'+(status==="changes_requested"?'Resubmit for review →':'Send for review →')+'</button></div>':'')+
@@ -5753,7 +5789,7 @@
   }
   function openRegulatoryFollowupModal(r,detail){
     if(!r||!r.involves_injury) return;
-    if(!canVerify()){ toast("Only an Admin or Safety Manager can update the injury regulatory follow-up.","err"); return; }
+    if(!isCurrentReportOwner(r)){ toast("Only the current Report Owner can update the regulatory follow-up.","err"); return; }
     regFollowupReport=r; regFollowupDetail=detail||null;
     $("regFollowupStatus").value=String(r.calosha_screening_status||"pending")||"pending";
     $("regFollowupAwareness").value=localDateTimeValue(r.calosha_awareness_at);
@@ -5793,90 +5829,172 @@
   });
 
   function updateReportOwnerModalState(){
-    var r=reportOwnerModalReport, sel=$("reportOwnerSelect"), note=$("reportOwnerEmailNote"), btn=$("reportOwnerSave");
-    if(!r||!sel||!note||!btn) return;
-    var nextId=String(sel.value||""), currentId=String(r.report_owner_user_id||""), p=profileById[nextId], name=p?profileName(p):"the selected user";
+    var r=reportOwnerModalReport,sel=$("reportOwnerSelect"),note=$("reportOwnerEmailNote"),btn=$("reportOwnerSave");
+    if(!r||!sel||!note||!btn)return;
+    var currentId=String(r.report_owner_user_id||""),nextId=String(sel.value||""),
+      self=currentUserId(),name=profileName(profileById[nextId])||"the selected manager";
+    var adminTake=!!(currentId&&currentId!==self&&currentRole==="admin");
+    var reasonWrap=$("reportOwnerReasonWrap");if(reasonWrap)reasonWrap.hidden=!adminTake;
     note.classList.remove("neutral");
-    if(!nextId){
-      note.textContent="Choose a Report Owner before confirming."; note.classList.add("neutral");
-      btn.disabled=true; btn.textContent="Confirm owner change"; return;
+    if(!nextId||nextId===currentId){note.textContent="Choose a different eligible owner.";note.classList.add("neutral");btn.disabled=true;return;}
+    if(adminTake){
+      note.textContent="Admin takeover: you will immediately become the owner. The previous owner will be notified. A reason is required.";
+      btn.textContent="Take control";btn.disabled=nextId!==self;return;
     }
-    if(nextId===currentId){
-      note.textContent=name+" is already the current Report Owner. Nothing will be changed or emailed."; note.classList.add("neutral");
-      btn.disabled=true; btn.textContent="No change"; return;
+    if(!currentId){
+      note.textContent=nextId===self?"Claim this unassigned report. You become its only editor.":"Admins may make the initial assignment of an unclaimed report.";
+      btn.textContent=nextId===self?"Claim report":"Assign initial owner";btn.disabled=false;return;
     }
-    if(nextId===currentUserId()){
-      note.textContent="You are changing the Report Owner to yourself. A one-time assignment email will be sent when you confirm.";
-      btn.disabled=false; btn.textContent="Confirm change & send email"; return;
-    }
-    note.textContent="Changing the Report Owner to "+name+" will save the handoff and immediately send that person an email when you confirm.";
-    btn.disabled=false; btn.textContent="Confirm change & send email";
+    note.textContent="Offer this report to "+name+". You remain its owner until they accept. An email and push notification will be issued.";
+    btn.textContent="Send transfer request";btn.disabled=false;
   }
   function openReportOwnerModal(r){
-    if(!r||!canChangeReportOwner(r)){toast("Only an Admin or Safety Manager can change the Report Owner while the report is open.","err");return;}
+    if(!r||!canChangeReportOwner(r)){toast("Only the current Report Owner may offer a transfer. Admins may take control.","err");return;}
     reportOwnerModalReport=r;
-    var sel=$("reportOwnerSelect"), err=$("reportOwnerErr");
-    if(sel){ sel.innerHTML=reportOwnerOptions(r.report_owner_user_id||currentUserId()); sel.value=r.report_owner_user_id||currentUserId(); }
+    var sel=$("reportOwnerSelect"),err=$("reportOwnerErr"),help=$("reportOwnerHelp"),heading=$("reportOwnerHeading");
+    var adminTake=!!(r.report_owner_user_id&&!isCurrentReportOwner(r)&&currentRole==="admin");
+    if(sel){
+      if(adminTake)sel.innerHTML='<option value="'+esc(currentUserId())+'">'+esc(profileName(profileById[currentUserId()])||"Take ownership")+'</option>';
+      else if(!r.report_owner_user_id&&currentRole==="safety_manager")sel.innerHTML='<option value="'+esc(currentUserId())+'">'+esc(profileName(profileById[currentUserId()])||"Claim report")+'</option>';
+      else sel.innerHTML=reportOwnerOptions(r.report_owner_user_id||currentUserId());
+      sel.value=adminTake||(!r.report_owner_user_id&&currentRole==="safety_manager")?currentUserId():(r.report_owner_user_id||currentUserId());
+    }
+    if(heading)heading.textContent=adminTake?"Admin — take report":(!r.report_owner_user_id?"Claim report":"Offer report transfer");
+    if(help)help.textContent=adminTake?"You are taking ownership without the existing owner's consent. A documented reason is required.":(!r.report_owner_user_id?"Claim this unassigned report before working on it.":"The new Safety Manager must accept this transfer before your access becomes read only.");
+    if($("reportOwnerReason"))$("reportOwnerReason").value="";
     if(err){err.textContent="";err.classList.remove("show");}
-    updateReportOwnerModalState();
-    $("reportOwnerBackdrop").classList.add("open");
+    updateReportOwnerModalState();$("reportOwnerBackdrop").classList.add("open");
     setTimeout(function(){if(sel)sel.focus();},40);
   }
   function closeReportOwnerModal(){ $("reportOwnerBackdrop").classList.remove("open"); reportOwnerModalReport=null; }
-  var _ownerChange=$("incidentOwnerChange"); if(_ownerChange) _ownerChange.addEventListener("click",function(){ if(activeIncident){ $("incidentOptions").open=false; openReportOwnerModal(activeIncident); } });
+  var _ownerChange=$("incidentOwnerChange");if(_ownerChange)_ownerChange.addEventListener("click",function(){
+    if(activeIncident){$("incidentOptions").open=false;openReportOwnerModal(activeIncident);}
+  });
   var incidentOptions=$("incidentOptions");
-  document.addEventListener("click",function(e){
-    if(incidentOptions.open&&!incidentOptions.contains(e.target)) incidentOptions.open=false;
-  });
+  document.addEventListener("click",function(e){if(incidentOptions.open&&!incidentOptions.contains(e.target))incidentOptions.open=false;});
   incidentOptions.addEventListener("keydown",function(e){
-    if(e.key==="Escape"&&incidentOptions.open){
-      e.stopPropagation();
-      incidentOptions.open=false;
-      incidentOptions.querySelector("summary").focus();
-    }
+    if(e.key==="Escape"&&incidentOptions.open){e.stopPropagation();incidentOptions.open=false;incidentOptions.querySelector("summary").focus();}
   });
-  var _ownerSelect=$("reportOwnerSelect"); if(_ownerSelect) _ownerSelect.addEventListener("change",updateReportOwnerModalState);
-  var _ownerCancel=$("reportOwnerCancel"); if(_ownerCancel) _ownerCancel.addEventListener("click",closeReportOwnerModal);
-  var _ownerBackdrop=$("reportOwnerBackdrop"); if(_ownerBackdrop) _ownerBackdrop.addEventListener("click",function(e){if(e.target===_ownerBackdrop)closeReportOwnerModal();});
+  var _ownerSelect=$("reportOwnerSelect");if(_ownerSelect)_ownerSelect.addEventListener("change",updateReportOwnerModalState);
+  var _ownerCancel=$("reportOwnerCancel");if(_ownerCancel)_ownerCancel.addEventListener("click",closeReportOwnerModal);
+  var _ownerBackdrop=$("reportOwnerBackdrop");if(_ownerBackdrop)_ownerBackdrop.addEventListener("click",function(e){if(e.target===_ownerBackdrop)closeReportOwnerModal();});
   document.addEventListener("keydown",function(e){if(e.key==="Escape"&&_ownerBackdrop&&_ownerBackdrop.classList.contains("open"))closeReportOwnerModal();});
-  var _ownerSave=$("reportOwnerSave"); if(_ownerSave) _ownerSave.addEventListener("click",async function(){
-    if(!reportOwnerModalReport) return;
-    var r=reportOwnerModalReport, sel=$("reportOwnerSelect"), err=$("reportOwnerErr"), nextId=sel?String(sel.value||""):"";
-    if(!nextId){if(err){err.textContent="Choose a Report Owner.";err.classList.add("show");}return;}
-    if(nextId===String(r.report_owner_user_id||"")){updateReportOwnerModalState();return;}
-    _ownerSave.disabled=true; var old=_ownerSave.textContent; _ownerSave.textContent="Saving…";
+  var _ownerSave=$("reportOwnerSave");if(_ownerSave)_ownerSave.addEventListener("click",async function(){
+    if(!reportOwnerModalReport)return;
+    var r=reportOwnerModalReport,sel=$("reportOwnerSelect"),err=$("reportOwnerErr"),nextId=sel?String(sel.value||""):"";
+    if(!nextId)return;
+    _ownerSave.disabled=true;var old=_ownerSave.textContent;_ownerSave.textContent="Saving…";
     try{
-      var notifyEmail=true;
-      var result=await persistReportOwner(r,nextId,notifyEmail);
+      var result=await persistReportOwner(r,nextId,true);
       closeReportOwnerModal();
-      var owner=reportOwnerName(r)||"Report Owner";
-      if(result&&result.email&&result.email.sent){
-        toast("Report owner changed to "+owner+" — handoff email sent","ok");
-      } else if(result&&result.email&&!result.email.sent&&!result.email.skipped){
-        console.error("report owner handoff email",result.email);
-        toast("Report owner changed to "+owner+", but the handoff email could not be sent.","err");
-      } else if(result&&result.email&&result.email.skipped){
-        if(result.email.reason==="SEND_ALREADY_IN_PROGRESS") toast("Report owner changed to "+owner+" — handoff email is already being processed","ok");
-        else toast("Report owner changed to "+owner+", but no additional handoff email was sent.","err");
-      } else if(result&&result.changed&&nextId===currentUserId()){
-        toast("Report owner changed to "+owner+" — no email sent","ok");
-      } else {
-        toast(result&&result.changed?("Report owner changed to "+owner):("Report owner is already "+owner),"ok");
-      }
-      var d=$("incidentBody"); if(d&&d.isConnected) loadAudit(r.id,d.querySelector("[data-audit]"));
+      if(result.pending)toast("Transfer request sent to "+result.targetName+". You keep ownership until accepted.","ok");
+      else if(result.changed)toast("Report ownership updated.","ok");
+      else toast("No ownership change was needed.","ok");
+      var d=$("incidentBody");if(d&&d.isConnected)loadAudit(r.id,d.querySelector("[data-audit]"));
+      await loadReports(true);
     }catch(ex){
-      console.error("change report owner",ex);
-      if(err){err.textContent=(ex&&ex.message==="INVALID_REPORT_OWNER")?"Choose an active Admin or Safety Manager.":"Could not change the Report Owner. Refresh the record and try again.";err.classList.add("show");}
+      console.error("report ownership",ex);
+      if(err){err.textContent=ex&&ex.message==="TAKEOVER_REASON_REQUIRED"?"An Admin takeover requires a reason.":"Unable to change ownership. Refresh and try again.";err.classList.add("show");}
     }finally{
       _ownerSave.textContent=old;
-      if(reportOwnerModalReport) updateReportOwnerModalState();
-      else _ownerSave.disabled=false;
+      if(reportOwnerModalReport)updateReportOwnerModalState();else _ownerSave.disabled=false;
     }
+  });
+
+  var pendingVerifierAction=null;
+  function closeVerifierDialog(){
+    $("ownershipVerifierBackdrop").classList.remove("open");pendingVerifierAction=null;
+  }
+  document.addEventListener("click",function(e){
+    var button=e.target.closest&&e.target.closest("[data-assign-action-verifier]");
+    if(!button)return;
+    var action=allCorrectiveActions.find(function(a){return String(a.id)===String(button.getAttribute("data-assign-action-verifier")||"");});
+    var report=activeIncident;
+    if(!report||!action||String(action.report_id)!==String(report.id)||!isCurrentReportOwner(report)){
+      toast("Only the current Report Owner can assign a verifier.","err");return;
+    }
+    if(action.status!=="awaiting_verification"){toast("This action is not ready for verification.","err");return;}
+    pendingVerifierAction={id:action.id,reportId:report.id};
+    $("ownershipVerifierSelect").innerHTML=verifierOptions(action.verifier_user_id||"");
+    $("ownershipVerifierSelect").value=action.verifier_user_id||"";
+    $("ownershipVerifierError").textContent="";$("ownershipVerifierError").classList.remove("show");
+    $("ownershipVerifierBackdrop").classList.add("open");
+  });
+  $("ownershipVerifierCancel").addEventListener("click",closeVerifierDialog);
+  $("ownershipVerifierBackdrop").addEventListener("click",function(e){if(e.target===$("ownershipVerifierBackdrop"))closeVerifierDialog();});
+  $("ownershipVerifierSave").addEventListener("click",async function(){
+    if(!pendingVerifierAction)return;
+    var target=String($("ownershipVerifierSelect").value||"");
+    var err=$("ownershipVerifierError"),btn=$("ownershipVerifierSave");
+    if(!target){err.textContent="Choose a Safety Manager or Admin verifier.";err.classList.add("show");return;}
+    btn.disabled=true;
+    try{
+      var response=await sb.rpc("rbh_set_corrective_action_verifier",{p_action_id:pendingVerifierAction.id,p_verifier_user_id:target});
+      if(response.error)throw response.error;
+      var report=allReports.find(function(x){return String(x.id)===String(pendingVerifierAction.reportId);});
+      var action=allCorrectiveActions.find(function(x){return String(x.id)===String(pendingVerifierAction.id);});
+      if(report&&action){action.verifier_user_id=target;await sendCorrectiveActionVerifierAssignmentEmail(report,action);}
+      closeVerifierDialog();
+      toast("Verifier assigned. The selected reviewer has been notified.","ok");
+      await loadReports(true);
+    }catch(e){console.error("Assign verifier",e);err.textContent="Could not assign the verifier. Refresh and retry.";err.classList.add("show");}
+    finally{btn.disabled=false;}
+  });
+
+  var pendingActionReassignment=null;
+  function closeOwnerActionDialog(){
+    if($("ownershipActionBackdrop"))$("ownershipActionBackdrop").classList.remove("open");
+    pendingActionReassignment=null;
+  }
+  document.addEventListener("click",function(e){
+    var button=e.target.closest&&e.target.closest("[data-reassign-action]");
+    if(!button)return;
+    var id=String(button.getAttribute("data-reassign-action")||"");
+    var report=activeIncident;
+    var action=allCorrectiveActions.find(function(a){return String(a.id)===id;});
+    if(!report||!action||String(action.report_id)!==String(report.id)||!isCurrentReportOwner(report)){
+      toast("Only the current Report Owner may reassign this corrective action.","err");return;
+    }
+    if(["awaiting_verification","verified"].includes(action.status)){toast("This action is already in review or verified.","err");return;}
+    pendingActionReassignment={reportId:report.id,actionId:id,oldOwner:String(action.owner_user_id||"")};
+    var sel=$("ownershipActionSelect");sel.innerHTML=assignmentOptions(action.owner_user_id||"");
+    sel.querySelectorAll("option").forEach(function(option){if(!option.value)option.remove();});
+    sel.value=String(action.owner_user_id||"");
+    $("ownershipActionReason").value="";
+    $("ownershipActionError").classList.remove("show");$("ownershipActionError").textContent="";
+    $("ownershipActionBackdrop").classList.add("open");sel.focus();
+  });
+  $("ownershipActionCancel").addEventListener("click",closeOwnerActionDialog);
+  $("ownershipActionBackdrop").addEventListener("click",function(e){if(e.target===$("ownershipActionBackdrop"))closeOwnerActionDialog();});
+  $("ownershipActionSave").addEventListener("click",async function(){
+    if(!pendingActionReassignment)return;
+    var sel=$("ownershipActionSelect"),reason=String($("ownershipActionReason").value||"").trim();
+    var target=String(sel.value||""),err=$("ownershipActionError"),btn=$("ownershipActionSave");
+    if(!target||target===pendingActionReassignment.oldOwner||!reason){
+      err.textContent="Choose a different eligible employee and enter a reassignment reason.";
+      err.classList.add("show");return;
+    }
+    btn.disabled=true;
+    try{
+      await assertOpenResourceFresh();
+      var result=await sb.rpc("rbh_reassign_owned_corrective_action",{
+        p_action_id:pendingActionReassignment.actionId,p_new_owner:target,p_reason:reason
+      });
+      if(result.error)throw result.error;
+      closeOwnerActionDialog();
+      toast("Corrective action reassigned. Email and opted-in push notifications are queued.","ok");
+      await loadReports(true);
+      // The prior owner loses authorization immediately, including for pending offline uploads.
+    }catch(e){
+      console.error("Reassign corrective action",e);
+      err.textContent="Unable to reassign. Confirm you still own the report, refresh, and retry.";
+      err.classList.add("show");
+    }finally{btn.disabled=false;}
   });
 
   var DISPOSITION_LABELS={no_issue:"No issue found",informational:"Informational only",not_safety:"Not safety-related",duplicate:"Duplicate report",other:"Other"};
   function openDispositionModal(r, wrap, notesEl, presetStatus){
-    if(!r || !canVerify()){ toast("Only an Admin or Safety Manager can close a report without corrective action.","err"); return; }
+    if(!r || !isCurrentReportOwner(r)){ toast("Only the current Report Owner can close this report.","err"); return; }
     if(r.involves_injury && !regulatoryFollowupResolved(r)){ toast("Resolve the injury regulatory follow-up before closing this report.","err"); return; }
     dispositionReport=r; dispositionWrap=wrap; dispositionNotesEl=notesEl;
     $("dHeading").textContent="Close report #"+r.ref_no+" — no investigation needed";
@@ -5894,7 +6012,7 @@
   document.addEventListener("keydown",function(e){ if(e.key==="Escape" && $("dispositionBackdrop").classList.contains("open")) closeDispositionModal(); });
   $("dSave").addEventListener("click",async function(){
     if(!dispositionReport) return;
-    if(!canVerify()){ toast("Only an Admin or Safety Manager can close a report without corrective action.","err"); closeDispositionModal(); return; }
+    if(!isCurrentReportOwner(r)){ toast("Only the current Report Owner can close this report.","err"); closeDispositionModal(); return; }
     if(dispositionReport.involves_injury && !regulatoryFollowupResolved(dispositionReport)){ $("dErr").textContent="Resolve the injury regulatory follow-up before closing this report."; $("dErr").classList.add("show"); return; }
     var reason=$("dReason").value, note=$("dNote").value.trim(), err=$("dErr");
     if(!reason){ err.textContent="Choose a closure reason."; err.classList.add("show"); return; }
@@ -7647,25 +7765,33 @@
   function investigatorName(r){ var p=r&&r.investigator_user_id?profileById[String(r.investigator_user_id)]:null; return p?profileName(p):""; }
   function verifierName(r){ var p=r&&r.verifier_user_id?profileById[String(r.verifier_user_id)]:null; return p?profileName(p):""; }
   function isManager(){ return currentRole==="admin"||currentRole==="safety_manager"; }
-  function canVerify(){ return isManager(); }
+  function canVerify(){ return isManager(); } // Role capability only; record-level permissions below.
   function currentUserId(){ return currentSession&&currentSession.user?String(currentSession.user.id):""; }
   function isInvestigatorAssignedToMe(r){ return !!(r&&currentUserId()&&String(r.investigator_user_id||"")===currentUserId()); }
   function isActionAssignedToMe(r){ return !!(r&&currentUserId()&&String(r.assigned_user_id||"")===currentUserId()); }
   function isVerifierAssignedToMe(r){ return !!(r&&currentUserId()&&String(r.verifier_user_id||"")===currentUserId()); }
+  function isCurrentReportOwner(r){
+    return !!(r&&currentUserId()&&String(r.report_owner_user_id||"")===currentUserId()&&isManager());
+  }
   function canPerformVerification(r){
-    return !!(r&&isManager());
+    return !!(r&&!isResolvedReport(r)&&isManager()&&
+      (isVerifierAssignedToMe(r)||allCorrectiveActions.some(function(a){
+        return String(a.report_id)===String(r.id)&&String(a.verifier_user_id||"")===currentUserId()
+          &&a.status==="awaiting_verification"&&!a.retired_at;
+      })));
   }
   function canWorkInvestigation(r){
-    return !!(r&&!isResolvedReport(r)&&isManager());
+    return !!(r&&!isResolvedReport(r)&&isCurrentReportOwner(r));
   }
   function canWorkCorrectiveAction(r){
-    if(!r||isResolvedReport(r)) return false;
-    if(isManager()) return true;
-    return currentRole==="supervisor" && isActionAssignedToMe(r);
+    return !!(r&&!isResolvedReport(r)&&currentRole!=="read_only"&&
+      (isActionAssignedToMe(r)||allCorrectiveActions.some(function(a){
+        return String(a.report_id)===String(r.id)&&String(a.owner_user_id||"")===currentUserId()
+          &&!a.retired_at&&["not_started","in_progress","changes_requested"].includes(a.status);
+      })));
   }
   function hasOperationalAccess(r){
-    if(isManager()) return true;
-    return currentRole==="supervisor" && isActionAssignedToMe(r);
+    return !!(isCurrentReportOwner(r)||canWorkCorrectiveAction(r));
   }
   function canEditStep(r,n){
     if(!r||isResolvedReport(r)) return false;
@@ -7675,18 +7801,13 @@
     // workflow restart so the audit trail stays intact.
     if(!stepState || stepState.state!=="current") return false;
     if(n===3 && ["new","under_review","assigned"].indexOf(String(r.status||"new"))<0) return false;
-    if(isManager()){
-      if(n===5) return canPerformVerification(r);
-      return true;
-    }
-    if(currentRole!=="supervisor") return false;
-    if(n>=1&&n<=3) return false;
-    if(n===4) return isActionAssignedToMe(r);
-    return false;
+    if(n===5) return canPerformVerification(r);
+    if(n===4) return canWorkCorrectiveAction(r);
+    return isCurrentReportOwner(r);
   }
-  function canEditReport(r){ return !isResolvedReport(r) && hasOperationalAccess(r); }
-  function canAddNotes(r){ return !isResolvedReport(r) && hasOperationalAccess(r); }
-  function canReopenReport(r){ return !!(r && isResolvedReport(r) && canVerify()); }
+  function canEditReport(r){ return !!(r&&!isResolvedReport(r)&&isCurrentReportOwner(r)); }
+  function canAddNotes(r){ return canEditReport(r); }
+  function canReopenReport(r){ return !!(r && isResolvedReport(r) && isCurrentReportOwner(r)); }
   function canManageUsers(){ return currentRole==="admin"; }
   function workflowHasProgress(r){
     if(!r || isResolvedReport(r)) return false;
@@ -7695,7 +7816,7 @@
       hasWorkflowValue(r.priority) || hasWorkflowValue(r.verifier_user_id) || (r.action_status&&r.action_status!=="not_started") ||
       hasWorkflowValue(r.action_completion_note) || hasWorkflowValue(r.action_verification_note);
   }
-  function canRestartWorkflow(r){ return !!(r && canVerify() && workflowHasProgress(r)); }
+  function canRestartWorkflow(r){ return !!(r && isCurrentReportOwner(r) && workflowHasProgress(r)); }
 
   function applyRoleUi(){
     var pill=$("rolePill");
@@ -7852,7 +7973,7 @@
       var r=findReport(a.report_id);
       if(!r||!isOpenOperational(r)||!correctiveActionInCurrentCycle(a,r)) return false;
       if(String(a.status||"")!=="awaiting_verification") return false;
-      return true;
+      return String(a.verifier_user_id||"")===currentUserId();
     });
   }
   function childActionSort(a,b){
@@ -7986,7 +8107,7 @@
   function correctiveActionNeedsMyAttention(a){
     if(!a||!currentUserId()) return false;
     if(String(a.owner_user_id||"")===currentUserId()) return true;
-    if(String(a.status||"")==="awaiting_verification" && isManager()) return true;
+    if(String(a.status||"")==="awaiting_verification" && isManager() && String(a.verifier_user_id||"")===currentUserId()) return true;
     return false;
   }
   function renderActionSummary(arr){
@@ -8061,12 +8182,12 @@
   }
 
   function focusedActionCanComplete(a,r){
-    if(!a||!r||isResolvedReport(r)||!correctiveActionInCurrentCycle(a,r)) return false;
-    if(isManager()) return true;
-    return currentRole==="supervisor" && currentUserId() && String(a.owner_user_id||"")===currentUserId();
+    return !!(a&&r&&!isResolvedReport(r)&&correctiveActionInCurrentCycle(a,r)
+      &&currentRole!=="read_only"&&currentUserId()&&String(a.owner_user_id||"")===currentUserId());
   }
   function focusedActionCanVerify(a,r){
-    return !!(a&&r&&!isResolvedReport(r)&&correctiveActionInCurrentCycle(a,r)&&isManager()&&String(a.status||"")==="awaiting_verification");
+    return !!(a&&r&&!isResolvedReport(r)&&correctiveActionInCurrentCycle(a,r)&&isManager()
+      &&String(a.status||"")==="awaiting_verification"&&String(a.verifier_user_id||"")===currentUserId());
   }
   function replaceGlobalCorrectiveAction(row){
     if(!row||!row.id) return;
@@ -8098,7 +8219,7 @@
     return activeFocusedAction;
   }
   async function clearFocusedLegacyVerifier(a){
-    if(!a||!a.verifier_user_id||!isManager()) return true;
+    if(!a||!a.verifier_user_id||!isCurrentReportOwner(findReport(a.report_id))) return true;
     var res=await sb.rpc("rbh_set_corrective_action_verifier",{p_action_id:a.id,p_verifier_user_id:null});
     if(res.error) throw res.error;
     a.verifier_user_id=null;
@@ -8651,7 +8772,48 @@
     scrollAppToTop();
   }
 
-  function renderHomeSnapshot(){ renderHomeGreeting(); renderHomeStats(); renderSafetyPulse(); renderHomeAttention(); renderHomeActivity(); updateNavCounts(); renderActions(); renderMyWork(); }
+  var ownershipInboxLastLoaded=0,ownershipInboxLoading=false;
+  async function loadReportTransferRequests(force){
+    var root=$("ownershipInbox"),list=$("ownershipRequestList");
+    if(!root||!list)return;
+    if(!isManager()||!currentUserId()){root.hidden=true;return;}
+    if(ownershipInboxLoading||(!force&&Date.now()-ownershipInboxLastLoaded<15000))return;
+    ownershipInboxLastLoaded=Date.now();ownershipInboxLoading=true;
+    try{
+      var response=await sb.rpc("rbh_my_pending_report_transfers");
+      if(response.error)throw response.error;
+      var pending=response.data||[];
+      root.hidden=!pending.length;
+      list.innerHTML=pending.map(function(t){
+        var name=String(t.from_owner_name||"Report Owner");
+        return '<div style="padding:10px 0;border-bottom:1px solid #ddd">'+
+          '<b>Report #'+esc(t.report_number||String(t.report_id).slice(0,8))+'</b>'+
+          '<div class="action-meta">Offered by '+esc(name)+' · Expires '+esc(fmtDate(t.expires_at))+'</div>'+
+          '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:9px">'+
+          '<button class="btn-primary" type="button" data-transfer-response="accept" data-transfer-id="'+esc(t.transfer_id)+'">Accept ownership</button>'+
+          '<button class="btn-secondary" type="button" data-transfer-response="decline" data-transfer-id="'+esc(t.transfer_id)+'">Decline</button>'+
+          '</div></div>';
+      }).join("");
+    }finally{ownershipInboxLoading=false;}
+  }
+  document.addEventListener("click",async function(event){
+    var button=event.target.closest&&event.target.closest("[data-transfer-response]");
+    if(!button)return;
+    var accept=button.getAttribute("data-transfer-response")==="accept";
+    var transferId=button.getAttribute("data-transfer-id");
+    if(!transferId||!confirm(accept?"Accept ownership? The previous Report Owner will become read only.":"Decline this report transfer? The current owner will retain control."))return;
+    button.disabled=true;
+    try{
+      var response=await sb.rpc("rbh_decide_report_transfer",{p_transfer_id:transferId,p_accept:accept});
+      if(response.error)throw response.error;
+      toast(accept?"Report ownership accepted. You can now manage the report.":"Transfer declined. The current owner was notified.","ok");
+      ownershipInboxLastLoaded=0;
+      await loadReports(true);await loadReportTransferRequests(true);
+    }catch(e){console.error("Respond to transfer",e);toast("Could not update ownership. Refresh and try again.","err");}
+    finally{button.disabled=false;}
+  });
+
+  function renderHomeSnapshot(){ renderHomeGreeting(); renderHomeStats(); renderSafetyPulse(); renderHomeAttention(); renderHomeActivity(); updateNavCounts(); renderActions(); renderMyWork(); loadReportTransferRequests(false).catch(function(e){console.warn("Transfer inbox",e);}); }
 
   async function upsertProfile(session){
     if(!session||!session.user) return;
@@ -9172,7 +9334,7 @@
       finally{if(completeBtn.isConnected)completeBtn.disabled=false;}
     });
     async function releaseLegacyReportVerifier(){
-      if(!r.verifier_user_id||!isManager()) return true;
+      if(!r.verifier_user_id||!isCurrentReportOwner(r)) return true;
       var vr=await sb.from("reports").update({verifier_user_id:null}).eq("id",r.id);
       if(vr.error) throw vr.error;
       r.verifier_user_id=null;
@@ -9334,11 +9496,10 @@
       if(parseInt(a.workflow_generation||0,10)!==parseInt(r&&r.workflow_restart_count||0,10)) return false;
       var status=String(a.status||"not_started");
       if(["not_started","in_progress","changes_requested"].indexOf(status)<0) return false;
-      if(isManager()) return true;
-      return currentRole==="supervisor" && currentUserId() && String(a.owner_user_id||"")===currentUserId();
+      return currentRole!=="read_only"&&currentUserId()&&String(a.owner_user_id||"")===currentUserId();
     }
     if(!r || !String(r.corrective_action||"").trim() || !r.assigned_user_id) return false;
-    return canEditStep(r,4);
+    return canWorkCorrectiveAction(r);
   }
   function actionEvidenceUploadKey(reportId,correctiveActionId){
     return String(reportId)+":"+(correctiveActionId?String(correctiveActionId):"legacy");

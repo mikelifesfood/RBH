@@ -121,7 +121,11 @@ test('typed Web Push shows only fixed privacy-safe copy and ignores caller-provi
     ['action_assignment','Corrective action assigned','You have a corrective action to complete.'],
     ['corrective_action_assignment','Corrective action assigned','You have a corrective action to complete.'],
     ['corrective_action_verification_requested','Verification required','A corrective action is ready for review.'],
-    ['corrective_action_changes_requested','Changes requested','Your corrective action needs attention.']
+    ['corrective_action_changes_requested','Changes requested','Your corrective action needs attention.'],
+    ['report_transfer_requested','Report ownership offered','A report ownership request needs your decision.'],
+    ['report_transfer_declined','Report transfer declined','Your report ownership transfer was declined.'],
+    ['report_owner_transferred_from','Report ownership transferred','You are no longer the owner of a report.'],
+    ['corrective_action_reassigned_from','Corrective action reassigned','A corrective action is no longer assigned to you.']
   ];
   for(const [type,title,body] of cases){
     const w=worker();let promise;
@@ -194,4 +198,21 @@ test('staff install promotion is mobile only',()=>{
   assert.match(pwa,/var isMobileDevice=isIOS/);
   assert.match(pwa,/isDashboardPage&&isMobileDevice&&!dismissed/);
   assert.match(pwa,/if\(!isDashboardPage\|\|!isMobileDevice\|\|isStandalone\)return/);
+});
+
+test('ownership push respects authoritative transfer and reassignment state',()=>{
+  assert.match(sender,/rbh_report_transfer_requests/);
+  assert.match(sender,/rbh_report_ownership_overrides/);
+  assert.match(sender,/rbh_corrective_action_reassignments/);
+  assert.match(sender,/report_transfer_requested/);
+  assert.match(sender,/corrective_action_reassigned_from/);
+  const staged=fs.readFileSync(new URL('../supabase/migrations/20261118_ownership_notifications_STAGED_NOT_APPLIED.sql',import.meta.url),'utf8');
+  assert.match(staged,/rbh_emit_transfer_request_notifications/);
+  assert.match(staged,/rbh_enqueue_ownership_email_webhook/);
+  assert.match(staged,/net\.http_post/);
+  const inbox=fs.readFileSync(new URL('../supabase/migrations/20261118_ownership_transfer_inbox_STAGED_NOT_APPLIED.sql',import.meta.url),'utf8');
+  assert.match(inbox,/rbh_my_pending_report_transfers/);
+  assert.match(dashboard,/data-transfer-response="accept"/);
+  assert.match(dashboard,/rbh_decide_report_transfer/);
+  assert.match(dashboard,/rbh_reassign_owned_corrective_action/);
 });
