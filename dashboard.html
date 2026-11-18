@@ -5738,12 +5738,27 @@
         if(ownerWasChanged && String(r.report_owner_user_id||"")!==String(ownerId)) await persistReportOwner(r,ownerId,false);
         if(r.status==="new") await updateStatus(r.id,"under_review",wrap,activeReopenStep(r)?2:null);
         else if(activeReopenStep(r)===1) await updateStatus(r.id,r.status,wrap,2);
-        // The incident form was originally constructed while Step 2 was read only.
-        // Rebuild it from the now-confirmed owner and workflow state so the
-        // Investigation fields, evidence uploader, and save controls all become
-        // editable immediately without navigating Home and reopening the report.
-        buildDetail(r,detail,wrap);
-        setWizardStep(detail,r,2,true);
+        // Reopen this same report through the complete, already-proven record
+        // opening path. A partial rebuild of the existing wizard can leave its
+        // old Step 1 panels/handlers active even though Supabase advanced it.
+        // This is the same path used when Home -> Open Report works, without
+        // making the user leave and return to the record.
+        var freshStart=await sb.from("reports").select("*").eq("id",r.id).single();
+        if(freshStart.error) throw freshStart.error;
+        if(!freshStart.data || freshStart.data.status==="new")
+          throw new Error("INVESTIGATION_ADVANCE_NOT_CONFIRMED");
+        Object.assign(r,freshStart.data);
+        if(activeIncident && String(activeIncident.id)===String(r.id)){
+          openIncident(r,lastOperationalView);
+          var reopenedBody=$("incidentBody");
+          if(reopenedBody && String(reopenedBody.getAttribute("data-report-id"))===String(r.id)){
+            setWizardStep(reopenedBody,r,2,true);
+            if(typeof reopenedBody._syncStepEditability==="function") reopenedBody._syncStepEditability();
+          }
+        } else {
+          buildDetail(r,detail,wrap);
+          setWizardStep(detail,r,2,true);
+        }
         var ownerName=reportOwnerName(r)||"Report Owner";
         toast("Investigation started — "+ownerName+" owns the report","ok");
         if(shouldNotifyAfterAdvance) sendReportOwnerAssignmentEmail(r).then(function(email){
