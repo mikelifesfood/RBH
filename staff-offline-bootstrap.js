@@ -215,7 +215,26 @@ async function reviewSavedDrafts(){
           preview.hidden=false;btn.textContent='Hide saved draft';
         }catch(e){preview.textContent='Could not decrypt draft.';preview.hidden=false;}
       });
-      wrap.append(summary,stateLabel,btn,preview);
+      const copy=document.createElement('button');
+      copy.type='button';copy.className='profile-secondary';
+      copy.style.marginLeft='8px';
+      copy.textContent='Copy draft for online form';
+      copy.addEventListener('click',async()=>{
+        try{
+          const saved=await f.readDraft(scope);
+          if(!saved)throw Error('OFFLINE_DRAFT_MISSING');
+          const text=formatLocalDraft(saved.data);
+          if(!navigator.clipboard?.writeText)throw Error('CLIPBOARD_UNAVAILABLE');
+          await navigator.clipboard.writeText(text);
+          const revision=action?action.updated_at:report?.updated_at;
+          stateLabel.textContent=(stale||saved.serverRevision!==revision)?
+            'Draft copied. This report has changed: review each field against the current online record before using it.':
+            'Draft copied. Paste relevant fields into the official online RBH form, review and submit there.';
+        }catch(e){
+          stateLabel.textContent='Could not copy automatically. Use Show saved draft to select and copy the text manually: '+e.message;
+        }
+      });
+      wrap.append(summary,stateLabel,btn,copy,preview);
       if(!stale&&!scope.actionId){
         const localPhotos=await f.listEvidence(scope);
         if(localPhotos.length){
