@@ -3,6 +3,12 @@
 **Repository:** `mikelifesfood/RBH` — commits directly to `main`.
 **Supabase project:** `owhkxguiavgxzwvbxevj`.
 
+## Scheduler staged with delivery blocked — November 17, 2026
+- Installed `pg_cron` job **rbh-pwa-push-dispatch**, running minute-by-minute and calling `teamworkt_internal.rbh_dispatch_push_due()`.
+- Verified schedule registered (`active=true`), but **global push switch OFF** and **RBH tenant switch OFF**; SQL function short-circuits before network request when disabled.
+- Confirmed pending/retry/claimed outbox count **0** at installation. No company-wide sends activated.
+- Requires explicit approval to change the two delivery gates to ON for all RBH staff opt-in users. Confirm cron execution logs following approval.
+
 ## Confirmed iPhone workflow push tap — PASSED (Nov 17, 2026)
 - User received the **fresh workflow-linked RBH push** on iPhone and tapped it, opening the staff Notification Center.
 - Screenshot shows **“RBH push delivery retry — test only”** at top with description **“Controlled notification test linked to the existing test report. No action is required.”**
