@@ -297,6 +297,7 @@ class OfflineBrowserTests(unittest.TestCase):
     def test_encrypted_local_drafts_and_photos_isolate_accounts(self):
         self.enroll()
         self.unlock()
+        self.page.locator("#workspacePanel").wait_for(state="visible")
         result=self.page.evaluate("""async()=>{
           const f=window.TeamWorktStaffOfflineFoundation;
           const a={organizationId:'org-1',userId:'user-1',reportId:'report-123',
