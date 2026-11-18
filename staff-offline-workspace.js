@@ -168,6 +168,8 @@ $('saveDraft').addEventListener('click',async()=>{
     if(!revision)throw Error('MISSING_SYNC_REVISION');
     const saveButton=$('saveDraft');saveButton.disabled=true;
     try {
+      const existing=await store().readDraft(scope);
+      if(existing?.data?.submission)throw Error("PENDING_OFFICIAL_SUBMISSION_RECONCILE_FIRST");
       await store().saveDraft(scope,draft,revision);
       const files=Array.from($('draftPhotos').files);
       for(const file of files){
