@@ -9,7 +9,7 @@
 <link rel="manifest" href="./dashboard.webmanifest">
 <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
-<script src="./pwa-client.js?v=20261115-dashboard-only-install" defer></script>
+<script src="./pwa-client.js?v=20261118-mobile-install" defer></script>
 <script src="./staff-offline-foundation.js" defer></script>
 <script src="./staff-offline-protocol.js" defer></script>
 <script src="./staff-offline-bootstrap.js" defer></script>
@@ -1620,7 +1620,6 @@
 
         <section class="view" id="view-home">
           <div class="home-hero"><div><div class="home-kicker">Safety Operations</div><h1 id="homeGreeting">RBH Safety</h1><p>Focus first on new, overdue, and higher-attention reports.</p></div></div>
-          <div class="home-stats" id="homeStats"></div>
           <div class="home-actions">
             <button class="action-card" id="homeOpen" type="button">
               <span class="ac-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></span>
@@ -1633,6 +1632,7 @@
               <span class="ac-d">Open the field reporting experience in a new tab.</span>
             </button>
           </div>
+          <div class="home-stats" id="homeStats"></div>
           <div class="attention-grid">
             <div class="home-panel"><div class="hp-head"><span class="hp-title">Needs your attention</span><button class="hp-link" data-view="records" type="button">Open inbox</button></div><div id="homeAttention" class="attention-list"></div></div>
             <div class="home-panel"><div class="hp-head"><span class="hp-title">Recent activity</span></div><div id="homeActivity" class="activity"></div></div>
@@ -2916,9 +2916,7 @@
   /* Keep browser back/refresh restoration from reopening a workspace halfway down the page. */
   try{ if("scrollRestoration" in window.history) window.history.scrollRestoration="manual"; }catch(_scrollRestoreErr){}
 
-  function storedView(){
-    try{ var v=localStorage.getItem(NAV_VIEW_KEY); return v||(currentRole==="supervisor"?"mywork":"home"); }catch(_e){ return currentRole==="supervisor"?"mywork":"home"; }
-  }
+  function storedView(){ return "home"; }
   function storeView(name){
     try{
       localStorage.setItem(NAV_VIEW_KEY,name);
@@ -2962,20 +2960,10 @@
       if(directReport){ openIncident(directReport,"mywork"); return; }
       toast("That assigned record is unavailable or you no longer have access to it.","err");
     }
-    var name=storedView();
-    var allowed=["home","mywork","records","actions","metrics","platform","users","incident"];
-    if(allowed.indexOf(name)<0) name="home";
-    if(name==="users" && currentRole!=="admin") name="home";
-    if(name==="platform" && !isPlatformAdmin) name="home";
-    if(name==="incident") {
-      try{
-        var saved=JSON.parse(localStorage.getItem(NAV_INCIDENT_KEY)||"null");
-        var r=saved&&allReports.find(function(x){ return String(x.id)===String(saved.id); });
-        if(r){ openIncident(r,(saved&&saved.from)||"records"); return; }
-      }catch(_e){}
-      name="records";
-    }
-    showView(name);
+    // A fresh dashboard launch always begins at Home. Push notification
+    // and email deep links were handled above; do not restore a prior tab or
+    // record from shared browser storage after a PWA relaunch.
+    showView("home");
   }
 
   $("mStatus").innerHTML=statusOptions("new");
@@ -3360,6 +3348,7 @@
     var q=($("search").value||"").toLowerCase().trim(), st=$("statusFilter").value;
     var explicitResolvedStatus=["closed","no_action","duplicate"].indexOf(st)>=0;
     filtered=allReports.filter(function(r){
+      if(!reportVisibleInPersonalWorkspace(r))return false;
       var resolved=isResolvedReport(r);
       // Keep resolved records out of the working Safety Inbox by default.
       // The Closed chip intentionally groups every resolved disposition
@@ -7819,7 +7808,7 @@
     return {n:visible,label:labels[visible]||"Workflow"};
   }
   function renderHomeAttention(){
-    var el=$("homeAttention"); if(!el) return; var items=allReports.filter(function(r){ return r.status!=="closed"&&r.status!=="no_action"&&r.status!=="duplicate"; });
+    var el=$("homeAttention"); if(!el) return; var items=allReports.filter(function(r){ return r.status!=="closed"&&r.status!=="no_action"&&r.status!=="duplicate"&&reportVisibleInPersonalWorkspace(r); });
     items.sort(function(a,b){ return reportAttentionRank(b)-reportAttentionRank(a) || new Date(b.created_at)-new Date(a.created_at); }); items=items.slice(0,5);
     var attentionSnapshot=items.map(function(r){var step=homeWorkflowStepInfo(r);return [r.id,r.ref_no,r.report_type||"",r.job_site||"",assigneeName(r)||"",r.created_at||"",r.status||"",r.action_status||"",r.involves_injury?1:0,isOverdue(r)?1:0,step.n,step.label].join("|");}).join("||");
     if(el.dataset.homeAttentionSnapshot===attentionSnapshot) return;
@@ -7835,6 +7824,16 @@
     });
   }
   function isOpenOperational(r){ return !!(r && r.status!=="closed" && r.status!=="no_action" && r.status!=="duplicate"); }
+  function reportVisibleInPersonalWorkspace(r){
+    // Admin/Safety Manager and Read Only retain the organization-wide
+    // Safety Inbox appropriate to their existing read permissions.
+    if(currentRole!=="supervisor")return true;
+    var uid=currentUserId();if(!uid||!r)return false;
+    if(String(r.report_owner_user_id||"")===uid||String(r.assigned_user_id||"")===uid||String(r.investigator_user_id||"")===uid)return true;
+    return (allCorrectiveActions||[]).some(function(a){
+      return String(a.report_id)===String(r.id)&&String(a.owner_user_id||"")===uid&&correctiveActionInCurrentCycle(a,r);
+    });
+  }
   function isAssignedToMe(r){ return isActionAssignedToMe(r); }
   function reportOwnerWorkActive(r){
     // Ownership lasts throughout all open workflow stages; the legacy separate investigator field does not drive My Work.
@@ -7977,9 +7976,13 @@
   }
 
   function currentCorrectiveActionWorkspaceRows(){
+    // This tab is personal for every role. Managers use the dedicated
+    // My Work review queue for team-wide verification, not the My Actions list.
+    var uid=currentUserId();if(!uid||currentRole==="read_only")return [];
     return (allCorrectiveActions||[]).filter(function(a){
       var r=findReport(a.report_id);
-      if(!r||isResolvedReport(r)||!correctiveActionInCurrentCycle(a,r)) return false;
+      if(!r||isResolvedReport(r)||!correctiveActionInCurrentCycle(a,r))return false;
+      if(String(a.owner_user_id||"")!==uid)return false;
       return String(a.status||"not_started")!=="verified";
     });
   }
@@ -9805,11 +9808,21 @@
 
   function updateNavCounts(){
     var el=$("navOpenCount"); if(!el) return;
-    var open=0; allReports.forEach(function(r){ if(r.status!=="closed"&&r.status!=="no_action"&&r.status!=="duplicate") open++; });
+    var open=0; allReports.filter(reportVisibleInPersonalWorkspace).forEach(function(r){ if(r.status!=="closed"&&r.status!=="no_action"&&r.status!=="duplicate") open++; });
     el.textContent=open>0?String(open):"";
   }
 
-  function renderHomeGreeting(){ var el=$("homeGreeting"); if(!el) return; var h=new Date().getHours(); var g=h<12?"Good morning":(h<18?"Good afternoon":"Good evening"); el.textContent=g+" \u2014 RBH Safety"; }
+  function renderHomeGreeting(){
+    var el=$("homeGreeting");if(!el)return;
+    var h=new Date().getHours(),g=h<12?"Good morning":(h<18?"Good afternoon":"Good evening");
+    var profile=currentProfile,full=profile&&String(profile.full_name||"").trim();
+    var first=full?full.split(/\s+/)[0]:"";
+    if(!first&&currentSession&&currentSession.user){
+      var email=String(currentSession.user.email||""),prefix=email.split("@")[0];
+      if(/^[a-z][a-z._-]*$/i.test(prefix))first=prefix.split(/[._-]/)[0];
+    }
+    el.textContent=g+(first?", "+first:"")+" — RBH Safety";
+  }
 
 
   /* Safety Pulse: derived only from reports already authorized for this account.
@@ -9817,8 +9830,8 @@
   function renderSafetyPulse(){
     var host=$("safetyPulse"); if(!host)return;
     var now=Date.now(), day=86400000, recent=0, prior=0, openHigh=0, overdue=0;
-    var seen={}, groups={}, leading=[], open=allReports.filter(function(r){return !isResolvedReport(r);});
-    allReports.forEach(function(r){
+    var seen={}, groups={}, leading=[], open=allReports.filter(function(r){return !isResolvedReport(r)&&reportVisibleInPersonalWorkspace(r);});
+    allReports.filter(reportVisibleInPersonalWorkspace).forEach(function(r){
       var time=Date.parse(r.created_at||"");
       if(Number.isFinite(time) && time<=now && time>=now-30*day)recent++;
       else if(Number.isFinite(time) && time<now-30*day && time>=now-60*day)prior++;
@@ -9884,7 +9897,7 @@
   function renderHomeStats(){
     var el=$("homeStats"); if(!el) return;
     var open=0,nw=0,inj=0,ov=0,verify=0;
-    allReports.forEach(function(r){ var isOpen=r.status!=="closed"&&r.status!=="no_action"&&r.status!=="duplicate"; if(isOpen) open++; if(r.status==="new") nw++; if(isOpen&&r.involves_injury) inj++; if(isOverdue(r)) ov++; if(reportActionStatus(r)==="awaiting_verification") verify++; });
+    allReports.filter(reportVisibleInPersonalWorkspace).forEach(function(r){ var isOpen=r.status!=="closed"&&r.status!=="no_action"&&r.status!=="duplicate"; if(isOpen) open++; if(r.status==="new") nw++; if(isOpen&&r.involves_injury) inj++; if(isOverdue(r)) ov++; if(reportActionStatus(r)==="awaiting_verification") verify++; });
     function tile(n,k,f,al){ return '<button class="hs'+(al&&n>0?" alert":"")+'" data-filter="'+f+'" type="button"><div class="hs-n">'+n+'</div><div class="hs-k">'+k+'</div></button>'; }
     var html=tile(open,"Open","open")+tile(nw,"New","new")+tile(ov,"Overdue","overdue",true)+tile(verify,"To review","actions",true)+tile(inj,"Open injuries","open_injuries",true);
     if(el.dataset.homeStatsSnapshot===html) return;
@@ -9898,10 +9911,14 @@
     if(!el.dataset.homeActivityLoaded&&!el.children.length) el.innerHTML='<div class="notes-empty">Loading…</div>';
     var events=[], map={};
     allReports.forEach(function(r){ map[r.id]=r.ref_no; });
-    allReports.slice(0,25).forEach(function(r){ events.push({ when:r.created_at, kind:"report", text:"New report #"+r.ref_no+" — "+(r.report_type||"Report") }); });
+    allReports.filter(reportVisibleInPersonalWorkspace).slice(0,25).forEach(function(r){ events.push({ when:r.created_at, kind:"report", text:"New report #"+r.ref_no+" — "+(r.report_type||"Report") }); });
     try{
       var res=await sb.from("report_audit").select("*").order("created_at",{ascending:false}).limit(20);
-      (res.data||[]).forEach(function(a){ events.push({ when:a.created_at, kind:"change", text:"#"+(map[a.report_id]||"?")+"  "+fmtChange(a), who:a.actor_email?auditActor(a.actor_email):(a.actor_id&&profileById[String(a.actor_id)]?profileName(profileById[String(a.actor_id)]):"") }); });
+      (res.data||[]).forEach(function(a){
+        var report=findReport(a.report_id);
+        if(!report||!reportVisibleInPersonalWorkspace(report))return;
+        events.push({ when:a.created_at, kind:"change", text:"#"+(map[a.report_id]||"?")+"  "+fmtChange(a), who:a.actor_email?auditActor(a.actor_email):(a.actor_id&&profileById[String(a.actor_id)]?profileName(profileById[String(a.actor_id)]):"") });
+      });
     }catch(e){ console.error(e); }
     events.sort(function(a,b){ return new Date(b.when)-new Date(a.when); });
     events=events.slice(0,10);
