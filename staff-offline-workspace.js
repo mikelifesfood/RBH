@@ -13,6 +13,10 @@ const STEPS=[
   ['add_action_before_close','Additional corrective action'],['closure','Report closure preparation']
 ];
 let context=null,record=null,restoreGeneration=0,editGeneration=0;
+let savedEditGeneration=0,saveRunning=false;
+function hasUnsavedEdits(){return editGeneration!==savedEditGeneration || !!$('draftPhotos')?.files?.length;}
+function confirmDiscard(){return !hasUnsavedEdits() || confirm('Changes have NOT been saved on this device. Leave without saving?');}
+function markSavedIfUnchanged(startGeneration){if(editGeneration===startGeneration)savedEditGeneration=startGeneration;}
 function message(text,error){$('status').textContent=text;$('status').className=error?'err':'';}
 function workspaceScope(){return {organizationId:context.organizationId,userId:context.userId,
  reportId:'workspace',generation:0,step:WORKSPACE_STEP};}
@@ -26,12 +30,17 @@ function makeScope(){
 }
 function clearEditor(){
   restoreGeneration++;
+  savedEditGeneration=editGeneration;
   $('editorPanel').hidden=true;$('draftPhotos').value='';
   for(const name of ['draftNote','draftFindings','draftRootCause','draftPlanDescription','draftPlanOwner','draftPlanDue','draftPlanPriority','draftDecision'])$(name).value='';
   $('draftStep').replaceChildren();$('draftAction').replaceChildren();
   $('evidenceCount').textContent='';record=null;
 }
 function lock(){
+  if(!confirmDiscard())return;
+  lockWithoutPrompt();
+}
+function lockWithoutPrompt(){
   store()?.lock();context=null;clearEditor();$('workspacePanel').hidden=true;
   $('unlockPanel').hidden=false;$('offlinePassphrase').value='';
   $('records').replaceChildren();message('Offline workspace locked.');
@@ -55,7 +64,7 @@ function renderRecordList(){
     const secondary=document.createElement('div');secondary.className='muted';
     secondary.textContent='Status: '+item.status+' · '+item.actions.length+' corrective action(s)';
     btn.append(heading,secondary);
-    btn.addEventListener('click',()=>openRecord(item));$('records').appendChild(btn);
+    btn.addEventListener('click',()=>{if(confirmDiscard())openRecord(item);});$('records').appendChild(btn);
   }
 }
 async function updateEvidenceCount(){
@@ -86,6 +95,7 @@ function applyForm(data){
 }
 async function restoreDraft(){
   const generation=++restoreGeneration,scope=makeScope(),editAtStart=editGeneration;
+  savedEditGeneration=editAtStart;
   const saveButton=$('saveDraft');saveButton.disabled=true;
   const stillCurrent=()=>generation===restoreGeneration &&
     context!==null&&record!==null&&JSON.stringify(makeScope())===JSON.stringify(scope);
@@ -115,7 +125,11 @@ async function openRecord(item){
   $('draftAction').replaceChildren();
   for(const action of item.actions){$('draftAction').appendChild(selectOption('Action #'+action.number+' — '+action.status,action.id));}
   $('editorPanel').hidden=false;
-  $('draftStep').onchange=async()=>{const step=$('draftStep').value;
+  let lastStep=null;
+  $('draftStep').onchange=async()=>{
+    if(lastStep!==null&&lastStep!==$('draftStep').value&&!confirmDiscard()){$('draftStep').value=lastStep;return;}
+    lastStep=$('draftStep').value;
+    const step=lastStep;
     $('draftAction').disabled=!['action_completion','verification','changes_requested'].includes(step);
     if(step==='action_completion'){
       const allowed=item.actions.filter(a=>a.canComplete).map(a=>a.id);
@@ -123,7 +137,12 @@ async function openRecord(item){
       if(!allowed.includes($('draftAction').value))$('draftAction').value=allowed[0]||'';
     }else for(const opt of $('draftAction').options)opt.disabled=false;
     updateFieldsForStep();await restoreDraft();};
-  $('draftAction').onchange=restoreDraft;
+  let lastAction=$('draftAction').value;
+  $('draftAction').onchange=async()=>{
+    if(!confirmDiscard()){$('draftAction').value=lastAction;return;}
+    lastAction=$('draftAction').value;
+    await restoreDraft();
+  };
   if(!$('draftStep').options.length){message('This report has no editable offline stages for your synchronized permissions.',true);clearEditor();return;}
   $('draftStep').dispatchEvent(new Event('change'));
   $('editorPanel').scrollIntoView({behavior:'smooth'});
@@ -157,6 +176,9 @@ $('editorPanel').addEventListener('change',event=>{
   if(event.target?.id==='draftPhotos')editGeneration++;
 });
 $('saveDraft').addEventListener('click',async()=>{
+  if(saveRunning)return;
+  saveRunning=true;
+  const startingEdits=editGeneration;
   try{
     const scope=makeScope(), draft=readForm();
     draft.reportRevision=record.revision;
@@ -178,16 +200,22 @@ $('saveDraft').addEventListener('click',async()=>{
       }
       $('draftPhotos').value='';
       await updateEvidenceCount();
-      message('Saved on this device — NOT submitted to RBH.');
+      markSavedIfUnchanged(startingEdits);
+      message(hasUnsavedEdits()?'An earlier version saved, but newer edits remain unsaved. Save again.':'Saved on this device — NOT submitted to RBH.');
     } finally {saveButton.disabled=false;}
   }catch(e){message('Local save failed: '+e.message+'. Do not close this page until you have copied your unsaved work.',true);}
+  finally{saveRunning=false;}
 });
-$('closeDraft').addEventListener('click',()=>{clearEditor();message('Return online to review drafts before officially submitting.');});
+$('closeDraft').addEventListener('click',()=>{if(!confirmDiscard())return;clearEditor();message('Return online to review drafts before officially submitting.');});
 $('lockButton').addEventListener('click',lock);
 $('eraseButton').addEventListener('click',async()=>{
   if(!context)return;
   if(!confirm('Erase ALL saved offline drafts, photos and snapshots for this RBH account on this device? This cannot be undone.'))return;
-  try{await store().deleteAccountWorkspace(context.organizationId,context.userId);lock();message('Offline account records erased from this device.');}
+  try{await store().deleteAccountWorkspace(context.organizationId,context.userId);lockWithoutPrompt();message('Offline account records erased from this device.');}
   catch(e){message('Could not erase all local records: '+e.message,true);}
+});
+window.addEventListener('beforeunload',event=>{
+  if(!hasUnsavedEdits()||!record)return;
+  event.preventDefault();event.returnValue='';
 });
 })();
