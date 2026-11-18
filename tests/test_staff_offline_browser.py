@@ -136,7 +136,7 @@ class OfflineBrowserTests(unittest.TestCase):
         self.unlock()
         self.page.get_by_text("Report #77").first.click()
         self.page.locator("#draftStep").select_option("action_completion")
-        self.assertEqual(self.page.locator("#draftNote").input_value(),"Fictional corrective work complete")
+        self.page.wait_for_function("document.querySelector('#draftNote').value === 'Fictional corrective work complete'")
         self.page.evaluate("""async()=>{
           const names=(await caches.keys()).join(' ');
           const keys=await Promise.all((await caches.keys()).map(async name=>(await caches.open(name)).keys()));
