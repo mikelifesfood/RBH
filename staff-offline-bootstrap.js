@@ -6,7 +6,7 @@
 'use strict';
 const STEP_INDEX='workspace_index';
 const TTL=24*60*60*1000;
-const state={identity:null,reports:[],actions:[],panel:null,initialized:false,saving:false};
+const state={identity:null,reports:[],actions:[],client:null,panel:null,initialized:false,saving:false};
 const api=()=>root.TeamWorktStaffOfflineFoundation;
 function $(id){return document.getElementById(id);}
 function sameIdentity(a,b){return a&&b&&a.organizationId===b.organizationId&&a.userId===b.userId;}
@@ -122,7 +122,7 @@ async function reviewSavedDrafts(){
     return;
   }
   try{
-    const entries=(await f.listDrafts(u.organizationId,u.userId)).filter(e=>e.scope.reportId!=='workspace');
+    const entries=(await f.listDrafts(u.organizationId,u.userId)).filter(e=>e.scope.reportId!=='workspace'&&!e.scope.step.startsWith('evidence_attempt_'));
     if(!entries.length){out.textContent='No locally saved staff drafts were found.';return;}
     const title=document.createElement('h4');title.textContent='Saved only on this device';out.appendChild(title);
     const note=document.createElement('p');
@@ -292,14 +292,14 @@ function wireWizardActionDrafts(detail,report,actionsProvider){
 }
 
 root.TeamWorktStaffOfflineUI=Object.freeze({
-  init(identity,reports,actions){
+  init(identity,reports,actions,client){
     if(!identity||!identity.userId||!identity.organizationId||!identity.email)return;
     if(state.identity&&!sameIdentity(state.identity,identity)){
       const previous=state.identity;
       api()?.lock();
       api()?.deleteAccountWorkspace(previous.organizationId,previous.userId).catch(e=>console.warn('Old offline workspace cleanup failed',e));
     }
-    state.identity={...identity};
+    state.identity={...identity};state.client=client||null;
     state.reports=Array.isArray(reports)?reports:[];
     state.actions=Array.isArray(actions)?actions:[];
     createPanel();
@@ -318,9 +318,9 @@ root.TeamWorktStaffOfflineUI=Object.freeze({
   },
   async clearOnSignOut(){
     const old=state.identity;
-    api()?.lock();state.identity=null;state.reports=[];state.actions=[];
+    api()?.lock();state.identity=null;state.reports=[];state.actions=[];state.client=null;
     if(old) await api().deleteAccountWorkspace(old.organizationId,old.userId);
   },
-  lock(){api()?.lock();state.identity=null;state.reports=[];state.actions=[];}
+  lock(){api()?.lock();state.identity=null;state.reports=[];state.actions=[];state.client=null;}
 });
 })(window);
