@@ -5314,6 +5314,7 @@
       [invFindings,invRoot,rootSave].forEach(function(control){
         if(control) control.disabled=!investigationEditable;
       });
+      if(investigationEditable && window.TeamWorktStaffOfflineUI) window.TeamWorktStaffOfflineUI.wireInvestigationDraft(r,invFindings,invRoot);
       var completeInvestigation=detail.querySelector('[data-step-complete="2"]');
       if(completeInvestigation) completeInvestigation.disabled=!investigationEditable;
 
