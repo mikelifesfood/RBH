@@ -1,0 +1,71 @@
+name: Staff offline safety regression
+on:
+  pull_request:
+    paths:
+      - 'staff-offline-*.js'
+      - 'staff-offline-*.html'
+      - 'sw.js'
+      - 'dashboard.html'
+      - 'tests/staff-offline-*.test.cjs'
+      - 'tests/test_staff_offline_browser.py'
+      - 'supabase/patches/*staff_offline*STAGED.sql'
+      - 'supabase/functions/manage-offline-action-evidence/index.ts'
+      - '.github/workflows/staff-offline-regression.yml'
+  workflow_dispatch:
+jobs:
+  protocol:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax check offline foundation and protocol
+        run: |
+          node --check staff-offline-foundation.js
+          node --check staff-offline-protocol.js
+          node --check staff-offline-workspace.js
+          node --check staff-offline-bootstrap.js
+          node --check staff-offline-evidence-replay.js
+          node --check staff-offline-action-submit.js
+          node --check sw.js
+      - name: Validate offline HTML references
+        run: |
+          grep -q 'staff-offline-foundation.js' staff-offline-workspace.html
+          grep -q 'staff-offline-workspace.js' staff-offline-workspace.html
+          grep -q 'staff-offline-bootstrap.js' dashboard.html
+          grep -q 'staff-offline-evidence-replay.js' dashboard.html
+          grep -q 'staff-offline-action-submit.js' dashboard.html
+          grep -q 'staff-offline-workspace.html' sw.js
+      - name: Test safe transitions, stale-state conflicts and receipts
+        run: node --test tests/staff-offline-protocol.test.cjs
+  browser:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Python test syntax
+        run: python -m py_compile tests/test_staff_offline_browser.py
+      - name: Install pinned Playwright test dependency
+        run: |
+          python -m pip install 'playwright==1.56.0'
+          python -m playwright install chromium
+      - name: Run real Chromium offline storage/PWA recovery tests
+        run: python -m unittest discover -s tests -p 'test_staff_offline_browser.py' -v
+  edge:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check staged offline evidence Edge Function
+        run: deno check supabase/functions/manage-offline-action-evidence/index.ts

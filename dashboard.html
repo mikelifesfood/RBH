@@ -10,6 +10,11 @@
 <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
 <script src="./pwa-client.js?v=20261115-dashboard-only-install" defer></script>
+<script src="./staff-offline-foundation.js" defer></script>
+<script src="./staff-offline-protocol.js" defer></script>
+<script src="./staff-offline-bootstrap.js" defer></script>
+<script src="./staff-offline-action-submit.js" defer></script>
+<script src="./staff-offline-evidence-replay.js" defer></script>
 <meta name="theme-color" content="#000000">
 <title>RBH Insulation — Safety Operations</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2966,7 +2971,7 @@
   $("mStatus").innerHTML=statusOptions("new");
 
   /* ---------- auth ---------- */
-  function showLogin(){ stopNotificationPolling(); stopLiveSync(); stopRecordPresence(); clearActiveOpenResource(); closeNotificationPanel(); userNotifications=[]; notificationActiveCount=0; renderNotificationCenter(); appView.style.display="none"; loginView.style.display="flex"; currentSession=null; currentProfile=null; currentRole="read_only"; isPlatformAdmin=false; currentOrgId=null; currentOrgName=""; allOrgs=[]; if(typeof closeProfileDrawer==="function") closeProfileDrawer(); }
+  function showLogin(){ if(window.TeamWorktStaffOfflineUI) window.TeamWorktStaffOfflineUI.lock(); stopNotificationPolling(); stopLiveSync(); stopRecordPresence(); clearActiveOpenResource(); closeNotificationPanel(); userNotifications=[]; notificationActiveCount=0; renderNotificationCenter(); appView.style.display="none"; loginView.style.display="flex"; currentSession=null; currentProfile=null; currentRole="read_only"; isPlatformAdmin=false; currentOrgId=null; currentOrgName=""; allOrgs=[]; if(typeof closeProfileDrawer==="function") closeProfileDrawer(); }
   async function showApp(session){
     currentSession=session;
     if(setupPasswordModeRequested()){ showPasswordSetup(); return; }
@@ -2986,6 +2991,7 @@
     await loadPlatformContext();
     applyRoleUi();
     await loadReports();
+    if(window.TeamWorktStaffOfflineUI && currentSession && currentOrgId) window.TeamWorktStaffOfflineUI.init({userId:currentUserId(),organizationId:currentOrgId,email:currentSession.user.email,role:currentRole},allReports,allCorrectiveActions,sb);
     await loadNotifications(true);
     startNotificationPolling();
     startLiveSync();
@@ -2998,7 +3004,12 @@
   }
   sb.auth.getSession().then(function(res){ var s=res.data&&res.data.session; if(s) showApp(s); else showLogin(); });
   sb.auth.onAuthStateChange(function(_e,s){
-    if(!s){ showLogin(); return; }
+    if(!s){
+      if(_e==="SIGNED_OUT" && window.TeamWorktStaffOfflineUI){
+        window.TeamWorktStaffOfflineUI.clearOnSignOut().catch(function(ex){console.warn("RBH offline signout cleanup failed",ex);});
+      }
+      showLogin(); return;
+    }
     var sameUser=currentSession&&currentSession.user&&s.user&&String(currentSession.user.id)===String(s.user.id);
     if(sameUser && appView.style.display==="block"){
       currentSession=s;
@@ -3016,7 +3027,7 @@
     finally{ btn.disabled=false; btn.textContent="Sign in"; }
   });
   var _signout=$("signout"); if(_signout) _signout.addEventListener("click", async function(){
-    try { if(window.RBHPush) await window.RBHPush.beforeSignOut(false); await sb.auth.signOut(); }
+    try { if(window.TeamWorktStaffOfflineUI){ if(await window.TeamWorktStaffOfflineUI.hasOfflineWorkspace()&&!confirm("Signing out erases this account’s offline drafts and evidence from this device. Continue?")) return; await window.TeamWorktStaffOfflineUI.clearOnSignOut(); } if(window.RBHPush) await window.RBHPush.beforeSignOut(false); await sb.auth.signOut(); }
     catch(e){toast(e&&e.message?e.message:"Unable to sign out safely. Please retry.","err");}
   });
 
@@ -3059,6 +3070,7 @@
       });
       attByReport=nextAttByReport;
       lastLiveDataFingerprint=nextFingerprint;
+      if(window.TeamWorktStaffOfflineUI) window.TeamWorktStaffOfflineUI.refresh(allReports,allCorrectiveActions);
 
       // Silent realtime/fallback checks should not redraw an unchanged dashboard.
       // This keeps Home visually stable while preserving the same live-sync safety net.
@@ -4707,6 +4719,7 @@
     invRoot.value=r.root_cause||"";
     syncInvestigationNextStepState();
     if(!canEditStep(r,2)){ [invFindings,invRoot,rootSave].forEach(function(x){if(x)x.disabled=true;}); }
+    else if(window.TeamWorktStaffOfflineUI) window.TeamWorktStaffOfflineUI.wireInvestigationDraft(r,invFindings,invRoot);
     if(!canEditStep(r,3)){ [actionPlanSave,actionPlanAdd].forEach(function(x){if(x)x.disabled=true;}); }
 
     // Track the edit state used to render Steps 2 and 3. When the workflow
@@ -5304,6 +5317,7 @@
       [invFindings,invRoot,rootSave].forEach(function(control){
         if(control) control.disabled=!investigationEditable;
       });
+      if(investigationEditable && window.TeamWorktStaffOfflineUI) window.TeamWorktStaffOfflineUI.wireInvestigationDraft(r,invFindings,invRoot);
       var completeInvestigation=detail.querySelector('[data-step-complete="2"]');
       if(completeInvestigation) completeInvestigation.disabled=!investigationEditable;
 
@@ -5393,6 +5407,7 @@
         var res=await sb.rpc("rbh_submit_corrective_action_completion",{p_action_id:a.id,p_completion_note:note});
         if(res.error) throw res.error;
         await loadCorrectiveActionPlan();
+        if(window.TeamWorktStaffOfflineUI) window.TeamWorktStaffOfflineUI.clearSubmittedDraft(r,a,"action_completion");
         var submittedAction=actionPlanState.actions.find(function(x){return String(x.id||"")===String(a.id||"");})||a;
         loadAudit(r.id,auditEl); renderHomeSnapshot(); renderMyWork(); renderActions(); refreshRecordWorkflow(r,detail);
         setWizardStep(detail,r,4,true);
@@ -5439,6 +5454,7 @@
           var verifyRes=await sb.rpc("rbh_verify_corrective_action",{p_action_id:verifyAction.id,p_verification_note:verifyNote});
           if(verifyRes.error) throw verifyRes.error;
           await loadCorrectiveActionPlan();
+          if(window.TeamWorktStaffOfflineUI) window.TeamWorktStaffOfflineUI.clearSubmittedDraft(r,verifyAction,"verification");
           loadNotifications(true).catch(function(ex){console.error("notification refresh",ex);});
           loadAudit(r.id,auditEl); renderHomeSnapshot(); renderMyWork(); renderActions(); refreshRecordWorkflow(r,detail);
           var verifySummary=correctiveActionSummary(r);
@@ -5480,6 +5496,7 @@
           var changesRes=await sb.rpc("rbh_request_corrective_action_changes",{p_action_id:changesAction.id,p_verification_note:changesNote});
           if(changesRes.error) throw changesRes.error;
           await loadCorrectiveActionPlan();
+          if(window.TeamWorktStaffOfflineUI) window.TeamWorktStaffOfflineUI.clearSubmittedDraft(r,changesAction,"changes_requested");
           var refreshedChangesAction=actionPlanState.actions.find(function(x){return String(x.id||"")===String(changesAction.id||"");})||changesAction;
           loadNotifications(true).catch(function(ex){console.error("notification refresh",ex);});
           loadAudit(r.id,auditEl); renderHomeSnapshot(); renderMyWork(); renderActions(); refreshRecordWorkflow(r,detail);
@@ -5498,6 +5515,7 @@
       }
     });
 
+    if(window.TeamWorktStaffOfflineUI) window.TeamWorktStaffOfflineUI.wireWizardActionDrafts(detail,r,function(){return actionPlanState.actions;});
     loadCorrectiveActionPlan().catch(function(ex){console.error("corrective action plan load",ex);actionPlanState.loading=false;if(actionPlanList)actionPlanList.innerHTML='<div class="wizard-required show">Could not load the corrective-action plan. Refresh the record and try again.</div>';if(actionPlanAdd)actionPlanAdd.disabled=true;if(actionPlanSave)actionPlanSave.disabled=true;});
 
     if(rootSave) rootSave.addEventListener("click",async function(){ rootSave.disabled=true; try{await waitForInvestigationEvidenceUpload();await persistInvestigation(true);rootSaved.hidden=false;setTimeout(function(){rootSaved.hidden=true;},2200);showView("home");}catch(ex){console.error(ex);toast("Could not save the investigation.","err");}finally{rootSave.disabled=!canEditStep(r,2);} });
@@ -7333,7 +7351,7 @@
 
   var _signoutAll=$("signoutAll"); if(_signoutAll) _signoutAll.addEventListener("click",async function(){
     _signoutAll.disabled=true; _signoutAll.textContent="Signing out…";
-    try{ if(window.RBHPush) await window.RBHPush.beforeSignOut(true); var res=await sb.auth.signOut({scope:"global"}); if(res&&res.error) throw res.error; }
+    try{ if(window.TeamWorktStaffOfflineUI){ if(await window.TeamWorktStaffOfflineUI.hasOfflineWorkspace()&&!confirm("Signing out on all devices erases this device’s offline drafts and evidence. Continue?")){ _signoutAll.disabled=false;_signoutAll.textContent="Sign out on all devices";return; } await window.TeamWorktStaffOfflineUI.clearOnSignOut(); } if(window.RBHPush) await window.RBHPush.beforeSignOut(true); var res=await sb.auth.signOut({scope:"global"}); if(res&&res.error) throw res.error; }
     catch(ex){ console.error("global signout",ex); toast("Could not sign out on all devices.","err"); _signoutAll.disabled=false; _signoutAll.textContent="Sign out on all devices"; }
   });
 
@@ -8142,6 +8160,11 @@
     });
     var evidence=$("focusedActionEvidence");
     if(evidence) renderActionEvidence(r,evidence,null,a,{readOnly:status==="awaiting_verification"||status==="verified"}).catch(function(ex){console.error("focused action evidence",ex);});
+    if(window.TeamWorktStaffOfflineUI){
+      if(canComplete&&$("focusedCompletionNote")) window.TeamWorktStaffOfflineUI.wireFocusedDraft(r,a,$("focusedCompletionNote"),"action_completion");
+      if(canVerify&&$("focusedVerificationNote")) window.TeamWorktStaffOfflineUI.wireFocusedDraft(r,a,$("focusedVerificationNote"),"verification");
+      if(canVerify&&$("focusedReturnNote")) window.TeamWorktStaffOfflineUI.wireFocusedDraft(r,a,$("focusedReturnNote"),"changes_requested");
+    }
 
     var submit=$("focusedSubmitAction");
     if(submit) submit.addEventListener("click",async function(){
@@ -8158,6 +8181,7 @@
         var fresh=activeFocusedAction||a;
         focusedSubmissionReceiptId=String(a.id);
         renderFocusedCorrectiveAction();
+        if(window.TeamWorktStaffOfflineUI) window.TeamWorktStaffOfflineUI.clearSubmittedDraft(r,a,"action_completion");
         var receiptButton=$("focusedOpenReview")||$("focusedReceiptBack");
         if(receiptButton){
           receiptButton.focus();
@@ -8186,6 +8210,7 @@
         if(res.error) throw res.error;
         await refreshFocusedCorrectiveActionData(a.id,r.id);
         renderFocusedCorrectiveAction();
+        if(window.TeamWorktStaffOfflineUI) window.TeamWorktStaffOfflineUI.clearSubmittedDraft(r,a,"verification");
         loadNotifications(true).catch(function(ex){console.error("notification refresh",ex);});
         toast("Corrective Action #"+String(a.action_number||"")+" verified","ok");
       }catch(ex){console.error(ex);toast("Could not verify this corrective action.","err");}

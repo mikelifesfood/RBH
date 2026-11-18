@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#113046">
+  <meta name="robots" content="noindex,nofollow">
+  <title>RBH Safety — Offline work</title>
+  <style>
+    :root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#183447;background:#f3f7fa}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh}header{padding:22px 18px;background:#113046;color:white}
+    header h1{font-size:1.4rem;margin:0}header p{margin:6px 0 0;color:#d7e8f2}
+    main{max-width:800px;margin:22px auto;padding:0 18px 60px}
+    section{background:#fff;border:1px solid #dae4ea;border-radius:12px;padding:20px;margin-bottom:16px}
+    h2{font-size:1.2rem;margin:0 0 10px}p{line-height:1.5}label{display:block;font-weight:650;margin:14px 0 6px}
+    input,textarea,select{font:inherit;width:100%;min-height:44px;padding:11px;border:1px solid #97adbb;border-radius:7px}
+    textarea{min-height:160px;resize:vertical}
+    button,.button{font:inherit;cursor:pointer;border:0;border-radius:8px;background:#165c7b;color:white;padding:12px 16px;font-weight:650}
+    button:disabled{opacity:.5;cursor:default}.secondary{background:#e8f1f6;color:#113046}
+    .row{display:flex;flex-wrap:wrap;gap:12px;margin-top:15px}.muted{color:#536f81;font-size:.92rem}
+    #status{font-weight:600;min-height:22px}.warn{color:#985a10}.err{color:#b62b37}
+    [hidden]{display:none!important}.stack{display:grid;gap:12px}
+    .record{background:#eef5f8;border:1px solid #ccdce4;border-radius:9px;padding:13px;text-align:left;width:100%;color:#183447}
+    .record.active{outline:2px solid #197d9f}
+  </style>
+  <script src="./staff-offline-foundation.js" defer></script>
+  <script src="./staff-offline-workspace.js" defer></script>
+</head>
+<body>
+<header><h1>RBH Safety — Offline work</h1><p>Work saved on this device is not submitted to RBH.</p></header>
+<main>
+  <section id="unlockPanel">
+    <h2>Unlock saved work</h2>
+    <p class="muted">Enter the same account email and offline passphrase used when you enabled offline work in the RBH dashboard. This is separate from your RBH sign-in password.</p>
+    <form id="unlockForm" autocomplete="off">
+      <label for="accountEmail">RBH email</label><input type="email" id="accountEmail" autocomplete="off" required>
+      <label for="offlinePassphrase">Offline passphrase</label><input type="password" id="offlinePassphrase" autocomplete="off" minlength="12" required>
+      <div class="row"><button type="submit">Unlock offline work</button><a class="button secondary" href="./dashboard.html">Back to dashboard</a></div>
+    </form>
+  </section>
+  <section id="workspacePanel" hidden>
+    <h2>Previously synchronized assignments</h2>
+    <p class="muted" id="syncLabel"></p>
+    <div id="records" class="stack"></div>
+    <div class="row"><button type="button" class="secondary" id="lockButton">Lock this screen</button><button type="button" class="secondary" id="eraseButton">Erase offline work on this device</button></div>
+  </section>
+  <section id="editorPanel" hidden>
+    <h2 id="editorTitle">Draft</h2>
+    <p class="muted" id="editorHelp">This is a draft only. Return online to review and submit official changes.</p>
+    <p class="muted" id="reportSummary"></p>
+    <label for="draftStep">Workflow step</label><select id="draftStep"></select>
+    <label for="draftAction">Corrective action</label><select id="draftAction"></select>
+    <div id="reviewFields" hidden>
+      <label for="draftCategory">Proposed incident classification</label><input id="draftCategory" type="text" maxlength="150" placeholder="Record the category to review online">
+      <label for="draftSeverity">Proposed severity / priority</label><input id="draftSeverity" type="text" maxlength="100" placeholder="Review against RBH's official options online">
+    </div>
+    <div id="assignmentFields" hidden>
+      <label for="draftReportOwner">Proposed report owner (name or email)</label><input id="draftReportOwner" type="text" autocomplete="off">
+      <label for="draftInvestigator">Proposed investigator (name or email)</label><input id="draftInvestigator" type="text" autocomplete="off">
+      <p class="muted">These names are an offline proposal. Assignments are only official after choosing authorized users in the online dashboard.</p>
+    </div>
+    <div id="investigationFields" hidden>
+      <label for="draftFindings">Investigation findings — what happened?</label><textarea id="draftFindings"></textarea>
+      <label for="draftRootCause">Root cause — why did it happen?</label><textarea id="draftRootCause"></textarea>
+    </div>
+    <div id="actionPlanFields" hidden>
+      <label for="draftPlanDescription">Corrective action to add or update</label><textarea id="draftPlanDescription"></textarea>
+      <label for="draftPlanOwner">Proposed responsible person</label><input id="draftPlanOwner" type="text" autocomplete="off">
+      <label for="draftPlanDue">Proposed due date</label><input id="draftPlanDue" type="date">
+      <label for="draftPlanPriority">Proposed priority</label><select id="draftPlanPriority"><option value="">Not selected</option><option>low</option><option>medium</option><option>high</option><option>critical</option></select>
+      <div id="additionalPlannedActions" class="stack"></div>
+      <div class="row"><button type="button" id="addPlannedAction" class="secondary">Add another draft corrective action</button></div>
+      <p class="muted">All planned actions remain local proposals until reviewed and activated with the proper RBH permissions online.</p>
+    </div>
+    <div id="verificationFields" hidden>
+      <label for="draftDecision">Proposed verification decision</label><select id="draftDecision"><option value="">Choose after reviewing</option><option value="verify">Verify as complete</option><option value="changes_requested">Request changes</option></select>
+    </div>
+    <label for="draftNote">Additional notes</label><textarea id="draftNote" placeholder="Describe the work performed or information to review later."></textarea>
+    <label for="draftPhotos">Evidence photos (10 MB maximum each)</label>
+    <input id="draftPhotos" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" multiple>
+    <p class="muted" id="draftPhotoHelp">Corrective-action photos can be submitted after reconnecting. Other locally saved images require manual review in RBH.</p>
+    <p class="muted" id="evidenceCount"></p>
+    <div class="row"><button type="button" id="saveDraft">Save on this device</button><button class="secondary" type="button" id="closeDraft">Back to assignments</button></div>
+  </section>
+  <section>
+    <p id="status" role="status" aria-live="polite"></p>
+    <p class="muted">Offline records are protected with your passphrase and expire after a limited period. RBH permissions and assignments cannot be checked without a connection. Never treat an offline draft as an official report, verification, or closure.</p>
+  </section>
+</main>
+</body>
+</html>

@@ -1,14 +1,21 @@
-/* RBH Safety PWA Build 4 — deliberately narrow service worker.
- * Cache only public, non-sensitive app shell resources.
+/* RBH Safety PWA — narrow public and EMPTY staff offline shell resources.
+ * Cache only static shell assets, never decrypted staff work.
  * Never cache dashboard HTML, Supabase responses, Auth tokens, images uploaded
  * to Storage, incident records or POST/PUT/PATCH/DELETE requests.
  */
-const CACHE_NAME = 'rbh-public-shell-v18-20261117-push';
+const CACHE_NAME = 'rbh-public-shell-v19-20261118-staff-offline-staged';
 const SCOPE = new URL(self.registration.scope);
 const FORM = new URL('index.html', SCOPE);
 const OFFLINE = new URL('offline.html', SCOPE);
+const STAFF = new URL('staff-offline-workspace.html', SCOPE);
+// Static opt-in marker only: never includes report/user details or authentication.
+const STAFF_MARKER_CACHE='rbh-staff-offline-device-v1';
+const STAFF_MARKER=new URL('staff-offline-device-enabled',SCOPE).href;
 const ASSETS = [
-  FORM.href, OFFLINE.href,
+  FORM.href, OFFLINE.href, STAFF.href,
+  new URL('staff-offline-foundation.js',SCOPE).href,
+  new URL('staff-offline-workspace.js',SCOPE).href,
+  new URL('staff-offline-protocol.js',SCOPE).href,
   new URL('pwa-client.js',SCOPE).href,
   new URL('turnstile-intake.js',SCOPE).href,
   new URL('offline-queue.js',SCOPE).href,
@@ -42,7 +49,7 @@ self.addEventListener('fetch',event=>{
   // JS scripts are network-first so a prior Safari cache cannot keep the old
   // "do not submit" handler after Build 5 has enabled offline submission.
   const staticKey=new URL(url.pathname,url.origin).href;
-  if(ASSETS.includes(staticKey)&&url.pathname!==FORM.pathname&&url.pathname!==OFFLINE.pathname){
+  if(ASSETS.includes(staticKey)&&url.pathname!==FORM.pathname&&url.pathname!==OFFLINE.pathname&&url.pathname!==STAFF.pathname){
     event.respondWith((async()=>{
       const cache=await caches.open(CACHE_NAME);
       try{
@@ -61,11 +68,15 @@ self.addEventListener('fetch',event=>{
   // Query parameters can contain an opaque site token, never use query as cache key.
   const publicForm=url.pathname===SCOPE.pathname||url.pathname===FORM.pathname;
   const staffDashboard=url.pathname===new URL('dashboard.html',SCOPE).pathname;
-  if(!publicForm&&!staffDashboard)return;
+  const staffWorkspace=url.pathname===STAFF.pathname;
+  if(!publicForm&&!staffDashboard&&!staffWorkspace)return;
 
   event.respondWith((async()=>{
     try{
-      const response=await fetch(req);
+      // Never accept a browser HTTP-cache hit as a live authenticated dashboard.
+      // In an actual offline state this network-only fetch must fail closed into
+      // the locked staff shell, not resurrect old privileged HTML.
+      const response=await fetch(req,{cache:(staffDashboard||staffWorkspace)?'no-store':'default'});
       if(publicForm&&response.ok&&response.type==='basic'){
         const cache=await caches.open(CACHE_NAME);
         await cache.put(FORM.href,response.clone());
@@ -75,6 +86,18 @@ self.addEventListener('fetch',event=>{
       if(publicForm){
         const shell=await caches.match(FORM.href);
         if(shell)return shell;
+      }
+      if(staffDashboard||staffWorkspace){
+        // The existing RBH dashboard must retain its old offline behavior
+        // until this specific device has explicitly enrolled for staff work.
+        // A synthetic static marker is never incident data and is erased
+        // during logout, account switch and an online organization disable.
+        const enrolled=staffWorkspace ||
+          !!(await (await caches.open(STAFF_MARKER_CACHE)).match(STAFF_MARKER));
+        if(enrolled){
+          const staffShell=await caches.match(STAFF.href);
+          if(staffShell)return staffShell;
+        }
       }
       const page=await caches.match(OFFLINE.href);
       if(page)return page;
