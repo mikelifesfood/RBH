@@ -224,7 +224,14 @@ Deno.serve(async (req: Request) => {
     return "";
   }
 
+  async function staffOfflineEnabled() {
+    const {data,error}=await service.from('staff_offline_settings')
+      .select('enabled').eq('organization_id',callerOrgId).maybeSingle();
+    return !error&&data?.enabled===true;
+  }
+
   if (action === "capabilities") {
+    if(!(await staffOfflineEnabled()))return json({error:"STAFF_OFFLINE_DISABLED"},403);
     // A side-effect-free handshake. Clients MUST require this exact protocol
     // version before calling offline upload fields; older live versions lacked
     // idempotency and must never process a retryable offline upload.
@@ -241,6 +248,7 @@ Deno.serve(async (req: Request) => {
     if (!files.length) return json({ error: "NO_FILES" }, 400);
     if (files.length > 5) return json({ error: "TOO_MANY_FILES" }, 400);
     if (clientEvidenceId && (files.length!==1 || !correctiveActionId)) return json({ error: "OFFLINE_SINGLE_ACTION_EVIDENCE_REQUIRED" },400);
+    if (clientEvidenceId && !(await staffOfflineEnabled())) return json({error:"STAFF_OFFLINE_DISABLED"},403);
 
     for (const file of files) {
       if (file.size > 10 * 1024 * 1024) {
