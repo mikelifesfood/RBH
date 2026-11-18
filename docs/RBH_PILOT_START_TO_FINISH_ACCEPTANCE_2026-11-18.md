@@ -61,3 +61,11 @@ Record **Pass / Fail / Notes / Screenshot or report #** for each numbered scenar
 3. Only then make prioritized owner-requested UI changes, retest, and review exact changed files.
 4. Deploy a clearly scoped RBH pilot build only after explicit approval. Do not expose unaccepted offline features to all customers.
 5. Backup/export agreed pilot data before any owner-approved test report cleanup or report number reset; verify audit/retention obligations.
+
+## November 18 staff offline candidate updates
+- Controlled pilot account gate is deployed, defaulting to `pilot_only=true` and all organization/user switches OFF. Once explicitly approved, a specific authorized test user may be allowlisted without exposing offline UI to all RBH staff.
+- The locked workspace now has separate structured offline fields for proposed report classification/severity, report owner/investigator, investigation, and **multiple proposed corrective actions** with owner, due date and priority per action. These are encrypted local drafts, **not official** assignment/plan submissions; managers still use the authoritative online RBH controls.
+- The offline editor now warns about unsaved notes and unsaved selected photos, guards step/record/lock navigation during uncommitted edits and encrypted saves, and shows a count if the minimal assigned-report snapshot is truncated.
+- The reconnect draft review now displays human-readable stage fields, not raw JSON. For investigation-level photos that cannot yet use the action-specific Edge endpoint, an explicit decrypted download is available so the user can attach manually using authorized online RBH controls.
+- Added Chromium tests covering lost-response photo retry, classification/assignment and multi-action draft reload, unsaved navigation denial, and account/data isolation. Check latest GitHub Actions run before claiming green.
+- **Outstanding engineering acceptance:** verify seamless handoff of non-action drafts to official online fields, full live RBH role/session/tenant tests, iPhone PWA acceptance, photo download/reupload privacy ergonomics and all existing workflow regressions. The current snapshot/review implementation does not itself close a report, assign staff, or activate a corrective plan.
