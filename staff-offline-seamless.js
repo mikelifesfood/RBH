@@ -230,6 +230,9 @@ async function flush(){
     const message=String(e.message||e);
     item={...item,status:conflictError(message)?'needs_review':'retry',lastError:message};
     await putEncrypted(u,'queue',item.operationId,item);
+    root.dispatchEvent?.(new CustomEvent('rbh-offline-action-sync-delayed',{
+     detail:{actionId:item.actionId,reportId:item.reportId,status:item.status,error:message}
+    }));
     if(navigator.onLine===false)break;
    }
    renderCounters();
@@ -410,6 +413,22 @@ function wireAction(r,a,textarea,button,step){
    }else hint.textContent='Could not save this submission: '+e.message;
   }finally{button.disabled=false;}
  },true);
+ // Show authoritative receipt/retry state on the action being edited.
+ const onSynced=event=>{
+  if(String(event.detail?.actionId)!==String(entry.id)||!hint.isConnected)return;
+  hint.textContent='Synchronized with RBH. Your corrective action was submitted.';
+  button.dataset.rbhOfflineQueued='synced';
+  button.textContent='Submitted for review';
+  button.disabled=true;
+ };
+ const onDelayed=event=>{
+  if(String(event.detail?.actionId)!==String(entry.id)||!hint.isConnected)return;
+  hint.textContent=event.detail?.status==='needs_review'?
+   'Saved on this device — needs review before it can sync. Open View saved work and sync status in Profile.':
+   'Saved on this device — retrying when the connection is available.';
+ };
+ root.addEventListener('rbh-offline-action-synced',onSynced);
+ root.addEventListener('rbh-offline-action-sync-delayed',onDelayed);
  if(step==='action_completion'){
   const input=document.createElement('input');input.type='file';input.accept='image/*';input.multiple=true;
   input.setAttribute('aria-label','Add offline corrective-action photos');
