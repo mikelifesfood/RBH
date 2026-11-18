@@ -113,7 +113,8 @@ async function render(){
   card.appendChild(area);let timer=null;
   const saving=el('p','muted status',queued?'This action is already queued.':'Changes are saved automatically.');card.appendChild(saving);
   area.addEventListener('input',()=>{clearTimeout(timer);saving.textContent='Saving…';timer=setTimeout(async()=>{try{
-   await offline.saveNote(a,area.value,step);saving.textContent='Saved on device.';}catch(e){saving.textContent='Save failed: '+e.message;}},350);});
+   const result=await offline.saveNote(a,area.value,step);
+   saving.textContent=result.queued?'Already queued for sync. Edits made after submission are not part of the queued update.':'Saved on device.';}catch(e){saving.textContent='Save failed: '+e.message;}},350);});
   if(step==='action_completion'){
    const photoLabel=el('label','','Evidence photos (optional)');card.appendChild(photoLabel);
    const photos=el('input');photos.type='file';photos.accept='image/*';photos.multiple=true;photos.disabled=!!queued||latest?.status==='synced';card.appendChild(photos);
