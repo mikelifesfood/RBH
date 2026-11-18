@@ -58,3 +58,14 @@ jobs:
           python -m playwright install chromium
       - name: Run real Chromium offline storage/PWA recovery tests
         run: python -m unittest discover -s tests -p 'test_staff_offline_browser.py' -v
+  edge:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check staged offline evidence Edge Function
+        run: deno check supabase/functions/manage-action-evidence/index.ts
