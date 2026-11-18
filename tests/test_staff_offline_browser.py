@@ -185,7 +185,8 @@ class OfflineBrowserTests(unittest.TestCase):
           const action={id:'offline-action',report_id:report.id,organization_id:id.organizationId,
             action_number:1,description:'Fictional offline test',owner_user_id:id.userId,
             status:'not_started',updated_at:'2026-11-18T20:00:00Z',workflow_generation:0};
-          window.offlineTest={legacy:0,commitAttempts:0,operationIds:[],fail:true};
+          window.offlineTest={legacy:0,commitAttempts:0,operationIds:[],fail:true,connected:true};
+          Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>window.offlineTest.connected});
           const client={
             auth:{getUser:async()=>({data:{user:{id:id.userId}}})},
             rpc:async(name,args)=>{
@@ -204,15 +205,26 @@ class OfflineBrowserTests(unittest.TestCase):
           button.textContent='Send for review';document.body.append(area,button);
           offline.wireAction(report,action,area,button,'action_completion');
           button.addEventListener('click',()=>{window.offlineTest.legacy++;});
+          // Online click belongs to the dashboard's normal synchronous RPC.
+          area.value='Online submit through native handler';
+          button.click();
+          await new Promise(resolve=>setTimeout(resolve,30));
+          window.offlineTest.onlineLegacy=window.offlineTest.legacy;
+          // Simulate airplane mode before the next offline-only click.
+          window.offlineTest.connected=false;
           area.value='Completed work, saved while offline.';
           button.click();
-          await new Promise(resolve=>setTimeout(resolve,100));
+          await new Promise(resolve=>setTimeout(resolve,50));
           window.offlineTest.afterFirst=await offline.counts();
+          window.offlineTest.connected=true;
+          window.offlineTest.fail=true;
+          await offline.flush(); // lost response; same operation is retried
           window.offlineTest.fail=false;
           await offline.flush();
           window.offlineTest.afterRetry=await offline.counts();
         }""")
         outcome=self.page.evaluate("""() => ({
+          onlineLegacy:window.offlineTest.onlineLegacy,
           legacy:window.offlineTest.legacy,
           attempts:window.offlineTest.commitAttempts,
           stable:window.offlineTest.operationIds.length===2 &&
@@ -220,7 +232,7 @@ class OfflineBrowserTests(unittest.TestCase):
           waiting:window.offlineTest.afterFirst.pending,
           synced:window.offlineTest.afterRetry.synced
         })""")
-        self.assertEqual(outcome,{'legacy':0,'attempts':2,'stable':True,
+        self.assertEqual(outcome,{'onlineLegacy':1,'legacy':1,'attempts':2,'stable':True,
                                   'waiting':1,'synced':1})
 
     def test_manual_official_action_submission_lost_response_replay(self):
