@@ -9869,6 +9869,34 @@
         if(files[i].size>10*1024*1024){ toast("Each evidence file must be 10 MB or smaller.","err"); input.value=""; return; }
       }
 
+      // Offline photos are encrypted on this device and attached to the same
+      // corrective-action operation; never attempt Storage/fetch offline.
+      if(navigator.onLine===false){
+        if(!correctiveAction||!correctiveAction.id||!window.TeamWorktSeamlessOffline||!window.TeamWorktSeamlessOffline.isEnabled()){
+          selected.textContent="Offline photo saving is not ready. Reconnect and open the report online to prepare this device.";
+          toast("Offline photo saving is not ready on this device.","err");
+          input.value="";return;
+        }
+        pick.disabled=true;pick.textContent="Saving on device…";
+        selected.textContent="Encrypting "+files.length+" image"+(files.length===1?"":"s")+" on device…";
+        try{
+          var savedCount=0;
+          for(var pi=0;pi<files.length;pi++){
+            var photo=files[pi];
+            if(!/^image\/(jpeg|png|webp|heic|heif)$/i.test(photo.type||""))
+              throw new Error("Offline evidence supports photos (JPG, PNG, WebP, HEIC) only. Add other files after reconnecting.");
+            savedCount=await window.TeamWorktSeamlessOffline.addPhoto({id:correctiveAction.id},photo);
+          }
+          selected.textContent=savedCount+" photo"+(savedCount===1?"":"s")+" saved securely on this device. They will upload before the corrective action is submitted when online.";
+          toast(files.length+" offline photo"+(files.length===1?"":"s")+" saved on device","ok");
+        }catch(photoError){
+          console.error("Offline corrective evidence save",photoError);
+          selected.textContent="Could not save all photos on device: "+String(photoError.message||photoError)+". Existing saved photos are preserved.";
+          toast("Offline photo save needs attention.","err");
+        }finally{pick.disabled=false;pick.textContent="Add evidence";input.value="";}
+        return;
+      }
+
       pick.disabled=true;
       pick.textContent="Uploading…";
       selected.textContent="Saving "+files.length+" evidence file"+(files.length===1?"":"s")+"…";
