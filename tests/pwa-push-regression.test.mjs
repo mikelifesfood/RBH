@@ -55,6 +55,48 @@ test('worker focuses an existing staff dashboard before opening a new window',as
   assert.equal(focused,1);
   assert.equal(w.opened.length,0);
 });
+test('valid notification tap opens signed-in PWA with opaque event lookup, not private record IDs',async()=>{
+  const w=worker();let promise;
+  const eventKey='0123456789abcdef0123456789abcdef';
+  w.handlers.notificationclick({
+    notification:{tag:'rbh-'+eventKey,close(){}},
+    waitUntil:v=>promise=v
+  });
+  await promise;
+  assert.deepEqual(w.opened,['https://rbh.example/dashboard.html?push_event='+eventKey]);
+  assert.ok(!w.opened[0].includes('report='));
+  assert.ok(!w.opened[0].includes('action='));
+});
+test('existing PWA receives a safe opaque notification event without reopening the app',async()=>{
+  const w=worker();let promise,focused=0,messages=[];
+  w.clients.push({
+    url:'https://rbh.example/dashboard.html',
+    focus:async()=>{focused++;},
+    postMessage:message=>messages.push(message)
+  });
+  const eventKey='abcdef0123456789abcdef0123456789';
+  w.handlers.notificationclick({
+    notification:{tag:'rbh-'+eventKey,close(){}},
+    waitUntil:v=>promise=v
+  });
+  await promise;
+  assert.equal(focused,1);
+  assert.equal(w.opened.length,0);
+  assert.equal(messages.length,1);
+  assert.equal(messages[0].type,'RBH_PUSH_OPEN');
+  assert.equal(messages[0].eventKey,eventKey);
+});
+test('push navigation resolves current recipients and routes to action or report, not notification panel',()=>{
+  assert.match(dashboard,/function requestedPushEventKeyFromUrl\(\)/);
+  assert.match(dashboard,/url\.searchParams\.delete\("push_event"\)/);
+  assert.match(dashboard,/\.eq\("recipient_user_id",currentUserId\(\)\)/);
+  assert.match(dashboard,/\.eq\("organization_id",currentOrgId\)/);
+  assert.match(dashboard,/\.eq\("id",uuid\)/);
+  assert.match(dashboard,/openFocusedCorrectiveAction\(a,"mywork"\)/);
+  assert.match(dashboard,/openIncident\(r,notificationReturnView\(\)\)/);
+  assert.ok(!dashboard.includes('else openNotificationPanel(); // Inaccessible, reassigned or resolved'));
+  assert.match(sw,/target\.searchParams\.set\('push_event',eventId\[1\]\)/);
+});
 test('public offline shell remains separate from signed-in dashboard',()=>{
   assert.match(sw,/if\(publicForm&&response\.ok/);
   assert.match(sw,/if\(!publicForm&&!staffDashboard&&!staffWorkspace\)return/);
