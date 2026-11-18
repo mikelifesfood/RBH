@@ -450,5 +450,53 @@ class OfflineBrowserTests(unittest.TestCase):
           "attemptGone":True})
 
 
+
+    def test_multi_action_offline_plan_and_classification_survive_restart(self):
+        self.enroll()
+        self.unlock()
+        self.page.get_by_text("Report #77").first.click()
+        self.page.locator("#draftStep").select_option("action_plan")
+        self.page.locator("#draftPlanDescription").fill("Fictional guarding update")
+        self.page.locator("#draftPlanOwner").fill("Test owner A")
+        self.page.locator("#addPlannedAction").click()
+        self.page.locator("[data-planned-action-field=description]").fill("Fictional training")
+        self.page.locator("[data-planned-action-field=owner]").fill("Test owner B")
+        self.page.locator("#saveDraft").click()
+        self.page.get_by_text("Saved on this device — NOT submitted to RBH.").wait_for()
+        self.page.reload()
+        self.unlock()
+        self.page.get_by_text("Report #77").first.click()
+        self.page.locator("#draftStep").select_option("action_plan")
+        self.page.wait_for_function(
+            "document.querySelectorAll('[data-planned-action-field=description]').length === 1"
+        )
+        self.assertEqual(self.page.locator("#draftPlanDescription").input_value(),
+                         "Fictional guarding update")
+        self.assertEqual(self.page.locator("[data-planned-action-field=description]").input_value(),
+                         "Fictional training")
+        planned=self.page.evaluate("""async()=>{
+          const f=window.TeamWorktStaffOfflineFoundation;
+          const d=await f.readDraft({organizationId:'org-1',userId:'user-1',
+            reportId:'report-123',generation:0,step:'action_plan'});
+          return d.data.fields.plannedActions;
+        }""")
+        self.assertEqual(len(planned),2)
+        self.assertEqual(planned[1]["owner"],"Test owner B")
+        self.page.locator("#draftStep").select_option("review")
+        self.page.locator("#draftCategory").fill("Fictional near miss")
+        self.page.locator("#draftSeverity").fill("Fictional medium")
+        self.page.locator("#saveDraft").click()
+        self.page.get_by_text("Saved on this device — NOT submitted to RBH.").wait_for()
+        self.page.reload()
+        self.unlock()
+        self.page.get_by_text("Report #77").first.click()
+        self.page.locator("#draftStep").select_option("review")
+        self.page.wait_for_function(
+            "document.querySelector('#draftCategory').value === 'Fictional near miss'"
+        )
+        self.assertEqual(self.page.locator("#draftSeverity").input_value(),
+                         "Fictional medium")
+
+
 if __name__=='__main__':
     unittest.main()
