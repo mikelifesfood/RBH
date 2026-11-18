@@ -177,6 +177,7 @@ Deno.serve(async (req: Request) => {
   }
 
   function authorizeSpecificAction(row: CorrectiveActionRow) {
+    if (!report || !caller) return "NOT_AUTHORIZED";
     if (String(row.organization_id || "") !== String(report.organization_id || "")) {
       return "ORGANIZATION_MISMATCH";
     }
@@ -195,6 +196,7 @@ Deno.serve(async (req: Request) => {
   }
 
   function authorizeLegacyReportEvidence() {
+    if (!report || !caller) return "NOT_AUTHORIZED";
     const assignedOwner =
       ["admin","safety_manager","supervisor"].includes(role) &&
       String(report.assigned_user_id || "") === String(caller.id);
