@@ -81,10 +81,12 @@ function createPanel(){
     '<button class="profile-primary" id="rbhOfflinePrepare" type="button">Prepare offline work</button>'+
     '<a class="profile-secondary" style="display:inline-flex;align-items:center;text-decoration:none" href="./staff-offline-workspace.html">Open offline workspace</a>'+
     '<button class="profile-secondary" id="rbhOfflineLock" type="button">Lock offline drafts</button>'+
-    '</div>';
+    '<button class="profile-secondary" id="rbhOfflineReview" type="button">Review saved drafts</button>'+
+    '</div><div id="rbhOfflineDrafts" class="field-help" hidden></div>';
   section.insertAdjacentElement('afterend',wrap);
   state.panel=wrap;
   $('rbhOfflinePrepare').addEventListener('click',prepare);
+  $('rbhOfflineReview').addEventListener('click',reviewSavedDrafts);
   $('rbhOfflineLock').addEventListener('click',()=>{api()?.lock();setStatus('Offline drafts locked. Enter your passphrase to unlock them again.');});
 }
 async function prepare(){
@@ -110,6 +112,67 @@ async function prepare(){
     f.lock();setStatus(e.message==='OFFLINE_DRAFT_CANNOT_DECRYPT'?'Your offline passphrase does not match this device’s existing drafts. Nothing was overwritten.':e.message,true);
   }finally{button.disabled=false;}
 }
+
+async function reviewSavedDrafts(){
+  const f=api(),u=state.identity,out=$('rbhOfflineDrafts');
+  if(!out||!f||!u)return;
+  out.hidden=false;out.replaceChildren();
+  if(!f.isUnlocked()){
+    out.textContent='Enter your offline passphrase above and choose Prepare offline work before reviewing drafts.';
+    return;
+  }
+  try{
+    const entries=(await f.listDrafts(u.organizationId,u.userId)).filter(e=>e.scope.reportId!=='workspace');
+    if(!entries.length){out.textContent='No locally saved staff drafts were found.';return;}
+    const title=document.createElement('h4');title.textContent='Saved only on this device';out.appendChild(title);
+    const note=document.createElement('p');
+    note.textContent='Nothing below has been submitted or verified. Check each record and use the existing online RBH workflow to officially submit it.';
+    out.appendChild(note);
+    for(const entry of entries){
+      const scope=entry.scope;
+      const report=state.reports.find(r=>String(r.id)===String(scope.reportId));
+      const action=scope.actionId?state.actions.find(a=>String(a.id)===String(scope.actionId)):null;
+      const stale=!report||String(report.organization_id)!==String(u.organizationId)||
+        Number(report.workflow_restart_count||0)!==scope.generation||
+        ['closed','no_action','duplicate'].includes(report.status)||
+        (scope.actionId&&(!action||action.retired_at||String(action.report_id)!==String(report.id)))||
+        (!!action&&Number(action.workflow_generation||0)!==scope.generation);
+      const wrap=document.createElement('div');wrap.style.borderTop='1px solid #ccd9e2';wrap.style.padding='12px 0';
+      const summary=document.createElement('strong');
+      summary.textContent='Report '+(report?'#'+report.ref_no:'unavailable')+
+        ' · '+scope.step.replaceAll('_',' ')+(action?' · Action #'+action.action_number:'');
+      const stateLabel=document.createElement('p');
+      stateLabel.textContent=stale?'Needs review — server record changed or access was removed.':'Saved on device; compare before submitting.';
+      if(stale)stateLabel.style.color='#965115';
+      const preview=document.createElement('pre');preview.hidden=true;
+      preview.style.whiteSpace='pre-wrap';preview.style.wordBreak='break-word';preview.style.maxHeight='220px';
+      preview.style.overflow='auto';
+      const btn=document.createElement('button');btn.type='button';btn.className='profile-secondary';
+      btn.textContent='Show saved draft';
+      btn.addEventListener('click',async()=>{
+        if(!preview.hidden){preview.hidden=true;btn.textContent='Show saved draft';return;}
+        try{
+          const saved=await f.readDraft(scope);
+          const serverRevision=action?action.updated_at:report?.updated_at;
+          const conflict=stale||!saved||saved.serverRevision!==serverRevision;
+          preview.textContent=(conflict?'NEEDS REVIEW: The server revision differs or access is unavailable. Do not overwrite newer work.\n\n':'')+
+            JSON.stringify(saved?.data??{},null,2);
+          preview.hidden=false;btn.textContent='Hide saved draft';
+        }catch(e){preview.textContent='Could not decrypt draft.';preview.hidden=false;}
+      });
+      wrap.append(summary,stateLabel,btn,preview);
+      if(!stale){
+        const link=document.createElement('a');
+        link.className='profile-secondary';link.style.cssText='display:inline-flex;margin-left:8px;text-decoration:none';
+        link.href='./dashboard.html?'+(action?'action='+encodeURIComponent(action.id):'report='+encodeURIComponent(report.id));
+        link.textContent='Open official work';
+        wrap.appendChild(link);
+      }
+      out.appendChild(wrap);
+    }
+  }catch(e){out.textContent='Offline draft review failed: '+e.message;}
+}
+
 async function refresh(){
   if(!state.identity||!api()?.isUnlocked()||state.saving)return;
   state.saving=true;
