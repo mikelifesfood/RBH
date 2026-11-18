@@ -153,3 +153,45 @@ test('self-assignment suppression retains in-app records and does not suppress a
   assert.match(sender,/report_owner_assigned_by,event.recipient_user_id/);
   assert.match(sender,/action.updated_by\|\|action.activated_by,event.recipient_user_id/);
 });
+
+
+test('dashboard opens Home on a new PWA launch while allowing explicit deep links',()=>{
+  assert.match(dashboard,/function storedView\(\)\{ return "home"; \}/);
+  assert.match(dashboard,/showView\("home"\);/);
+  assert.match(dashboard,/if\(directActionId\)/);
+  assert.match(dashboard,/if\(directReportId\)/);
+  assert.match(dashboard,/profile\.full_name/);
+  assert.match(dashboard,/id="homeGreeting"/);
+  assert.ok(dashboard.indexOf('<div class="home-actions">')<dashboard.indexOf('<div class="home-stats" id="homeStats">'));
+});
+test('corrective action list and supervisor inbox use account ownership',()=>{
+  const uid='supervisor-1';
+  const report={id:'report-1',status:'assigned',reopen_count:0};
+  const allCorrectiveActions=[
+    {id:'mine',report_id:report.id,owner_user_id:uid,status:'in_progress'},
+    {id:'theirs',report_id:report.id,owner_user_id:'someone-else',status:'in_progress'}
+  ];
+  const scope={
+    currentUserId:()=>uid,currentRole:'supervisor',
+    allCorrectiveActions,findReport:()=>report,
+    isResolvedReport:()=>false,correctiveActionInCurrentCycle:()=>true
+  };
+  const src=dashboard.slice(dashboard.indexOf('  function currentCorrectiveActionWorkspaceRows(){'),dashboard.indexOf('  function correctiveActionNeedsMyAttention('));
+  assert.ok(src.startsWith('  function currentCorrectiveActionWorkspaceRows(){'));
+  const result=vm.runInNewContext(src+'\ncurrentCorrectiveActionWorkspaceRows();',scope);
+  assert.deepEqual(Array.from(result,x=>x.id),['mine']);
+  const reportScope={
+    currentRole:'supervisor',currentUserId:()=>uid,allCorrectiveActions,
+    correctiveActionInCurrentCycle:()=>true
+  };
+  const visibility=dashboard.slice(dashboard.indexOf('  function reportVisibleInPersonalWorkspace('),dashboard.indexOf('  function reportOwnerWorkActive('));
+  assert.equal(vm.runInNewContext(visibility+'\nreportVisibleInPersonalWorkspace({id:"report-1"});',reportScope),true);
+  assert.equal(vm.runInNewContext(visibility+'\nreportVisibleInPersonalWorkspace({id:"report-2"});',reportScope),false);
+  assert.match(dashboard,/filtered=allReports\.filter\(function\(r\)\{\s*if\(!reportVisibleInPersonalWorkspace\(r\)\)return false;/);
+});
+test('staff install promotion is mobile only',()=>{
+  const pwa=fs.readFileSync(new URL('../pwa-client.js',import.meta.url),'utf8');
+  assert.match(pwa,/var isMobileDevice=isIOS/);
+  assert.match(pwa,/isDashboardPage&&isMobileDevice&&!dismissed/);
+  assert.match(pwa,/if\(!isDashboardPage\|\|!isMobileDevice\|\|isStandalone\)return/);
+});
