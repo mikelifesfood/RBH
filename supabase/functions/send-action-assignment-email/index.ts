@@ -1,4 +1,4 @@
-// RBH Safety - Workflow Transactional Email (Brevo) V11
+// RBH Safety - Workflow Transactional Email (Brevo) V12
 // Reuses the existing RBH Brevo project secrets and report_notification_events audit table.
 // Supports:
 //   report_owner_assignment -> newly assigned Report Owner
@@ -514,6 +514,7 @@ Deno.serve(async (req: Request) => {
     if (ownerError || !owner || owner.is_active === false) return json({ error: "REPORT_OWNER_PROFILE_UNAVAILABLE" }, 409);
     if (!["admin", "safety_manager"].includes(String(owner.app_role || ""))) return json({ error: "INVALID_REPORT_OWNER_ROLE" }, 409);
     if (String(owner.organization_id) !== String(report.organization_id)) return json({ error: "REPORT_OWNER_ORGANIZATION_MISMATCH" }, 409);
+    if (String(owner.id) === String(userData.user.id) || String(report.report_owner_assigned_by || "") === String(owner.id)) return json({ ok: true, sent: false, skipped: true, reason: "SELF_ASSIGNMENT" });
     if (!String(owner.email || "").trim()) return json({ ok: true, sent: false, skipped: true, reason: "NO_REPORT_OWNER_EMAIL" });
 
     const fingerprintInput = [report.id, owner.id, String(report.report_owner_assigned_at || ""), String(report.reopen_count || 0), String(report.workflow_restart_count || 0)].join("|");
@@ -545,6 +546,7 @@ Deno.serve(async (req: Request) => {
     if (investigatorError || !investigator || investigator.is_active === false) return json({ error: "INVESTIGATOR_PROFILE_UNAVAILABLE" }, 409);
     if (!["admin", "safety_manager", "supervisor"].includes(String(investigator.app_role || ""))) return json({ error: "INVALID_INVESTIGATOR_ROLE" }, 409);
     if (String(investigator.organization_id) !== String(report.organization_id)) return json({ error: "INVESTIGATOR_ORGANIZATION_MISMATCH" }, 409);
+    if (String(investigator.id) === String(userData.user.id)) return json({ ok: true, sent: false, skipped: true, reason: "SELF_ASSIGNMENT" });
     if (!String(investigator.email || "").trim()) return json({ ok: true, sent: false, skipped: true, reason: "NO_INVESTIGATOR_EMAIL" });
 
     const { data: investigatorAudit } = await service
@@ -594,6 +596,7 @@ Deno.serve(async (req: Request) => {
     if (verifierError || !verifier || verifier.is_active === false) return json({ error: "VERIFIER_PROFILE_UNAVAILABLE" }, 409);
     if (!["admin", "safety_manager"].includes(String(verifier.app_role || ""))) return json({ error: "INVALID_VERIFIER_ROLE" }, 409);
     if (String(verifier.organization_id) !== String(report.organization_id)) return json({ error: "VERIFIER_ORGANIZATION_MISMATCH" }, 409);
+    if (String(verifier.id) === String(userData.user.id)) return json({ ok: true, sent: false, skipped: true, reason: "SELF_ASSIGNMENT" });
     if (!String(verifier.email || "").trim()) return json({ ok: true, sent: false, skipped: true, reason: "NO_VERIFIER_EMAIL" });
 
     let verifierAudit: any = null;
@@ -653,6 +656,10 @@ Deno.serve(async (req: Request) => {
     .maybeSingle();
   if (assigneeError || !assignee || assignee.is_active === false) return json({ error: "ASSIGNEE_PROFILE_UNAVAILABLE" }, 409);
   if (String(assignee.organization_id) !== String(report.organization_id)) return json({ error: "ASSIGNEE_ORGANIZATION_MISMATCH" }, 409);
+  // Only initial assignment is redundant when initiated by the assignee.
+  // Never suppress changes requested, verification, or ordinary workflow follow-ups.
+  if (notificationType === "assignment" && String(assignee.id) === String(userData.user.id))
+    return json({ ok: true, sent: false, skipped: true, reason: "SELF_ASSIGNMENT" });
   if (!String(assignee.email || "").trim()) return json({ ok: true, sent: false, skipped: true, reason: "NO_ASSIGNEE_EMAIL" });
 
   const fingerprintInput = notificationType === "changes_requested"
