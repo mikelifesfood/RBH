@@ -12,6 +12,7 @@
 <script src="./pwa-client.js?v=20261115-dashboard-only-install" defer></script>
 <script src="./staff-offline-foundation.js" defer></script>
 <script src="./staff-offline-bootstrap.js" defer></script>
+<script src="./staff-offline-evidence-replay.js" defer></script>
 <meta name="theme-color" content="#000000">
 <title>RBH Insulation — Safety Operations</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2988,7 +2989,7 @@
     await loadPlatformContext();
     applyRoleUi();
     await loadReports();
-    if(window.TeamWorktStaffOfflineUI && currentSession && currentOrgId) window.TeamWorktStaffOfflineUI.init({userId:currentUserId(),organizationId:currentOrgId,email:currentSession.user.email,role:currentRole},allReports,allCorrectiveActions);
+    if(window.TeamWorktStaffOfflineUI && currentSession && currentOrgId) window.TeamWorktStaffOfflineUI.init({userId:currentUserId(),organizationId:currentOrgId,email:currentSession.user.email,role:currentRole},allReports,allCorrectiveActions,sb);
     await loadNotifications(true);
     startNotificationPolling();
     startLiveSync();
