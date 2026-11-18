@@ -18,7 +18,10 @@ const FIELD_IDS=['draftFindings','draftRootCause','draftCategory','draftSeverity
 let context=null,record=null,restoreGeneration=0,editGeneration=0;
 let savedEditGeneration=0,saveRunning=false;
 function hasUnsavedEdits(){return editGeneration!==savedEditGeneration || !!$('draftPhotos')?.files?.length;}
-function confirmDiscard(){return !hasUnsavedEdits() || confirm('Changes have NOT been saved on this device. Leave without saving?');}
+function confirmDiscard(){
+  if(saveRunning){message('Device save is still finishing. Stay on this draft until confirmation.');return false;}
+  return !hasUnsavedEdits() || confirm('Changes have NOT been saved on this device. Leave without saving?');
+}
 function markSavedIfUnchanged(startGeneration){if(editGeneration===startGeneration)savedEditGeneration=startGeneration;}
 function message(text,error){$('status').textContent=text;$('status').className=error?'err':'';}
 function workspaceScope(){return {organizationId:context.organizationId,userId:context.userId,
@@ -275,7 +278,7 @@ $('eraseButton').addEventListener('click',async()=>{
   catch(e){message('Could not erase all local records: '+e.message,true);}
 });
 window.addEventListener('beforeunload',event=>{
-  if(!hasUnsavedEdits()||!record)return;
+  if((!hasUnsavedEdits()&&!saveRunning)||!record)return;
   event.preventDefault();event.returnValue='';
 });
 })();
