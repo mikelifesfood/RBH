@@ -5741,7 +5741,12 @@
         if(ownerWasChanged && String(r.report_owner_user_id||"")!==String(ownerId)) await persistReportOwner(r,ownerId,false);
         if(r.status==="new") await updateStatus(r.id,"under_review",wrap,activeReopenStep(r)?2:null);
         else if(activeReopenStep(r)===1) await updateStatus(r.id,r.status,wrap,2);
-        refreshRecordWorkflow(r,detail); setWizardStep(detail,r,2,true); loadAudit(r.id,auditEl);
+        // The incident form was originally constructed while Step 2 was read only.
+        // Rebuild it from the now-confirmed owner and workflow state so the
+        // Investigation fields, evidence uploader, and save controls all become
+        // editable immediately without navigating Home and reopening the report.
+        buildDetail(r,detail,wrap);
+        setWizardStep(detail,r,2,true);
         var ownerName=reportOwnerName(r)||"Report Owner";
         toast("Investigation started — "+ownerName+" owns the report","ok");
         if(shouldNotifyAfterAdvance) sendReportOwnerAssignmentEmail(r).then(function(email){
