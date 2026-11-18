@@ -82,7 +82,7 @@
       if (!unlocked) throw Error('OFFLINE_DRAFT_LOCKED');
       if (data === undefined || data === null || typeof data !== 'object') throw Error('INVALID_DRAFT_DATA');
       const key=id(scope),salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12));
-      // JSON data only in this first foundation. Images require a separate encrypted binary store.
+      // JSON fields belong in this store; binary evidence is encrypted separately.
       const payload=JSON.stringify({data,serverRevision:serverRevision ?? null});
       if (payload.length > 512000) throw Error('DRAFT_TOO_LARGE');
       const cryptKey=await derive(unlocked,salt);
@@ -114,16 +114,17 @@
       if (!/^image\/(jpeg|png|webp|heic|heif)$/i.test(mime)) throw Error('EVIDENCE_TYPE_NOT_SUPPORTED');
       const bytes = await file.arrayBuffer(), hash = await sha256(bytes);
       const salt=crypto.getRandomValues(new Uint8Array(16)), iv=crypto.getRandomValues(new Uint8Array(12));
+      const metaIv=crypto.getRandomValues(new Uint8Array(12));
       const keyMaterial=await derive(unlocked,salt);
       const ciphertext=await crypto.subtle.encrypt({name:'AES-GCM',iv,additionalData:encoder.encode(key)},keyMaterial,bytes);
-      const record={id:key,scope:{...scope},salt:b64(salt),iv:b64(iv),
+      const encryptedMetadata=await crypto.subtle.encrypt({name:'AES-GCM',iv:metaIv,additionalData:encoder.encode(key)},keyMaterial,encoder.encode(JSON.stringify({fileName:file.name || 'evidence',mimeType:mime,sha256:hash})));
+      const record={id:key,scope:{...scope},salt:b64(salt),iv:b64(iv),metaIv:b64(metaIv),
         ciphertext:new Blob([ciphertext],{type:'application/octet-stream'}),
-        fileName:file.name || 'evidence',mimeType:mime,byteLength:bytes.byteLength,sha256:hash,
-        savedAt:new Date().toISOString(),format:1};
-      // Metadata (including filename) is not secret; callers must avoid identifying names.
+        encryptedMetadata:b64(new Uint8Array(encryptedMetadata)),byteLength:bytes.byteLength,
+        savedAt:new Date().toISOString(),format:2};
       await transaction('readwrite',store=>store.put(record),FILES);
       const verified=await fetchRecord(key,FILES);
-      if (!verified || verified.sha256!==hash || verified.ciphertext.size!==ciphertext.byteLength) throw Error('EVIDENCE_WRITE_NOT_VERIFIED');
+      if (!verified || verified.encryptedMetadata!==record.encryptedMetadata || verified.ciphertext.size!==ciphertext.byteLength) throw Error('EVIDENCE_WRITE_NOT_VERIFIED');
       return {status:'saved_on_this_device',savedAt:record.savedAt,sha256:hash};
     },
     async readEvidence(scope,attachmentId) {
@@ -134,8 +135,9 @@
       let bytes;
       try {bytes=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(record.iv),additionalData:encoder.encode(key)},cryptKey,await record.ciphertext.arrayBuffer());}
       catch(_){throw Error('OFFLINE_EVIDENCE_CANNOT_DECRYPT');}
-      if (await sha256(bytes)!==record.sha256) throw Error('OFFLINE_EVIDENCE_CHECKSUM_MISMATCH');
-      return {file:new File([bytes],record.fileName,{type:record.mimeType}),sha256:record.sha256,savedAt:record.savedAt};
+      const meta=JSON.parse(decoder.decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(record.metaIv),additionalData:encoder.encode(key)},cryptKey,unb64(record.encryptedMetadata))));
+      if (await sha256(bytes)!==meta.sha256) throw Error('OFFLINE_EVIDENCE_CHECKSUM_MISMATCH');
+      return {file:new File([bytes],meta.fileName,{type:meta.mimeType}),sha256:meta.sha256,savedAt:record.savedAt};
     },
     async deleteEvidence(scope,attachmentId) {
       const key=await evidencePayload(scope,attachmentId);
@@ -149,7 +151,7 @@
         return await new Promise((resolve,reject)=>{
           const entries=[],tx=db.transaction(FILES,'readonly'),req=tx.objectStore(FILES).openCursor();
           req.onsuccess=()=>{const cur=req.result;if(!cur)return;const r=cur.value;
-            if(String(r.id).startsWith(prefix)) entries.push({attachmentId:r.id.slice(prefix.length),fileName:r.fileName,byteLength:r.byteLength,sha256:r.sha256,savedAt:r.savedAt});
+            if(String(r.id).startsWith(prefix)) entries.push({attachmentId:r.id.slice(prefix.length),byteLength:r.byteLength,savedAt:r.savedAt});
             cur.continue();};
           req.onerror=()=>reject(req.error||Error('DEVICE_STORAGE_ERROR'));
           tx.oncomplete=()=>resolve(entries);
