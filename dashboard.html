@@ -10,6 +10,8 @@
 <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
 <script src="./pwa-client.js?v=20261115-dashboard-only-install" defer></script>
+<script src="./staff-offline-foundation.js" defer></script>
+<script src="./staff-offline-bootstrap.js" defer></script>
 <meta name="theme-color" content="#000000">
 <title>RBH Insulation — Safety Operations</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2966,7 +2968,7 @@
   $("mStatus").innerHTML=statusOptions("new");
 
   /* ---------- auth ---------- */
-  function showLogin(){ stopNotificationPolling(); stopLiveSync(); stopRecordPresence(); clearActiveOpenResource(); closeNotificationPanel(); userNotifications=[]; notificationActiveCount=0; renderNotificationCenter(); appView.style.display="none"; loginView.style.display="flex"; currentSession=null; currentProfile=null; currentRole="read_only"; isPlatformAdmin=false; currentOrgId=null; currentOrgName=""; allOrgs=[]; if(typeof closeProfileDrawer==="function") closeProfileDrawer(); }
+  function showLogin(){ if(window.TeamWorktStaffOfflineUI) window.TeamWorktStaffOfflineUI.lock(); stopNotificationPolling(); stopLiveSync(); stopRecordPresence(); clearActiveOpenResource(); closeNotificationPanel(); userNotifications=[]; notificationActiveCount=0; renderNotificationCenter(); appView.style.display="none"; loginView.style.display="flex"; currentSession=null; currentProfile=null; currentRole="read_only"; isPlatformAdmin=false; currentOrgId=null; currentOrgName=""; allOrgs=[]; if(typeof closeProfileDrawer==="function") closeProfileDrawer(); }
   async function showApp(session){
     currentSession=session;
     if(setupPasswordModeRequested()){ showPasswordSetup(); return; }
@@ -2986,6 +2988,7 @@
     await loadPlatformContext();
     applyRoleUi();
     await loadReports();
+    if(window.TeamWorktStaffOfflineUI && currentSession && currentOrgId) window.TeamWorktStaffOfflineUI.init({userId:currentUserId(),organizationId:currentOrgId,email:currentSession.user.email,role:currentRole},allReports,allCorrectiveActions);
     await loadNotifications(true);
     startNotificationPolling();
     startLiveSync();
@@ -3059,6 +3062,7 @@
       });
       attByReport=nextAttByReport;
       lastLiveDataFingerprint=nextFingerprint;
+      if(window.TeamWorktStaffOfflineUI) window.TeamWorktStaffOfflineUI.refresh(allReports,allCorrectiveActions);
 
       // Silent realtime/fallback checks should not redraw an unchanged dashboard.
       // This keeps Home visually stable while preserving the same live-sync safety net.
@@ -8142,6 +8146,11 @@
     });
     var evidence=$("focusedActionEvidence");
     if(evidence) renderActionEvidence(r,evidence,null,a,{readOnly:status==="awaiting_verification"||status==="verified"}).catch(function(ex){console.error("focused action evidence",ex);});
+    if(window.TeamWorktStaffOfflineUI){
+      if(canComplete&&$("focusedCompletionNote")) window.TeamWorktStaffOfflineUI.wireFocusedDraft(r,a,$("focusedCompletionNote"),"action_completion");
+      if(canVerify&&$("focusedVerificationNote")) window.TeamWorktStaffOfflineUI.wireFocusedDraft(r,a,$("focusedVerificationNote"),"verification");
+      if(canVerify&&$("focusedReturnNote")) window.TeamWorktStaffOfflineUI.wireFocusedDraft(r,a,$("focusedReturnNote"),"changes_requested");
+    }
 
     var submit=$("focusedSubmitAction");
     if(submit) submit.addEventListener("click",async function(){
@@ -8158,6 +8167,7 @@
         var fresh=activeFocusedAction||a;
         focusedSubmissionReceiptId=String(a.id);
         renderFocusedCorrectiveAction();
+        if(window.TeamWorktStaffOfflineUI) window.TeamWorktStaffOfflineUI.clearSubmittedDraft(r,a,"action_completion");
         var receiptButton=$("focusedOpenReview")||$("focusedReceiptBack");
         if(receiptButton){
           receiptButton.focus();
@@ -8186,6 +8196,7 @@
         if(res.error) throw res.error;
         await refreshFocusedCorrectiveActionData(a.id,r.id);
         renderFocusedCorrectiveAction();
+        if(window.TeamWorktStaffOfflineUI) window.TeamWorktStaffOfflineUI.clearSubmittedDraft(r,a,"verification");
         loadNotifications(true).catch(function(ex){console.error("notification refresh",ex);});
         toast("Corrective Action #"+String(a.action_number||"")+" verified","ok");
       }catch(ex){console.error(ex);toast("Could not verify this corrective action.","err");}
