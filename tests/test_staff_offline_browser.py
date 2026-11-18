@@ -70,6 +70,8 @@ class OfflineBrowserTests(unittest.TestCase):
             {organizationId:'org-1',userId:'user-1',syncedAt:new Date().toISOString(),
              expiresAt:new Date(Date.now()+3600000).toISOString(),role:'supervisor',records},'v1');
           await f.registerAccountLocator(email,'org-1','user-1');
+          const marker=new URL('./staff-offline-device-enabled',location.href).href;
+          await (await caches.open('rbh-staff-offline-device-v1')).put(marker,new Response('1'));
           f.lock();
         }""",{"email":EMAIL,"passphrase":PASS})
 
@@ -532,6 +534,21 @@ class OfflineBrowserTests(unittest.TestCase):
         )
         self.assertEqual(self.page.locator("#draftInvestigator").input_value(),
                          "Fictional investigator B")
+
+
+
+    def test_unenrolled_dashboard_uses_legacy_offline_page(self):
+        self.page.evaluate("""async()=>{
+          await navigator.serviceWorker.register('./sw.js',{scope:'./'});
+          await navigator.serviceWorker.ready;
+        }""")
+        self.page.reload()
+        self.page.wait_for_function("navigator.serviceWorker.controller !== null")
+        DASHBOARD_NETWORK_BLOCKED.set()
+        self.context.set_offline(True)
+        self.page.goto(BASE+"/dashboard.html",wait_until="domcontentloaded")
+        self.assertEqual(self.page.locator("#unlockForm").count(),0)
+        self.assertNotIn("staff-offline-workspace.html",self.page.url)
 
 
 if __name__=='__main__':
