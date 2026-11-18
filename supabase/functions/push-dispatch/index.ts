@@ -3,7 +3,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.117.2";
 import webpush from "npm:web-push@3.6.7";
 const json=(value:unknown,status=200)=>new Response(JSON.stringify(value),{status,headers:{"Content-Type":"application/json","Cache-Control":"no-store"}});
-const allowed=new Set(["new_report","report_owner_assignment","action_assignment","corrective_action_assignment","corrective_action_verification_requested","corrective_action_changes_requested","report_transfer_requested","report_transfer_declined","report_owner_transferred_from","corrective_action_reassigned_from"]);
+const allowed=new Set(["new_report","report_owner_assignment","action_assignment","corrective_action_assignment","corrective_action_verification_requested","corrective_action_changes_requested","report_transfer_requested","report_transfer_declined"]);
 const providerOk=(endpoint:string)=>{
   try{const u=new URL(endpoint),h=u.hostname.toLowerCase();
     return u.protocol==="https:"&&!u.username&&!u.password&&!u.port&&
@@ -81,13 +81,13 @@ Deno.serve(async req=>{
     }
     if(permitted){
       const {data:r}=await service.from("reports")
-        .select("id,organization_id,report_owner_user_id,report_owner_assigned_by,assigned_user_id,status")
+        .select("id,organization_id,report_owner_user_id,report_owner_assigned_by,assigned_user_id,status,action_status,workflow_restart_count,reopen_count")
         .eq("id",event.report_id).maybeSingle();
       report=r;permitted=!!r&&r.organization_id===event.organization_id;
     }
     if(permitted&&event.corrective_action_id){
       const {data:a}=await service.from("report_corrective_actions")
-        .select("id,organization_id,report_id,owner_user_id,verifier_user_id,status,updated_by,activated_by")
+        .select("id,organization_id,report_id,owner_user_id,verifier_user_id,status,updated_by,activated_by,activated_at,retired_at,workflow_generation,activation_reopen_count")
         .eq("id",event.corrective_action_id).maybeSingle();
       action=a;permitted=!!a&&a.organization_id===event.organization_id&&a.report_id===report.id;
     }
@@ -101,7 +101,7 @@ Deno.serve(async req=>{
       if(!permitted){
         // Preserve suppressed-item audit; never send stale or read-only work.
       }else switch(event.notification_type){
-        case "new_report": permitted=manager;break;
+        case "new_report": permitted=manager&&report.status==="new"&&!report.report_owner_user_id;break;
         case "report_owner_assignment": permitted=report.report_owner_user_id===uid;break;
         case "report_transfer_requested": {
           const {data:t}=await service.from("rbh_report_transfer_requests").select("id")
@@ -127,10 +127,23 @@ Deno.serve(async req=>{
           permitted=manager&&report.report_owner_user_id!==uid&&!!(transfer||override);break;
         }
         case "action_assignment":
-          permitted=(action&&action.owner_user_id===uid)||report.assigned_user_id===uid;break;
+          permitted=action?(
+            action.owner_user_id===uid&&!!action.activated_at&&!action.retired_at&&
+            ["not_started","in_progress","changes_requested"].includes(action.status)
+          ):(report.assigned_user_id===uid&&["not_started","in_progress","changes_requested"].includes(String(report.action_status||"")));
+          break;
         case "corrective_action_assignment":
+          permitted=!!action&&action.owner_user_id===uid&&!!action.activated_at&&!action.retired_at&&
+            ["not_started","in_progress","changes_requested"].includes(action.status)&&
+            Number(action.workflow_generation||0)===Number(report.workflow_restart_count||0)&&
+            Number(action.activation_reopen_count||0)===Number(report.reopen_count||0);
+          break;
         case "corrective_action_changes_requested":
-          permitted=!!action&&action.owner_user_id===uid;break;
+          permitted=!!action&&action.owner_user_id===uid&&action.status==="changes_requested"&&
+            !!action.activated_at&&!action.retired_at&&
+            Number(action.workflow_generation||0)===Number(report.workflow_restart_count||0)&&
+            Number(action.activation_reopen_count||0)===Number(report.reopen_count||0);
+          break;
         case "corrective_action_reassigned_from": {
           const {data:t}=await service.from("rbh_corrective_action_reassignments").select("id")
             .eq("corrective_action_id",event.corrective_action_id).eq("old_owner_id",uid)
@@ -138,7 +151,13 @@ Deno.serve(async req=>{
           permitted=!!action&&workRole&&action.owner_user_id!==uid&&!!t;break;
         }
         case "corrective_action_verification_requested":
-          permitted=!!action&&(action.verifier_user_id===uid||report.report_owner_user_id===uid||manager);break;
+          // The current Report Owner is the sole reviewer. Reject stale,
+          // unassigned, previous-owner and completed-action notifications.
+          permitted=manager&&!!action&&report.report_owner_user_id===uid&&
+            action.status==="awaiting_verification"&&!!action.activated_at&&!action.retired_at&&
+            Number(action.workflow_generation||0)===Number(report.workflow_restart_count||0)&&
+            Number(action.activation_reopen_count||0)===Number(report.reopen_count||0);
+          break;
         default: permitted=false;
       }
     }
