@@ -88,7 +88,22 @@ class OfflineBrowserTests(unittest.TestCase):
         self.unlock()
         self.page.get_by_text("Report #77").first.click()
         self.page.locator("#draftStep").select_option("action_completion")
-        self.page.wait_for_function("document.querySelector('#draftNote').value === 'Fictional corrective work complete'")
+        try:
+            self.page.wait_for_function("document.querySelector('#draftNote').value === 'Fictional corrective work complete'",timeout=5000)
+        except Exception:
+            details=self.page.evaluate("""async()=>{
+              const scope={organizationId:'org-1',userId:'user-1',reportId:'report-123',
+                actionId:'action-456',generation:0,step:'action_completion'};
+              const s=window.TeamWorktStaffOfflineFoundation;
+              let draft=null,error=null;
+              try{draft=await s.readDraft(scope);}catch(e){error=String(e);}
+              return {status:document.getElementById('status').textContent,
+                step:document.getElementById('draftStep').value,
+                action:document.getElementById('draftAction').value,
+                note:document.getElementById('draftNote').value,
+                draft,error,unlocked:s.isUnlocked()};
+            }""")
+            self.fail("RESTORE_DIAGNOSTIC: "+repr(details))
         self.assertIn("1 photo(s)",self.page.locator("#evidenceCount").inner_text())
         self.page.evaluate("""async()=>{
           const f=window.TeamWorktStaffOfflineFoundation;
