@@ -5,7 +5,7 @@
  */
 (function (root) {
   'use strict';
-  const DB = 'teamworkt-staff-offline-v1', STORE = 'encrypted_drafts', VERSION = 1;
+  const DB = 'teamworkt-staff-offline-v1', STORE = 'encrypted_drafts', FILES = 'encrypted_evidence', VERSION = 2;
   const encoder = new TextEncoder(), decoder = new TextDecoder();
   const ITERATIONS = 310000;
   let unlocked = null; // in-memory passphrase; never persisted
@@ -27,30 +27,31 @@
     return new Promise((resolve,reject) => {
       if (!root.indexedDB) return reject(Error('DEVICE_STORAGE_UNAVAILABLE'));
       const request=indexedDB.open(DB, VERSION);
-      request.onupgradeneeded=()=>{if (!request.result.objectStoreNames.contains(STORE))request.result.createObjectStore(STORE,{keyPath:'id'});};
+      request.onupgradeneeded=()=>{if (!request.result.objectStoreNames.contains(STORE))request.result.createObjectStore(STORE,{keyPath:'id'});
+        if (!request.result.objectStoreNames.contains(FILES))request.result.createObjectStore(FILES,{keyPath:'id'});};
       request.onerror=()=>reject(request.error || Error('DEVICE_STORAGE_ERROR'));
       request.onblocked=()=>reject(Error('DEVICE_STORAGE_BUSY'));
       request.onsuccess=()=>resolve(request.result);
     });
   }
-  async function transaction(mode,callback) {
+  async function transaction(mode,callback,storeName = STORE) {
     const db=await open();
     try {
       return await new Promise((resolve,reject)=>{
-        const tx=db.transaction(STORE,mode);
+        const tx=db.transaction(storeName,mode);
         let result;
         tx.onerror=()=>reject(tx.error || Error('DEVICE_STORAGE_ERROR'));
         tx.onabort=()=>reject(tx.error || Error('DEVICE_STORAGE_ABORTED'));
         tx.oncomplete=()=>resolve(result);
-        try {result=callback(tx.objectStore(STORE));} catch(e) {tx.abort();reject(e);}
+        try {result=callback(tx.objectStore(storeName));} catch(e) {tx.abort();reject(e);}
       });
     } finally { db.close(); }
   }
-  async function fetchRecord(key) {
+  async function fetchRecord(key, storeName = STORE) {
     const db=await open();
     try {
       return await new Promise((resolve,reject)=>{
-        const tx=db.transaction(STORE,'readonly'),req=tx.objectStore(STORE).get(key);
+        const tx=db.transaction(storeName,'readonly'),req=tx.objectStore(storeName).get(key);
         req.onsuccess=()=>resolve(req.result || null);
         req.onerror=()=>reject(req.error || Error('DEVICE_STORAGE_ERROR'));
         tx.onabort=()=>reject(tx.error || Error('DEVICE_STORAGE_ABORTED'));
@@ -60,6 +61,14 @@
   async function derive(passphrase,salt) {
     const material=await crypto.subtle.importKey('raw',encoder.encode(passphrase),'PBKDF2',false,['deriveKey']);
     return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:ITERATIONS,hash:'SHA-256'},material,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+  }
+  async function evidencePayload(scope,attachmentId) {
+    if (typeof attachmentId !== 'string' || !/^[a-zA-Z0-9_-]{8,96}$/.test(attachmentId)) throw Error('INVALID_EVIDENCE_ID');
+    return id(scope) + ':evidence:' + attachmentId;
+  }
+  async function sha256(bytes) {
+    const digest = await crypto.subtle.digest('SHA-256',bytes);
+    return [...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('');
   }
   const api = {
     unlock(passphrase) {
@@ -95,6 +104,58 @@
         plaintext=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(record.iv),additionalData:encoder.encode(key)},cryptKey,unb64(record.ciphertext));
       } catch (_) {throw Error('OFFLINE_DRAFT_CANNOT_DECRYPT');}
       return {...JSON.parse(decoder.decode(plaintext)),savedAt:record.savedAt};
+    },
+    async saveEvidence(scope,attachmentId,file) {
+      if (!unlocked) throw Error('OFFLINE_DRAFT_LOCKED');
+      const key=await evidencePayload(scope,attachmentId);
+      if (!(file instanceof Blob)) throw Error('INVALID_EVIDENCE_FILE');
+      if (!file.size || file.size > 10 * 1024 * 1024) throw Error('EVIDENCE_SIZE_INVALID');
+      const mime = file.type || 'application/octet-stream';
+      if (!/^image\/(jpeg|png|webp|heic|heif)$/i.test(mime)) throw Error('EVIDENCE_TYPE_NOT_SUPPORTED');
+      const bytes = await file.arrayBuffer(), hash = await sha256(bytes);
+      const salt=crypto.getRandomValues(new Uint8Array(16)), iv=crypto.getRandomValues(new Uint8Array(12));
+      const keyMaterial=await derive(unlocked,salt);
+      const ciphertext=await crypto.subtle.encrypt({name:'AES-GCM',iv,additionalData:encoder.encode(key)},keyMaterial,bytes);
+      const record={id:key,scope:{...scope},salt:b64(salt),iv:b64(iv),
+        ciphertext:new Blob([ciphertext],{type:'application/octet-stream'}),
+        fileName:file.name || 'evidence',mimeType:mime,byteLength:bytes.byteLength,sha256:hash,
+        savedAt:new Date().toISOString(),format:1};
+      // Metadata (including filename) is not secret; callers must avoid identifying names.
+      await transaction('readwrite',store=>store.put(record),FILES);
+      const verified=await fetchRecord(key,FILES);
+      if (!verified || verified.sha256!==hash || verified.ciphertext.size!==ciphertext.byteLength) throw Error('EVIDENCE_WRITE_NOT_VERIFIED');
+      return {status:'saved_on_this_device',savedAt:record.savedAt,sha256:hash};
+    },
+    async readEvidence(scope,attachmentId) {
+      if (!unlocked) throw Error('OFFLINE_DRAFT_LOCKED');
+      const key=await evidencePayload(scope,attachmentId),record=await fetchRecord(key,FILES);
+      if (!record) return null;
+      const cryptKey=await derive(unlocked,unb64(record.salt));
+      let bytes;
+      try {bytes=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(record.iv),additionalData:encoder.encode(key)},cryptKey,await record.ciphertext.arrayBuffer());}
+      catch(_){throw Error('OFFLINE_EVIDENCE_CANNOT_DECRYPT');}
+      if (await sha256(bytes)!==record.sha256) throw Error('OFFLINE_EVIDENCE_CHECKSUM_MISMATCH');
+      return {file:new File([bytes],record.fileName,{type:record.mimeType}),sha256:record.sha256,savedAt:record.savedAt};
+    },
+    async deleteEvidence(scope,attachmentId) {
+      const key=await evidencePayload(scope,attachmentId);
+      await transaction('readwrite',store=>store.delete(key),FILES);
+      if (await fetchRecord(key,FILES)) throw Error('EVIDENCE_DELETE_NOT_VERIFIED');
+    },
+    async listEvidence(scope) {
+      if (!unlocked) throw Error('OFFLINE_DRAFT_LOCKED');
+      const prefix=id(scope)+':evidence:',db=await open();
+      try {
+        return await new Promise((resolve,reject)=>{
+          const entries=[],tx=db.transaction(FILES,'readonly'),req=tx.objectStore(FILES).openCursor();
+          req.onsuccess=()=>{const cur=req.result;if(!cur)return;const r=cur.value;
+            if(String(r.id).startsWith(prefix)) entries.push({attachmentId:r.id.slice(prefix.length),fileName:r.fileName,byteLength:r.byteLength,sha256:r.sha256,savedAt:r.savedAt});
+            cur.continue();};
+          req.onerror=()=>reject(req.error||Error('DEVICE_STORAGE_ERROR'));
+          tx.oncomplete=()=>resolve(entries);
+          tx.onabort=()=>reject(tx.error||Error('DEVICE_STORAGE_ABORTED'));
+        });
+      } finally {db.close();}
     },
     async deleteDraft(scope) {
       const key=id(scope); await transaction('readwrite',store=>store.delete(key));
