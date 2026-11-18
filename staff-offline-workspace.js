@@ -229,10 +229,16 @@ $('addPlannedAction').addEventListener('click',()=>{
   message('New corrective-action proposal added. Save on this device before leaving.');
 });
 $('editorPanel').addEventListener('input',event=>{
-  if(event.target&&event.target.id!=='draftStep'&&event.target.id!=='draftAction')editGeneration++;
+  if(event.target&&event.target.id!=='draftStep'&&event.target.id!=='draftAction'){
+    const wasSaved=!hasUnsavedEdits();editGeneration++;
+    if(wasSaved)message('Unsaved changes — choose Save on this device before leaving.');
+  }
 });
 $('editorPanel').addEventListener('change',event=>{
-  if(event.target?.id==='draftPhotos')editGeneration++;
+  if(event.target?.id==='draftPhotos'){
+    editGeneration++;
+    message('Photo selected but NOT yet saved. Choose Save on this device.');
+  }
 });
 $('saveDraft').addEventListener('click',async()=>{
   if(saveRunning)return;
