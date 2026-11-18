@@ -47,6 +47,7 @@ begin
  and access_deleted_at is null and app_role in ('admin','safety_manager','supervisor')
  and coalesce(current_organization_id,organization_id)=v_org;
  if not found then raise exception 'INVALID_ACTION_OWNER'; end if;
+ perform set_config('rbh.authorized_action_reassignment',v_uid::text,true);
  update public.report_corrective_actions set owner_user_id=p_new_owner,updated_by=v_uid,
  updated_at=now() where id=p_action_id;
  insert into public.rbh_corrective_action_reassignments
