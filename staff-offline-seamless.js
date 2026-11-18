@@ -248,44 +248,74 @@ async function renderCounters(){
  catch(_){p.textContent='Device status unavailable. Check local storage before leaving.';}
 }
 function renderPanel(){
- if(document.getElementById('rbhSeamlessPanel'))return;
- // This is an everyday work feature, not a security setting.
- // Place it on the default Profile tab, immediately after personal details.
- const profileForm=document.getElementById('profileForm');
- const fallback=document.getElementById('rbhPushStatus')?.closest('.profile-card-section');
- const anchor=profileForm||fallback;
- if(!anchor)return;
- const panel=document.createElement('div');panel.className='profile-card-section';panel.id='rbhSeamlessPanel';
- panel.innerHTML='<h4>Offline sync (automatic)</h4><p class="field-help">Assigned corrective actions are prepared securely on this device when you sign in online. Enter work normally, even without reception; submissions made offline sync when the app is open and connectivity returns. No separate passphrase.</p><p id="rbhSeamlessStatus" role="status" class="field-help">Preparing your device…</p><a class="profile-secondary" style="display:inline-flex;text-decoration:none" href="./staff-offline-seamless.html">View saved work and sync status</a>';
- anchor.insertAdjacentElement('afterend',panel);
- renderCounters();
+ const panel=document.getElementById('rbhSeamlessPanel');
+ if(!panel)throw Error('OFFLINE_PROFILE_PANEL_NOT_FOUND');
+ panel.hidden=false;
+ const retry=document.getElementById('rbhSeamlessRetry');
+ if(retry&&!retry.dataset.wired){
+  retry.dataset.wired='yes';
+  retry.addEventListener('click',async()=>{
+   retry.disabled=true;
+   try{await init(state.identity,state.latestReports||[],state.latestActions||[],state.client);}
+   finally{retry.disabled=false;}
+  });
+ }
+ return panel;
+}
+function statusMessage(message,error){
+ const node=document.getElementById('rbhSeamlessStatus');
+ if(node){node.textContent=message;node.style.color=error?'#a1182c':'';}
 }
 async function init(identity,reports,actions,client){
  if(!identity||!client)return;
- if(state.identity&&!same(state.identity,identity))await eraseDevice(state.identity);
+ const panel=renderPanel();
+ statusMessage('Checking offline access…');
+ const prior=state.identity;
+ if(prior&&!same(prior,identity)){
+  try{await eraseDevice(prior);}catch(e){console.warn('Prior offline cleanup failed',e);}
+ }
  state.identity={...identity};state.client=client;state.enabled=false;
- const gate=await client.rpc('rbh_staff_offline_status').catch(()=>({error:true}));
+ state.latestReports=Array.isArray(reports)?reports:[];
+ state.latestActions=Array.isArray(actions)?actions:[];
+ let gate;
+ try{gate=await client.rpc('rbh_staff_offline_status');}
+ catch(e){gate={error:{message:e?.message||'NETWORK_UNAVAILABLE'}};}
  if(!same(state.identity,identity))return;
- state.enabled=!gate.error&&gate.data?.enabled===true&&gate.data?.protocolVersion===1;
- const panel=document.getElementById('rbhSeamlessPanel');
- if(!state.enabled){
-  if(panel)panel.hidden=true;
-  // A confirmed server-side revocation must clear cached work. Never erase
-  // a pending queue merely because the network failed to return a verdict.
-  if(!gate.error&&gate.data?.enabled===false){
-   await eraseDevice(identity);
-   if(root.caches){const c=await caches.open('rbh-staff-offline-device-v1');
-    await c.delete(new URL('./staff-offline-device-enabled',location.href).href);}
+ if(gate.error){
+  statusMessage('Offline access could not be checked ('+(gate.error.message||'connection or session error')+'). Your work is not offline-ready. Try Check offline access while connected.',true);
+  return;
+ }
+ if(gate.data?.enabled!==true||gate.data?.protocolVersion!==1){
+  statusMessage('Offline access is not available for this signed-in account. Confirm your pilot login and tap Check offline access.',true);
+  const openLink=document.getElementById('rbhSeamlessOpen');if(openLink)openLink.style.display='none';
+  // Only an explicit authenticated revocation clears previously saved work.
+  if(gate.data?.enabled===false){
+   try{
+    await eraseDevice(identity);
+    if(root.caches){const c=await caches.open('rbh-staff-offline-device-v1');
+     await c.delete(new URL('./staff-offline-device-enabled',location.href).href);}
+   }catch(e){console.warn('Offline revocation cleanup failed',e);}
   }
   return;
  }
  try{
+  if(!root.isSecureContext||!root.crypto?.subtle||!root.indexedDB)
+   throw Error('SECURE_DEVICE_STORAGE_UNAVAILABLE');
   await deviceKey(identity,true);
-  await saveSnapshot(identity,reports,actions);
-  if(root.caches){const c=await caches.open('rbh-staff-offline-device-v1');await c.put(new URL('./staff-offline-device-enabled',location.href).href,new Response('1'));}
+  await saveSnapshot(identity,state.latestReports,state.latestActions);
+  if(root.caches){const c=await caches.open('rbh-staff-offline-device-v1');
+   await c.put(new URL('./staff-offline-device-enabled',location.href).href,new Response('1'));}
+  state.enabled=true;
+  const link=document.getElementById('rbhSeamlessOpen');if(link)link.style.display='inline-flex';
+  statusMessage('Offline work prepared securely for this device. No separate passphrase is required.');
   if(navigator.storage?.persist)navigator.storage.persist().catch(()=>{});
-  renderPanel();if(panel)panel.hidden=false;renderCounters();flush();
- }catch(e){console.error('RBH offline-first initialization failed',e);root.alert?.('Offline device storage could not be prepared. Do not rely on offline saving until resolved.');}
+  flush();
+ }catch(e){
+  state.enabled=false;
+  const msg=String(e?.message||'DEVICE_PREPARATION_FAILED');
+  console.error('RBH offline-first initialization failed',e);
+  statusMessage('Offline work could not be prepared on this device ('+msg+'). Do not rely on offline work until this is resolved.',true);
+ }
 }
 function refresh(reports,actions){if(state.enabled&&state.identity)saveSnapshot(state.identity,reports,actions).catch(e=>console.warn('offline snapshot refresh failed',e));}
 function actionFromLive(r,a,step){
