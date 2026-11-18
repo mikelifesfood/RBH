@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS public.staff_offline_settings (
 );
 ALTER TABLE public.staff_offline_settings ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.staff_offline_settings FROM PUBLIC,anon,authenticated;
+GRANT SELECT ON public.staff_offline_settings TO service_role;
 
 CREATE OR REPLACE FUNCTION public.rbh_staff_offline_status()
 RETURNS jsonb
