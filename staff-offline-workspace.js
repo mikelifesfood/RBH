@@ -159,6 +159,9 @@ $('editorPanel').addEventListener('change',event=>{
 $('saveDraft').addEventListener('click',async()=>{
   try{
     const scope=makeScope(), draft=readForm();
+    draft.reportRevision=record.revision;
+    draft.reopenCount=Number(record.reopenCount||0);
+    draft.actionStatus=(record.actions.find(a=>a.id===scope.actionId)||{}).status||null;
     if(!draft.note.trim()&&!Object.values(draft.fields).some(v=>v.trim())&&!$('draftPhotos').files.length)throw Error('Enter draft details or attach a photo before saving.');
     const item=record,action=item.actions.find(a=>a.id===scope.actionId);
     const revision=scope.actionId?action?.revision:item.revision;
