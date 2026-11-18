@@ -77,3 +77,9 @@ Record **Pass / Fail / Notes / Screenshot or report #** for each numbered scenar
 - Separate offline evidence v2 and authenticated server gate are already deployed. Default organization OFF and pilot-only allowlist still empty. **No frontend merge**, user activation, digest scheduler, test data deletion or report number reset.
 - Device validation includes encrypted draft/photo reopen, mobile-style Chromium service-worker fallback, account isolation, mistaken navigation guard, stale/role/gate tests, lost-response retry, multi-action persistence and proposed owner/investigator recovery. Browser CI is not a replacement for an installed iPhone PWA.
 - Owner-led UAT can begin only after a safe frontend deployment, a specifically authorized RBH test account is pilot-enabled, and expected roles and action evidence live checks are verified. Do not activate the whole organization or go live to staff prematurely.
+
+## Automated development verification — final staged candidate
+- GitHub Actions run **#44319351848**: **SUCCESS** on all three jobs — Chromium browser/PWA, Node workflow protocol, Deno Edge Function typecheck — at commit `f3e566af99a3993bed72010284a94464e6d6e399`.
+- The browser suite includes explicit offline draft field copy into the user's clipboard after unlock and current online review. The test waits for the async clipboard operation and verifies both notes and investigation fields survive.
+- **This is automated acceptance for the staged code, NOT end-to-end RBH customer acceptance.** Actual authenticated role/tenant tests, installed iPhone PWA and real storage upload need a controlled pilot flag and frontend visibility.
+- Digest development paused, no recurring job. Pilot activation, frontend merge, real-user launch, data cleanup and report-number reset require appropriate owner decisions.
