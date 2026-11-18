@@ -2983,7 +2983,7 @@
       var directActionReport=directAction&&allReports.find(function(x){ return String(x.id)===String(directAction.report_id); });
       clearRequestedWorkItemFromUrl();
       if(directAction&&directActionReport&&
-         (isManager()||currentUserId()&&String(directAction.owner_user_id||"")===currentUserId())){
+         (currentUserId()&&String(directAction.owner_user_id||"")===currentUserId())){
         openFocusedCorrectiveAction(directAction,"mywork");
         return;
       }
@@ -4966,7 +4966,7 @@
       return !!(a&&!isResolvedReport(r)&&isManager()&&currentUserId()&&String(a.verifier_user_id||"")===currentUserId());
     }
     async function releaseLegacyCorrectiveActionVerifier(a){
-      if(!a||!a.verifier_user_id||!isManager()) return true;
+      if(!a||!a.verifier_user_id||!isCurrentReportOwner(r)) return true;
       var res=await sb.rpc("rbh_set_corrective_action_verifier",{p_action_id:a.id,p_verifier_user_id:null});
       if(res.error) throw res.error;
       a.verifier_user_id=null;
@@ -5024,7 +5024,7 @@
         } else if(status==="awaiting_verification"){
           var canReview=canVerifyCorrectiveAction(a);
           if(canReview){
-            review='<div class="multi-action-verifier-note"><b>Ready for review</b>Review the completed work and evidence below. No reviewer needs to be assigned. Verify it as complete, or send this action back for changes.</div>'+
+            review='<div class="multi-action-verifier-note"><b>Ready for review</b>Review the completed work and evidence below. You are the assigned verifier. Verify it as complete, or send this action back for changes.</div>'+
               '<div class="mav-review">'+
                 '<label class="inv-l">Approval note (optional)<textarea data-child-verification-note="'+esc(a.id)+'" placeholder="What did you verify?"></textarea></label>'+
                 '<div class="multi-action-verification-actions"><button class="wizard-primary" type="button" data-child-verify-action="'+esc(a.id)+'">Verify as complete</button></div>'+
@@ -7973,7 +7973,7 @@
       var r=findReport(a.report_id);
       if(!r||!isOpenOperational(r)||!correctiveActionInCurrentCycle(a,r)) return false;
       if(String(a.status||"")!=="awaiting_verification") return false;
-      return true;
+      return String(a.verifier_user_id||"")===currentUserId();
     });
   }
   function childActionSort(a,b){
@@ -8107,7 +8107,7 @@
   function correctiveActionNeedsMyAttention(a){
     if(!a||!currentUserId()) return false;
     if(String(a.owner_user_id||"")===currentUserId()) return true;
-    if(String(a.status||"")==="awaiting_verification" && isManager()) return true;
+    if(String(a.status||"")==="awaiting_verification" && isManager() && String(a.verifier_user_id||"")===currentUserId()) return true;
     return false;
   }
   function renderActionSummary(arr){
@@ -8182,12 +8182,12 @@
   }
 
   function focusedActionCanComplete(a,r){
-    if(!a||!r||isResolvedReport(r)||!correctiveActionInCurrentCycle(a,r)) return false;
-    if(isManager()) return true;
-    return currentRole==="supervisor" && currentUserId() && String(a.owner_user_id||"")===currentUserId();
+    return !!(a&&r&&!isResolvedReport(r)&&correctiveActionInCurrentCycle(a,r)
+      &&currentRole!=="read_only"&&currentUserId()&&String(a.owner_user_id||"")===currentUserId());
   }
   function focusedActionCanVerify(a,r){
-    return !!(a&&r&&!isResolvedReport(r)&&correctiveActionInCurrentCycle(a,r)&&isManager()&&String(a.status||"")==="awaiting_verification");
+    return !!(a&&r&&!isResolvedReport(r)&&correctiveActionInCurrentCycle(a,r)&&isManager()
+      &&String(a.status||"")==="awaiting_verification"&&String(a.verifier_user_id||"")===currentUserId());
   }
   function replaceGlobalCorrectiveAction(row){
     if(!row||!row.id) return;
@@ -8219,7 +8219,7 @@
     return activeFocusedAction;
   }
   async function clearFocusedLegacyVerifier(a){
-    if(!a||!a.verifier_user_id||!isManager()) return true;
+    if(!a||!a.verifier_user_id||!isCurrentReportOwner(findReport(a.report_id))) return true;
     var res=await sb.rpc("rbh_set_corrective_action_verifier",{p_action_id:a.id,p_verifier_user_id:null});
     if(res.error) throw res.error;
     a.verifier_user_id=null;
