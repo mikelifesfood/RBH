@@ -14,7 +14,7 @@
 // SUPABASE_ANON_KEY
 // SUPABASE_SERVICE_ROLE_KEY
 
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2.117.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
