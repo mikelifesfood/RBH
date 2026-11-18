@@ -15,6 +15,7 @@
 <script src="./staff-offline-bootstrap.js" defer></script>
 <script src="./staff-offline-action-submit.js" defer></script>
 <script src="./staff-offline-evidence-replay.js" defer></script>
+<script src="./staff-offline-seamless.js?v=20261118-automatic" defer></script>
 <meta name="theme-color" content="#000000">
 <title>RBH Insulation — Safety Operations</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2991,7 +2992,7 @@
     await loadPlatformContext();
     applyRoleUi();
     await loadReports();
-    if(window.TeamWorktStaffOfflineUI && currentSession && currentOrgId) window.TeamWorktStaffOfflineUI.init({userId:currentUserId(),organizationId:currentOrgId,email:currentSession.user.email,role:currentRole},allReports,allCorrectiveActions,sb);
+    if(window.TeamWorktSeamlessOffline && currentSession && currentOrgId) await window.TeamWorktSeamlessOffline.init({userId:currentUserId(),organizationId:currentOrgId,email:currentSession.user.email,role:currentRole},allReports,allCorrectiveActions,sb);
     await loadNotifications(true);
     startNotificationPolling();
     startLiveSync();
@@ -3005,6 +3006,9 @@
   sb.auth.getSession().then(function(res){ var s=res.data&&res.data.session; if(s) showApp(s); else showLogin(); });
   sb.auth.onAuthStateChange(function(_e,s){
     if(!s){
+      if(_e==="SIGNED_OUT" && window.TeamWorktSeamlessOffline){
+        window.TeamWorktSeamlessOffline.signOut().catch(function(ex){console.warn("RBH seamless offline signout cleanup failed",ex);});
+      }
       if(_e==="SIGNED_OUT" && window.TeamWorktStaffOfflineUI){
         window.TeamWorktStaffOfflineUI.clearOnSignOut().catch(function(ex){console.warn("RBH offline signout cleanup failed",ex);});
       }
@@ -3027,8 +3031,33 @@
     finally{ btn.disabled=false; btn.textContent="Sign in"; }
   });
   var _signout=$("signout"); if(_signout) _signout.addEventListener("click", async function(){
-    try { if(window.TeamWorktStaffOfflineUI){ if(await window.TeamWorktStaffOfflineUI.hasOfflineWorkspace()&&!confirm("Signing out erases this account’s offline drafts and evidence from this device. Continue?")) return; await window.TeamWorktStaffOfflineUI.clearOnSignOut(); } if(window.RBHPush) await window.RBHPush.beforeSignOut(false); await sb.auth.signOut(); }
+    try {
+      if(window.TeamWorktSeamlessOffline && await window.TeamWorktSeamlessOffline.hasPending()){
+        if(!confirm("You have corrective actions saved on this device that have not synchronized. Signing out will permanently erase them. Sign out anyway?"))return;
+      }
+      if(window.TeamWorktStaffOfflineUI){ if(await window.TeamWorktStaffOfflineUI.hasOfflineWorkspace()&&!confirm("Signing out erases this account’s offline drafts and evidence from this device. Continue?")) return; await window.TeamWorktStaffOfflineUI.clearOnSignOut(); } if(window.RBHPush) await window.RBHPush.beforeSignOut(false); await sb.auth.signOut(); }
     catch(e){toast(e&&e.message?e.message:"Unable to sign out safely. Please retry.","err");}
+  });
+
+  window.addEventListener("rbh-offline-action-synced",async function(ev){
+    try{
+      if(!currentSession||!currentOrgId)return;
+      var info=ev.detail||{},r=findReport(info.reportId);
+      var a=allCorrectiveActions.find(function(row){return String(row.id)===String(info.actionId);});
+      // Refresh authoritative state after an offline receipt; never invent a
+      // client-side workflow status or send mail before the server confirms.
+      await loadReports(true);
+      r=findReport(info.reportId);
+      a=allCorrectiveActions.find(function(row){return String(row.id)===String(info.actionId);});
+      if(!r||!a)return;
+      if(info.kind==="submit_action_completion"){
+        sendCorrectiveActionVerificationRequestedEmail(r,a).catch(function(ex){console.warn("offline completion mail deferred",ex);});
+      }else if(info.kind==="request_action_changes"){
+        sendCorrectiveActionChangesRequestedEmail(r,a).catch(function(ex){console.warn("offline changes mail deferred",ex);});
+      }
+      loadNotifications(true).catch(function(){});
+      toast("Corrective Action #"+String(a.action_number||"")+" synchronized to RBH.","ok");
+    }catch(ex){console.warn("RBH offline synchronization display refresh failed",ex);}
   });
 
   /* ---------- data ---------- */
@@ -3070,7 +3099,7 @@
       });
       attByReport=nextAttByReport;
       lastLiveDataFingerprint=nextFingerprint;
-      if(window.TeamWorktStaffOfflineUI) window.TeamWorktStaffOfflineUI.refresh(allReports,allCorrectiveActions);
+      if(window.TeamWorktSeamlessOffline) window.TeamWorktSeamlessOffline.refresh(allReports,allCorrectiveActions);
 
       // Silent realtime/fallback checks should not redraw an unchanged dashboard.
       // This keeps Home visually stable while preserving the same live-sync safety net.
@@ -5516,6 +5545,61 @@
     });
 
     if(window.TeamWorktStaffOfflineUI) window.TeamWorktStaffOfflineUI.wireWizardActionDrafts(detail,r,function(){return actionPlanState.actions;});
+    if(window.TeamWorktSeamlessOffline && !detail.dataset.rbhSeamlessNotes){
+      detail.dataset.rbhSeamlessNotes="yes";
+      var wireSeamlessChildFields=function(){
+        if(!detail.isConnected)return;
+        detail.querySelectorAll("textarea[data-child-completion-note],textarea[data-child-verification-note],textarea[data-child-return-note]").forEach(function(field){
+          if(field.dataset.seamlessWired||field.disabled)return;
+          var completion=field.hasAttribute("data-child-completion-note");
+          var verification=field.hasAttribute("data-child-verification-note");
+          var id=completion?field.getAttribute("data-child-completion-note"):
+            verification?field.getAttribute("data-child-verification-note"):
+            field.closest("[data-child-verification-card]")?.getAttribute("data-child-verification-card");
+          var child=actionPlanState.actions.find(function(x){return String(x.id)===String(id);});
+          if(!child)return;
+          var step=completion?"action_completion":verification?"verification":"changes_requested";
+          var button=detail.querySelector('['+(completion?'data-submit-child-completion':verification?'data-child-verify-action':'data-child-request-changes')+'="'+id+'"]');
+          if(button)window.TeamWorktSeamlessOffline.wireAction(r,child,field,button,step);
+        });
+      };
+      var seamlessObserver=new MutationObserver(wireSeamlessChildFields);
+      seamlessObserver.observe(detail,{childList:true,subtree:true});
+      wireSeamlessChildFields();
+      var seamlessCleanup=new MutationObserver(function(){
+        if(!detail.isConnected){seamlessObserver.disconnect();seamlessCleanup.disconnect();}
+      });
+      seamlessCleanup.observe(document.body,{childList:true,subtree:true});
+    }
+    if(window.TeamWorktSeamlessOffline && !detail.dataset.rbhSeamlessCapture){
+      detail.dataset.rbhSeamlessCapture="yes";
+      detail.addEventListener("click",async function(e){
+        if(navigator.onLine!==false)return;
+        var button=e.target.closest("[data-submit-child-completion],[data-child-verify-action],[data-child-request-changes]");
+        if(!button||button.disabled)return;
+        e.preventDefault();e.stopImmediatePropagation();
+        var id=button.getAttribute("data-submit-child-completion")||button.getAttribute("data-child-verify-action")||button.getAttribute("data-child-request-changes");
+        var action=actionPlanState.actions.find(function(x){return String(x.id)===String(id);});
+        if(!action)return;
+        var step=button.hasAttribute("data-submit-child-completion")?"action_completion":
+          button.hasAttribute("data-child-verify-action")?"verification":"changes_requested";
+        var card=button.closest("[data-child-completion-card],[data-child-verification-card]");
+        var field=card&&card.querySelector(step==="action_completion"?"[data-child-completion-note]":
+          step==="verification"?"[data-child-verification-note]":"[data-child-return-note]");
+        var note=(field&&field.value||"").trim();
+        var context={id:action.id,number:action.action_number,reportId:r.id,reportNumber:r.ref_no,
+          reportSite:r.job_site||"",description:action.description||"",actionStatus:action.status,
+          actionRevision:action.updated_at,reportRevision:r.updated_at,generation:Number(r.workflow_restart_count||0),
+          reopenCount:Number(r.reopen_count||0),canSubmit:canCompleteCorrectiveAction(action),
+          canVerify:canVerifyCorrectiveAction(action)};
+        button.disabled=true;
+        try{
+          await window.TeamWorktSeamlessOffline.stage(context,step,note);
+          toast("Saved on device. Continue to your next corrective action; this will sync automatically.","ok");
+        }catch(ex){toast("Could not save offline: "+ex.message,"err");}
+        finally{if(button.isConnected)button.disabled=false;}
+      },true);
+    }
     loadCorrectiveActionPlan().catch(function(ex){console.error("corrective action plan load",ex);actionPlanState.loading=false;if(actionPlanList)actionPlanList.innerHTML='<div class="wizard-required show">Could not load the corrective-action plan. Refresh the record and try again.</div>';if(actionPlanAdd)actionPlanAdd.disabled=true;if(actionPlanSave)actionPlanSave.disabled=true;});
 
     if(rootSave) rootSave.addEventListener("click",async function(){ rootSave.disabled=true; try{await waitForInvestigationEvidenceUpload();await persistInvestigation(true);rootSaved.hidden=false;setTimeout(function(){rootSaved.hidden=true;},2200);showView("home");}catch(ex){console.error(ex);toast("Could not save the investigation.","err");}finally{rootSave.disabled=!canEditStep(r,2);} });
@@ -8164,6 +8248,15 @@
       if(canComplete&&$("focusedCompletionNote")) window.TeamWorktStaffOfflineUI.wireFocusedDraft(r,a,$("focusedCompletionNote"),"action_completion");
       if(canVerify&&$("focusedVerificationNote")) window.TeamWorktStaffOfflineUI.wireFocusedDraft(r,a,$("focusedVerificationNote"),"verification");
       if(canVerify&&$("focusedReturnNote")) window.TeamWorktStaffOfflineUI.wireFocusedDraft(r,a,$("focusedReturnNote"),"changes_requested");
+    }
+
+    if(window.TeamWorktSeamlessOffline){
+      if(canComplete&&$("focusedCompletionNote")&&$("focusedSubmitAction"))
+        window.TeamWorktSeamlessOffline.wireAction(r,a,$("focusedCompletionNote"),$("focusedSubmitAction"),"action_completion");
+      if(canVerify&&$("focusedVerificationNote")&&$("focusedVerifyAction"))
+        window.TeamWorktSeamlessOffline.wireAction(r,a,$("focusedVerificationNote"),$("focusedVerifyAction"),"verification");
+      if(canVerify&&$("focusedReturnNote")&&$("focusedRequestChanges"))
+        window.TeamWorktSeamlessOffline.wireAction(r,a,$("focusedReturnNote"),$("focusedRequestChanges"),"changes_requested");
     }
 
     var submit=$("focusedSubmitAction");

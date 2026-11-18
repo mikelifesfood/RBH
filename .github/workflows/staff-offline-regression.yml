@@ -30,6 +30,7 @@ jobs:
           node --check staff-offline-bootstrap.js
           node --check staff-offline-evidence-replay.js
           node --check staff-offline-action-submit.js
+          node --check staff-offline-seamless.js
           node --check sw.js
       - name: Validate offline HTML references
         run: |
@@ -38,7 +39,10 @@ jobs:
           grep -q 'staff-offline-bootstrap.js' dashboard.html
           grep -q 'staff-offline-evidence-replay.js' dashboard.html
           grep -q 'staff-offline-action-submit.js' dashboard.html
-          grep -q 'staff-offline-workspace.html' sw.js
+          grep -q 'staff-offline-seamless.html' sw.js
+          grep -q 'staff-offline-seamless.js' sw.js
+          grep -q 'staff-offline-seamless.js' dashboard.html
+          grep -q 'staff-offline-seamless.js' staff-offline-seamless.html
       - name: Test safe transitions, stale-state conflicts and receipts
         run: node --test tests/staff-offline-protocol.test.cjs
   browser:
