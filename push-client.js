@@ -1,7 +1,7 @@
 /* RBH staff PWA push controls: opt-in only, never used on anonymous reporting form. */
 (function(){
   "use strict";
-  var sb=null,busy=false,registeredFor=null;
+  var sb=null,busy=false,registeredFor=null,localOptOut=false;
   var box,info,enable,disable,test;
   function standalone(){return (window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)||navigator.standalone===true;}
   function ios(){return /iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);}
@@ -40,7 +40,7 @@
       // after normal sign-out. The backend permits rebinding ONLY the same
       // existing account/device endpoint, with a newly verified live session.
       if(state.subscription&&!status.deviceRegistered&&status.deviceKnown&&
-         status.configured&&Notification.permission==="granted"){
+         !localOptOut&&status.configured&&Notification.permission==="granted"){
         var keys=state.subscription.toJSON().keys||{};
         await call("register",{endpoint:state.subscription.endpoint,
           subscription:{p256dh:keys.p256dh,auth:keys.auth}});
@@ -76,6 +76,7 @@
       var subscription=state.subscription||await state.worker.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:decodeKey(status.publicKey)});
       var keys=subscription.toJSON().keys||{};
       await call("register",{endpoint:subscription.endpoint,subscription:{p256dh:keys.p256dh,auth:keys.auth}});
+      localOptOut=false;
       registeredFor=subscription.endpoint;show("Push subscription saved for this device.");
     }catch(e){show(e&&e.message?e.message:"Unable to enable notifications.");}
     finally{busy=false;await refresh();}
@@ -83,10 +84,14 @@
   async function disablePush(){
     if(busy)return;busy=true;controls(false);
     try{
+      // An explicit OFF request must not be silently reversed by refresh,
+      // even if the platform refuses to unsubscribe immediately.
+      localOptOut=true;
       var state=await currentSubscription();
       if(state.subscription){
         await call("disable",{endpoint:state.subscription.endpoint});
-        await state.subscription.unsubscribe();
+        var removed=await state.subscription.unsubscribe();
+        if(!removed)throw Error("Device unsubscribe was not confirmed.");
       }
       registeredFor=null;
       show("Push notifications disabled on this device.");
