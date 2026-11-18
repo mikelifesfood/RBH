@@ -171,6 +171,37 @@ async function reviewSavedDrafts(){
         }catch(e){preview.textContent='Could not decrypt draft.';preview.hidden=false;}
       });
       wrap.append(summary,stateLabel,btn,preview);
+      if(!stale&&!scope.actionId){
+        const localPhotos=await f.listEvidence(scope);
+        if(localPhotos.length){
+          const advisory=document.createElement('p');
+          advisory.textContent=localPhotos.length+' encrypted investigation/photo attachment(s) remain only on this device. They cannot yet use the corrective-action upload endpoint. Download them individually and attach through the authorized online RBH workflow; do not treat this as official submission.';
+          wrap.appendChild(advisory);
+          for(const photo of localPhotos){
+            const exportButton=document.createElement('button');
+            exportButton.type='button';exportButton.className='profile-secondary';
+            exportButton.style.marginRight='8px';
+            exportButton.textContent='Download local photo';
+            exportButton.addEventListener('click',async()=>{
+              exportButton.disabled=true;
+              try{
+                const restored=await f.readEvidence(scope,photo.attachmentId);
+                if(!restored)throw Error('OFFLINE_PHOTO_MISSING');
+                const download=URL.createObjectURL(restored.file);
+                try{
+                  const anchor=document.createElement('a');
+                  anchor.href=download;anchor.download=restored.file.name||'rbh-evidence';
+                  anchor.style.display='none';document.body.appendChild(anchor);anchor.click();anchor.remove();
+                }finally{
+                  setTimeout(()=>URL.revokeObjectURL(download),60000);
+                }
+              }catch(e){alert('Could not export this encrypted local photo: '+e.message);}
+              finally{exportButton.disabled=false;}
+            });
+            wrap.appendChild(exportButton);
+          }
+        }
+      }
       if(!stale&&scope.actionId&&state.client&&root.TeamWorktStaffEvidenceReplay){
         const evidence=await f.listEvidence(scope);
         if(evidence.length){
