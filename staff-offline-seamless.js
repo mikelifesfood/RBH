@@ -457,15 +457,27 @@ async function hasPending(){
   const drafts=await listEncrypted(state.identity,'draft');
   return drafts.some(d=>!d.synced&&(!!String(d.note||'').trim()||(d.files||[]).length>0));
 }
+let recoveryInProgress=false;
+async function resumeSync(){
+ if(navigator.onLine===false||!state.identity||!state.client)return;
+ if(state.enabled){await flush();return;}
+ if(recoveryInProgress)return;
+ // When init was attempted during airplane mode, a temporary auth/gate
+ // failure leaves state.enabled=false. Re-enable without deleting local work.
+ recoveryInProgress=true;
+ try{await init(state.identity,state.latestReports||[],state.latestActions||[],state.client);}
+ catch(e){state.lastSyncIssue=String(e?.message||e);console.warn('RBH offline reconnection recheck delayed',e);}
+ finally{recoveryInProgress=false;}
+}
 if(root.addEventListener){
- root.addEventListener('online',()=>{setTimeout(flush,500);});
- root.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')flush();});
- root.addEventListener('focus',()=>flush());
- // iOS PWAs do not always fire an online event after Airplane Mode.
- // Poll only while the dashboard is visible and the user remains signed in.
+ root.addEventListener('online',()=>{setTimeout(resumeSync,500);});
+ root.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')resumeSync();});
+ root.addEventListener('focus',()=>resumeSync());
+ // Safari iOS may not emit online after leaving Airplane Mode. Recheck
+ // both disabled initialization and pending queue while the PWA is visible.
  root.setInterval?.(()=>{
-  if(state.enabled&&!state.busy&&document.visibilityState==='visible'&&navigator.onLine!==false)
-   flush();
+  if(!state.busy&&!recoveryInProgress&&document.visibilityState==='visible'&&navigator.onLine!==false)
+   resumeSync();
  },15000);
 }
 root.TeamWorktSeamlessOffline=Object.freeze({init,refresh,wireAction,stage,saveNote,addPhoto,flush,counts,snapshot,
