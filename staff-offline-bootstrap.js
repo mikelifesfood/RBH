@@ -195,6 +195,45 @@ async function reviewSavedDrafts(){
           wrap.appendChild(upload);
         }
       }
+      if(!stale&&scope.actionId&&state.client&&state.enabled&&root.TeamWorktStaffActionSubmit&&
+        ['action_completion','verification','changes_requested'].includes(scope.step)){
+        const official=document.createElement('button');
+        official.type='button';official.className='profile-secondary';
+        official.style.marginLeft='8px';
+        official.textContent='Review and submit saved '+scope.step.replaceAll('_',' ');
+        official.addEventListener('click',async()=>{
+          const retained=await f.listEvidence(scope);
+          if(retained.length){
+            alert('Upload the saved evidence photos and confirm receipt before submitting this workflow step.');
+            return;
+          }
+          const saved=await f.readDraft(scope);
+          if(!saved||!saved.data?.note){
+            alert('No saved completion or verification note was found for official submission.');
+            return;
+          }
+          const kind=scope.step==='action_completion'?'completion':
+            scope.step==='verification'?'verification':'changes request';
+          const agreed=confirm('Submit your saved '+kind+' to RBH now? This is an OFFICIAL online workflow action that can notify other employees. Please confirm you reviewed the current report and saved note.');
+          if(!agreed)return;
+          official.disabled=true;
+          const outcome=document.createElement('p');outcome.setAttribute('role','status');
+          outcome.textContent='Verifying current access and sending only after your approval…';
+          wrap.appendChild(outcome);
+          try{
+            const done=await root.TeamWorktStaffActionSubmit.submitOne({
+              client:state.client,scope,identity:state.identity,confirm:true
+            });
+            if(done.status!=='synced_to_rbh')throw Error('UNVERIFIED_SUBMISSION');
+            outcome.textContent='Synced to RBH with a verified server receipt. Your official workflow stage is complete; refresh the dashboard to see the latest state.';
+            official.disabled=true;official.textContent='Officially submitted';
+          }catch(e){
+            outcome.textContent='Not confirmed: '+e.message+'. The encrypted local draft and operation ID were preserved for review or safe retry.';
+            official.disabled=false;
+          }
+        });
+        wrap.appendChild(official);
+      }
       if(!stale){
         const link=document.createElement('a');
         link.className='profile-secondary';link.style.cssText='display:inline-flex;margin-left:8px;text-decoration:none';
