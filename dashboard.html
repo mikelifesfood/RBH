@@ -9822,7 +9822,7 @@
       var email=String(currentSession.user.email||""),prefix=email.split("@")[0];
       if(/^[a-z][a-z._-]*$/i.test(prefix))first=prefix.split(/[._-]/)[0];
     }
-    el.textContent=g+(first?", "+first:"")+" — RBH Safety";
+    el.textContent=g+(first?", "+first:"");
   }
 
 
