@@ -167,6 +167,64 @@ class OfflineBrowserTests(unittest.TestCase):
         }""")
         self.assertEqual(result,{'allowed':False,'blocked':True,'calls':1})
 
+    def test_manual_official_action_submission_lost_response_replay(self):
+        self.enroll()
+        self.unlock()
+        self.page.add_script_tag(url=BASE+"/staff-offline-protocol.js")
+        self.page.add_script_tag(url=BASE+"/staff-offline-action-submit.js")
+        result=self.page.evaluate("""async()=>{
+          const f=window.TeamWorktStaffOfflineFoundation;
+          const scope={organizationId:'org-1',userId:'user-1',reportId:'report-123',
+            actionId:'action-456',generation:0,step:'action_completion'};
+          const identity={organizationId:'org-1',userId:'user-1'};
+          const timestamp='2026-11-18T12:00:00Z';
+          await f.saveDraft(scope,{note:'Fictional action completed',reportRevision:timestamp,
+            reopenCount:0,actionStatus:'in_progress'},timestamp);
+          let mutations=0,ids=[],lost=true,stale=false;
+          const client={
+            auth:{
+              getSession:async()=>({data:{session:{access_token:'fictional-only'}}}),
+              getUser:async()=>({data:{user:{id:'user-1'}}})
+            },
+            from(table){
+              return {select(){return this;},eq(){return this;},async maybeSingle(){
+                if(table==='reports')return {data:{id:'report-123',organization_id:'org-1',
+                  workflow_restart_count:0,reopen_count:0,updated_at:stale?'changed':timestamp,status:'investigation'}};
+                return {data:{id:'action-456',report_id:'report-123',organization_id:'org-1',
+                  workflow_generation:0,status:'in_progress',updated_at:timestamp,retired_at:null}};
+              }};
+            },
+            async rpc(name,args){
+              if(name==='rbh_staff_offline_status')return {data:{enabled:true,protocolVersion:1}};
+              if(name!=='rbh_commit_offline_corrective_action')throw Error('UNKNOWN_RPC');
+              mutations++;ids.push(args.p_operation_id);
+              if(lost){lost=false;throw Error('SIMULATED_LOST_HTTP_RESPONSE_AFTER_COMMIT');}
+              return {data:{ok:true,committed:true,operationId:args.p_operation_id,
+                actionId:scope.actionId,reportId:scope.reportId,kind:'submit_action_completion'}};
+            }
+          };
+          const submit=window.TeamWorktStaffActionSubmit.submitOne;
+          let denied=false;
+          try{await submit({client,scope,identity,confirm:false});}
+          catch(e){denied=String(e).includes('EXPLICIT_USER_CONFIRMATION_REQUIRED');}
+          stale=true;
+          let rejected=false;
+          try{await submit({client,scope,identity,confirm:true});}
+          catch(e){rejected=String(e).includes('OFFLINE_CONFLICT_NEEDS_REVIEW');}
+          stale=false;
+          let transient=false;
+          try{await submit({client,scope,identity,confirm:true});}
+          catch(e){transient=String(e).includes('SIMULATED_LOST_HTTP_RESPONSE');}
+          const pending=await f.readDraft(scope);
+          const operation=pending?.data?.submission?.operationId;
+          const completed=await submit({client,scope,identity,confirm:true});
+          const remaining=await f.readDraft(scope);
+          return {denied,rejected,transient,mutations,stable:ids.length===2&&ids[0]===ids[1]&&ids[0]===operation,
+            committed:completed.status==='synced_to_rbh',purged:remaining===null};
+        }""")
+        self.assertEqual(result,{'denied':True,'rejected':True,'transient':True,
+          'mutations':2,'stable':True,'committed':True,'purged':True})
+
     def test_wrong_identity_passphrase_and_local_erase(self):
         self.enroll()
         self.unlock(email="wrong@example.invalid")
