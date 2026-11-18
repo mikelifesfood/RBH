@@ -50,6 +50,15 @@
     <p class="muted" id="reportSummary"></p>
     <label for="draftStep">Workflow step</label><select id="draftStep"></select>
     <label for="draftAction">Corrective action</label><select id="draftAction"></select>
+    <div id="reviewFields" hidden>
+      <label for="draftCategory">Proposed incident classification</label><input id="draftCategory" type="text" maxlength="150" placeholder="Record the category to review online">
+      <label for="draftSeverity">Proposed severity / priority</label><input id="draftSeverity" type="text" maxlength="100" placeholder="Review against RBH's official options online">
+    </div>
+    <div id="assignmentFields" hidden>
+      <label for="draftReportOwner">Proposed report owner (name or email)</label><input id="draftReportOwner" type="text" autocomplete="off">
+      <label for="draftInvestigator">Proposed investigator (name or email)</label><input id="draftInvestigator" type="text" autocomplete="off">
+      <p class="muted">These names are an offline proposal. Assignments are only official after choosing authorized users in the online dashboard.</p>
+    </div>
     <div id="investigationFields" hidden>
       <label for="draftFindings">Investigation findings — what happened?</label><textarea id="draftFindings"></textarea>
       <label for="draftRootCause">Root cause — why did it happen?</label><textarea id="draftRootCause"></textarea>
@@ -59,6 +68,9 @@
       <label for="draftPlanOwner">Proposed responsible person</label><input id="draftPlanOwner" type="text" autocomplete="off">
       <label for="draftPlanDue">Proposed due date</label><input id="draftPlanDue" type="date">
       <label for="draftPlanPriority">Proposed priority</label><select id="draftPlanPriority"><option value="">Not selected</option><option>low</option><option>medium</option><option>high</option><option>critical</option></select>
+      <div id="additionalPlannedActions" class="stack"></div>
+      <div class="row"><button type="button" id="addPlannedAction" class="secondary">Add another draft corrective action</button></div>
+      <p class="muted">All planned actions remain local proposals until reviewed and activated with the proper RBH permissions online.</p>
     </div>
     <div id="verificationFields" hidden>
       <label for="draftDecision">Proposed verification decision</label><select id="draftDecision"><option value="">Choose after reviewing</option><option value="verify">Verify as complete</option><option value="changes_requested">Request changes</option></select>
