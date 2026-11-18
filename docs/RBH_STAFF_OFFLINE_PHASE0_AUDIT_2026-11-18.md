@@ -93,3 +93,8 @@ Production dashboard/Service Worker, public reporter, report data, staff account
 
 ### Safer isolation correction
 - The offline evidence implementation is now a **separate** staged Edge Function `manage-offline-action-evidence`. The branch no longer carries a replacement for the existing live `manage-action-evidence` endpoint, protecting current online uploads and removals from unintended regressions. The offline replay client invokes only the new endpoint. The endpoint is **not deployed** and remains restricted by the OFF-by-default organization feature gate plus active-session verification.
+
+## Approved backend deployment — 2026-11-18 (latest status, supersedes earlier staged-only backend statements)
+User explicitly approved the additive Supabase changes and **separate** offline Edge Function, with offline functionality disabled by default. Three named migrations have now been applied and verified in the RBH Supabase project, and `manage-offline-action-evidence` v1 was deployed with `verify_jwt=true`. GitHub source and deployed Edge source match exactly. Existing `manage-action-evidence` v13 is unchanged.
+**Zero organizations enabled, zero offline operations committed, zero offline evidence uploaded.** Draft PR #2 remains unmerged and no production browser/offline UI was activated. Official live authenticated workflow tests are not complete and remain gated.
+Deployment verification, security-advisor interpretation, migration names and rollback controls: `docs/RBH_STAFF_OFFLINE_BACKEND_DEPLOYMENT_2026-11-18.md`.
