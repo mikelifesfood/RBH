@@ -36,6 +36,16 @@
     try{
       var state=await currentSubscription();
       var status=await call("status",{endpoint:state.subscription?state.subscription.endpoint:null});
+      // A user who opted in on this browser should not have to opt in again
+      // after normal sign-out. The backend permits rebinding ONLY the same
+      // existing account/device endpoint, with a newly verified live session.
+      if(state.subscription&&!status.deviceRegistered&&status.deviceKnown&&
+         status.configured&&Notification.permission==="granted"){
+        var keys=state.subscription.toJSON().keys||{};
+        await call("register",{endpoint:state.subscription.endpoint,
+          subscription:{p256dh:keys.p256dh,auth:keys.auth}});
+        status=await call("status",{endpoint:state.subscription.endpoint});
+      }
       if(state.subscription&&status.deviceRegistered){
         show("Push notifications are enabled on this device. Email and in-app alerts remain active.");
         if(enable){enable.hidden=true;}if(disable){disable.hidden=false;}if(test)test.hidden=false;controls(true);
@@ -113,7 +123,10 @@
       await call(all?"disable_all":"disable_session");
       revoked=true;
     }catch(e){console.warn("RBH push server revocation unavailable during sign-out",e);}
-    if(available()){
+    // A normal sign-out disables server delivery for the expired session,
+    // but preserves the browser subscription and prior account/device opt-in.
+    // Signing out of ALL sessions explicitly retires this browser endpoint.
+    if(all&&available()){
       try{
         var registration=await Promise.race([
           navigator.serviceWorker.ready,
@@ -123,7 +136,7 @@
           var subscription=await registration.pushManager.getSubscription();
           if(subscription)await subscription.unsubscribe();
         }
-      }catch(e){console.warn("RBH device push unsubscribe unavailable during sign-out",e);}
+      }catch(e){console.warn("RBH all-device push unsubscribe unavailable during sign-out",e);}
     }
     registeredFor=null;
     return {revoked:revoked};
