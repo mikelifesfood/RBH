@@ -81,12 +81,22 @@ begin
    'report_transfer_declined','report_owner_transferred_from',
    'corrective_action_reassigned_from') then return new; end if;
  if new.notification_type in ('report_owner_assignment','action_assignment','corrective_action_assignment') then
-   if auth.uid() is not null and auth.uid()=new.recipient_user_id then return new; end if;
+   if auth.uid() is not null and auth.uid()=new.recipient_user_id
+      and not (
+        (new.notification_type='report_owner_assignment'
+          and coalesce(current_setting('rbh.accepted_report_transfer',true),'')=auth.uid()::text)
+        or
+        (new.notification_type='corrective_action_assignment'
+          and coalesce(current_setting('rbh.authorized_action_reassignment',true),'')=auth.uid()::text)
+      )
+   then return new; end if;
    if new.notification_type='report_owner_assignment' and exists(
       select 1 from public.reports r where r.id=new.report_id
       and r.organization_id=new.organization_id
       and r.report_owner_assigned_by=new.recipient_user_id) then return new; end if;
-   if new.notification_type='corrective_action_assignment' and exists(
+   if new.notification_type='corrective_action_assignment'
+      and coalesce(current_setting('rbh.authorized_action_reassignment',true),'')<>coalesce(auth.uid()::text,'')
+      and exists(
       select 1 from public.report_corrective_actions a
       where a.id=new.corrective_action_id and a.report_id=new.report_id
       and a.organization_id=new.organization_id
