@@ -2,7 +2,8 @@
 -- Requires ownership transfer migrations. Tested in transaction rollback before release.
 -- Applied after the existing business-data migrations; does not delete or rewrite records.
 
--- Harden rbh_set_report_owner\nCREATE OR REPLACE FUNCTION public.rbh_set_report_owner(p_report_id uuid, p_owner_user_id uuid)
+-- Harden rbh_set_report_owner
+CREATE OR REPLACE FUNCTION public.rbh_set_report_owner(p_report_id uuid, p_owner_user_id uuid)
  RETURNS TABLE(report_owner_user_id uuid, report_owner_assigned_at timestamp with time zone, report_owner_assigned_by uuid, report_updated_at timestamp with time zone)
  LANGUAGE plpgsql
  SECURITY DEFINER
@@ -93,8 +94,10 @@ begin
   where r.id = p_report_id;
 end;
 $function$
-\n
--- Harden rbh_submit_corrective_action_completion\nCREATE OR REPLACE FUNCTION public.rbh_submit_corrective_action_completion(p_action_id uuid, p_completion_note text)
+
+
+-- Harden rbh_submit_corrective_action_completion
+CREATE OR REPLACE FUNCTION public.rbh_submit_corrective_action_completion(p_action_id uuid, p_completion_note text)
  RETURNS jsonb
  LANGUAGE plpgsql
  SECURITY DEFINER
@@ -233,8 +236,10 @@ begin
   );
 end;
 $function$
-\n
--- Harden rbh_verify_corrective_action\nCREATE OR REPLACE FUNCTION public.rbh_verify_corrective_action(p_action_id uuid, p_verification_note text)
+
+
+-- Harden rbh_verify_corrective_action
+CREATE OR REPLACE FUNCTION public.rbh_verify_corrective_action(p_action_id uuid, p_verification_note text)
  RETURNS jsonb
  LANGUAGE plpgsql
  SECURITY DEFINER
@@ -351,8 +356,10 @@ begin
   );
 end;
 $function$
-\n
--- Harden rbh_request_corrective_action_changes\nCREATE OR REPLACE FUNCTION public.rbh_request_corrective_action_changes(p_action_id uuid, p_verification_note text)
+
+
+-- Harden rbh_request_corrective_action_changes
+CREATE OR REPLACE FUNCTION public.rbh_request_corrective_action_changes(p_action_id uuid, p_verification_note text)
  RETURNS jsonb
  LANGUAGE plpgsql
  SECURITY DEFINER
@@ -470,8 +477,10 @@ begin
   );
 end;
 $function$
-\n
--- Harden rbh_can_manage_corrective_action_plan\nCREATE OR REPLACE FUNCTION public.rbh_can_manage_corrective_action_plan(p_report_id uuid)
+
+
+-- Harden rbh_can_manage_corrective_action_plan
+CREATE OR REPLACE FUNCTION public.rbh_can_manage_corrective_action_plan(p_report_id uuid)
  RETURNS boolean
  LANGUAGE sql
  STABLE SECURITY DEFINER
@@ -494,8 +503,10 @@ AS $function$
       )
   );
 $function$
-\n
--- Harden rbh_set_corrective_action_verifier\nCREATE OR REPLACE FUNCTION public.rbh_set_corrective_action_verifier(p_action_id uuid, p_verifier_user_id uuid)
+
+
+-- Harden rbh_set_corrective_action_verifier
+CREATE OR REPLACE FUNCTION public.rbh_set_corrective_action_verifier(p_action_id uuid, p_verifier_user_id uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
  SECURITY DEFINER
@@ -615,7 +626,8 @@ begin
   );
 end;
 $function$
-\n
+
+
 -- Report writes are owner-restricted, including SECURITY DEFINER RPCs.
 create or replace function public.rbh_enforce_report_current_owner()
 returns trigger language plpgsql security definer set search_path='pg_catalog','public','auth' as $$
