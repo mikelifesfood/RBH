@@ -4600,13 +4600,14 @@
     var reviewOwnerSelect=detail.querySelector(".review-owner-select");
     if(reviewOwnerSelect){
       if(!r.report_owner_user_id && isManager() && currentUserId()) reviewOwnerSelect.value=currentUserId();
-      reviewOwnerSelect.disabled=!isManager()||!canEditStep(r,1);
+      reviewOwnerSelect.disabled=!!r.report_owner_user_id||!isManager()||!canEditStep(r,1);
     }
 
     var reviewOwnerName=detail.querySelector("[data-review-owner-name]");
     var reviewOwnerChange=detail.querySelector("[data-review-owner-change]");
     var reviewOwnerField=detail.querySelector("#reviewOwnerField");
     function syncReviewOwner(editable){
+      editable=!!(editable&&!r.report_owner_user_id);
       var ownerId=editable&&reviewOwnerSelect?reviewOwnerSelect.value:r.report_owner_user_id;
       reviewOwnerName.textContent=ownerId&&ownerId===currentUserId()?"You":(ownerId&&profileById[ownerId]?profileName(profileById[ownerId]):"Unassigned");
       reviewOwnerChange.hidden=!editable;
@@ -4616,7 +4617,7 @@
       }
     }
     reviewOwnerChange.addEventListener("click",function(){
-      if(!canEditStep(r,1)) return;
+      if(!canEditStep(r,1)||r.report_owner_user_id) return;
       reviewOwnerField.hidden=!reviewOwnerField.hidden;
       reviewOwnerChange.setAttribute("aria-expanded",String(!reviewOwnerField.hidden));
       if(!reviewOwnerField.hidden) reviewOwnerSelect.focus();
@@ -4626,14 +4627,14 @@
     var investigatorCard=detail.querySelector("[data-investigator-card]"), investigatorSelect=investigatorCard?investigatorCard.querySelector(".inv-investigator"):null, investigatorSave=investigatorCard?investigatorCard.querySelector(".investigator-save"):null, investigatorSelf=investigatorCard?investigatorCard.querySelector(".investigator-self"):null, investigatorSaved=investigatorCard?investigatorCard.querySelector(".investigator-saved"):null, investigatorChip=investigatorCard?investigatorCard.querySelector("[data-investigator-chip]"):null, investigatorPermission=investigatorCard?investigatorCard.querySelector("[data-investigator-permission]"):null;
     function syncInvestigatorUi(){
       if(!investigatorCard) return;
-      var managerCanAssign=isManager()&&!isResolvedReport(r);
+      var managerCanAssign=isCurrentReportOwner(r)&&!isResolvedReport(r);
       [investigatorSelect,investigatorSave,investigatorSelf].forEach(function(x){if(x)x.disabled=!managerCanAssign;});
       if(investigatorPermission) investigatorPermission.hidden=managerCanAssign;
       if(investigatorSelect) investigatorSelect.value=r.investigator_user_id||"";
       if(investigatorChip){ investigatorChip.textContent=r.investigator_user_id?"Assigned":"Unassigned"; investigatorChip.className="investigator-chip"+(r.investigator_user_id?" assigned":""); }
     }
     async function persistInvestigator(nextId,showToast){
-      if(!isManager()||isResolvedReport(r)) throw new Error("NOT_AUTHORIZED");
+      if(!isCurrentReportOwner(r)||isResolvedReport(r)) throw new Error("NOT_AUTHORIZED");
       await assertOpenResourceFresh();
       nextId=nextId||null;
       if(nextId){
@@ -5410,7 +5411,7 @@
         renderCorrectiveActionPlan();
       }
       renderCorrectiveActionDecision();
-      if(reviewOwnerSelect) reviewOwnerSelect.disabled=!isManager()||!canEditStep(r,1);
+      if(reviewOwnerSelect) reviewOwnerSelect.disabled=!!r.report_owner_user_id||!isManager()||!canEditStep(r,1);
       syncReviewNextFooter();
       syncInvestigationNextStepState();
       syncPlanNextStepState();
@@ -5666,7 +5667,7 @@
         var ownerWasChanged=String(r.report_owner_user_id||"")!==String(ownerId);
         var shouldNotifyAfterAdvance=ownerWasChanged||String(r.status||"")==="new";
         if(r.involves_injury){
-          if(canVerify()){
+          if(isCurrentReportOwner(r)){
             if(!(await persistRegulatoryReview(false))) return;
           } else if(["yes","no","pending"].indexOf(String(r.calosha_screening_status||""))<0){
             toast("An Admin or Safety Manager must complete the regulatory screening before this injury review can advance.","err"); return;
