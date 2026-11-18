@@ -79,6 +79,7 @@ begin
  then raise exception 'REPORT_OWNERSHIP_CHANGED'; end if;
  if p_accept is true then
    perform set_config('rbh.authorized_owner_change',v_actor::text,true);
+   perform set_config('rbh.accepted_report_transfer',v_actor::text,true);
    update public.reports set report_owner_user_id=v_actor,
     report_owner_assigned_at=now(),report_owner_assigned_by=v_transfer.from_user_id
    where id=v_transfer.report_id;
