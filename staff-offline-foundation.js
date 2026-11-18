@@ -120,12 +120,12 @@
       const ciphertext=await crypto.subtle.encrypt({name:'AES-GCM',iv,additionalData:encoder.encode(key)},keyMaterial,bytes);
       const encryptedMetadata=await crypto.subtle.encrypt({name:'AES-GCM',iv:metaIv,additionalData:encoder.encode(key)},keyMaterial,encoder.encode(JSON.stringify({fileName:file.name || 'evidence',mimeType:mime,sha256:hash})));
       const record={id:key,scope:{...scope},salt:b64(salt),iv:b64(iv),metaIv:b64(metaIv),
-        ciphertext:new Blob([ciphertext],{type:'application/octet-stream'}),
+        ciphertext:new Uint8Array(ciphertext),
         encryptedMetadata:b64(new Uint8Array(encryptedMetadata)),byteLength:bytes.byteLength,
         savedAt:new Date().toISOString(),format:2};
       await transaction('readwrite',store=>store.put(record),FILES);
       const verified=await fetchRecord(key,FILES);
-      if (!verified || verified.encryptedMetadata!==record.encryptedMetadata || verified.ciphertext.size!==ciphertext.byteLength) throw Error('EVIDENCE_WRITE_NOT_VERIFIED');
+      if (!verified || verified.encryptedMetadata!==record.encryptedMetadata || verified.ciphertext.byteLength!==ciphertext.byteLength) throw Error('EVIDENCE_WRITE_NOT_VERIFIED');
       return {status:'saved_on_this_device',savedAt:record.savedAt,sha256:hash};
     },
     async readEvidence(scope,attachmentId) {
@@ -134,7 +134,7 @@
       if (!record) return null;
       const cryptKey=await derive(unlocked,unb64(record.salt));
       let bytes;
-      try {bytes=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(record.iv),additionalData:encoder.encode(key)},cryptKey,await record.ciphertext.arrayBuffer());}
+      try {bytes=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(record.iv),additionalData:encoder.encode(key)},cryptKey,record.ciphertext);}
       catch(_){throw Error('OFFLINE_EVIDENCE_CANNOT_DECRYPT');}
       const meta=JSON.parse(decoder.decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(record.metaIv),additionalData:encoder.encode(key)},cryptKey,unb64(record.encryptedMetadata))));
       if (await sha256(bytes)!==meta.sha256) throw Error('OFFLINE_EVIDENCE_CHECKSUM_MISMATCH');
