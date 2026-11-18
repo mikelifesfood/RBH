@@ -387,5 +387,68 @@ class OfflineBrowserTests(unittest.TestCase):
         )
 
 
+
+    def test_evidence_upload_lost_response_keeps_photo_then_deduplicates_retry(self):
+        self.enroll()
+        self.unlock()
+        self.page.add_script_tag(url=BASE+"/staff-offline-evidence-replay.js")
+        result=self.page.evaluate("""async()=>{
+          const store=window.TeamWorktStaffOfflineFoundation;
+          const scope={organizationId:'org-1',userId:'user-1',reportId:'report-123',
+            actionId:'action-456',generation:0,step:'action_completion'};
+          const id='b7fd5a14-f238-435b-b39f-9bd1c4cc6a9e';
+          const revision='2026-11-18T12:00:00Z';
+          await store.saveDraft(scope,{note:'Complete fictional action',reportRevision:revision,
+            reopenCount:0,actionStatus:'in_progress'},revision);
+          await store.saveEvidence(scope,id,new File([new Uint8Array([137,80,78,71])],
+            'evidence.png',{type:'image/png'}));
+          let uploads=0,firstLost=true,operationIds=[];
+          const client={
+            auth:{
+              getSession:async()=>({data:{session:{access_token:'fictional'}}}),
+              getUser:async()=>({data:{user:{id:'user-1'}}})
+            },
+            from(table){
+              return {select(){return this;},eq(){return this;},async maybeSingle(){
+                return {data:table==='reports'?
+                  {id:'report-123',organization_id:'org-1',workflow_restart_count:0,
+                   reopen_count:0,status:'investigation',updated_at:revision}:
+                  {id:'action-456',report_id:'report-123',organization_id:'org-1',
+                   workflow_generation:0,status:'in_progress',updated_at:revision,
+                   retired_at:null,activated_at:'2026-11-18T10:00:00Z'}};
+              }};
+            },
+            functions:{invoke:async(_name,{body})=>{
+              if(body.action==='capabilities')return {data:{ok:true,offlineProtocolVersion:1,
+                reportId:scope.reportId,correctiveActionId:scope.actionId}};
+              uploads++;operationIds.push(body.get('clientEvidenceId'));
+              if(firstLost){firstLost=false;return {error:{message:'simulated-lost-response'}};}
+              return {data:{ok:true,offlineProtocolVersion:1,clientEvidenceId:id,
+                correctiveActionId:scope.actionId,
+                added:[{id:'remote-attachment-123',correctiveActionId:scope.actionId}]}};
+            }}
+          };
+          const identity={organizationId:'org-1',userId:'user-1'};
+          let pending=false;
+          try{await window.TeamWorktStaffEvidenceReplay.uploadOne({
+              client,scope,evidenceId:id,identity,confirm:true
+            });}
+          catch(e){pending=String(e).includes('EVIDENCE_UPLOAD_PENDING_RETRY');}
+          const retained=(await store.listEvidence(scope)).length===1;
+          const savedAttempt=await store.readDraft({...scope,step:'evidence_attempt_'+id});
+          const done=await window.TeamWorktStaffEvidenceReplay.uploadOne({
+            client,scope,evidenceId:id,identity,confirm:true
+          });
+          const evidenceLeft=(await store.listEvidence(scope)).length;
+          const attemptLeft=await store.readDraft({...scope,step:'evidence_attempt_'+id});
+          return {pending,retained,durable:!!savedAttempt,uploads,
+            sameId:operationIds[0]===id&&operationIds[1]===id,
+            synced:done.status==='synced_to_rbh',evidenceLeft,attemptGone:attemptLeft===null};
+        }""")
+        self.assertEqual(result,{"pending":True,"retained":True,"durable":True,
+          "uploads":2,"sameId":True,"synced":True,"evidenceLeft":0,
+          "attemptGone":True})
+
+
 if __name__=='__main__':
     unittest.main()
