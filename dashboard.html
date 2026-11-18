@@ -7826,14 +7826,10 @@
   }
   function isOpenOperational(r){ return !!(r && r.status!=="closed" && r.status!=="no_action" && r.status!=="duplicate"); }
   function reportVisibleInPersonalWorkspace(r){
-    // Admin/Safety Manager and Read Only retain the organization-wide
-    // Safety Inbox appropriate to their existing read permissions.
-    if(currentRole!=="supervisor")return true;
-    var uid=currentUserId();if(!uid||!r)return false;
-    if(String(r.report_owner_user_id||"")===uid||String(r.assigned_user_id||"")===uid||String(r.investigator_user_id||"")===uid)return true;
-    return (allCorrectiveActions||[]).some(function(a){
-      return String(a.report_id)===String(r.id)&&String(a.owner_user_id||"")===uid&&correctiveActionInCurrentCycle(a,r);
-    });
+    // RBH intentionally allows organization-wide report reading for every
+    // active role. My Work and Corrective Actions still filter by assignment;
+    // action permissions are enforced by existing role-aware server checks.
+    return !!r;
   }
   function isAssignedToMe(r){ return isActionAssignedToMe(r); }
   function reportOwnerWorkActive(r){
