@@ -90,7 +90,7 @@ async function render(){
 $('syncNow').addEventListener('click',async()=>{if(navigator.onLine===false){$('summary').textContent='Still offline — submissions are safely stored on this device.';return;}
 $('summary').textContent='Reopen the RBH dashboard to authenticate and synchronize safely.';
 });
-window.addEventListener('online',()=>{status();$('summary').textContent='Connection detected. Open the dashboard to authenticate and sync.';});
+window.addEventListener('online',()=>{status();$('summary').textContent='Connection restored — opening RBH to synchronize securely.';setTimeout(()=>{location.replace('./dashboard.html?offlineSync=1');},600);});
 window.addEventListener('offline',status);
 render();
 })();
