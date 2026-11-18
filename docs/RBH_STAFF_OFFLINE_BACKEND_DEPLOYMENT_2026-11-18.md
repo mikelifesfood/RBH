@@ -65,3 +65,14 @@ Because no organizations are enabled, the new endpoints currently have no author
 - GitHub CI run **#44315920548** passed all protocol, real Chromium browser and Edge TypeScript jobs after the hardening syntax correction. Added further simulated lost-response evidence recovery regression in the next test commit; verify its latest CI separately.
 - Found no active `cron.job` matching Safety Pulse/digest in RBH's cron schema; recurring digest remains on hold.
 - Full RBH acceptance matrix is in `docs/RBH_PILOT_START_TO_FINISH_ACCEPTANCE_2026-11-18.md`.
+
+## Controlled RBH pilot account gate — deployed after v2 evidence hardening
+- Additional additive migration: `rbh_staff_offline_pilot_account_restriction_20261118`.
+- `staff_offline_settings.pilot_only` defaults to **TRUE**. Added RLS-protected `staff_offline_pilot_users` allowlist table; ordinary authenticated users cannot SELECT its rows.
+- Both `rbh_staff_offline_status()` and `rbh_commit_offline_corrective_action(...)` now require BOTH the organization's offline switch and the actor's pilot allowlist when `pilot_only=true`. The separate Edge Function inherits that restriction by calling the status RPC.
+- Verified by successful transactional rollback dry-run before applying migration, and by post-deployment SQL checks:
+  - **0 enabled organizations**, **0 enabled pilot users**, **0 offline commits**, **0 offline evidence uploads**.
+  - Pilot table RLS enabled; authenticated cannot directly read pilot allowlist.
+  - Anonymous cannot call either public offline RPC.
+  - The effective server function definitions both contain pilot enforcement.
+- This creates a safe *future* route to a single-account RBH trial. No account was allowlisted, no tenant was activated and no browser/frontend application was deployed.
