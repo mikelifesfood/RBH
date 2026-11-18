@@ -3,6 +3,9 @@ on:
   pull_request:
     paths:
       - 'staff-offline-*.js'
+      - 'staff-offline-*.html'
+      - 'sw.js'
+      - 'dashboard.html'
       - 'tests/staff-offline-*.test.cjs'
       - '.github/workflows/staff-offline-regression.yml'
   workflow_dispatch:
@@ -20,5 +23,14 @@ jobs:
         run: |
           node --check staff-offline-foundation.js
           node --check staff-offline-protocol.js
+          node --check staff-offline-workspace.js
+          node --check staff-offline-bootstrap.js
+          node --check sw.js
+      - name: Validate offline HTML references
+        run: |
+          grep -q 'staff-offline-foundation.js' staff-offline-workspace.html
+          grep -q 'staff-offline-workspace.js' staff-offline-workspace.html
+          grep -q 'staff-offline-bootstrap.js' dashboard.html
+          grep -q 'staff-offline-workspace.html' sw.js
       - name: Test safe transitions, stale-state conflicts and receipts
         run: node --test tests/staff-offline-protocol.test.cjs
