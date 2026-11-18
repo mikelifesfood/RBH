@@ -5728,6 +5728,9 @@
         if(!ownerId){toast("Choose a Report Owner before starting the investigation.","err");return;}
         var ownerWasChanged=String(r.report_owner_user_id||"")!==String(ownerId);
         var shouldNotifyAfterAdvance=ownerWasChanged||String(r.status||"")==="new";
+        // Claim the unassigned report before regulatory screening: saving its
+        // screening fields is owner-restricted on the database as well.
+        if(ownerWasChanged && !r.report_owner_user_id) await persistReportOwner(r,ownerId,false);
         if(r.involves_injury){
           if(isCurrentReportOwner(r)){
             if(!(await persistRegulatoryReview(false))) return;
@@ -5735,7 +5738,7 @@
             toast("An Admin or Safety Manager must complete the regulatory screening before this injury review can advance.","err"); return;
           }
         }
-        if(ownerWasChanged) await persistReportOwner(r,ownerId,false);
+        if(ownerWasChanged && String(r.report_owner_user_id||"")!==String(ownerId)) await persistReportOwner(r,ownerId,false);
         if(r.status==="new") await updateStatus(r.id,"under_review",wrap,activeReopenStep(r)?2:null);
         else if(activeReopenStep(r)===1) await updateStatus(r.id,r.status,wrap,2);
         refreshRecordWorkflow(r,detail); setWizardStep(detail,r,2,true); loadAudit(r.id,auditEl);
@@ -7866,6 +7869,9 @@
     // including Admins. Corrections belong in Notes or require a deliberate
     // workflow restart so the audit trail stays intact.
     if(!stepState || stepState.state!=="current") return false;
+    // Step 1 is claimable by any eligible manager while a new report is unassigned.
+    // Other stages and already-owned reports continue to require the current owner.
+    if(n===1 && !r.report_owner_user_id) return isManager() && String(r.status||"new")==="new";
     if(n===3 && ["new","under_review","assigned"].indexOf(String(r.status||"new"))<0) return false;
     if(n===5) return canPerformVerification(r);
     if(n===4) return canWorkCorrectiveAction(r);
