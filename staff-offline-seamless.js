@@ -134,9 +134,9 @@ async function saveNote(a,note,step){
  return serializeAction(u.organizationId+':'+u.userId+':'+a.id,async()=>{
 
  const previous=await draft(u,a.id);
- if(previous?.queued)throw Error('ACTION_ALREADY_QUEUED');
+ if(previous?.queued)return {queued:true};
  await putEncrypted(u,'draft',a.id,{actionId:a.id,step,note,savedAt:Date.now(),files:previous?.files||[]});
- return true;
+ return {queued:false};
 
  });
 }
@@ -368,24 +368,47 @@ function wireAction(r,a,textarea,button,step){
  const hint=document.createElement('p');hint.className='field-help';hint.setAttribute('role','status');
  hint.textContent='Changes save securely on this device.';textarea.insertAdjacentElement('afterend',hint);
  draft(u,a.id).then(old=>{
-  if(!textarea.isConnected||changed||!old||old.queued)return;
-  if(old.note&&!textarea.value.trim())textarea.value=old.note;
+  if(!textarea.isConnected||!old)return;
+  if(old.queued){
+   button.dataset.rbhOfflineQueued='yes';
+   hint.textContent='This action was saved on this device and is waiting to sync. Do not submit it again.';
+   if(old.note&&!changed&&!textarea.value.trim())textarea.value=old.note;
+   return;
+  }
+  if(!changed&&old.note&&!textarea.value.trim())textarea.value=old.note;
  }).catch(()=>{hint.textContent='Local draft could not be restored.';});
  textarea.addEventListener('input',()=>{
   changed=true;clearTimeout(timer);hint.textContent='Saving on device…';
-  timer=setTimeout(async()=>{try{await saveNote(entry,textarea.value,step);hint.textContent='Saved on device.';}
-   catch(e){hint.textContent='Device save failed: '+e.message;}},350);
+  timer=setTimeout(async()=>{try{
+   const saved=await saveNote(entry,textarea.value,step);
+   hint.textContent=saved.queued?'Already queued for sync. New edits are not part of the queued submission; check saved work.':'Saved on device.';
+  }catch(e){hint.textContent='Device save failed: '+e.message;}},350);
  });
- // Capture before the legacy online handler. Offline submission NEVER calls
- // the online RPC directly; one tap stores one durable, retryable intent.
+ // Use the same durable idempotent operation path online and offline.
+ // iOS may report navigator.onLine=true during airplane-mode transitions.
  button.addEventListener('click',async event=>{
-  if(navigator.onLine!==false)return;
   event.preventDefault();event.stopImmediatePropagation();
+  if(button.dataset.rbhOfflineQueued==='yes'){
+   hint.textContent='Already saved for sync. Checking for server confirmation…';
+   if(navigator.onLine!==false)flush();
+   return;
+  }
   if(!textarea.value.trim()&&step!=='verification'){hint.textContent='Enter a note before submitting.';return;}
+  clearTimeout(timer);
   button.disabled=true;
-  try{await stage(entry,step,textarea.value);hint.textContent='Saved on device — waiting to sync. You may move to another action.';button.textContent='Saved — waiting to sync';}
-  catch(e){hint.textContent='Could not queue: '+e.message;}
-  finally{button.disabled=false;}
+  try{
+   await stage(entry,step,textarea.value);
+   button.dataset.rbhOfflineQueued='yes';
+   hint.textContent='Saved securely on this device — awaiting server confirmation.';
+   button.textContent='Saved — awaiting sync';
+   if(navigator.onLine!==false)flush();
+  }catch(e){
+   if(e.message==='ACTION_HAS_PENDING_SUBMISSION'){
+    button.dataset.rbhOfflineQueued='yes';
+    hint.textContent='Already queued on this device. Waiting to synchronize.';
+    if(navigator.onLine!==false)flush();
+   }else hint.textContent='Could not save this submission: '+e.message;
+  }finally{button.disabled=false;}
  },true);
  if(step==='action_completion'){
   const input=document.createElement('input');input.type='file';input.accept='image/*';input.multiple=true;
@@ -416,6 +439,12 @@ if(root.addEventListener){
  root.addEventListener('online',()=>{setTimeout(flush,500);});
  root.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')flush();});
  root.addEventListener('focus',()=>flush());
+ // iOS PWAs do not always fire an online event after Airplane Mode.
+ // Poll only while the dashboard is visible and the user remains signed in.
+ root.setInterval?.(()=>{
+  if(state.enabled&&!state.busy&&document.visibilityState==='visible'&&navigator.onLine!==false)
+   flush();
+ },15000);
 }
 root.TeamWorktSeamlessOffline=Object.freeze({init,refresh,wireAction,stage,saveNote,addPhoto,flush,counts,snapshot,
  offlineIdentity,draft,listEncrypted,signOut,hasPending,isEnabled:()=>state.enabled});
