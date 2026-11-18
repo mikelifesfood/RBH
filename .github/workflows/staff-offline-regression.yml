@@ -1,0 +1,24 @@
+name: Staff offline safety regression
+on:
+  pull_request:
+    paths:
+      - 'staff-offline-*.js'
+      - 'tests/staff-offline-*.test.cjs'
+      - '.github/workflows/staff-offline-regression.yml'
+  workflow_dispatch:
+jobs:
+  protocol:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax check offline foundation and protocol
+        run: |
+          node --check staff-offline-foundation.js
+          node --check staff-offline-protocol.js
+      - name: Test safe transitions, stale-state conflicts and receipts
+        run: node --test tests/staff-offline-protocol.test.cjs
