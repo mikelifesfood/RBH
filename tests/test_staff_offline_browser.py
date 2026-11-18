@@ -594,6 +594,11 @@ class OfflineBrowserTests(unittest.TestCase):
     def test_seamless_two_corrective_actions_save_without_password_and_retry(self):
         self.page.goto(BASE+"/staff-offline-seamless.html")
         self.page.evaluate("""async()=>{
+          // init() normally runs in the authenticated dashboard, which owns this panel.
+          // In this synthetic setup seed the dashboard host without altering the
+          // actual offline-only shell's markup.
+          document.body.insertAdjacentHTML('beforeend',
+            '<div id="rbhSeamlessPanel" hidden><p id="rbhSeamlessStatus"></p></div>');
           const api=window.TeamWorktSeamlessOffline;
           const u={organizationId:'org-1',userId:'user-1',role:'supervisor'};
           const reports=[{id:'report-123',organization_id:'org-1',ref_no:77,
