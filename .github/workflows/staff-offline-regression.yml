@@ -8,6 +8,8 @@ on:
       - 'dashboard.html'
       - 'tests/staff-offline-*.test.cjs'
       - 'tests/test_staff_offline_browser.py'
+      - 'supabase/patches/*staff_offline*STAGED.sql'
+      - 'supabase/functions/manage-action-evidence/index.ts'
       - '.github/workflows/staff-offline-regression.yml'
   workflow_dispatch:
 jobs:
