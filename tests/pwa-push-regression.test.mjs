@@ -164,7 +164,7 @@ test('dashboard opens Home on a new PWA launch while allowing explicit deep link
   assert.match(dashboard,/id="homeGreeting"/);
   assert.ok(dashboard.indexOf('<div class="home-actions">')<dashboard.indexOf('<div class="home-stats" id="homeStats">'));
 });
-test('corrective action list and supervisor inbox use account ownership',()=>{
+test('corrective actions are personal while all roles can read company reports',()=>{
   const uid='supervisor-1';
   const report={id:'report-1',status:'assigned',reopen_count:0};
   const allCorrectiveActions=[
@@ -186,7 +186,7 @@ test('corrective action list and supervisor inbox use account ownership',()=>{
   };
   const visibility=dashboard.slice(dashboard.indexOf('  function reportVisibleInPersonalWorkspace('),dashboard.indexOf('  function reportOwnerWorkActive('));
   assert.equal(vm.runInNewContext(visibility+'\nreportVisibleInPersonalWorkspace({id:"report-1"});',reportScope),true);
-  assert.equal(vm.runInNewContext(visibility+'\nreportVisibleInPersonalWorkspace({id:"report-2"});',reportScope),false);
+  assert.equal(vm.runInNewContext(visibility+'\nreportVisibleInPersonalWorkspace({id:"report-2"});',reportScope),true);
   assert.match(dashboard,/filtered=allReports\.filter\(function\(r\)\{\s*if\(!reportVisibleInPersonalWorkspace\(r\)\)return false;/);
 });
 test('staff install promotion is mobile only',()=>{
