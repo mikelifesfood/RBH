@@ -1,13 +1,13 @@
 -- STAGED ONLY — safe organization-level staff offline feature gate.
 -- Do not enable until complete iPhone/Chrome role, evidence, and session acceptance.
 BEGIN;
+-- RBH's existing organization ID is already used on reports and profiles; do
+-- not assume the optional multi-tenant organizations table has been backfilled.
 CREATE TABLE IF NOT EXISTS public.staff_offline_settings (
   organization_id uuid PRIMARY KEY,
   enabled boolean NOT NULL DEFAULT false,
   updated_at timestamptz NOT NULL DEFAULT now(),
-  updated_by uuid,
-  CONSTRAINT staff_offline_settings_org_fkey FOREIGN KEY (organization_id)
-    REFERENCES public.organizations(id)
+  updated_by uuid
 );
 ALTER TABLE public.staff_offline_settings ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.staff_offline_settings FROM PUBLIC,anon,authenticated;
