@@ -9867,6 +9867,20 @@
     var pick=el.querySelector(".evidence-pick");
     var selected=el.querySelector(".evidence-selected");
     if(!input||!pick||!selected) return;
+    // A local photo is NOT a cloud attachment until the offline operation
+    // receives a server receipt. Make the two counts unambiguous.
+    if(correctiveAction&&correctiveAction.id&&window.TeamWorktSeamlessOffline&&window.TeamWorktSeamlessOffline.isEnabled()){
+      try{
+        var localEvidenceDraft=await window.TeamWorktSeamlessOffline.draft(
+          {organizationId:currentOrgId,userId:currentUserId()},correctiveAction.id);
+        var localPhotos=(localEvidenceDraft&&localEvidenceDraft.files||[]).length;
+        if(localPhotos){
+          var evidenceCount=el.querySelector(".evidence-count");
+          if(evidenceCount)evidenceCount.textContent=arr.length+" uploaded · "+localPhotos+" on device";
+          selected.textContent=localPhotos+" photo"+(localPhotos===1?"":"s")+" saved on this device. They will upload before the queued action is sent to RBH.";
+        }
+      }catch(ex){console.warn("Offline evidence count not available",ex);}
+    }
 
     pick.addEventListener("click",function(){ if(!pick.disabled) input.click(); });
     input.addEventListener("change",async function(){
@@ -9896,6 +9910,8 @@
             savedCount=await window.TeamWorktSeamlessOffline.addPhoto({id:correctiveAction.id},photo);
           }
           selected.textContent=savedCount+" photo"+(savedCount===1?"":"s")+" saved securely on this device. They will upload before the corrective action is submitted when online.";
+          var localBadge=el.querySelector(".evidence-count");
+          if(localBadge)localBadge.textContent=arr.length+" uploaded · "+savedCount+" on device";
           toast(files.length+" offline photo"+(files.length===1?"":"s")+" saved on device","ok");
         }catch(photoError){
           console.error("Offline corrective evidence save",photoError);
