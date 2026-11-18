@@ -37,7 +37,7 @@ Deno.serve(async(req:Request)=>{
     service.from("profiles").select("id,email,full_name,is_active,access_deleted_at,organization_id,current_organization_id,app_role,preferred_language").eq("id",n.recipient_user_id).maybeSingle(),
     service.from("reports").select("id,organization_id,report_owner_user_id,ref_no,status").eq("id",n.report_id).maybeSingle()
   ]);
-  if(!r||r.organization_id!==n.organization_id||!isActive(p,n.organization_id)||!String(p.email||"").trim())
+  if(!r||r.organization_id!==n.organization_id||!p||!isActive(p,n.organization_id)||!String(p.email||"").trim())
     return json({ok:true,skipped:true,reason:"RECIPIENT_NOT_ACTIVE"});
   const type=n.notification_type;
   let permitted=false;
