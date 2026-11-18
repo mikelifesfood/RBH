@@ -8,6 +8,9 @@ const SCOPE = new URL(self.registration.scope);
 const FORM = new URL('index.html', SCOPE);
 const OFFLINE = new URL('offline.html', SCOPE);
 const STAFF = new URL('staff-offline-workspace.html', SCOPE);
+// Static opt-in marker only: never includes report/user details or authentication.
+const STAFF_MARKER_CACHE='rbh-staff-offline-device-v1';
+const STAFF_MARKER=new URL('staff-offline-device-enabled',SCOPE).href;
 const ASSETS = [
   FORM.href, OFFLINE.href, STAFF.href,
   new URL('staff-offline-foundation.js',SCOPE).href,
@@ -85,8 +88,16 @@ self.addEventListener('fetch',event=>{
         if(shell)return shell;
       }
       if(staffDashboard||staffWorkspace){
-        const staffShell=await caches.match(STAFF.href);
-        if(staffShell)return staffShell;
+        // The existing RBH dashboard must retain its old offline behavior
+        // until this specific device has explicitly enrolled for staff work.
+        // A synthetic static marker is never incident data and is erased
+        // during logout, account switch and an online organization disable.
+        const enrolled=staffWorkspace ||
+          !!(await (await caches.open(STAFF_MARKER_CACHE)).match(STAFF_MARKER));
+        if(enrolled){
+          const staffShell=await caches.match(STAFF.href);
+          if(staffShell)return staffShell;
+        }
       }
       const page=await caches.match(OFFLINE.href);
       if(page)return page;
