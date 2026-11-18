@@ -120,7 +120,7 @@ Deno.serve(async (req: Request) => {
   }
 
   if (!isUuid(reportId)) return json({ error: "INVALID_REPORT_ID" }, 400);
-  if (!["upload", "remove"].includes(action)) return json({ error: "INVALID_ACTION" }, 400);
+  if (!["upload", "remove", "capabilities"].includes(action)) return json({ error: "INVALID_ACTION" }, 400);
   if (correctiveActionId && !isUuid(correctiveActionId)) {
     return json({ error: "INVALID_CORRECTIVE_ACTION_ID" }, 400);
   }
@@ -224,6 +224,19 @@ Deno.serve(async (req: Request) => {
     return "";
   }
 
+  if (action === "capabilities") {
+    // A side-effect-free handshake. Clients MUST require this exact protocol
+    // version before calling offline upload fields; older live versions lacked
+    // idempotency and must never process a retryable offline upload.
+    if(!correctiveActionId) return json({error:"CORRECTIVE_ACTION_REQUIRED"},400);
+    const actionRow=await loadCorrectiveAction(correctiveActionId);
+    if(!actionRow)return json({error:"CORRECTIVE_ACTION_NOT_FOUND"},404);
+    const denied=authorizeSpecificAction(actionRow);
+    if(denied)return json({error:denied},403);
+    return json({ok:true,offlineProtocolVersion:1,correctiveActionId,
+      reportId:report.id,organizationId:report.organization_id});
+  }
+
   if (action === "upload") {
     if (!files.length) return json({ error: "NO_FILES" }, 400);
     if (files.length > 5) return json({ error: "TOO_MANY_FILES" }, 400);
@@ -270,7 +283,7 @@ Deno.serve(async (req: Request) => {
         if(prior.report_id!==report.id||prior.corrective_action_id!==correctiveAction.id||
           prior.offline_evidence_sha256!==offlineDigest||prior.file_name!==files[0].name||
           Number(prior.size_bytes)!==files[0].size) return json({error:"OFFLINE_EVIDENCE_ID_REUSED"},409);
-        return json({ok:true,alreadyUploaded:true,addedCount:0,existingCount:1,failedCount:0,
+        return json({ok:true,alreadyUploaded:true,offlineProtocolVersion:1,clientEvidenceId,addedCount:0,existingCount:1,failedCount:0,
           added:[{id:prior.id,fileName:prior.file_name,storagePath:prior.storage_path,
             correctiveActionId:correctiveAction.id}],correctiveActionId:correctiveAction.id});
       }
@@ -405,6 +418,7 @@ Deno.serve(async (req: Request) => {
         failedCount: failed.length,
         correctiveActionId: correctiveAction?.id || null,
         actionNumber: correctiveAction?.action_number || null,
+        ...(clientEvidenceId?{offlineProtocolVersion:1,clientEvidenceId}:{}) ,
       },
       added.length ? 200 : 502,
     );
