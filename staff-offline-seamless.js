@@ -249,7 +249,11 @@ async function renderCounters(){
 }
 function renderPanel(){
  if(document.getElementById('rbhSeamlessPanel'))return;
- const anchor=document.getElementById('rbhPushStatus')?.closest('.profile-card-section');
+ // This is an everyday work feature, not a security setting.
+ // Place it on the default Profile tab, immediately after personal details.
+ const profileForm=document.getElementById('profileForm');
+ const fallback=document.getElementById('rbhPushStatus')?.closest('.profile-card-section');
+ const anchor=profileForm||fallback;
  if(!anchor)return;
  const panel=document.createElement('div');panel.className='profile-card-section';panel.id='rbhSeamlessPanel';
  panel.innerHTML='<h4>Offline sync (automatic)</h4><p class="field-help">Assigned corrective actions are prepared securely on this device when you sign in online. Enter work normally, even without reception; submissions made offline sync when the app is open and connectivity returns. No separate passphrase.</p><p id="rbhSeamlessStatus" role="status" class="field-help">Preparing your device…</p><a class="profile-secondary" style="display:inline-flex;text-decoration:none" href="./staff-offline-seamless.html">View saved work and sync status</a>';
