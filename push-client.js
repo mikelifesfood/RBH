@@ -104,22 +104,29 @@
     finally{busy=false;controls(true);}
   }
   async function beforeSignOut(all){
-    if(!sb)return;
+    if(!sb)return {revoked:false};
+    // Push cleanup is best-effort. Sign-out must remain possible when the
+    // function, browser push service, or network is unavailable. The push
+    // dispatcher independently rejects subscriptions from revoked sessions.
+    var revoked=false;
     try{
-      // Server revocation first: never block safe sign-out waiting for a worker.
       await call(all?"disable_all":"disable_session");
-      if(available()){
+      revoked=true;
+    }catch(e){console.warn("RBH push server revocation unavailable during sign-out",e);}
+    if(available()){
+      try{
         var registration=await Promise.race([
           navigator.serviceWorker.ready,
           new Promise(function(resolve){setTimeout(function(){resolve(null);},1500);})
         ]);
         if(registration){
           var subscription=await registration.pushManager.getSubscription();
-          if(subscription)try{await subscription.unsubscribe();}catch(_){}
+          if(subscription)await subscription.unsubscribe();
         }
-      }
-      registeredFor=null;
-    }catch(e){throw Error("Could not revoke push notifications. Please retry before signing out.");}
+      }catch(e){console.warn("RBH device push unsubscribe unavailable during sign-out",e);}
+    }
+    registeredFor=null;
+    return {revoked:revoked};
   }
   function init(client){
     sb=client;
