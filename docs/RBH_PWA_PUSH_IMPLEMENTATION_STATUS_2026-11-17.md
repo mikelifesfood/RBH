@@ -3,6 +3,13 @@
 **Repository:** `mikelifesfood/RBH` — commits directly to `main`.
 **Supabase project:** `owhkxguiavgxzwvbxevj`.
 
+## Confirmed iPhone workflow push tap — PASSED (Nov 17, 2026)
+- User received the **fresh workflow-linked RBH push** on iPhone and tapped it, opening the staff Notification Center.
+- Screenshot shows **“RBH push delivery retry — test only”** at top with description **“Controlled notification test linked to the existing test report. No action is required.”**
+- Supabase delivery row for this test is **accepted**, attempts **1**, provider HTTP **201**. Confirmed global switch **OFF**, RBH switch **OFF**, zero scheduled push dispatch jobs after test.
+- The notification center overlays the underlying report view; user confirmed expected opening. Do not overstate this as verified direct deep-link to an individual incident from the system push: the generic self-contained push routes to notification center.
+- Remaining go-live controls: recurring scheduler, opt-in/role and tenant negative tests, live report creation trigger (rather than manually queued test), and explicit broad-staff rollout decision.
+
 ## Secure dispatcher credential and workflow-linked provider test — November 17, 2026
 - Vault secret name `rbh_push_dispatch_key` verified (credential value never read or printed).
 - Private dispatcher probe using the Vault credential and `apikey` header returned **HTTP 200** with delivery disabled and `processed:0`; this confirms the secret is recognized by the Edge Function without initiating sends.
