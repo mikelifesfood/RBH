@@ -3019,7 +3019,7 @@
     finally{ btn.disabled=false; btn.textContent="Sign in"; }
   });
   var _signout=$("signout"); if(_signout) _signout.addEventListener("click", async function(){
-    try { if(window.RBHPush) await window.RBHPush.beforeSignOut(false); await sb.auth.signOut(); }
+    try { if(window.TeamWorktStaffOfflineUI){ if(!confirm("Signing out erases this account’s offline drafts and evidence from this device. Continue?")) return; await window.TeamWorktStaffOfflineUI.clearOnSignOut(); } if(window.RBHPush) await window.RBHPush.beforeSignOut(false); await sb.auth.signOut(); }
     catch(e){toast(e&&e.message?e.message:"Unable to sign out safely. Please retry.","err");}
   });
 
@@ -7337,7 +7337,7 @@
 
   var _signoutAll=$("signoutAll"); if(_signoutAll) _signoutAll.addEventListener("click",async function(){
     _signoutAll.disabled=true; _signoutAll.textContent="Signing out…";
-    try{ if(window.RBHPush) await window.RBHPush.beforeSignOut(true); var res=await sb.auth.signOut({scope:"global"}); if(res&&res.error) throw res.error; }
+    try{ if(window.TeamWorktStaffOfflineUI){ if(!confirm("Signing out on all devices erases this device’s offline drafts and evidence. Continue?")){ _signoutAll.disabled=false;_signoutAll.textContent="Sign out on all devices";return; } await window.TeamWorktStaffOfflineUI.clearOnSignOut(); } if(window.RBHPush) await window.RBHPush.beforeSignOut(true); var res=await sb.auth.signOut({scope:"global"}); if(res&&res.error) throw res.error; }
     catch(ex){ console.error("global signout",ex); toast("Could not sign out on all devices.","err"); _signoutAll.disabled=false; _signoutAll.textContent="Sign out on all devices"; }
   });
 
