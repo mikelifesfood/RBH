@@ -2122,7 +2122,7 @@
   </div>
 </div>
 
-<script src="./push-client.js?v=20261117-push-preflight"></script>
+<script src="./push-client.js?v=20261118-logout-revoke"></script>
 <script>
 (function(){
   "use strict";
@@ -3044,7 +3044,7 @@
       if(window.TeamWorktSeamlessOffline && await window.TeamWorktSeamlessOffline.hasPending()){
         if(!confirm("You have corrective actions saved on this device that have not synchronized. Signing out will permanently erase them. Sign out anyway?"))return;
       }
-      if(window.TeamWorktStaffOfflineUI){ if(await window.TeamWorktStaffOfflineUI.hasOfflineWorkspace()&&!confirm("Signing out erases this account’s offline drafts and evidence from this device. Continue?")) return; await window.TeamWorktStaffOfflineUI.clearOnSignOut(); } if(window.RBHPush) await window.RBHPush.beforeSignOut(false); await sb.auth.signOut(); }
+      if(window.TeamWorktStaffOfflineUI){ if(await window.TeamWorktStaffOfflineUI.hasOfflineWorkspace()&&!confirm("Signing out erases this account’s offline drafts and evidence from this device. Continue?")) return; await window.TeamWorktStaffOfflineUI.clearOnSignOut(); } var pushResult=window.RBHPush?await window.RBHPush.beforeSignOut(false):null; var signoutResult=await sb.auth.signOut(); if(signoutResult&&signoutResult.error)throw signoutResult.error; if(pushResult&&pushResult.revoked===false)toast("Signed out. Push cleanup could not be confirmed; notification delivery requires an active session.","err"); }
     catch(e){toast(e&&e.message?e.message:"Unable to sign out safely. Please retry.","err");}
   });
 
@@ -7444,7 +7444,7 @@
 
   var _signoutAll=$("signoutAll"); if(_signoutAll) _signoutAll.addEventListener("click",async function(){
     _signoutAll.disabled=true; _signoutAll.textContent="Signing out…";
-    try{ if(window.TeamWorktStaffOfflineUI){ if(await window.TeamWorktStaffOfflineUI.hasOfflineWorkspace()&&!confirm("Signing out on all devices erases this device’s offline drafts and evidence. Continue?")){ _signoutAll.disabled=false;_signoutAll.textContent="Sign out on all devices";return; } await window.TeamWorktStaffOfflineUI.clearOnSignOut(); } if(window.RBHPush) await window.RBHPush.beforeSignOut(true); var res=await sb.auth.signOut({scope:"global"}); if(res&&res.error) throw res.error; }
+    try{ if(window.TeamWorktStaffOfflineUI){ if(await window.TeamWorktStaffOfflineUI.hasOfflineWorkspace()&&!confirm("Signing out on all devices erases this device’s offline drafts and evidence. Continue?")){ _signoutAll.disabled=false;_signoutAll.textContent="Sign out on all devices";return; } await window.TeamWorktStaffOfflineUI.clearOnSignOut(); } var pushResult=window.RBHPush?await window.RBHPush.beforeSignOut(true):null; var res=await sb.auth.signOut({scope:"global"}); if(res&&res.error) throw res.error; if(pushResult&&pushResult.revoked===false)toast("Signed out. Push cleanup could not be confirmed; notification delivery requires an active session.","err"); }
     catch(ex){ console.error("global signout",ex); toast("Could not sign out on all devices.","err"); _signoutAll.disabled=false; _signoutAll.textContent="Sign out on all devices"; }
   });
 
