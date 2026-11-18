@@ -10,7 +10,7 @@ const STEPS=[
   ['review','Review / classification'],['investigation','Investigation / root cause'],
   ['action_plan','Corrective-action planning'],['action_completion','Action completion'],
   ['verification','Verification notes'],['changes_requested','Changes requested'],
-  ['closure','Report closure preparation']
+  ['add_action_before_close','Additional corrective action'],['closure','Report closure preparation']
 ];
 let context=null,record=null;
 function message(text,error){$('status').textContent=text;$('status').className=error?'err':'';}
@@ -25,7 +25,8 @@ function makeScope(){
     actionId:actionId||null,generation:Number(record.generation||0),step};
 }
 function clearEditor(){
-  $('editorPanel').hidden=true;$('draftNote').value='';$('draftPhotos').value='';
+  $('editorPanel').hidden=true;$('draftPhotos').value='';
+  for(const name of ['draftNote','draftFindings','draftRootCause','draftPlanDescription','draftPlanOwner','draftPlanDue','draftPlanPriority','draftDecision'])$(name).value='';
   $('draftStep').replaceChildren();$('draftAction').replaceChildren();
   $('evidenceCount').textContent='';record=null;
 }
@@ -39,8 +40,9 @@ function selectOption(label,value){
 }
 function canPrepare(step,item){
   if(item.readOnly)return false;
-  if(['verification','changes_requested'].includes(step))return item.role==='admin'||item.role==='safety_manager';
+  if(['verification','changes_requested','closure','add_action_before_close'].includes(step))return item.role==='admin'||item.role==='safety_manager';
   if(step==='action_completion')return item.actions.some(a=>a.canComplete);
+  if(step==='review'||step==='investigation'||step==='action_plan')return item.canEditReport;
   return item.canEditReport;
 }
 function renderRecordList(){
@@ -60,17 +62,40 @@ async function updateEvidenceCount(){
   const evidence=await store().listEvidence(scope);
   $('evidenceCount').textContent=evidence.length+' photo(s) saved locally for this step.';
 }
+function updateFieldsForStep(){
+  const step=$('draftStep').value;
+  $('investigationFields').hidden=step!=='investigation';
+  $('actionPlanFields').hidden=!['action_plan','add_action_before_close'].includes(step);
+  $('verificationFields').hidden=!['verification','changes_requested'].includes(step);
+  $('draftPhotos').disabled=!(step==='investigation'||step==='action_completion'||step==='verification'||step==='changes_requested');
+}
+function readForm(){
+  const fields={};
+  for(const name of ['draftFindings','draftRootCause','draftPlanDescription','draftPlanOwner','draftPlanDue','draftPlanPriority','draftDecision']){
+    fields[name]=$(name).value;
+  }
+  return {note:$('draftNote').value,fields,offlineOnly:true};
+}
+function applyForm(data){
+  $('draftNote').value=data&&typeof data.note==='string'?data.note:'';
+  const fields=data&&data.fields||{};
+  for(const name of ['draftFindings','draftRootCause','draftPlanDescription','draftPlanOwner','draftPlanDue','draftPlanPriority','draftDecision']){
+    $(name).value=typeof fields[name]==='string'?fields[name]:'';
+  }
+}
 async function restoreDraft(){
   const scope=makeScope();
   try{
     const data=await store().readDraft(scope);
-    $('draftNote').value=data&&data.data&&typeof data.data.note==='string'?data.data.note:'';
+    applyForm(data&&data.data);
+    updateFieldsForStep();
     await updateEvidenceCount();
     message(data?'Previously saved on this device — not submitted.':'New local draft — not submitted.');
   }catch(e){message(e.message==='OFFLINE_DRAFT_CANNOT_DECRYPT'?'Incorrect offline passphrase or damaged draft.':e.message,true);}
 }
 async function openRecord(item){
   record=item;$('editorTitle').textContent='Report #'+item.number+' — offline draft';
+  $('reportSummary').textContent='Existing report: '+String(item.description||'').slice(0,350);
   $('draftStep').replaceChildren();
   for(const [value,label] of STEPS){if(canPrepare(value,item))$('draftStep').appendChild(selectOption(label,value));}
   $('draftAction').replaceChildren();
@@ -83,7 +108,7 @@ async function openRecord(item){
       for(const opt of $('draftAction').options)opt.disabled=!allowed.includes(opt.value);
       if(!allowed.includes($('draftAction').value))$('draftAction').value=allowed[0]||'';
     }else for(const opt of $('draftAction').options)opt.disabled=false;
-    await restoreDraft();};
+    updateFieldsForStep();await restoreDraft();};
   $('draftAction').onchange=restoreDraft;
   if(!$('draftStep').options.length){message('This report has no editable offline stages for your synchronized permissions.',true);clearEditor();return;}
   $('draftStep').dispatchEvent(new Event('change'));
@@ -113,14 +138,14 @@ $('unlockForm').addEventListener('submit',async event=>{
 });
 $('saveDraft').addEventListener('click',async()=>{
   try{
-    const scope=makeScope(), note=$('draftNote').value;
-    if(!note.trim()&&!$('draftPhotos').files.length)throw Error('Enter notes or attach a photo before saving.');
+    const scope=makeScope(), draft=readForm();
+    if(!draft.note.trim()&&!Object.values(draft.fields).some(v=>v.trim())&&!$('draftPhotos').files.length)throw Error('Enter draft details or attach a photo before saving.');
     const item=record,action=item.actions.find(a=>a.id===scope.actionId);
     const revision=scope.actionId?action?.revision:item.revision;
     if(!revision)throw Error('MISSING_SYNC_REVISION');
     const saveButton=$('saveDraft');saveButton.disabled=true;
     try {
-      await store().saveDraft(scope,{note,offlineOnly:true},revision);
+      await store().saveDraft(scope,draft,revision);
       const files=Array.from($('draftPhotos').files);
       for(const file of files){
         const attachmentId=crypto.randomUUID().replace(/-/g,'');
