@@ -102,7 +102,8 @@ class OfflineBrowserTests(unittest.TestCase):
         self.page.reload()  # Ensure the new SW controls this client before going offline
         self.context.set_offline(True)
         self.page.goto(BASE+"/dashboard.html",wait_until="domcontentloaded")
-        self.assertTrue(self.page.locator("#unlockForm").count(),\n          "Offline navigation returned: "+self.page.url+" HTML="+self.page.content()[:1200])
+        self.assertTrue(self.page.locator("#unlockForm").count(),
+          "Offline navigation returned: "+self.page.url+" HTML="+self.page.content()[:1200])
         self.unlock()
         self.page.get_by_text("Report #77").first.click()
         self.page.locator("#draftStep").select_option("action_completion")
