@@ -8892,10 +8892,31 @@
     try{
       var response=await sb.rpc("rbh_decide_report_transfer",{p_transfer_id:transferId,p_accept:accept});
       if(response.error)throw response.error;
-      toast(accept?"Report ownership accepted. You can now manage the report.":"Transfer declined. The current owner was notified.","ok");
+      var result=response.data||{};
+      if(!result.ok || result.status!==(accept?"accepted":"declined") || !result.report_id)
+        throw new Error("TRANSFER_DECISION_NOT_CONFIRMED");
+      // Do not announce ownership until the authoritative report row confirms
+      // that the accepted transfer committed. A stale inbox or notification is
+      // not proof that an ownership transfer completed.
+      if(accept){
+        var verified=await sb.from("reports").select("report_owner_user_id").eq("id",result.report_id).single();
+        if(verified.error)throw verified.error;
+        if(!verified.data || String(verified.data.report_owner_user_id||"")!==currentUserId())
+          throw new Error("TRANSFER_OWNER_CONFIRMATION_FAILED");
+      }
       ownershipInboxLastLoaded=0;
-      await loadReports(true);await loadReportTransferRequests(true);
-    }catch(e){console.error("Respond to transfer",e);toast("Could not update ownership. Refresh and try again.","err");}
+      await loadReports(true);
+      await loadReportTransferRequests(true);
+      toast(accept?"Report ownership accepted and confirmed. You can now manage the report.":"Transfer declined. The current owner was notified.","ok");
+    }catch(e){
+      console.error("Respond to transfer",e);
+      ownershipInboxLastLoaded=0;
+      // A refresh failure after an accepted RPC must never be described as a
+      // failed transfer; reload the authoritative state before retrying.
+      loadReports(true).catch(function(refreshError){console.error("Transfer recovery refresh",refreshError);});
+      loadReportTransferRequests(true).catch(function(refreshError){console.error("Transfer inbox recovery",refreshError);});
+      toast("Ownership could not be confirmed. Check the Report Owner on the record and the transfer inbox before trying again.","err");
+    }
     finally{button.disabled=false;}
   });
 
