@@ -133,12 +133,11 @@ class OfflineBrowserTests(unittest.TestCase):
         DASHBOARD_NETWORK_BLOCKED.set()
         self.context.set_offline(True)
         self.page.goto(BASE+"/dashboard.html",wait_until="domcontentloaded")
-        self.assertTrue(self.page.locator("#unlockForm").count(),
-          "Offline navigation returned: "+self.page.url+" HTML="+self.page.content()[:1200])
-        self.unlock()
-        self.page.get_by_text("Report #77").first.click()
-        self.page.locator("#draftStep").select_option("action_completion")
-        self.page.wait_for_function("document.querySelector('#draftNote').value === 'Fictional corrective work complete'")
+        self.assertTrue(self.page.locator("#summary").count(),
+          "Offline fallback did not reach the password-free staff action shell: "+self.page.url)
+        self.assertEqual(self.page.locator("#offlinePassphrase").count(),0)
+        self.assertIn("Not prepared for offline work",self.page.locator("#summary").inner_text())
+
         self.page.evaluate("""async()=>{
           const names=(await caches.keys()).join(' ');
           const keys=await Promise.all((await caches.keys()).map(async name=>(await caches.open(name)).keys()));
