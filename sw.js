@@ -122,7 +122,11 @@ self.addEventListener('push',event=>{
       action_assignment:['Corrective action assigned','You have a corrective action to complete.'],
       corrective_action_assignment:['Corrective action assigned','You have a corrective action to complete.'],
       corrective_action_verification_requested:['Verification required','A corrective action is ready for review.'],
-      corrective_action_changes_requested:['Changes requested','Your corrective action needs attention.']
+      corrective_action_changes_requested:['Changes requested','Your corrective action needs attention.'],
+      report_transfer_requested:['Report ownership offered','A report ownership request needs your decision.'],
+      report_transfer_declined:['Report transfer declined','Your report ownership transfer was declined.'],
+      report_owner_transferred_from:['Report ownership transferred','You are no longer the owner of a report.'],
+      corrective_action_reassigned_from:['Corrective action reassigned','A corrective action is no longer assigned to you.']
     });
     let tag='rbh-safety-work',copy=null;
     try{
