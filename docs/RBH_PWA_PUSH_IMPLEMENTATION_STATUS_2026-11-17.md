@@ -3,6 +3,16 @@
 **Repository:** `mikelifesfood/RBH` — commits directly to `main`.
 **Supabase project:** `owhkxguiavgxzwvbxevj`.
 
+## RBH automatic push ACTIVATED — November 17, 2026
+- Explicit user authorization received to activate automatic RBH push **with notifications OFF by default for each user/device**. The existing opt-in control remains the only way to register a device. No automatic subscription, permission prompt, or bulk registration.
+- Verified `push_delivery_settings.enabled=true` and RBH `push_organization_settings.enabled=true`; other organizations have no enabled row. `rbh-pwa-push-dispatch` pg_cron job is active every minute.
+- At activation: **1 active opted-in device**, one other previously registered device disabled, and **0 outstanding push messages**. No historical backlog replays.
+- Secure scheduler invoked after activation; `net._http_response` reported **HTTP 200** and `{"enabled":true,"processed":0,"accepted":0,"failed":0}` (there was no new event to send).
+- Push event types map to actionable in-app events: `new_report`, `report_owner_assignment`, `action_assignment`, `corrective_action_assignment`, `corrective_action_verification_requested`, `corrective_action_changes_requested`. Existing email delivery log uses corresponding workflow types (`new_report`, `report_owner_assignment`, `action_assignment`, `action_verification_requested`, `action_changes_requested`), with corrective-action event naming differing in the in-app ledger. Do not assert identical email vs push event IDs or identical recipient lists without further event-level testing.
+- Dispatch checks account, company, role, live session and current work assignment before send. Generic lock-screen message, no report details. Existing email and in-app notifications unchanged; **Weekly Safety Pulse digest remains held**.
+- Operational next check: create a genuine new RBH report or assignment for an opted-in account, verify the cron-queued event and receipt, and monitor accepted/cancelled/retry. CI/functional negative tests continue as pilot hardening, rather than preventing this explicitly authorized activation.
+- Emergency off: set global and RBH tenant settings `enabled=false` (without affecting device opt-in registrations or email).
+
 ## Scheduler staged with delivery blocked — November 17, 2026
 - Installed `pg_cron` job **rbh-pwa-push-dispatch**, running minute-by-minute and calling `teamworkt_internal.rbh_dispatch_push_due()`.
 - Verified schedule registered (`active=true`), but **global push switch OFF** and **RBH tenant switch OFF**; SQL function short-circuits before network request when disabled.
