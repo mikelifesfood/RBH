@@ -128,9 +128,6 @@ Deno.serve(async (req: Request) => {
     return json({ error: "INVALID_CORRECTIVE_ACTION_ID" }, 400);
   }
   if (clientEvidenceId && (!isUuid(clientEvidenceId) || action !== "upload")) return json({ error: "INVALID_OFFLINE_EVIDENCE_ID" },400);
-  if (action === "remove" && !isUuid(attachmentId)) {
-    return json({ error: "INVALID_ATTACHMENT_ID" }, 400);
-  }
 
   const { data: caller, error: callerError } = await service
     .from("profiles")
@@ -444,105 +441,5 @@ Deno.serve(async (req: Request) => {
     );
   }
 
-  // -------------------------------------------------------------------------
-  // REMOVE
-  // -------------------------------------------------------------------------
-
-  const { data: attachment, error: attachmentError } = await service
-    .from("report_attachments")
-    .select(
-      "id,report_id,organization_id,corrective_action_id,storage_path,file_name,mime_type,created_at",
-    )
-    .eq("id", attachmentId)
-    .eq("report_id", reportId)
-    .maybeSingle();
-
-  if (attachmentError || !attachment) {
-    return json({ error: "ATTACHMENT_NOT_FOUND" }, 404);
-  }
-
-  const linkedActionId = attachment.corrective_action_id
-    ? String(attachment.corrective_action_id)
-    : "";
-
-  let linkedAction: CorrectiveActionRow | null = null;
-
-  if (linkedActionId) {
-    if (correctiveActionId && correctiveActionId !== linkedActionId) {
-      return json({ error: "ATTACHMENT_CORRECTIVE_ACTION_MISMATCH" }, 409);
-    }
-
-    linkedAction = await loadCorrectiveAction(linkedActionId);
-    if (!linkedAction) return json({ error: "CORRECTIVE_ACTION_NOT_FOUND" }, 404);
-
-    const authError = authorizeSpecificAction(linkedAction);
-    if (authError) return json({ error: authError }, 403);
-  } else {
-    // Legacy unlinked evidence retains the original report-level permission model.
-    const authError = authorizeLegacyReportEvidence();
-    if (authError) return json({ error: authError }, authError === "ACTION_PLAN_REQUIRED" ? 409 : 403);
-  }
-
-  const path = String(attachment.storage_path || "");
-  if (!path.startsWith("corrective-evidence/")) {
-    return json({ error: "NOT_CORRECTIVE_ACTION_EVIDENCE" }, 409);
-  }
-
-  const { error: storageError } = await service.storage
-    .from("report-attachments")
-    .remove([path]);
-
-  if (storageError) {
-    console.error("Evidence storage delete failed", storageError);
-    return json(
-      { error: "STORAGE_DELETE_FAILED", detail: storageError.message },
-      502,
-    );
-  }
-
-  const { error: metadataError } = await service
-    .from("report_attachments")
-    .delete()
-    .eq("id", attachmentId)
-    .eq("report_id", reportId);
-
-  if (metadataError) {
-    console.error("Evidence metadata delete failed", metadataError);
-    return json(
-      { error: "METADATA_DELETE_FAILED", detail: metadataError.message },
-      500,
-    );
-  }
-
-  const removedName = String(
-    attachment.file_name || path.split("/").pop() || "Evidence file",
-  );
-  const actionLabel = linkedAction
-    ? `Corrective Action #${linkedAction.action_number}`
-    : "Corrective action";
-
-  const { error: noteError } = await service.from("report_notes").insert({
-    report_id: report.id,
-    organization_id: report.organization_id,
-    title: linkedAction
-      ? `[System] ${actionLabel} evidence removed`
-      : "[System] Corrective-action evidence removed",
-    body: `Removed evidence file${
-      linkedAction ? ` from ${actionLabel}` : ""
-    }: ${removedName}`,
-    author_email: caller.email || userData.user.email || null,
-  });
-
-  if (noteError) {
-    console.error("Evidence removal audit note failed", noteError);
-  }
-
-  return json({
-    ok: true,
-    removed: true,
-    attachmentId,
-    fileName: removedName,
-    correctiveActionId: linkedAction?.id || null,
-    actionNumber: linkedAction?.action_number || null,
-  });
+  return json({error:'OFFLINE_ONLY_ENDPOINT'},400);
 });
