@@ -5545,6 +5545,32 @@
     });
 
     if(window.TeamWorktStaffOfflineUI) window.TeamWorktStaffOfflineUI.wireWizardActionDrafts(detail,r,function(){return actionPlanState.actions;});
+    if(window.TeamWorktSeamlessOffline && !detail.dataset.rbhSeamlessNotes){
+      detail.dataset.rbhSeamlessNotes="yes";
+      var wireSeamlessChildFields=function(){
+        if(!detail.isConnected)return;
+        detail.querySelectorAll("textarea[data-child-completion-note],textarea[data-child-verification-note],textarea[data-child-return-note]").forEach(function(field){
+          if(field.dataset.seamlessWired||field.disabled)return;
+          var completion=field.hasAttribute("data-child-completion-note");
+          var verification=field.hasAttribute("data-child-verification-note");
+          var id=completion?field.getAttribute("data-child-completion-note"):
+            verification?field.getAttribute("data-child-verification-note"):
+            field.closest("[data-child-verification-card]")?.getAttribute("data-child-verification-card");
+          var child=actionPlanState.actions.find(function(x){return String(x.id)===String(id);});
+          if(!child)return;
+          var step=completion?"action_completion":verification?"verification":"changes_requested";
+          var button=detail.querySelector('['+(completion?'data-submit-child-completion':verification?'data-child-verify-action':'data-child-request-changes')+'="'+id+'"]');
+          if(button)window.TeamWorktSeamlessOffline.wireAction(r,child,field,button,step);
+        });
+      };
+      var seamlessObserver=new MutationObserver(wireSeamlessChildFields);
+      seamlessObserver.observe(detail,{childList:true,subtree:true});
+      wireSeamlessChildFields();
+      var seamlessCleanup=new MutationObserver(function(){
+        if(!detail.isConnected){seamlessObserver.disconnect();seamlessCleanup.disconnect();}
+      });
+      seamlessCleanup.observe(document.body,{childList:true,subtree:true});
+    }
     if(window.TeamWorktSeamlessOffline && !detail.dataset.rbhSeamlessCapture){
       detail.dataset.rbhSeamlessCapture="yes";
       detail.addEventListener("click",async function(e){
