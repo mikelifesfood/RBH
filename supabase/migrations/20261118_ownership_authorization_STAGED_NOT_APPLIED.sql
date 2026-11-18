@@ -719,7 +719,9 @@ begin
     end if;
  end if;
  if new.verifier_user_id is distinct from old.verifier_user_id
-    and v_report_owner is distinct from v_actor and not(old.verifier_user_id=v_actor and new.verifier_user_id=v_actor)
+    and v_report_owner is distinct from v_actor
+    and not(old.owner_user_id=v_actor and old.status='changes_requested'
+      and new.status='awaiting_verification' and new.verifier_user_id is null)
  then raise exception 'REPORT_OWNER_REQUIRED_TO_ASSIGN_VERIFIER'; end if;
  if new.description is distinct from old.description or new.due_date is distinct from old.due_date
     or new.priority is distinct from old.priority or new.control_type is distinct from old.control_type
@@ -727,6 +729,9 @@ begin
  if new.verification_note is distinct from old.verification_note
     or new.verified_by is distinct from old.verified_by or new.verified_at is distinct from old.verified_at then
     if old.verifier_user_id is distinct from v_actor
+      and not(old.owner_user_id=v_actor and old.status='changes_requested'
+        and new.status='awaiting_verification' and new.verification_note is null
+        and new.verified_by is null and new.verified_at is null)
     then raise exception 'ASSIGNED_VERIFIER_REQUIRED'; end if;
  end if;
  return new;
