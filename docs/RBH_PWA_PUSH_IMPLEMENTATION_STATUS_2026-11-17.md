@@ -3,6 +3,15 @@
 **Repository:** `mikelifesfood/RBH` — commits directly to `main`.
 **Supabase project:** `owhkxguiavgxzwvbxevj`.
 
+## Secure dispatcher credential and workflow-linked provider test — November 17, 2026
+- Vault secret name `rbh_push_dispatch_key` verified (credential value never read or printed).
+- Private dispatcher probe using the Vault credential and `apikey` header returned **HTTP 200** with delivery disabled and `processed:0`; this confirms the secret is recognized by the Edge Function without initiating sends.
+- Controlled one-device workflow-linked test used **existing unread RBH `new_report` notification** associated with the existing test record, targeted to the registered Apple push device. No new report or duplicate in-app notification was created.
+- Temporarily enabled RBH tenant and global gate for a **single manual dispatch** with no recurring scheduler, then immediately disabled both.
+- Dispatcher response: **HTTP 200**; `processed:1, accepted:1, failed:0, cancelled:0, retry:0`. Outbox marks the one test `accepted`, provider HTTP **201**, attempts 1; **actual phone receipt still requires user confirmation**.
+- Final checked state: global OFF, RBH tenant OFF, no `rbh-pwa-push-dispatch` cron job, 2 active devices. The weekly digest remains held.
+- Next: user confirm system notification receipt/tap, controlled event-trigger and role/tenant regression, then explicitly approve enabling RBH tenant/global switches and recurring cron schedule for **all opted-in RBH staff**.
+
 ## November 17 update — all-staff opt-in readiness (NOT YET LIVE)
 - A test report generated a `new_report` in-app notification for an active RBH Admin who has two registered push devices. No push was queued because automatic dispatch was intentionally disabled — **not** because the user's phone failed.
 - Added `push_organization_settings` with **RBH Insulation disabled** by default, preserving global master switch disabled. Only explicitly enabled organizations can enqueue or dispatch.
