@@ -121,15 +121,29 @@ async function snapshot(u){
 }
 function actionScope(a,u){return {organizationId:u.organizationId,userId:u.userId,reportId:a.reportId,actionId:a.id,generation:a.generation};}
 async function draft(u,actionId){return readEncrypted(u,'draft',actionId);}
+const actionWrites=new Map();
+function serializeAction(id,callback){
+ const previous=actionWrites.get(id)||Promise.resolve();
+ const next=previous.catch(()=>{}).then(callback);
+ actionWrites.set(id,next);
+ next.finally(()=>{if(actionWrites.get(id)===next)actionWrites.delete(id);}).catch(()=>{});
+ return next;
+}
 async function saveNote(a,note,step){
  const u=state.identity||await offlineIdentity();
+ return serializeAction(u.organizationId+':'+u.userId+':'+a.id,async()=>{
+
  const previous=await draft(u,a.id);
  if(previous?.queued)throw Error('ACTION_ALREADY_QUEUED');
  await putEncrypted(u,'draft',a.id,{actionId:a.id,step,note,savedAt:Date.now(),files:previous?.files||[]});
  return true;
+
+ });
 }
 async function addPhoto(a,file){
  const u=state.identity||await offlineIdentity();
+ return serializeAction(u.organizationId+':'+u.userId+':'+a.id,async()=>{
+
  if(!file||!file.size||file.size>10*1024*1024||!/^image\/(jpeg|png|webp|heic|heif)$/i.test(file.type))throw Error('PHOTO_MUST_BE_IMAGE_UNDER_10MB');
  const previous=await draft(u,a.id)||{actionId:a.id,step:'action_completion',note:'',files:[]};
  if(previous.queued)throw Error('ACTION_ALREADY_QUEUED');
@@ -141,9 +155,13 @@ async function addPhoto(a,file){
  previous.files.push(entry.id);
  await putEncrypted(u,'draft',a.id,previous);
  return previous.files.length;
+
+ });
 }
 async function stage(a,step,note){
  const u=state.identity||await offlineIdentity();
+ return serializeAction(u.organizationId+':'+u.userId+':'+a.id,async()=>{
+
  if(!KINDS[step])throw Error('OFFLINE_OPERATION_NOT_SUPPORTED');
  const n=String(note||'').trim();
  if((step!=='verification'&&!n)||n.length>5000)throw Error('NOTE_REQUIRED_UP_TO_5000_CHARACTERS');
@@ -160,6 +178,8 @@ async function stage(a,step,note){
  renderCounters();
  if(state.client&&navigator.onLine!==false)flush();
  return item;
+
+ });
 }
 async function uploadPhotos(item,u){
  for(const id of item.files){
