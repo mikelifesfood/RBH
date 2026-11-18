@@ -555,6 +555,7 @@ class OfflineBrowserTests(unittest.TestCase):
     def test_offline_recovered_draft_copy_preserves_fields_for_online_handoff(self):
         self.enroll()
         self.unlock()
+        self.page.locator("#workspacePanel").wait_for(state="visible")
         self.page.evaluate("""async()=>{
           const store=window.TeamWorktStaffOfflineFoundation;
           const scope={organizationId:'org-1',userId:'user-1',reportId:'report-123',
