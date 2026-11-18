@@ -204,20 +204,20 @@ Deno.serve(async (req: Request) => {
     if (Number(row.activation_reopen_count||0)!==Number(report.reopen_count||0)) return "CORRECTIVE_ACTION_NOT_CURRENT_REOPEN_CYCLE";
 
     const assignedOwner =
-      role === "supervisor" &&
+      ["admin","safety_manager","supervisor"].includes(role) &&
       String(row.owner_user_id || "") === String(caller.id);
 
-    if (!manager && !assignedOwner) return "NOT_AUTHORIZED";
+    if (!assignedOwner) return "NOT_AUTHORIZED";
     return "";
   }
 
   function authorizeLegacyReportEvidence() {
     if(!report || !caller)return 'NOT_AUTHORIZED';
     const assignedOwner =
-      role === "supervisor" &&
+      ["admin","safety_manager","supervisor"].includes(role) &&
       String(report.assigned_user_id || "") === String(caller.id);
 
-    if (!manager && !assignedOwner) return "NOT_AUTHORIZED";
+    if (!assignedOwner) return "NOT_AUTHORIZED";
 
     if (!String(report.corrective_action || "").trim() || !report.assigned_user_id) {
       return "ACTION_PLAN_REQUIRED";
