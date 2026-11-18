@@ -358,5 +358,34 @@ class OfflineBrowserTests(unittest.TestCase):
         self.unlock()
         self.page.get_by_text("No offline work",exact=False).wait_for()
 
+
+    def test_unsaved_draft_is_protected_when_switching_step_or_locking(self):
+        self.enroll()
+        self.unlock()
+        self.page.get_by_text("Report #77").first.click()
+        self.page.locator("#draftStep").select_option("action_completion")
+        self.page.locator("#draftNote").fill("Unsaved fictional work")
+        prompts=[]
+        def deny(dialog):
+            prompts.append(dialog.message)
+            dialog.dismiss()
+        self.page.on("dialog", deny)
+        self.page.locator("#draftStep").select_option("investigation")
+        self.assertEqual(self.page.locator("#draftStep").input_value(),"action_completion")
+        self.assertEqual(self.page.locator("#draftNote").input_value(),"Unsaved fictional work")
+        self.page.locator("#lockButton").click()
+        self.assertTrue(self.page.locator("#workspacePanel").is_visible())
+        self.assertGreaterEqual(len(prompts),2)
+        self.page.locator("#saveDraft").click()
+        self.page.get_by_text("Saved on this device — NOT submitted to RBH.").wait_for()
+        self.page.locator("#draftStep").select_option("investigation")
+        self.assertEqual(self.page.locator("#draftStep").input_value(),"investigation")
+        # Successfully saved notes survive navigation and can be reopened.
+        self.page.locator("#draftStep").select_option("action_completion")
+        self.page.wait_for_function(
+            "document.querySelector('#draftNote').value === 'Unsaved fictional work'"
+        )
+
+
 if __name__=='__main__':
     unittest.main()
