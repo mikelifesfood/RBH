@@ -145,6 +145,28 @@ class OfflineBrowserTests(unittest.TestCase):
           if(urls.some(url=>url.includes('report-123')))throw Error('REPORT_IDENTIFIER_IN_CACHE');
         }""")
 
+    def test_old_server_protocol_cannot_upload_photos_automatically(self):
+        self.enroll()
+        self.unlock()
+        self.page.add_script_tag(url=BASE+"/staff-offline-evidence-replay.js")
+        result=self.page.evaluate("""async()=>{
+          let calls=0;
+          const oldServer={functions:{invoke:async()=>{calls++;return {data:null,error:{message:'INVALID_ACTION'}};}}};
+          const sync=window.TeamWorktStaffEvidenceReplay;
+          const allowed=await sync.capability(oldServer,'report-123','action-456');
+          let blocked=false;
+          try {
+            await sync.uploadOne({client:oldServer,scope:{
+              organizationId:'org-1',userId:'user-1',reportId:'report-123',
+              actionId:'action-456',generation:0,step:'action_completion'
+            },evidenceId:'demo-evidence',identity:{
+              organizationId:'org-1',userId:'user-1'
+            },confirm:false});
+          }catch(e){blocked=String(e).includes('EXPLICIT_USER_CONFIRMATION_REQUIRED');}
+          return {allowed,blocked,calls};
+        }""")
+        self.assertEqual(result,{'allowed':False,'blocked':True,'calls':1})
+
     def test_wrong_identity_passphrase_and_local_erase(self):
         self.enroll()
         self.unlock(email="wrong@example.invalid")
