@@ -5805,7 +5805,16 @@
             toast("The assignments are saved in My Work. Some assignment emails could not be sent.","err");
           }
         }).catch(function(ex){console.error(ex);toast("The assignments are saved in My Work. Could not confirm the assignment emails.","err");});
-      }catch(ex){console.error(ex);if(ex&&ex.message!=="PLAN_INCOMPLETE")toast("Could not assign the corrective actions.","err");}finally{if(complete3.isConnected){complete3.disabled=!canEditStep(r,3);if(!complete3.disabled&&complete3.textContent==="Assigning…")complete3.textContent=previousLabel;}} });
+      }catch(ex){
+        console.error("corrective action assignment",ex);
+        var assignmentError=String(ex&&(ex.message||ex.code)||"");
+        if(/REPORT_OWNER_REQUIRED_FOR_ACTION_PLAN|REPORT_OWNER_REQUIRED_FOR_UPDATE|REPORT_OWNERSHIP_REQUIRED/.test(assignmentError)){
+          try{await refreshReportAfterPlanActivation();refreshRecordWorkflow(r,detail);}catch(refreshError){console.error("ownership refresh",refreshError);}
+          toast("The report owner has changed. Only the current Report Owner can assign corrective actions.","err");
+        }else if(assignmentError!=="PLAN_INCOMPLETE"){
+          toast("Could not assign the corrective actions. "+(assignmentError||"Please try again."),"err");
+        }
+      }finally{if(complete3.isConnected){complete3.disabled=!canEditStep(r,3);if(!complete3.disabled&&complete3.textContent==="Assigning…")complete3.textContent=previousLabel;}} });
 
     renderActionWorkflow(r,detail.querySelector("[data-action-completion]"),auditEl,detail,"complete");
     renderActionWorkflow(r,detail.querySelector("[data-action-verification]"),auditEl,detail,"verify");
