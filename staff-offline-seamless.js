@@ -319,7 +319,7 @@ async function init(identity,reports,actions,client){
   return;
  }
  if(gate.data?.enabled!==true||gate.data?.protocolVersion!==1){
-  statusMessage('Offline access is not available for this signed-in account. Confirm your pilot login and tap Check offline access.',true);
+  statusMessage('Offline access is not available for this account. Check that your account is active and connected to an organization with offline work enabled, then tap Check offline access.',true);
   const openLink=document.getElementById('rbhSeamlessOpen');if(openLink)openLink.style.display='none';
   // Only an explicit authenticated revocation clears previously saved work.
   if(gate.data?.enabled===false){
