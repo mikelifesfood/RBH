@@ -70,7 +70,7 @@ function createPanel(){
   const wrap=document.createElement('div');
   wrap.className='profile-card-section';wrap.id='rbhOfflineWorkspaceControls';
   wrap.innerHTML='<h4>Offline work (this device)</h4>'+
-    '<p class="field-help">Save your assigned reports for use where reception is poor. Local drafts and photos are encrypted and never sent automatically.</p>'+
+    '<p class="field-help">Save your assigned reports for use where reception is poor. Local drafts and photos are encrypted and never sent automatically. Signing out or switching accounts erases this account’s offline data on this device; submit important work first.</p>'+
     '<div id="rbhOfflineEnrollment">'+
     '<label for="rbhOfflinePassphrase">Offline passphrase (12+ characters, separate from your sign-in password)</label>'+
     '<input type="password" id="rbhOfflinePassphrase" minlength="12" autocomplete="new-password" placeholder="Choose or enter your offline passphrase">'+
@@ -168,7 +168,11 @@ async function clearSubmittedDraft(report,action,step){
 root.TeamWorktStaffOfflineUI=Object.freeze({
   init(identity,reports,actions){
     if(!identity||!identity.userId||!identity.organizationId||!identity.email)return;
-    if(state.identity&&!sameIdentity(state.identity,identity))api()?.lock();
+    if(state.identity&&!sameIdentity(state.identity,identity)){
+      const previous=state.identity;
+      api()?.lock();
+      api()?.deleteAccountWorkspace(previous.organizationId,previous.userId).catch(e=>console.warn('Old offline workspace cleanup failed',e));
+    }
     state.identity={...identity};
     state.reports=Array.isArray(reports)?reports:[];
     state.actions=Array.isArray(actions)?actions:[];
@@ -181,6 +185,11 @@ root.TeamWorktStaffOfflineUI=Object.freeze({
     refresh();
   },
   wireFocusedDraft,clearSubmittedDraft,
+  async clearOnSignOut(){
+    const old=state.identity;
+    api()?.lock();state.identity=null;state.reports=[];state.actions=[];
+    if(old) await api().deleteAccountWorkspace(old.organizationId,old.userId);
+  },
   lock(){api()?.lock();state.identity=null;state.reports=[];state.actions=[];}
 });
 })(window);
