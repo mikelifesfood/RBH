@@ -12,7 +12,7 @@ const STEPS=[
   ['verification','Verification notes'],['changes_requested','Changes requested'],
   ['add_action_before_close','Additional corrective action'],['closure','Report closure preparation']
 ];
-let context=null,record=null,restoreGeneration=0;
+let context=null,record=null,restoreGeneration=0,editGeneration=0;
 function message(text,error){$('status').textContent=text;$('status').className=error?'err':'';}
 function workspaceScope(){return {organizationId:context.organizationId,userId:context.userId,
  reportId:'workspace',generation:0,step:WORKSPACE_STEP};}
@@ -85,20 +85,26 @@ function applyForm(data){
   }
 }
 async function restoreDraft(){
-  const generation=++restoreGeneration,scope=makeScope();
+  const generation=++restoreGeneration,scope=makeScope(),editAtStart=editGeneration;
+  const saveButton=$('saveDraft');saveButton.disabled=true;
   const stillCurrent=()=>generation===restoreGeneration &&
     context!==null&&record!==null&&JSON.stringify(makeScope())===JSON.stringify(scope);
   try{
     const data=await store().readDraft(scope);
     if(!stillCurrent())return; // older asynchronous step must never erase newer notes
-    applyForm(data&&data.data);
+    if(editGeneration===editAtStart){
+      applyForm(data&&data.data);
+    }
     updateFieldsForStep();
     const evidence=await store().listEvidence(scope);
     if(!stillCurrent())return;
     $('evidenceCount').textContent=evidence.length+' photo(s) saved locally for this step.';
-    message(data?'Previously saved on this device — not submitted.':'New local draft — not submitted.');
+    message(editGeneration!==editAtStart?'Your new edits were preserved while the saved draft loaded. Save to keep them; do not accidentally overwrite older notes.':
+      (data?'Previously saved on this device — not submitted.':'New local draft — not submitted.'));
   }catch(e){
     if(stillCurrent())message(e.message==='OFFLINE_DRAFT_CANNOT_DECRYPT'?'Incorrect offline passphrase or damaged draft.':e.message,true);
+  }finally{
+    if(generation===restoreGeneration)saveButton.disabled=false;
   }
 }
 async function openRecord(item){
@@ -143,6 +149,12 @@ $('unlockForm').addEventListener('submit',async event=>{
     store()?.lock();
     message(err.message==='OFFLINE_DRAFT_CANNOT_DECRYPT'?'Incorrect passphrase or unavailable offline records.':err.message,true);
   }
+});
+$('editorPanel').addEventListener('input',event=>{
+  if(event.target&&event.target.id!=='draftStep'&&event.target.id!=='draftAction')editGeneration++;
+});
+$('editorPanel').addEventListener('change',event=>{
+  if(event.target?.id==='draftPhotos')editGeneration++;
 });
 $('saveDraft').addEventListener('click',async()=>{
   try{
