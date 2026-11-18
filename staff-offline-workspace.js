@@ -78,6 +78,11 @@ function updateFieldsForStep(){
   $('actionPlanFields').hidden=!['action_plan','add_action_before_close'].includes(step);
   $('verificationFields').hidden=!['verification','changes_requested'].includes(step);
   $('draftPhotos').disabled=!(step==='investigation'||step==='action_completion'||step==='verification'||step==='changes_requested');
+  $('draftPhotoHelp').textContent=step==='investigation'?
+    'Investigation photos can be saved encrypted on this device, but they are NOT eligible for automatic reconnect upload yet. Keep them on this device and review their manual handling before pilot launch.':
+    ['action_completion','verification','changes_requested'].includes(step)?
+    'Corrective-action photos remain on this device until you approve their upload after reconnecting.':
+    'Photo attachments are not offered for this workflow step; save notes here and attach documents in the official online workflow.';
 }
 function readForm(){
   const fields={};
