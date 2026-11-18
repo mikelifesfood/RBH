@@ -6,7 +6,7 @@
 'use strict';
 const STEP_INDEX='workspace_index';
 const TTL=24*60*60*1000;
-const state={identity:null,reports:[],actions:[],client:null,panel:null,initialized:false,saving:false};
+const state={identity:null,reports:[],actions:[],client:null,panel:null,initialized:false,saving:false,enabled:false,initVersion:0};
 const api=()=>root.TeamWorktStaffOfflineFoundation;
 function $(id){return document.getElementById(id);}
 function sameIdentity(a,b){return a&&b&&a.organizationId===b.organizationId&&a.userId===b.userId;}
@@ -337,17 +337,36 @@ function wireWizardActionDrafts(detail,report,actionsProvider){
 }
 
 root.TeamWorktStaffOfflineUI=Object.freeze({
-  init(identity,reports,actions,client){
-    if(!identity||!identity.userId||!identity.organizationId||!identity.email)return;
+  async init(identity,reports,actions,client){
+    if(!identity||!identity.userId||!identity.organizationId||!identity.email||!client)return;
+    const serial=++state.initVersion;
     if(state.identity&&!sameIdentity(state.identity,identity)){
       const previous=state.identity;
       api()?.lock();
-      api()?.deleteAccountWorkspace(previous.organizationId,previous.userId).catch(e=>console.warn('Old offline workspace cleanup failed',e));
+      await api()?.deleteAccountWorkspace(previous.organizationId,previous.userId).catch(
+        e=>console.warn('Previous offline workspace cleanup failed',e));
     }
-    state.identity={...identity};state.client=client||null;
+    state.identity={...identity};state.client=client;
     state.reports=Array.isArray(reports)?reports:[];
     state.actions=Array.isArray(actions)?actions:[];
+    let enabled=false;
+    try {
+      const response=await client.rpc('rbh_staff_offline_status');
+      enabled=!response.error&&response.data?.enabled===true&&response.data?.protocolVersion===1;
+    }catch(_){}
+    if(serial!==state.initVersion||!sameIdentity(state.identity,identity))return;
+    state.enabled=enabled;
+    if(!enabled){
+      api()?.lock();
+      if(state.panel)state.panel.hidden=true;
+      // An online company disable or revoked permission must invalidate any
+      // account workspace stored on this browser. Ignore missing local DB.
+      try {await api()?.deleteAccountWorkspace(identity.organizationId,identity.userId);}
+      catch(e){console.warn('Disabled RBH offline workspace cleanup failed',e);}
+      return;
+    }
     createPanel();
+    if(state.panel)state.panel.hidden=false;
     if(api()?.isUnlocked())refresh();
   },
   refresh(reports,actions){
@@ -363,9 +382,10 @@ root.TeamWorktStaffOfflineUI=Object.freeze({
   },
   async clearOnSignOut(){
     const old=state.identity;
+    ++state.initVersion;state.enabled=false;
     api()?.lock();state.identity=null;state.reports=[];state.actions=[];state.client=null;
     if(old) await api().deleteAccountWorkspace(old.organizationId,old.userId);
   },
-  lock(){api()?.lock();state.identity=null;state.reports=[];state.actions=[];state.client=null;}
+  lock(){++state.initVersion;state.enabled=false;api()?.lock();state.identity=null;state.reports=[];state.actions=[];state.client=null;}
 });
 })(window);
