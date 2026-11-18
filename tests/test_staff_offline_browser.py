@@ -273,6 +273,29 @@ class OfflineBrowserTests(unittest.TestCase):
         self.assertEqual(result,{'wrongTenant':True,'revokedSession':True,'featureOff':True,
           'crossTenant':True,'changedReport':True,'mutations':0,'unchanged':True})
 
+    def test_authenticated_dashboard_offline_panel_requires_server_rollout_gate(self):
+        self.page.set_content(
+            '<main><section class="profile-card-section"><span id="rbhPushStatus"></span></section></main>'
+        )
+        self.page.add_script_tag(url=BASE+"/staff-offline-bootstrap.js")
+        result=self.page.evaluate("""async()=>{
+          const ui=window.TeamWorktStaffOfflineUI;
+          const identity={organizationId:'org-1',userId:'user-1',
+            email:'offline-tester@example.invalid',role:'supervisor'};
+          const client=enabled=>({rpc:async()=>({
+            data:{enabled,protocolVersion:1,maxSnapshotAgeHours:24}})});
+          await ui.init(identity,[],[],client(false));
+          const disabled=document.getElementById('rbhOfflineWorkspaceControls');
+          await ui.init(identity,[],[],client(true));
+          const enabled=document.getElementById('rbhOfflineWorkspaceControls');
+          await ui.init(identity,[],[],client(false));
+          const hiddenAgain=enabled?.hidden===true;
+          return {notShownInitially:!disabled||disabled.hidden===true,
+            shownWhenEnabled:!!enabled,hiddenAgain};
+        }""")
+        self.assertEqual(result,{'notShownInitially':True,
+            'shownWhenEnabled':True,'hiddenAgain':True})
+
     def test_offline_snapshot_expiry_blocks_access_without_destroying_draft(self):
         self.enroll()
         self.page.evaluate("""async()=>{
