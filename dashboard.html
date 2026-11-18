@@ -4714,9 +4714,9 @@
     detail._correctivePlanState=actionPlanState;
     invFindings.value=r.investigation_findings||"";
     invRoot.value=r.root_cause||"";
-    if(window.TeamWorktStaffOfflineUI) window.TeamWorktStaffOfflineUI.wireInvestigationDraft(r,invFindings,invRoot);
     syncInvestigationNextStepState();
     if(!canEditStep(r,2)){ [invFindings,invRoot,rootSave].forEach(function(x){if(x)x.disabled=true;}); }
+    else if(window.TeamWorktStaffOfflineUI) window.TeamWorktStaffOfflineUI.wireInvestigationDraft(r,invFindings,invRoot);
     if(!canEditStep(r,3)){ [actionPlanSave,actionPlanAdd].forEach(function(x){if(x)x.disabled=true;}); }
 
     // Track the edit state used to render Steps 2 and 3. When the workflow
