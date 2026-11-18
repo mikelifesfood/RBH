@@ -74,3 +74,19 @@ Production dashboard/Service Worker, public reporter, report data, staff account
 - Verify real iPhone Home Screen PWA offline launch/force quit and Chrome browser behavior. Headless Chromium alone is not device acceptance.
 - Require completed end-to-end regression, security review, launch flag, deployment and rollback before merging into `main`.
 - Running backlog, RBH weekly digest hold and final test data are unchanged in production; do not reset sequence or delete reports without owner's explicit approval.
+
+
+## November 18 follow-up — confirmed branch integration and review gates
+- The previous note that no official upload/commit integration exists is superseded **on the feature branch only**: authenticated online `Review saved drafts` now offers individually confirmed evidence upload and individually confirmed corrective-action completion, verification and changes-requested submission. **No automatic replay** occurs on reconnect.
+- `staff-offline-action-submit.js` requires current signed-in user, tenant, action generation/reopen cycle, exact stored revision, an enabled org feature flag, zero unuploaded evidence, durable operation key and a bound server receipt. A lost HTTP response preserves its key for safe retry.
+- `staff-offline-evidence-replay.js` requires authenticated protocol-version handshake, file digest, stable attachment UUID, existing-action authorization, exact revisions, an explicit confirmation and server receipt. The staged server Edge Function additionally checks live Supabase session via `rbh_staff_offline_status` instead of merely reading the flag with service-role privileges.
+- Three additive SQL scripts cover tenant rollout flag (OFF by default), private role-bound idempotency ledger, guarded nested RPC dispatch and evidence deduplication. Latest SQL combination **passed transactional rollback dry-run** against the RBH Supabase schema, including anonymous execute denial, private ledger access and no enabled tenants. **No SQL was persisted**.
+- IndexedDB tests now also cover wrong tenant/user isolation for drafts/photos and expired snapshots. Feature-gated enrollment is hidden when company access is disabled. The online enrollment path asks the browser for persistent device storage and gives a warning if persistence is not guaranteed.
+- GitHub Actions run #44310923605 **SUCCESS**, covering Node protocol safety, Chromium PWA/offline storage and workflow replay mocks, and strict Deno TypeScript check for the staged evidence Edge Function.
+
+### Still blocking MVP release
+- **No server migration, Edge Function update or dashboard merge has been deployed.** The currently live RBH system is unchanged.
+- Full integration tests of real authenticated Supabase users/roles, actual Edge Function and storage replay under lost-response/concurrent retry, and real iPhone Home Screen PWA offline/reopen behavior are not complete. Mocked Chromium success is not enough.
+- Offline review, investigation, action-plan, reassignment, close and reopen stages currently preserve structured notes and evidence but are **not yet one-click atomic official submissions**. Existing online RBH functions remain the authoritative way to finalize these stages.
+- Before deployment, confirm lifecycle transition matrix, refresh and conflict reconciliation, data-retention UX, monitoring/rollback, and final RBH pilot acceptance.
+- Preserve all existing report numbers and test records until the explicitly requested final reset. Continue holding the Weekly Safety Pulse recurring digest.
