@@ -498,5 +498,41 @@ class OfflineBrowserTests(unittest.TestCase):
                          "Fictional medium")
 
 
+
+    def test_assignment_draft_is_manager_only_and_survives_reload(self):
+        self.enroll()
+        self.unlock()
+        self.page.get_by_text("Report #77").first.click()
+        self.assertEqual(self.page.locator("#draftStep option[value=assignment]").count(),0)
+        self.page.reload()
+        self.page.evaluate("""async()=>{
+          const f=window.TeamWorktStaffOfflineFoundation;
+          f.unlock('long-demo-passphrase-2026');
+          const scope={organizationId:'org-1',userId:'user-1',
+            reportId:'workspace',generation:0,step:'workspace_index'};
+          const item=await f.readDraft(scope);
+          const data=item.data;data.role='safety_manager';
+          data.records[0].role='safety_manager';data.records[0].canEditReport=true;
+          await f.saveDraft(scope,data,item.serverRevision);
+          f.lock();
+        }""")
+        self.unlock()
+        self.page.get_by_text("Report #77").first.click()
+        self.page.locator("#draftStep").select_option("assignment")
+        self.page.locator("#draftReportOwner").fill("Fictional lead A")
+        self.page.locator("#draftInvestigator").fill("Fictional investigator B")
+        self.page.locator("#saveDraft").click()
+        self.page.get_by_text("Saved on this device — NOT submitted to RBH.").wait_for()
+        self.page.reload()
+        self.unlock()
+        self.page.get_by_text("Report #77").first.click()
+        self.page.locator("#draftStep").select_option("assignment")
+        self.page.wait_for_function(
+            "document.querySelector('#draftReportOwner').value === 'Fictional lead A'"
+        )
+        self.assertEqual(self.page.locator("#draftInvestigator").input_value(),
+                         "Fictional investigator B")
+
+
 if __name__=='__main__':
     unittest.main()
