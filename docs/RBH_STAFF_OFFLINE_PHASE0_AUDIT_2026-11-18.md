@@ -55,3 +55,22 @@ Status: **IN PROGRESS — NOT DEPLOYED / NOT ACCEPTED**
 
 ## Explicitly unchanged
 Production dashboard/Service Worker, public reporter, report data, staff accounts, RLS, email and push, cron schedules, weekly digest and report numbering.
+
+
+## November 18 implementation update — isolated feature branch
+- `dashboard.html` on the feature branch now includes an authenticated device enrollment panel and on-device encrypted autosaving for the focused corrective-action view, wizard child action notes, and investigation findings/root cause. Existing online commit RPCs remain intact.
+- `staff-offline-workspace.html` is a static, locked shell for previously synchronized, permission-filtered assigned work. It drafts report review, investigation, action planning, completion, verification/send-back, additional action and closure notes; photo evidence is encrypted locally. It **does not** synchronize or officially commit any workflow changes.
+- `sw.js` on the branch handles offline staff dashboard navigation by showing the static locked workspace shell. No dashboard HTML, Supabase responses, reports, credentials or evidence are cached in Cache Storage.
+- `staff-offline-bootstrap.js` offers explicit per-device enrollment, encrypts a 24-hour assigned-record snapshot, and scopes data by account. Explicit logout/account switching purges local work; sign-out warns before erasure if enrolled.
+- `staff-offline-protocol.js` is an entirely pure, testable, user-confirmed transition state machine. It **does not send** uploads or RPCs. No automatic action status changes on connection restoration.
+- Database SQL files and updated `manage-action-evidence` Edge Function source are staged in the branch, **not deployed**. The SQL wrapper preserves existing audited RPC role and lifecycle logic and adds per-actor stable operation IDs and optimistic revision checks. The Edge Function optional offline evidence route uses a deterministic client UUID and SHA-256 with strict owner/tenant/action/revision authorization and requires an additive schema migration.
+- Browser regression suite `tests/test_staff_offline_browser.py` covers fictional-case IndexedDB/photo persistence, offline PWA shell fallback, account mismatch, passphrase mismatch, and account deletion. CI is on GitHub Actions using Ubuntu 24.04 with Playwright Chromium; browser acceptance must only be marked passing after the actual run succeeds.
+
+## Unresolved / pilot-blocking
+- Integrate the staged server action RPC and evidence uploader **only after** database migration validation, transactional rollback tests, and full security authorization tests.
+- Add a safe explicit reconnect review/outbox, server revision comparisons and conflict choices for all workflow stages; verify all intended offline draft types can be restored into the live dashboard without silent overwrites.
+- Complete additional workflow surfaces and action-plan details (including multiple planned actions); verify all workflow roles and states.
+- Validate photo upload recovery when the server accepted the object but the response was lost, competing retries, cross-tenant denial, and storage failure.
+- Verify real iPhone Home Screen PWA offline launch/force quit and Chrome browser behavior. Headless Chromium alone is not device acceptance.
+- Require completed end-to-end regression, security review, launch flag, deployment and rollback before merging into `main`.
+- Running backlog, RBH weekly digest hold and final test data are unchanged in production; do not reset sequence or delete reports without owner's explicit approval.
