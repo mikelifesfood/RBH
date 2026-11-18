@@ -3044,6 +3044,10 @@
       openNotificationPanel();
       try{ history.replaceState({},document.title,location.pathname+location.search); }catch(_){}
     }
+    // Notification taps on a closed PWA carry only an opaque event identifier.
+    // Resolve it after authentication and tenant-scoped report data have loaded.
+    var launchPushKey=requestedPushEventKeyFromUrl();
+    if(launchPushKey) pendingPushKey=launchPushKey;
     if(pendingPushKey){ var key=pendingPushKey; pendingPushKey=null; openPushNotification(key); }
   }
   sb.auth.getSession().then(function(res){ var s=res.data&&res.data.session; if(s) showApp(s); else showLogin(); });
@@ -3320,30 +3324,79 @@
     return currentRole==="read_only"?"records":"mywork";
   }
   async function openNotificationItem(n){
-    if(!n) return;
-    if(!n.viewed_at){
-      try{
-        var vr=await sb.rpc("rbh_mark_notification_viewed",{p_notification_id:n.id});
-        if(vr.error) throw vr.error;
-        n.viewed_at=new Date().toISOString(); renderNotificationCenter();
-      }catch(ex){ console.error("notification viewed",ex); }
-    }
+    if(!n||!currentSession||!currentSession.user)return;
+    // RLS protects the select; repeat the recipient and tenant check to avoid
+    // misrouting after a signed-in account switch or a stale notification.
+    if(String(n.recipient_user_id||"")!==currentUserId()||
+       String(n.organization_id||"")!==String(currentOrgId||""))return;
     closeNotificationPanel();
-    var r=allReports.find(function(x){ return String(x.id)===String(n.report_id); });
-    if(!r){
-      await loadReports();
-      r=allReports.find(function(x){ return String(x.id)===String(n.report_id); });
+    // Navigation should not wait for a separate viewed-status network write.
+    if(!n.viewed_at){
+      sb.rpc("rbh_mark_notification_viewed",{p_notification_id:n.id})
+        .then(function(res){
+          if(res.error)throw res.error;
+          n.viewed_at=new Date().toISOString();
+          renderNotificationCenter();
+        }).catch(function(ex){console.warn("notification viewed",ex);});
     }
-    if(r) openIncident(r,notificationReturnView());
-    else toast("That report is unavailable or you no longer have access to it.","err");
+    var actionId=String(n.corrective_action_id||"");
+    if(actionId){
+      var a=allCorrectiveActions.find(function(x){return String(x.id)===actionId;});
+      if(!a){
+        await loadReports(true);
+        a=allCorrectiveActions.find(function(x){return String(x.id)===actionId;});
+      }
+      if(a&&String(a.report_id)===String(n.report_id)&&
+          !a.retired_at&&findReport(a.report_id)){
+        // The focused action view applies the same owner/verifier permissions
+        // as any other route. Unassigned employees see it read only.
+        openFocusedCorrectiveAction(a,"mywork");
+        return;
+      }
+      // Archived or unavailable action: the accessible parent report remains
+      // a useful fallback, without exposing a private record ID in push.
+    }
+    var r=allReports.find(function(x){return String(x.id)===String(n.report_id);});
+    if(!r){
+      await loadReports(true);
+      r=allReports.find(function(x){return String(x.id)===String(n.report_id);});
+    }
+    if(r&&reportVisibleInPersonalWorkspace(r))openIncident(r,notificationReturnView());
+    else{
+      showView("home");
+      toast("That safety item is no longer available to your account.","err");
+    }
+  }
+  function requestedPushEventKeyFromUrl(){
+    try{
+      var url=new URL(location.href),key=url.searchParams.get("push_event")||"";
+      if(!key)return "";
+      // Clear the opaque token from browser history even on invalid input.
+      url.searchParams.delete("push_event");
+      history.replaceState({},document.title,url.pathname+url.search+url.hash);
+      return /^[a-f0-9]{32}$/.test(key)?key:"";
+    }catch(_e){return "";}
   }
   var pendingPushKey=null;
   async function openPushNotification(key){
     if(!currentSession||!currentSession.user||!/^[a-f0-9]{32}$/.test(key))return;
-    await loadNotifications(true);
-    var n=userNotifications.find(function(x){return String(x.id).replace(/-/g,"").toLowerCase()===key;});
-    if(n) await openNotificationItem(n);
-    else openNotificationPanel(); // Inaccessible, reassigned or resolved: no data exposed.
+    try{
+      // Read the exact notification, including previously viewed/acknowledged
+      // entries. The attention-only notification panel deliberately filters
+      // these out, so it must not be used as the navigation source.
+      var uuid=key.slice(0,8)+"-"+key.slice(8,12)+"-"+key.slice(12,16)+"-"+key.slice(16,20)+"-"+key.slice(20);
+      var result=await sb.from("report_user_notifications")
+        .select("id,organization_id,recipient_user_id,report_id,corrective_action_id,notification_type,viewed_at")
+        .eq("id",uuid).eq("recipient_user_id",currentUserId())
+        .eq("organization_id",currentOrgId).maybeSingle();
+      if(result.error)throw result.error;
+      if(result.data)await openNotificationItem(result.data);
+      else{showView("home");toast("That notification is no longer available.","err");}
+    }catch(ex){
+      console.warn("RBH push navigation unavailable",ex);
+      showView("home");
+      toast("Could not open the safety item. Please refresh and try again.","err");
+    }
   }
   if("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("message",function(event){
     var data=event&&event.data;
