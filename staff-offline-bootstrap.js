@@ -219,41 +219,52 @@ async function wireFocusedDraft(report,action,textarea,step){
   if(!['action_completion','verification','changes_requested'].includes(step))return;
   if(textarea.dataset.rbhOfflineWired==='yes')return;
   textarea.dataset.rbhOfflineWired='yes';
-  const scope=scopeFor(report,action,step);
-  const revision=action.updated_at;
+  const scope=scopeFor(report,action,step),revision=action.updated_at;
   const hint=document.createElement('p');
   hint.className='field-help';hint.setAttribute('role','status');
   hint.textContent='Offline draft saving enabled on this device.';
   textarea.insertAdjacentElement('afterend',hint);
+  let conflicted=false,dirty=false;
+  textarea.addEventListener('input',()=>{dirty=true;});
   try{
     const saved=await api().readDraft(scope);
     if(!textarea.isConnected)return;
-    if(saved&&saved.data&&saved.data.note){
-      if(saved.serverRevision===revision){
-        if(!textarea.value.trim())textarea.value=saved.data.note;
-        hint.textContent='Saved local draft restored. Review before submitting officially.';
+    if(saved&&saved.data){
+      conflicted=saved.serverRevision!==revision ||
+        (saved.data.reportRevision&&saved.data.reportRevision!==report.updated_at) ||
+        (Number(saved.data.reopenCount||0)!==Number(report.reopen_count||0));
+      if(!conflicted){
+        if(saved.data.note && !dirty && !textarea.value.trim())textarea.value=saved.data.note;
+        hint.textContent=dirty?'Newly entered text retained; older local draft not overwritten.':
+          'Saved local draft restored. Review before submitting officially.';
       }else{
-        hint.textContent='A local draft exists, but this action changed on the server. Review the differences before copying it.';
+        hint.textContent='Needs review: the report or action changed while the draft was offline. Local draft remains unchanged.';
         hint.style.color='#9b5712';
         const reveal=document.createElement('button');reveal.type='button';
         reveal.className='wizard-save';reveal.textContent='Show older draft';
         reveal.addEventListener('click',()=>{
           const output=document.createElement('textarea');
-          output.readOnly=true;output.value=saved.data.note;
+          output.readOnly=true;output.value=saved.data.note||'';
           output.setAttribute('aria-label','Older offline draft (read only)');
           hint.insertAdjacentElement('afterend',output);reveal.disabled=true;
         });hint.insertAdjacentElement('afterend',reveal);
       }
     }
-  }catch(e){hint.textContent='Could not restore your local draft. It has not been deleted.';}
+  }catch(e){hint.textContent='Could not restore your local draft. It has not been deleted.';conflicted=true;}
   let timer=null;
   textarea.addEventListener('input',()=>{
     clearTimeout(timer);
+    if(conflicted){
+      hint.textContent='Existing local draft needs manual review. Copy your new notes before navigating; autosave is paused.';
+      return;
+    }
     hint.textContent='Saving on this device…';
     timer=setTimeout(async()=>{
       if(!textarea.isConnected||!api()?.isUnlocked())return;
       try{
-        await api().saveDraft(scope,{note:textarea.value,offlineOnly:true},revision);
+        await api().saveDraft(scope,{note:textarea.value,offlineOnly:true,
+          reportRevision:report.updated_at,reopenCount:Number(report.reopen_count||0),
+          actionStatus:action.status},revision);
         hint.textContent='Saved on this device — not submitted.';
       }catch(e){hint.textContent='Device save failed. Do not close this page until you copy your note.';hint.style.color='#a62c36';}
     },450);
