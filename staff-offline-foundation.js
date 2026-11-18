@@ -5,7 +5,7 @@
  */
 (function (root) {
   'use strict';
-  const DB = 'teamworkt-staff-offline-v1', STORE = 'encrypted_drafts', FILES = 'encrypted_evidence', VERSION = 2;
+  const DB = 'teamworkt-staff-offline-v1', STORE = 'encrypted_drafts', FILES = 'encrypted_evidence', ACCOUNTS = 'account_locators', VERSION = 3;
   const encoder = new TextEncoder(), decoder = new TextDecoder();
   const ITERATIONS = 310000;
   let unlocked = null; // in-memory passphrase; never persisted
@@ -28,7 +28,8 @@
       if (!root.indexedDB) return reject(Error('DEVICE_STORAGE_UNAVAILABLE'));
       const request=indexedDB.open(DB, VERSION);
       request.onupgradeneeded=()=>{if (!request.result.objectStoreNames.contains(STORE))request.result.createObjectStore(STORE,{keyPath:'id'});
-        if (!request.result.objectStoreNames.contains(FILES))request.result.createObjectStore(FILES,{keyPath:'id'});};
+        if (!request.result.objectStoreNames.contains(FILES))request.result.createObjectStore(FILES,{keyPath:'id'});
+        if (!request.result.objectStoreNames.contains(ACCOUNTS))request.result.createObjectStore(ACCOUNTS,{keyPath:'id'});};
       request.onerror=()=>reject(request.error || Error('DEVICE_STORAGE_ERROR'));
       request.onblocked=()=>reject(Error('DEVICE_STORAGE_BUSY'));
       request.onsuccess=()=>resolve(request.result);
@@ -158,6 +159,42 @@
           tx.onabort=()=>reject(tx.error||Error('DEVICE_STORAGE_ABORTED'));
         });
       } finally {db.close();}
+    },
+    async registerAccountLocator(email,organizationId,userId) {
+      if (!unlocked) throw Error('OFFLINE_DRAFT_LOCKED');
+      if (!email || !organizationId || !userId) throw Error('INVALID_ACCOUNT_LOCATOR');
+      const id='email:'+await sha256(encoder.encode(String(email).trim().toLowerCase()));
+      await transaction('readwrite',store=>store.put({id,organizationId,userId}),ACCOUNTS);
+      const result=await fetchRecord(id,ACCOUNTS);
+      if (!result||result.organizationId!==organizationId||result.userId!==userId) throw Error('ACCOUNT_LOCATOR_WRITE_FAILED');
+    },
+    async resolveAccountLocator(email) {
+      if (!email) return null;
+      const id='email:'+await sha256(encoder.encode(String(email).trim().toLowerCase()));
+      const result=await fetchRecord(id,ACCOUNTS);
+      return result?{organizationId:result.organizationId,userId:result.userId}:null;
+    },
+    async deleteAccountWorkspace(organizationId,userId) {
+      if (!organizationId||!userId) throw Error('SCOPE_REQUIRED');
+      let deleted=0;
+      for (const storeName of [STORE,FILES,ACCOUNTS]) {
+        const db=await open();
+        try {
+          await new Promise((resolve,reject)=>{
+            const tx=db.transaction(storeName,'readwrite'),request=tx.objectStore(storeName).openCursor();
+            request.onsuccess=()=>{const cursor=request.result;if(!cursor)return;
+              const value=cursor.value;
+              if(value.organizationId===organizationId&&value.userId===userId||
+                value.scope&&value.scope.organizationId===organizationId&&value.scope.userId===userId){
+                cursor.delete();deleted++;
+              } cursor.continue();};
+            request.onerror=()=>reject(request.error||Error('DEVICE_STORAGE_ERROR'));
+            tx.oncomplete=()=>resolve();
+            tx.onabort=()=>reject(tx.error||Error('DEVICE_STORAGE_ABORTED'));
+          });
+        }finally{db.close();}
+      }
+      return {deleted};
     },
     async deleteDraft(scope) {
       const key=id(scope); await transaction('readwrite',store=>store.delete(key));
