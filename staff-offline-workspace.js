@@ -148,7 +148,7 @@ $('saveDraft').addEventListener('click',async()=>{
       await store().saveDraft(scope,draft,revision);
       const files=Array.from($('draftPhotos').files);
       for(const file of files){
-        const attachmentId=crypto.randomUUID().replace(/-/g,'');
+        const attachmentId=crypto.randomUUID();
         await store().saveEvidence(scope,attachmentId,file);
       }
       $('draftPhotos').value='';
