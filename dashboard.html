@@ -1918,6 +1918,15 @@
           </div>
           <button class="profile-primary" id="profileSave" type="submit">Save profile</button>
         </form>
+        <div class="profile-card-section" id="rbhSeamlessPanel" aria-label="Automatic offline work">
+          <h4>Offline sync (automatic)</h4>
+          <p class="field-help">Corrective-action work can be saved securely on this device and synchronized when a connection returns. No separate offline password is needed.</p>
+          <p id="rbhSeamlessStatus" role="status" aria-live="polite" class="field-help">Checking offline access and device readiness… If this message does not change, the updated offline script may not have loaded.</p>
+          <div class="profile-action-row">
+            <button class="profile-secondary" id="rbhSeamlessRetry" type="button">Check offline access</button>
+            <a class="profile-secondary" id="rbhSeamlessOpen" style="display:none;text-decoration:none;align-items:center" href="./staff-offline-seamless.html">View saved work and sync status</a>
+          </div>
+        </div>
       </section>
 
       <section class="profile-panel" data-profile-panel="security" hidden>
