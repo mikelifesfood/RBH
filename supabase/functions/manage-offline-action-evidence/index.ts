@@ -260,8 +260,11 @@ Deno.serve(async (req: Request) => {
     if (clientEvidenceId && !(await staffOfflineEnabled())) return json({error:"STAFF_OFFLINE_DISABLED"},403);
 
     for (const file of files) {
-      if (file.size > 10 * 1024 * 1024) {
-        return json({ error: "FILE_TOO_LARGE", fileName: file.name }, 400);
+      if (!file.size || file.size > 10 * 1024 * 1024) {
+        return json({ error: "FILE_SIZE_INVALID", fileName: file.name }, 400);
+      }
+      if (clientEvidenceId && !/^image\\/(jpeg|png|webp|heic|heif)$/i.test(file.type || "")) {
+        return json({ error: "OFFLINE_EVIDENCE_TYPE_NOT_SUPPORTED" }, 400);
       }
     }
 
