@@ -1632,6 +1632,7 @@
               <span class="ac-d">Open the field reporting experience in a new tab.</span>
             </button>
           </div>
+          <div class="home-panel" id="ownershipInbox" hidden style="margin-bottom:16px"><div class="hp-head"><span class="hp-title">Report transfers awaiting your decision</span></div><div id="ownershipRequestList" class="attention-list"></div></div>
           <div class="home-stats" id="homeStats"></div>
           <div class="attention-grid">
             <div class="home-panel"><div class="hp-head"><span class="hp-title">Needs your attention</span><button class="hp-link" data-view="records" type="button">Open inbox</button></div><div id="homeAttention" class="attention-list"></div></div>
@@ -1972,6 +1973,16 @@
   </div>
 </div>
 
+<div class="modal-backdrop" id="ownershipActionBackdrop">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="ownershipActionHeading">
+    <h3 id="ownershipActionHeading">Reassign corrective action</h3>
+    <p class="msub">Only the current Report Owner may reassign an action. The previous owner becomes read only and the newly assigned employee receives an email and an opted-in push notification.</p>
+    <div class="field"><label for="ownershipActionSelect">Assign to</label><select id="ownershipActionSelect"></select></div>
+    <div class="field"><label for="ownershipActionReason">Reason for reassignment</label><textarea id="ownershipActionReason" maxlength="500" placeholder="Explain why this action is being reassigned"></textarea></div>
+    <div class="login-err" id="ownershipActionError"></div>
+    <div class="modal-actions"><button class="btn-secondary" id="ownershipActionCancel" type="button">Cancel</button><button class="btn-primary" id="ownershipActionSave" type="button">Confirm reassignment</button></div>
+  </div>
+</div>
 <div class="modal-backdrop" id="addUserBackdrop">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="addUserHeading">
     <h3 id="addUserHeading">Add dashboard user</h3>
@@ -5109,6 +5120,7 @@
           '<div class="mac-head"><div class="mac-title"><b>Corrective Action #'+esc(a.action_number||"")+'</b><span>Assigned action</span></div><span class="multi-action-status mas-status-'+esc(status)+'">'+esc(actionStatusLabel(status))+'</span></div>'+
           '<div class="mac-desc">'+esc(a.description||"No description recorded.")+'</div>'+
           '<div class="ca-action-summary-meta"><span><b>Assigned to:</b> '+esc(owner)+'</span><span><b>Due:</b> '+esc(due)+'</span><span><b>Priority:</b> '+esc(priority)+'</span><span><b>Type:</b> '+esc(control)+'</span></div>'+
+          (isCurrentReportOwner(r)&&["not_started","in_progress","changes_requested"].includes(status)?'<button class="btn-secondary" type="button" data-reassign-action="'+esc(a.id)+'" style="margin:9px 0">Reassign corrective action</button>':'')+
           work+
           '<div class="evidence-panel" data-action-evidence data-corrective-action-id="'+esc(a.id)+'"></div>'+
           (editable?'<div class="multi-action-completion-actions multi-action-submit-after-evidence"><button class="wizard-primary" type="button" data-submit-child-completion="'+esc(a.id)+'">'+(status==="changes_requested"?'Resubmit for review →':'Send for review →')+'</button></div>':'')+
@@ -8650,7 +8662,48 @@
     scrollAppToTop();
   }
 
-  function renderHomeSnapshot(){ renderHomeGreeting(); renderHomeStats(); renderSafetyPulse(); renderHomeAttention(); renderHomeActivity(); updateNavCounts(); renderActions(); renderMyWork(); }
+  var ownershipInboxLastLoaded=0,ownershipInboxLoading=false;
+  async function loadReportTransferRequests(force){
+    var root=$("ownershipInbox"),list=$("ownershipRequestList");
+    if(!root||!list)return;
+    if(!isManager()||!currentUserId()){root.hidden=true;return;}
+    if(ownershipInboxLoading||(!force&&Date.now()-ownershipInboxLastLoaded<15000))return;
+    ownershipInboxLastLoaded=Date.now();ownershipInboxLoading=true;
+    try{
+      var response=await sb.rpc("rbh_my_pending_report_transfers");
+      if(response.error)throw response.error;
+      var pending=response.data||[];
+      root.hidden=!pending.length;
+      list.innerHTML=pending.map(function(t){
+        var name=String(t.from_owner_name||"Report Owner");
+        return '<div style="padding:10px 0;border-bottom:1px solid #ddd">'+
+          '<b>Report #'+esc(t.report_number||String(t.report_id).slice(0,8))+'</b>'+
+          '<div class="action-meta">Offered by '+esc(name)+' · Expires '+esc(fmtDate(t.expires_at))+'</div>'+
+          '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:9px">'+
+          '<button class="btn-primary" type="button" data-transfer-response="accept" data-transfer-id="'+esc(t.transfer_id)+'">Accept ownership</button>'+
+          '<button class="btn-secondary" type="button" data-transfer-response="decline" data-transfer-id="'+esc(t.transfer_id)+'">Decline</button>'+
+          '</div></div>';
+      }).join("");
+    }finally{ownershipInboxLoading=false;}
+  }
+  document.addEventListener("click",async function(event){
+    var button=event.target.closest&&event.target.closest("[data-transfer-response]");
+    if(!button)return;
+    var accept=button.getAttribute("data-transfer-response")==="accept";
+    var transferId=button.getAttribute("data-transfer-id");
+    if(!transferId||!confirm(accept?"Accept ownership? The previous Report Owner will become read only.":"Decline this report transfer? The current owner will retain control."))return;
+    button.disabled=true;
+    try{
+      var response=await sb.rpc("rbh_decide_report_transfer",{p_transfer_id:transferId,p_accept:accept});
+      if(response.error)throw response.error;
+      toast(accept?"Report ownership accepted. You can now manage the report.":"Transfer declined. The current owner was notified.","ok");
+      ownershipInboxLastLoaded=0;
+      await loadReports(true);await loadReportTransferRequests(true);
+    }catch(e){console.error("Respond to transfer",e);toast("Could not update ownership. Refresh and try again.","err");}
+    finally{button.disabled=false;}
+  });
+
+  function renderHomeSnapshot(){ renderHomeGreeting(); renderHomeStats(); renderSafetyPulse(); renderHomeAttention(); renderHomeActivity(); updateNavCounts(); renderActions(); renderMyWork(); loadReportTransferRequests(false).catch(function(e){console.warn("Transfer inbox",e);}); }
 
   async function upsertProfile(session){
     if(!session||!session.user) return;
