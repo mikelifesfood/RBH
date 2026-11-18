@@ -591,5 +591,93 @@ class OfflineBrowserTests(unittest.TestCase):
         self.assertIn("Human-review handoff required",copied)
 
 
+    def test_seamless_two_corrective_actions_save_without_password_and_retry(self):
+        self.page.goto(BASE+"/staff-offline-seamless.html")
+        self.page.evaluate("""async()=>{
+          const api=window.TeamWorktSeamlessOffline;
+          const u={organizationId:'org-1',userId:'user-1',role:'supervisor'};
+          const reports=[{id:'report-123',organization_id:'org-1',ref_no:77,
+            job_site:'Fictional basement',status:'investigation',updated_at:'2026-11-18T12:00:00Z',
+            workflow_restart_count:0,reopen_count:0}];
+          const actions=[1,2].map(n=>({id:'action-'+n,report_id:'report-123',organization_id:'org-1',
+            action_number:n,owner_user_id:'user-1',workflow_generation:0,
+            status:'in_progress',description:'Fictional corrective action '+n,
+            updated_at:'2026-11-18T12:00:00Z'}));
+          Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>false});
+          const fake={rpc:async()=>({data:{enabled:true,protocolVersion:1}})};
+          await api.init(u,reports,actions,fake);
+        }""")
+        self.page.reload()
+        self.page.get_by_text("Corrective Action #1").wait_for()
+        self.assertEqual(self.page.locator("#offlinePassphrase").count(),0)
+        self.assertEqual(self.page.locator("article.card").count(),2)
+        self.page.locator("article.card textarea").nth(0).fill("First basement repair completed")
+        self.page.locator("article.card button.primary").nth(0).click()
+        self.page.get_by_text("1 saved on device").wait_for()
+        self.page.locator("article.card textarea").nth(1).fill("Second basement repair completed")
+        self.page.locator("article.card button.primary").nth(1).click()
+        self.page.get_by_text("2 saved on device").wait_for()
+        prepared=self.page.evaluate("""async()=>{
+          const api=window.TeamWorktSeamlessOffline,u=await api.offlineIdentity();
+          const queued=await api.listEncrypted(u,'queue');
+          const db=await new Promise((resolve,reject)=>{
+            const r=indexedDB.open('rbh-seamless-offline-v1');
+            r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);
+          });
+          const key=await new Promise((resolve,reject)=>{
+            const r=db.transaction('keys','readonly').objectStore('keys').get('rbh-seamless:org-1:user-1');
+            r.onsuccess=()=>resolve(r.result?.key);r.onerror=()=>reject(r.error);
+          });
+          db.close();
+          return {count:queued.length,distinct:new Set(queued.map(x=>x.operationId)).size,
+            waiting:queued.every(x=>x.status==='waiting'),
+            keyExtractable:key?.extractable};
+        }""")
+        self.assertEqual(prepared,{'count':2,'distinct':2,'waiting':True,'keyExtractable':False})
+        # A reload must not lose either queue entry, and a lost HTTP reply
+        # must retry the same UUID without a second logical database mutation.
+        self.page.reload()
+        self.page.get_by_text("2 saved on device").wait_for()
+        results=self.page.evaluate("""async()=>{
+          const api=window.TeamWorktSeamlessOffline,u=await api.offlineIdentity();
+          const ss=await api.snapshot(u);
+          Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>true});
+          const seen=new Set(),rpcIds=[];let firstLost=false;
+          const client={
+            auth:{getUser:async()=>({data:{user:{id:u.userId}}})},
+            async rpc(name,p){
+              if(name==='rbh_staff_offline_status')return {data:{enabled:true,protocolVersion:1}};
+              if(name!=='rbh_commit_offline_corrective_action')throw Error('UNEXPECTED_RPC');
+              rpcIds.push(p.p_operation_id);
+              const wasSeen=seen.has(p.p_operation_id);seen.add(p.p_operation_id);
+              if(!firstLost){firstLost=true;return {error:{message:'SIMULATED_NETWORK_TIMEOUT'}};}
+              return {data:{ok:true,committed:true,operationId:p.p_operation_id,
+                actionId:p.p_action_id,kind:p.p_kind,reportId:'report-123'}};
+            }
+          };
+          const reports=[{id:'report-123',organization_id:'org-1',ref_no:77,
+            job_site:'Fictional basement',status:'investigation',updated_at:'2026-11-18T12:00:00Z',
+            workflow_restart_count:0,reopen_count:0}];
+          const actions=ss.map(a=>({id:a.id,report_id:a.reportId,organization_id:'org-1',
+            action_number:a.number,owner_user_id:'user-1',workflow_generation:0,
+            status:'in_progress',description:a.description,updated_at:a.actionRevision}));
+          await api.init(u,reports,actions,client);
+          for(let i=0;i<12;i++){
+            await new Promise(resolve=>setTimeout(resolve,70));
+            await api.flush();
+            const states=await api.listEncrypted(u,'queue');
+            if(states.every(x=>x.status==='synced'))break;
+          }
+          const states=await api.listEncrypted(u,'queue');
+          return {count:states.length,synced:states.every(x=>x.status==='synced'),
+            serverMutations:seen.size,retrySameId:rpcIds.length>=3&&rpcIds[0]===rpcIds[2]||
+              rpcIds.length>=3&&rpcIds[0]===rpcIds[1]};
+        }""")
+        self.assertEqual(results['count'],2)
+        self.assertTrue(results['synced'],results)
+        self.assertEqual(results['serverMutations'],2)
+        self.assertTrue(results['retrySameId'],results)
+
+
 if __name__=='__main__':
     unittest.main()
