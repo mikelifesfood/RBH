@@ -5026,13 +5026,11 @@
       return !!(a&&!isResolvedReport(r)&&currentRole!=="read_only"&&currentUserId()&&String(a.owner_user_id||"")===currentUserId());
     }
     function canVerifyCorrectiveAction(a){
-      return !!(a&&!isResolvedReport(r)&&isManager()&&currentUserId()&&String(a.verifier_user_id||"")===currentUserId());
+      return !!(a&&!isResolvedReport(r)&&isCurrentReportOwner(r));
     }
     async function releaseLegacyCorrectiveActionVerifier(a){
-      if(!a||!a.verifier_user_id||!isCurrentReportOwner(r)) return true;
-      var res=await sb.rpc("rbh_set_corrective_action_verifier",{p_action_id:a.id,p_verifier_user_id:null});
-      if(res.error) throw res.error;
-      a.verifier_user_id=null;
+      // The current Report Owner is the verifier; never clear the verifier
+      // before approval, which would discard reviewer routing.
       return true;
     }
     function renderMultiActionVerification(){
@@ -5087,7 +5085,7 @@
         } else if(status==="awaiting_verification"){
           var canReview=canVerifyCorrectiveAction(a);
           if(canReview){
-            review='<div class="multi-action-verifier-note"><b>Ready for review</b>Review the completed work and evidence below. You are the assigned verifier. Verify it as complete, or send this action back for changes.</div>'+
+            review='<div class="multi-action-verifier-note"><b>Ready for review</b>Review the completed work and evidence below. As the current Report Owner, you can verify it as complete or send it back for changes.</div>'+
               '<div class="mav-review">'+
                 '<label class="inv-l">Approval note (optional)<textarea data-child-verification-note="'+esc(a.id)+'" placeholder="What did you verify?"></textarea></label>'+
                 '<div class="multi-action-verification-actions"><button class="wizard-primary" type="button" data-child-verify-action="'+esc(a.id)+'">Verify as complete</button></div>'+
@@ -5099,8 +5097,7 @@
               '</div>';
           } else {
             review='<div class="multi-action-verifier-note"><b>Review required</b>'+
-              (a.verifier_user_id?'Only the assigned verifier can review this action.':'A verifier must be assigned before this action can be approved.')+'</div>'+
-              (isCurrentReportOwner(r)?'<button class="btn-secondary" type="button" data-assign-action-verifier="'+esc(a.id)+'">Assign / change verifier</button>':'');
+              'Only the current Report Owner can review this action.</div>';
           }
         } else if(status==="changes_requested"){
           review='<div class="ops-alert critical"><b>Changes requested</b>'+esc(a.verification_note||"The reviewer requested additional work.")+'</div>'+
@@ -7857,11 +7854,7 @@
     return !!(r&&currentUserId()&&String(r.report_owner_user_id||"")===currentUserId()&&isManager());
   }
   function canPerformVerification(r){
-    return !!(r&&!isResolvedReport(r)&&isManager()&&
-      (isVerifierAssignedToMe(r)||allCorrectiveActions.some(function(a){
-        return String(a.report_id)===String(r.id)&&String(a.verifier_user_id||"")===currentUserId()
-          &&a.status==="awaiting_verification"&&!a.retired_at;
-      })));
+    return !!(r&&!isResolvedReport(r)&&isCurrentReportOwner(r));
   }
   function canWorkInvestigation(r){
     return !!(r&&!isResolvedReport(r)&&isCurrentReportOwner(r));
@@ -8059,7 +8052,7 @@
       var r=findReport(a.report_id);
       if(!r||!isOpenOperational(r)||!correctiveActionInCurrentCycle(a,r)) return false;
       if(String(a.status||"")!=="awaiting_verification") return false;
-      return String(a.verifier_user_id||"")===currentUserId();
+      return isCurrentReportOwner(r);
     });
   }
   function childActionSort(a,b){
@@ -8193,7 +8186,7 @@
   function correctiveActionNeedsMyAttention(a){
     if(!a||!currentUserId()) return false;
     if(String(a.owner_user_id||"")===currentUserId()) return true;
-    if(String(a.status||"")==="awaiting_verification" && isManager() && String(a.verifier_user_id||"")===currentUserId()) return true;
+    if(String(a.status||"")==="awaiting_verification" && isCurrentReportOwner(findReport(a.report_id))) return true;
     return false;
   }
   function renderActionSummary(arr){
@@ -8273,7 +8266,7 @@
   }
   function focusedActionCanVerify(a,r){
     return !!(a&&r&&!isResolvedReport(r)&&correctiveActionInCurrentCycle(a,r)&&isManager()
-      &&String(a.status||"")==="awaiting_verification"&&String(a.verifier_user_id||"")===currentUserId());
+      &&String(a.status||"")==="awaiting_verification"&&isCurrentReportOwner(r));
   }
   function replaceGlobalCorrectiveAction(row){
     if(!row||!row.id) return;
