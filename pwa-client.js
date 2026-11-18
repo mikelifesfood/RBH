@@ -13,6 +13,10 @@
     (navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
   var isStandalone=(window.matchMedia&&matchMedia('(display-mode: standalone)').matches) ||
     navigator.standalone===true;
+  // Offer installation only on phones/tablets, never on desktop browsers.
+  // iPadOS may advertise MacIntel; touch support distinguishes the tablet.
+  var isMobileDevice=isIOS||/Android|Mobile|Tablet/i.test(navigator.userAgent)||
+    (navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
   var isPublicForm=!!document.getElementById('reportForm');
   // Only authorized staff dashboard pages should advertise installation.
   // Public reporting still uses the service worker and offline warning.
@@ -26,7 +30,7 @@
   }
 
   function installCardVisible(){
-    return isDashboardPage&&!dismissed&&!isStandalone&&(!!deferredPrompt||isIOS);
+    return isDashboardPage&&isMobileDevice&&!dismissed&&!isStandalone&&(!!deferredPrompt||isIOS);
   }
   function refreshInstall(){
     if(installCard) installCard.hidden=!installCardVisible();
@@ -71,7 +75,7 @@
 
   window.addEventListener('beforeinstallprompt',function(event){
     // No install UI or promotion for anonymous public reporting.
-    if(!isDashboardPage||isStandalone)return;
+    if(!isDashboardPage||!isMobileDevice||isStandalone)return;
     event.preventDefault();
     deferredPrompt=event;
     refreshInstall();
@@ -107,7 +111,7 @@
   }
 
   function init(){
-    if(isDashboardPage)createInstallControls();
+    if(isDashboardPage&&isMobileDevice)createInstallControls();
     if(isPublicForm)wireOfflineNotice();
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
