@@ -666,6 +666,9 @@ class OfflineBrowserTests(unittest.TestCase):
           const actions=ss.map(a=>({id:a.id,report_id:a.reportId,organization_id:'org-1',
             action_number:a.number,owner_user_id:'user-1',workflow_generation:0,
             status:'in_progress',description:a.description,updated_at:a.actionRevision}));
+          // The reload restores the standalone shell, not the dashboard host.
+          document.body.insertAdjacentHTML('beforeend',
+            '<div id="rbhSeamlessPanel" hidden><p id="rbhSeamlessStatus"></p></div>');
           await api.init(u,reports,actions,client);
           for(let i=0;i<12;i++){
             await new Promise(resolve=>setTimeout(resolve,70));
