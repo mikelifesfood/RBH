@@ -102,7 +102,7 @@ class OfflineBrowserTests(unittest.TestCase):
         self.page.reload()  # Ensure the new SW controls this client before going offline
         self.context.set_offline(True)
         self.page.goto(BASE+"/dashboard.html",wait_until="domcontentloaded")
-        self.page.locator("#unlockForm").wait_for()
+        self.assertTrue(self.page.locator("#unlockForm").count(),\n          "Offline navigation returned: "+self.page.url+" HTML="+self.page.content()[:1200])
         self.unlock()
         self.page.get_by_text("Report #77").first.click()
         self.page.locator("#draftStep").select_option("action_completion")
@@ -127,7 +127,7 @@ class OfflineBrowserTests(unittest.TestCase):
         self.page.locator("#eraseButton").click()
         self.page.get_by_text("erased",exact=False).wait_for()
         self.unlock()
-        self.assertIn("No offline work",self.page.locator("#status").inner_text())
+        self.page.get_by_text("No offline work",exact=False).wait_for()
 
 if __name__=='__main__':
     unittest.main()
