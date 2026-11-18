@@ -206,7 +206,9 @@ async function flush(){
   if(auth.error||auth.data?.user?.id!==u.userId)return;
   const gate=await state.client.rpc('rbh_staff_offline_status');
   if(gate.error||gate.data?.enabled!==true||gate.data?.protocolVersion!==1)return;
-  const entries=(await listEncrypted(u,'queue')).filter(x=>x.status==='waiting'||x.status==='retry');
+  // Reclaim interrupted attempts after a browser crash or PWA force-close.
+  // Reuse the durable operationId so the server's idempotency ledger prevents duplicates.
+  const entries=(await listEncrypted(u,'queue')).filter(x=>['waiting','retry','syncing'].includes(x.status));
   for(const original of entries){
    let item={...original,status:'syncing'};await putEncrypted(u,'queue',item.operationId,item);renderCounters();
    try{
@@ -369,7 +371,15 @@ async function signOut(){
  if(u)await eraseDevice(u);
  if(root.caches){const c=await caches.open('rbh-staff-offline-device-v1');await c.delete(new URL('./staff-offline-device-enabled',location.href).href);}
 }
-async function hasPending(){return state.identity&&(await counts()).pending>0;}
+async function hasPending(){
+  if(!state.identity)return false;
+  const c=await counts();
+  if(c.pending>0||c.review>0)return true;
+  // A note or photo saved on this device but not yet submitted is also
+  // irreplaceable work. Warn before logout wipes the encrypted local store.
+  const drafts=await listEncrypted(state.identity,'draft');
+  return drafts.some(d=>!d.synced&&(!!String(d.note||'').trim()||(d.files||[]).length>0));
+}
 if(root.addEventListener){
  root.addEventListener('online',()=>{setTimeout(flush,500);});
  root.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')flush();});
