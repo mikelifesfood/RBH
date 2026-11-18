@@ -78,6 +78,7 @@ begin
    or v_report.status in ('closed','no_action','duplicate')
  then raise exception 'REPORT_OWNERSHIP_CHANGED'; end if;
  if p_accept is true then
+   perform set_config('rbh.authorized_owner_change',v_actor::text,true);
    update public.reports set report_owner_user_id=v_actor,
     report_owner_assigned_at=now(),report_owner_assigned_by=v_transfer.from_user_id
    where id=v_transfer.report_id;
@@ -103,6 +104,7 @@ begin
  if v_report.report_owner_user_id is distinct from v_actor then
    update public.rbh_report_transfer_requests set status='cancelled',decided_at=now(),decided_by=v_actor
    where report_id=p_report_id and status='pending';
+   perform set_config('rbh.authorized_owner_change',v_actor::text,true);
    update public.reports set report_owner_user_id=v_actor,report_owner_assigned_at=now(),
      report_owner_assigned_by=v_actor where id=p_report_id;
    -- Separate durable audit for mandatory override reason; existing report audit also records owner change.
