@@ -1,5 +1,5 @@
 // RBH / TeamWorkt PWA push dispatch: dedicated sb_secret backend invocation only.
-// Not scheduled. Requires explicit global enable and valid VAPID secrets before sending.
+// Scheduled every minute; requires explicit company enable, device opt-in, and valid VAPID secrets.
 import { createClient } from "npm:@supabase/supabase-js@2.117.2";
 import webpush from "npm:web-push@3.6.7";
 const json=(value:unknown,status=200)=>new Response(JSON.stringify(value),{status,headers:{"Content-Type":"application/json","Cache-Control":"no-store"}});
@@ -77,13 +77,13 @@ Deno.serve(async req=>{
     }
     if(permitted){
       const {data:r}=await service.from("reports")
-        .select("id,organization_id,report_owner_user_id,assigned_user_id,status")
+        .select("id,organization_id,report_owner_user_id,report_owner_assigned_by,assigned_user_id,status")
         .eq("id",event.report_id).maybeSingle();
       report=r;permitted=!!r&&r.organization_id===event.organization_id;
     }
     if(permitted&&event.corrective_action_id){
       const {data:a}=await service.from("report_corrective_actions")
-        .select("id,organization_id,report_id,owner_user_id,verifier_user_id,status")
+        .select("id,organization_id,report_id,owner_user_id,verifier_user_id,status,updated_by,activated_by")
         .eq("id",event.corrective_action_id).maybeSingle();
       action=a;permitted=!!a&&a.organization_id===event.organization_id&&a.report_id===report.id;
     }
@@ -109,6 +109,15 @@ Deno.serve(async req=>{
         default: permitted=false;
       }
     }
+    // Self-assignment still lives in the user's dashboard work queue.
+    // Do not send a redundant push when they assigned the work to themselves.
+    if(permitted&&["report_owner_assignment","action_assignment","corrective_action_assignment"].includes(event.notification_type)){
+      const same=(a:any,b:any)=>!!a&&!!b&&String(a)===String(b);
+      if(event.notification_type==="report_owner_assignment"&&
+        same(report.report_owner_assigned_by,event.recipient_user_id))permitted=false;
+      if(event.notification_type==="corrective_action_assignment"&&action&&
+        same(action.updated_by||action.activated_by,event.recipient_user_id))permitted=false;
+    }
     if(!permitted){
       await service.from("push_delivery_outbox").update({status:"cancelled",last_error_code:"RECIPIENT_NOT_CURRENT",updated_at:now}).eq("id",task.id).eq("status","claimed");
       summary.cancelled++;continue;
@@ -116,7 +125,7 @@ Deno.serve(async req=>{
     try{
       const response=await webpush.sendNotification(
         {endpoint:device.endpoint,keys:{p256dh:device.p256dh,auth:device.auth_secret}},
-        JSON.stringify({tag:event.id.replace(/-/g,"")}),{TTL:3600,urgency:"normal"}
+        JSON.stringify({tag:event.id.replace(/-/g,""),type:event.notification_type}),{TTL:3600,urgency:"normal"}
       );
       await service.from("push_delivery_outbox").update({status:"accepted",last_http_status:response.statusCode,updated_at:now}).eq("id",task.id).eq("status","claimed");
       await service.from("user_push_subscriptions").update({last_success_at:now,failure_count:0,updated_at:now}).eq("id",device.id);
