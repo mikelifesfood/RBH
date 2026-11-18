@@ -225,9 +225,15 @@ Deno.serve(async (req: Request) => {
   }
 
   async function staffOfflineEnabled() {
-    const {data,error}=await service.from('staff_offline_settings')
-      .select('enabled').eq('organization_id',callerOrgId).maybeSingle();
-    return !error&&data?.enabled===true;
+    // Do not use the service role to read a feature flag and thereby skip
+    // session revocation. The authenticated RPC checks auth.sessions,
+    // current tenant membership and active profile on EVERY call.
+    const sessionClient=createClient(supabaseUrl,anonKey,{
+      global:{headers:{Authorization:`Bearer ${token}`}},
+      auth:{persistSession:false,autoRefreshToken:false}
+    });
+    const {data,error}=await sessionClient.rpc('rbh_staff_offline_status');
+    return !error&&data?.enabled===true&&data?.protocolVersion===1;
   }
 
   if (action === "capabilities") {
