@@ -96,6 +96,15 @@ async function prepare(){
   if(!pass||pass.length<12||pass!==again){setStatus('Enter and confirm the same offline passphrase (at least 12 characters).',true);return;}
   const button=$('rbhOfflinePrepare');button.disabled=true;
   try{
+    // Request more durable browser storage only during this explicit opt-in.
+    // A denial never prevents saving; the UI must warn about possible eviction.
+    let persistent=false;
+    try {
+      if(navigator.storage?.persist)
+        persistent=await navigator.storage.persist();
+      else if(navigator.storage?.persisted)
+        persistent=await navigator.storage.persisted();
+    } catch(_) {}
     f.unlock(pass);
     const locator=await f.resolveAccountLocator(u.email);
     if(locator&&(!sameIdentity(locator,u)))throw Error('ACCOUNT_CONTEXT_CHANGED');
@@ -107,7 +116,8 @@ async function prepare(){
     await f.saveDraft(indexScope(),buildIndex(),new Date().toISOString());
     if(!locator)await f.registerAccountLocator(u.email,u.organizationId,u.userId);
     $('rbhOfflinePassphrase').value='';$('rbhOfflinePassphraseAgain').value='';
-    setStatus('Assigned work is encrypted on this device. Drafts and evidence remain local until officially submitted online.');
+    setStatus('Assigned work is encrypted on this device. Drafts and evidence remain local until officially submitted online.'+
+      (persistent?' Persistent device storage is enabled.':' Storage persistence is not guaranteed by this browser; keep the app installed and confirm drafts are saved before leaving the worksite.'));
   }catch(e){
     f.lock();setStatus(e.message==='OFFLINE_DRAFT_CANNOT_DECRYPT'?'Your offline passphrase does not match this device’s existing drafts. Nothing was overwritten.':e.message,true);
   }finally{button.disabled=false;}
