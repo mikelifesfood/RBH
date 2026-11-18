@@ -88,7 +88,7 @@ class OfflineBrowserTests(unittest.TestCase):
         self.unlock()
         self.page.get_by_text("Report #77").first.click()
         self.page.locator("#draftStep").select_option("action_completion")
-        self.assertEqual(self.page.locator("#draftNote").input_value(),"Fictional corrective work complete")
+        self.page.wait_for_function("document.querySelector('#draftNote').value === 'Fictional corrective work complete'")
         self.assertIn("1 photo(s)",self.page.locator("#evidenceCount").inner_text())
         self.page.evaluate("""async()=>{
           const f=window.TeamWorktStaffOfflineFoundation;
@@ -118,14 +118,14 @@ class OfflineBrowserTests(unittest.TestCase):
     def test_wrong_identity_passphrase_and_local_erase(self):
         self.enroll()
         self.unlock(email="wrong@example.invalid")
-        self.assertIn("No offline work",self.page.locator("#status").inner_text())
+        self.page.get_by_text("No offline work",exact=False).wait_for()
         self.unlock(password="incorrect-passphrase-2026")
-        self.assertIn("Incorrect passphrase",self.page.locator("#status").inner_text())
+        self.page.get_by_text("Incorrect passphrase",exact=False).wait_for()
         self.unlock()
         self.page.get_by_text("Report #77").first.wait_for()
         self.page.on("dialog",lambda dialog: dialog.accept())
         self.page.locator("#eraseButton").click()
-        self.assertIn("erased",self.page.locator("#status").inner_text())
+        self.page.get_by_text("erased",exact=False).wait_for()
         self.unlock()
         self.assertIn("No offline work",self.page.locator("#status").inner_text())
 
