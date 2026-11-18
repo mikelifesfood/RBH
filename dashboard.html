@@ -3031,8 +3031,33 @@
     finally{ btn.disabled=false; btn.textContent="Sign in"; }
   });
   var _signout=$("signout"); if(_signout) _signout.addEventListener("click", async function(){
-    try { if(window.TeamWorktStaffOfflineUI){ if(await window.TeamWorktStaffOfflineUI.hasOfflineWorkspace()&&!confirm("Signing out erases this account’s offline drafts and evidence from this device. Continue?")) return; await window.TeamWorktStaffOfflineUI.clearOnSignOut(); } if(window.RBHPush) await window.RBHPush.beforeSignOut(false); await sb.auth.signOut(); }
+    try {
+      if(window.TeamWorktSeamlessOffline && await window.TeamWorktSeamlessOffline.hasPending()){
+        if(!confirm("You have corrective actions saved on this device that have not synchronized. Signing out will permanently erase them. Sign out anyway?"))return;
+      }
+      if(window.TeamWorktStaffOfflineUI){ if(await window.TeamWorktStaffOfflineUI.hasOfflineWorkspace()&&!confirm("Signing out erases this account’s offline drafts and evidence from this device. Continue?")) return; await window.TeamWorktStaffOfflineUI.clearOnSignOut(); } if(window.RBHPush) await window.RBHPush.beforeSignOut(false); await sb.auth.signOut(); }
     catch(e){toast(e&&e.message?e.message:"Unable to sign out safely. Please retry.","err");}
+  });
+
+  window.addEventListener("rbh-offline-action-synced",async function(ev){
+    try{
+      if(!currentSession||!currentOrgId)return;
+      var info=ev.detail||{},r=findReport(info.reportId);
+      var a=allCorrectiveActions.find(function(row){return String(row.id)===String(info.actionId);});
+      // Refresh authoritative state after an offline receipt; never invent a
+      // client-side workflow status or send mail before the server confirms.
+      await loadReports(true);
+      r=findReport(info.reportId);
+      a=allCorrectiveActions.find(function(row){return String(row.id)===String(info.actionId);});
+      if(!r||!a)return;
+      if(info.kind==="submit_action_completion"){
+        sendCorrectiveActionVerificationRequestedEmail(r,a).catch(function(ex){console.warn("offline completion mail deferred",ex);});
+      }else if(info.kind==="request_action_changes"){
+        sendCorrectiveActionChangesRequestedEmail(r,a).catch(function(ex){console.warn("offline changes mail deferred",ex);});
+      }
+      loadNotifications(true).catch(function(){});
+      toast("Corrective Action #"+String(a.action_number||"")+" synchronized to RBH.","ok");
+    }catch(ex){console.warn("RBH offline synchronization display refresh failed",ex);}
   });
 
   /* ---------- data ---------- */
