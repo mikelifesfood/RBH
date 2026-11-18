@@ -48,11 +48,19 @@ Deno.serve(async req=>{
       .eq("user_id",user.id).eq("organization_id",org).is("disabled_at",null);
     if(error)return reply({error:"DEVICE_STATUS_UNAVAILABLE"},503);
     let deviceRegistered=false;
+    let deviceKnown=false;
     if(typeof body.endpoint==="string"&&safeEndpoint(body.endpoint)){
       const hash=hex(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(body.endpoint)));
       deviceRegistered=(data||[]).some(x=>x.endpoint_sha256===hash&&x.auth_session_id===sessionId);
+      // An earlier explicit device opt-in survives sign-out as a disabled row.
+      // Only the same account and company may silently rebind it to a new
+      // authenticated session; another user's subscription is never adopted.
+      const {data:prior,error:priorError}=await service.from("user_push_subscriptions")
+        .select("user_id,organization_id").eq("endpoint_sha256",hash).maybeSingle();
+      if(priorError)return reply({error:"DEVICE_STATUS_UNAVAILABLE"},503);
+      deviceKnown=!!prior&&prior.user_id===user.id&&prior.organization_id===org;
     }
-    return reply({configured:!!Deno.env.get("VAPID_PUBLIC_KEY"),publicKey:Deno.env.get("VAPID_PUBLIC_KEY")||null,activeDevices:(data||[]).length,deviceRegistered});
+    return reply({configured:!!Deno.env.get("VAPID_PUBLIC_KEY"),publicKey:Deno.env.get("VAPID_PUBLIC_KEY")||null,activeDevices:(data||[]).length,deviceRegistered,deviceKnown});
   }
   if(action==="disable_session"){
     const {error}=await service.from("user_push_subscriptions")
