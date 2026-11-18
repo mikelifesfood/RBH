@@ -2286,26 +2286,36 @@
     nextId=String(nextId||"").trim();
     if(!nextId) throw new Error("REPORT_OWNER_REQUIRED");
     var selected=profileById[nextId];
-    if(!selected||selected.is_active===false||["admin","safety_manager"].indexOf(String(selected.app_role||""))<0) throw new Error("INVALID_REPORT_OWNER");
-    if(String(selected.organization_id||currentOrgId||"")!==String(r.organization_id||currentOrgId||"")) throw new Error("REPORT_OWNER_ORGANIZATION_MISMATCH");
-    var oldId=String(r.report_owner_user_id||"");
-    if(oldId===nextId){ refreshIncidentOwnerHeader(r); return {changed:false,sent:false}; }
+    if(!selected||selected.is_active===false||["admin","safety_manager"].indexOf(String(selected.app_role||""))<0)
+      throw new Error("INVALID_REPORT_OWNER");
+    if(String(selected.current_organization_id||selected.organization_id||currentOrgId||"")!==String(r.organization_id||currentOrgId||""))
+      throw new Error("REPORT_OWNER_ORGANIZATION_MISMATCH");
+    var oldId=String(r.report_owner_user_id||""),me=currentUserId();
+    if(oldId===nextId)return {changed:false};
     await assertOpenResourceFresh();
-    var res=await sb.rpc("rbh_set_report_owner",{p_report_id:r.id,p_owner_user_id:nextId});
-    if(res.error) throw res.error;
-    var d=res.data||{}; if(Array.isArray(d)) d=d[0]||{};
-    r.report_owner_user_id=d.report_owner_user_id||nextId;
-    r.report_owner_assigned_at=d.report_owner_assigned_at||new Date().toISOString();
-    r.report_owner_assigned_by=d.report_owner_assigned_by||currentUserId();
-    if(d.report_updated_at) r.updated_at=d.report_updated_at;
-    if(activeOpenResource&&String(activeOpenResource.reportId||"")===String(r.id)){
-      if(d.report_updated_at) activeOpenResource.reportUpdatedAt=String(d.report_updated_at);
-      activeOpenResource.capturedAt=safeIsoNow(); activeOpenResource.stale=false; activeOpenResource.changedBy=null;
+    if(oldId&&oldId===me){
+      var offer=await sb.rpc("rbh_request_report_transfer",{p_report_id:r.id,p_to_user_id:nextId});
+      if(offer.error)throw offer.error;
+      return {changed:false,pending:true,targetName:profileName(selected)};
     }
-    refreshIncidentOwnerHeader(r); refreshIncidentMeta(r); renderLiveRecordNotices();
-    renderHomeSnapshot(); applyFilters();
-    var email=null;
-    if(notifyEmail) email=await sendReportOwnerAssignmentEmail(r);
+    if(oldId&&currentRole==="admin"&&nextId===me){
+      var reason=String(($("reportOwnerReason")||{}).value||"").trim();
+      if(!reason)throw new Error("TAKEOVER_REASON_REQUIRED");
+      var takeover=await sb.rpc("rbh_admin_take_report",{p_report_id:r.id,p_reason:reason});
+      if(takeover.error)throw takeover.error;
+    }else if(!oldId&&nextId===me){
+      var claim=await sb.rpc("rbh_claim_unassigned_report",{p_report_id:r.id});
+      if(claim.error)throw claim.error;
+    }else if(!oldId&&currentRole==="admin"){
+      var initial=await sb.rpc("rbh_set_report_owner",{p_report_id:r.id,p_owner_user_id:nextId});
+      if(initial.error)throw initial.error;
+    }else throw new Error("REPORT_TRANSFER_NOT_ALLOWED");
+    r.report_owner_user_id=nextId;
+    r.report_owner_assigned_at=new Date().toISOString();
+    r.report_owner_assigned_by=me;
+    refreshIncidentOwnerHeader(r);refreshIncidentMeta(r);renderLiveRecordNotices();
+    renderHomeSnapshot();applyFilters();
+    var email=notifyEmail&&!oldId&&nextId!==me?await sendReportOwnerAssignmentEmail(r):null;
     return {changed:true,email:email};
   }
 
@@ -5796,84 +5806,75 @@
   });
 
   function updateReportOwnerModalState(){
-    var r=reportOwnerModalReport, sel=$("reportOwnerSelect"), note=$("reportOwnerEmailNote"), btn=$("reportOwnerSave");
-    if(!r||!sel||!note||!btn) return;
-    var nextId=String(sel.value||""), currentId=String(r.report_owner_user_id||""), p=profileById[nextId], name=p?profileName(p):"the selected user";
+    var r=reportOwnerModalReport,sel=$("reportOwnerSelect"),note=$("reportOwnerEmailNote"),btn=$("reportOwnerSave");
+    if(!r||!sel||!note||!btn)return;
+    var currentId=String(r.report_owner_user_id||""),nextId=String(sel.value||""),
+      self=currentUserId(),name=profileName(profileById[nextId])||"the selected manager";
+    var adminTake=!!(currentId&&currentId!==self&&currentRole==="admin");
+    var reasonWrap=$("reportOwnerReasonWrap");if(reasonWrap)reasonWrap.hidden=!adminTake;
     note.classList.remove("neutral");
-    if(!nextId){
-      note.textContent="Choose a Report Owner before confirming."; note.classList.add("neutral");
-      btn.disabled=true; btn.textContent="Confirm owner change"; return;
+    if(!nextId||nextId===currentId){note.textContent="Choose a different eligible owner.";note.classList.add("neutral");btn.disabled=true;return;}
+    if(adminTake){
+      note.textContent="Admin takeover: you will immediately become the owner. The previous owner will be notified. A reason is required.";
+      btn.textContent="Take control";btn.disabled=nextId!==self;return;
     }
-    if(nextId===currentId){
-      note.textContent=name+" is already the current Report Owner. Nothing will be changed or emailed."; note.classList.add("neutral");
-      btn.disabled=true; btn.textContent="No change"; return;
+    if(!currentId){
+      note.textContent=nextId===self?"Claim this unassigned report. You become its only editor.":"Admins may make the initial assignment of an unclaimed report.";
+      btn.textContent=nextId===self?"Claim report":"Assign initial owner";btn.disabled=false;return;
     }
-    if(nextId===currentUserId()){
-      note.textContent="You are changing the Report Owner to yourself. A one-time assignment email will be sent when you confirm.";
-      btn.disabled=false; btn.textContent="Confirm change & send email"; return;
-    }
-    note.textContent="Changing the Report Owner to "+name+" will save the handoff and immediately send that person an email when you confirm.";
-    btn.disabled=false; btn.textContent="Confirm change & send email";
+    note.textContent="Offer this report to "+name+". You remain its owner until they accept. An email and push notification will be issued.";
+    btn.textContent="Send transfer request";btn.disabled=false;
   }
   function openReportOwnerModal(r){
-    if(!r||!canChangeReportOwner(r)){toast("Only an Admin or Safety Manager can change the Report Owner while the report is open.","err");return;}
+    if(!r||!canChangeReportOwner(r)){toast("Only the current Report Owner may offer a transfer. Admins may take control.","err");return;}
     reportOwnerModalReport=r;
-    var sel=$("reportOwnerSelect"), err=$("reportOwnerErr");
-    if(sel){ sel.innerHTML=reportOwnerOptions(r.report_owner_user_id||currentUserId()); sel.value=r.report_owner_user_id||currentUserId(); }
+    var sel=$("reportOwnerSelect"),err=$("reportOwnerErr"),help=$("reportOwnerHelp"),heading=$("reportOwnerHeading");
+    var adminTake=!!(r.report_owner_user_id&&!isCurrentReportOwner(r)&&currentRole==="admin");
+    if(sel){
+      if(adminTake)sel.innerHTML='<option value="'+esc(currentUserId())+'">'+esc(profileName(profileById[currentUserId()])||"Take ownership")+'</option>';
+      else if(!r.report_owner_user_id&&currentRole==="safety_manager")sel.innerHTML='<option value="'+esc(currentUserId())+'">'+esc(profileName(profileById[currentUserId()])||"Claim report")+'</option>';
+      else sel.innerHTML=reportOwnerOptions(r.report_owner_user_id||currentUserId());
+      sel.value=adminTake||(!r.report_owner_user_id&&currentRole==="safety_manager")?currentUserId():(r.report_owner_user_id||currentUserId());
+    }
+    if(heading)heading.textContent=adminTake?"Admin — take report":(!r.report_owner_user_id?"Claim report":"Offer report transfer");
+    if(help)help.textContent=adminTake?"You are taking ownership without the existing owner's consent. A documented reason is required.":(!r.report_owner_user_id?"Claim this unassigned report before working on it.":"The new Safety Manager must accept this transfer before your access becomes read only.");
+    if($("reportOwnerReason"))$("reportOwnerReason").value="";
     if(err){err.textContent="";err.classList.remove("show");}
-    updateReportOwnerModalState();
-    $("reportOwnerBackdrop").classList.add("open");
+    updateReportOwnerModalState();$("reportOwnerBackdrop").classList.add("open");
     setTimeout(function(){if(sel)sel.focus();},40);
   }
   function closeReportOwnerModal(){ $("reportOwnerBackdrop").classList.remove("open"); reportOwnerModalReport=null; }
-  var _ownerChange=$("incidentOwnerChange"); if(_ownerChange) _ownerChange.addEventListener("click",function(){ if(activeIncident){ $("incidentOptions").open=false; openReportOwnerModal(activeIncident); } });
+  var _ownerChange=$("incidentOwnerChange");if(_ownerChange)_ownerChange.addEventListener("click",function(){
+    if(activeIncident){$("incidentOptions").open=false;openReportOwnerModal(activeIncident);}
+  });
   var incidentOptions=$("incidentOptions");
-  document.addEventListener("click",function(e){
-    if(incidentOptions.open&&!incidentOptions.contains(e.target)) incidentOptions.open=false;
-  });
+  document.addEventListener("click",function(e){if(incidentOptions.open&&!incidentOptions.contains(e.target))incidentOptions.open=false;});
   incidentOptions.addEventListener("keydown",function(e){
-    if(e.key==="Escape"&&incidentOptions.open){
-      e.stopPropagation();
-      incidentOptions.open=false;
-      incidentOptions.querySelector("summary").focus();
-    }
+    if(e.key==="Escape"&&incidentOptions.open){e.stopPropagation();incidentOptions.open=false;incidentOptions.querySelector("summary").focus();}
   });
-  var _ownerSelect=$("reportOwnerSelect"); if(_ownerSelect) _ownerSelect.addEventListener("change",updateReportOwnerModalState);
-  var _ownerCancel=$("reportOwnerCancel"); if(_ownerCancel) _ownerCancel.addEventListener("click",closeReportOwnerModal);
-  var _ownerBackdrop=$("reportOwnerBackdrop"); if(_ownerBackdrop) _ownerBackdrop.addEventListener("click",function(e){if(e.target===_ownerBackdrop)closeReportOwnerModal();});
+  var _ownerSelect=$("reportOwnerSelect");if(_ownerSelect)_ownerSelect.addEventListener("change",updateReportOwnerModalState);
+  var _ownerCancel=$("reportOwnerCancel");if(_ownerCancel)_ownerCancel.addEventListener("click",closeReportOwnerModal);
+  var _ownerBackdrop=$("reportOwnerBackdrop");if(_ownerBackdrop)_ownerBackdrop.addEventListener("click",function(e){if(e.target===_ownerBackdrop)closeReportOwnerModal();});
   document.addEventListener("keydown",function(e){if(e.key==="Escape"&&_ownerBackdrop&&_ownerBackdrop.classList.contains("open"))closeReportOwnerModal();});
-  var _ownerSave=$("reportOwnerSave"); if(_ownerSave) _ownerSave.addEventListener("click",async function(){
-    if(!reportOwnerModalReport) return;
-    var r=reportOwnerModalReport, sel=$("reportOwnerSelect"), err=$("reportOwnerErr"), nextId=sel?String(sel.value||""):"";
-    if(!nextId){if(err){err.textContent="Choose a Report Owner.";err.classList.add("show");}return;}
-    if(nextId===String(r.report_owner_user_id||"")){updateReportOwnerModalState();return;}
-    _ownerSave.disabled=true; var old=_ownerSave.textContent; _ownerSave.textContent="Saving…";
+  var _ownerSave=$("reportOwnerSave");if(_ownerSave)_ownerSave.addEventListener("click",async function(){
+    if(!reportOwnerModalReport)return;
+    var r=reportOwnerModalReport,sel=$("reportOwnerSelect"),err=$("reportOwnerErr"),nextId=sel?String(sel.value||""):"";
+    if(!nextId)return;
+    _ownerSave.disabled=true;var old=_ownerSave.textContent;_ownerSave.textContent="Saving…";
     try{
-      var notifyEmail=true;
-      var result=await persistReportOwner(r,nextId,notifyEmail);
+      var result=await persistReportOwner(r,nextId,true);
       closeReportOwnerModal();
-      var owner=reportOwnerName(r)||"Report Owner";
-      if(result&&result.email&&result.email.sent){
-        toast("Report owner changed to "+owner+" — handoff email sent","ok");
-      } else if(result&&result.email&&!result.email.sent&&!result.email.skipped){
-        console.error("report owner handoff email",result.email);
-        toast("Report owner changed to "+owner+", but the handoff email could not be sent.","err");
-      } else if(result&&result.email&&result.email.skipped){
-        if(result.email.reason==="SEND_ALREADY_IN_PROGRESS") toast("Report owner changed to "+owner+" — handoff email is already being processed","ok");
-        else toast("Report owner changed to "+owner+", but no additional handoff email was sent.","err");
-      } else if(result&&result.changed&&nextId===currentUserId()){
-        toast("Report owner changed to "+owner+" — no email sent","ok");
-      } else {
-        toast(result&&result.changed?("Report owner changed to "+owner):("Report owner is already "+owner),"ok");
-      }
-      var d=$("incidentBody"); if(d&&d.isConnected) loadAudit(r.id,d.querySelector("[data-audit]"));
+      if(result.pending)toast("Transfer request sent to "+result.targetName+". You keep ownership until accepted.","ok");
+      else if(result.changed)toast("Report ownership updated.","ok");
+      else toast("No ownership change was needed.","ok");
+      var d=$("incidentBody");if(d&&d.isConnected)loadAudit(r.id,d.querySelector("[data-audit]"));
+      await loadReports(true);
     }catch(ex){
-      console.error("change report owner",ex);
-      if(err){err.textContent=(ex&&ex.message==="INVALID_REPORT_OWNER")?"Choose an active Admin or Safety Manager.":"Could not change the Report Owner. Refresh the record and try again.";err.classList.add("show");}
+      console.error("report ownership",ex);
+      if(err){err.textContent=ex&&ex.message==="TAKEOVER_REASON_REQUIRED"?"An Admin takeover requires a reason.":"Unable to change ownership. Refresh and try again.";err.classList.add("show");}
     }finally{
       _ownerSave.textContent=old;
-      if(reportOwnerModalReport) updateReportOwnerModalState();
-      else _ownerSave.disabled=false;
+      if(reportOwnerModalReport)updateReportOwnerModalState();else _ownerSave.disabled=false;
     }
   });
 
