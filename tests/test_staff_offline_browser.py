@@ -168,6 +168,61 @@ class OfflineBrowserTests(unittest.TestCase):
         }""")
         self.assertEqual(result,{'allowed':False,'blocked':True,'calls':1})
 
+    def test_seamless_corrective_action_retries_after_airplane_mode_without_duplicate(self):
+        # Fictional in-browser client; never writes to Supabase or sends a push.
+        self.page.goto(BASE + "/offline.html")
+        self.page.evaluate("""() => {
+          const panel=document.createElement('div');panel.id='rbhSeamlessPanel';
+          const status=document.createElement('p');status.id='rbhSeamlessStatus';
+          panel.append(status);document.body.append(panel);
+        }""")
+        self.page.add_script_tag(url=BASE + "/staff-offline-seamless.js")
+        self.page.evaluate("""async () => {
+          const id={userId:'offline-user',organizationId:'offline-org',role:'admin'};
+          const report={id:'offline-report',ref_no:67,organization_id:id.organizationId,
+            updated_at:'2026-11-18T20:00:00Z',status:'assigned',
+            workflow_restart_count:0,reopen_count:0};
+          const action={id:'offline-action',report_id:report.id,organization_id:id.organizationId,
+            action_number:1,description:'Fictional offline test',owner_user_id:id.userId,
+            status:'not_started',updated_at:'2026-11-18T20:00:00Z',workflow_generation:0};
+          window.offlineTest={legacy:0,commitAttempts:0,operationIds:[],fail:true};
+          const client={
+            auth:{getUser:async()=>({data:{user:{id:id.userId}}})},
+            rpc:async(name,args)=>{
+              if(name==='rbh_staff_offline_status')return {data:{enabled:true,protocolVersion:1}};
+              if(name!=='rbh_commit_offline_corrective_action')throw Error('UNEXPECTED_RPC');
+              window.offlineTest.commitAttempts++;
+              window.offlineTest.operationIds.push(args.p_operation_id);
+              if(window.offlineTest.fail)throw Error('NETWORK_INTERRUPTED');
+              return {data:{ok:true,committed:true,operationId:args.p_operation_id,
+                actionId:action.id,kind:'submit_action_completion'}};
+            }
+          };
+          const offline=window.TeamWorktSeamlessOffline;
+          await offline.init(id,[report],[action],client);
+          const area=document.createElement('textarea'),button=document.createElement('button');
+          button.textContent='Send for review';document.body.append(area,button);
+          offline.wireAction(report,action,area,button,'action_completion');
+          button.addEventListener('click',()=>{window.offlineTest.legacy++;});
+          area.value='Completed work, saved while offline.';
+          button.click();
+          await new Promise(resolve=>setTimeout(resolve,100));
+          window.offlineTest.afterFirst=await offline.counts();
+          window.offlineTest.fail=false;
+          await offline.flush();
+          window.offlineTest.afterRetry=await offline.counts();
+        }""")
+        outcome=self.page.evaluate("""() => ({
+          legacy:window.offlineTest.legacy,
+          attempts:window.offlineTest.commitAttempts,
+          stable:window.offlineTest.operationIds.length===2 &&
+            window.offlineTest.operationIds[0]===window.offlineTest.operationIds[1],
+          waiting:window.offlineTest.afterFirst.pending,
+          synced:window.offlineTest.afterRetry.synced
+        })""")
+        self.assertEqual(outcome,{'legacy':0,'attempts':2,'stable':True,
+                                  'waiting':1,'synced':1})
+
     def test_manual_official_action_submission_lost_response_replay(self):
         self.enroll()
         self.unlock()
