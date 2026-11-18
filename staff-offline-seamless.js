@@ -47,7 +47,7 @@ async function deviceKey(u,create){
 async function putEncrypted(u,kind,id,value){
  const key=await deviceKey(u,true),recordId=rowId(u,kind,id),iv=crypto.getRandomValues(new Uint8Array(12));
  const payload=enc.encode(JSON.stringify(value));
- if(payload.byteLength>13*1024*1024)throw Error('OFFLINE_ITEM_TOO_LARGE');
+ if(payload.byteLength>16*1024*1024)throw Error('OFFLINE_ITEM_TOO_LARGE');
  const ciphertext=await crypto.subtle.encrypt({name:'AES-GCM',iv,additionalData:enc.encode(recordId)},key,payload);
  const record={id:recordId,iv,ciphertext,savedAt:Date.now()};
  await dbOp('data','readwrite',store=>store.put(record));
@@ -134,8 +134,9 @@ async function addPhoto(a,file){
  const previous=await draft(u,a.id)||{actionId:a.id,step:'action_completion',note:'',files:[]};
  if(previous.queued)throw Error('ACTION_ALREADY_QUEUED');
  if(previous.files.length>=5)throw Error('MAX_FIVE_PHOTOS_PER_ACTION');
- const bytes=Array.from(new Uint8Array(await file.arrayBuffer()));
- const entry={id:crypto.randomUUID(),name:file.name.slice(0,120),type:file.type,bytes,savedAt:Date.now()};
+ const bytes=new Uint8Array(await file.arrayBuffer());
+ let binary='';for(let i=0;i<bytes.length;i+=32768)binary+=String.fromCharCode(...bytes.subarray(i,i+32768));
+ const entry={id:crypto.randomUUID(),name:file.name.slice(0,120),type:file.type,base64:btoa(binary),savedAt:Date.now()};
  await putEncrypted(u,'photo',entry.id,entry);
  previous.files.push(entry.id);
  await putEncrypted(u,'draft',a.id,previous);
@@ -169,7 +170,7 @@ async function uploadPhotos(item,u){
   for(const [k,v] of Object.entries({action:'upload',reportId:item.reportId,correctiveActionId:item.actionId,
    clientEvidenceId:id,expectedActionRevision:item.actionRevision,expectedReportRevision:item.reportRevision,
    expectedActionStatus:item.actionStatus,expectedGeneration:String(item.generation),expectedReopenCount:String(item.reopenCount)}))fd.append(k,v);
-  fd.append('files',new File([new Uint8Array(file.bytes)],file.name,{type:file.type}));
+  fd.append('files',new File([Uint8Array.from(atob(file.base64),c=>c.charCodeAt(0))],file.name,{type:file.type}));
   const res=await state.client.functions.invoke('manage-offline-action-evidence',{body:fd});
   if(res.error||res.data?.ok!==true||res.data?.clientEvidenceId!==id||res.data?.offlineProtocolVersion!==1||
    !Array.isArray(res.data.added)||res.data.added.length!==1)throw Error('EVIDENCE_RECEIPT_NOT_VERIFIED');
@@ -200,6 +201,7 @@ async function flush(){
        res.data.actionId!==item.actionId||res.data.kind!==item.kind)throw Error('SERVER_RECEIPT_NOT_VERIFIED');
     item={...item,status:'synced',syncedAt:Date.now(),receipt:res.data};
     await putEncrypted(u,'queue',item.operationId,item);
+    root.dispatchEvent?.(new CustomEvent('rbh-offline-action-synced',{detail:{actionId:item.actionId,reportId:item.reportId,kind:item.kind}}));
     await putEncrypted(u,'draft',item.actionId,{actionId:item.actionId,step:item.step,note:item.note,
       queued:false,files:[],synced:true,savedAt:Date.now()});
    }catch(e){
