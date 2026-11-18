@@ -3,18 +3,18 @@
  * Never cache dashboard HTML, Supabase responses, Auth tokens, images uploaded
  * to Storage, incident records or POST/PUT/PATCH/DELETE requests.
  */
-const CACHE_NAME = 'rbh-public-shell-v19-20261118-staff-offline-staged';
+const CACHE_NAME = 'rbh-public-shell-v20-20261118-staff-seamless';
 const SCOPE = new URL(self.registration.scope);
 const FORM = new URL('index.html', SCOPE);
 const OFFLINE = new URL('offline.html', SCOPE);
-const STAFF = new URL('staff-offline-workspace.html', SCOPE);
+const STAFF = new URL('staff-offline-seamless.html', SCOPE);
 // Static opt-in marker only: never includes report/user details or authentication.
 const STAFF_MARKER_CACHE='rbh-staff-offline-device-v1';
 const STAFF_MARKER=new URL('staff-offline-device-enabled',SCOPE).href;
 const ASSETS = [
   FORM.href, OFFLINE.href, STAFF.href,
   new URL('staff-offline-foundation.js',SCOPE).href,
-  new URL('staff-offline-workspace.js',SCOPE).href,
+  new URL('staff-offline-seamless.js',SCOPE).href,
   new URL('staff-offline-protocol.js',SCOPE).href,
   new URL('pwa-client.js',SCOPE).href,
   new URL('turnstile-intake.js',SCOPE).href,
@@ -88,8 +88,8 @@ self.addEventListener('fetch',event=>{
         if(shell)return shell;
       }
       if(staffDashboard||staffWorkspace){
-        // The existing RBH dashboard must retain its old offline behavior
-        // until this specific device has explicitly enrolled for staff work.
+        // Keep the dashboard network-only; encrypted assignments render in a static local action shell.
+        // The public form remains independent and retains its own offline outbox.
         // A synthetic static marker is never incident data and is erased
         // during logout, account switch and an online organization disable.
         const enrolled=staffWorkspace ||
