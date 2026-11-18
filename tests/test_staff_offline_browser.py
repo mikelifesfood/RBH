@@ -115,6 +115,10 @@ class OfflineBrowserTests(unittest.TestCase):
           if(restored.file.size===0||restored.file.name!=='evidence.png')throw Error('EVIDENCE_NOT_RECOVERED');
         }""")
         self.page.reload()  # Ensure the new SW controls this client before going offline
+        self.page.wait_for_function("navigator.serviceWorker.controller !== null")
+        # Loopback interfaces can be exempted from Chromium's offline emulation.
+        # Abort the exact dashboard network request too so SW fallback is tested.
+        self.context.route("**/dashboard.html",lambda route: route.abort("internetdisconnected"))
         self.context.set_offline(True)
         self.page.goto(BASE+"/dashboard.html",wait_until="domcontentloaded")
         self.assertTrue(self.page.locator("#unlockForm").count(),
