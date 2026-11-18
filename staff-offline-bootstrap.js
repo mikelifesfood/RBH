@@ -161,6 +161,40 @@ async function reviewSavedDrafts(){
         }catch(e){preview.textContent='Could not decrypt draft.';preview.hidden=false;}
       });
       wrap.append(summary,stateLabel,btn,preview);
+      if(!stale&&scope.actionId&&state.client&&root.TeamWorktStaffEvidenceReplay){
+        const evidence=await f.listEvidence(scope);
+        if(evidence.length){
+          const upload=document.createElement('button');
+          upload.type='button';upload.className='profile-secondary';
+          upload.textContent='Upload '+evidence.length+' saved evidence photo(s)';
+          upload.style.marginLeft='8px';
+          upload.addEventListener('click',async()=>{
+            if(!confirm('Upload these encrypted local photos to the official RBH report now? This does not complete or verify the corrective action.'))return;
+            upload.disabled=true;
+            const results=document.createElement('p');results.setAttribute('role','status');
+            results.textContent='Checking current permissions and evidence protocol…';wrap.appendChild(results);
+            try{
+              const enabled=await root.TeamWorktStaffEvidenceReplay.capability(state.client,scope.reportId,scope.actionId);
+              if(!enabled)throw Error('Offline evidence upload is not yet activated by RBH. Photos remain safely on this device.');
+              let synced=0;
+              for(const file of evidence){
+                results.textContent='Uploading photo '+(synced+1)+' of '+evidence.length+'…';
+                await root.TeamWorktStaffEvidenceReplay.uploadOne({
+                  client:state.client,scope,evidenceId:file.attachmentId,
+                  identity:state.identity,confirm:true
+                });
+                synced++;
+              }
+              results.textContent=synced+' photo(s) uploaded and confirmed by RBH. Your corrective-action notes still require official submission.';
+              upload.disabled=true;upload.textContent='Evidence synchronized';
+            }catch(e){
+              results.textContent='Evidence was not confirmed: '+e.message+' Your remaining photos stay on this device for safe retry.';
+              upload.disabled=false;
+            }
+          });
+          wrap.appendChild(upload);
+        }
+      }
       if(!stale){
         const link=document.createElement('a');
         link.className='profile-secondary';link.style.cssText='display:inline-flex;margin-left:8px;text-decoration:none';
