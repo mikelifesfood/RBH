@@ -258,15 +258,6 @@ Deno.serve(async (req: Request) => {
           !/^[0-9]+$/.test(expectedGeneration) || !/^[0-9]+$/.test(expectedReopenCount)) {
         return json({ error:"OFFLINE_REVISION_REQUIRED" },400);
       }
-      if (String(correctiveAction.updated_at)!==expectedActionRevision ||
-          String(report.updated_at)!==expectedReportRevision ||
-          String(correctiveAction.status)!==expectedActionStatus ||
-          Number(correctiveAction.workflow_generation)!==Number(expectedGeneration) ||
-          Number(report.workflow_restart_count||0)!==Number(expectedGeneration) ||
-          Number(report.reopen_count||0)!==Number(expectedReopenCount) ||
-          ["closed","no_action","duplicate"].includes(String(report.status))) {
-        return json({ error:"OFFLINE_CONFLICT_NEEDS_REVIEW" },409);
-      }
       const payload=await files[0].arrayBuffer();
       offlineDigest=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",payload)))
         .map(x=>x.toString(16).padStart(2,"0")).join("");
@@ -282,6 +273,15 @@ Deno.serve(async (req: Request) => {
         return json({ok:true,alreadyUploaded:true,addedCount:0,existingCount:1,failedCount:0,
           added:[{id:prior.id,fileName:prior.file_name,storagePath:prior.storage_path,
             correctiveActionId:correctiveAction.id}],correctiveActionId:correctiveAction.id});
+      }
+      if (String(correctiveAction.updated_at)!==expectedActionRevision ||
+          String(report.updated_at)!==expectedReportRevision ||
+          String(correctiveAction.status)!==expectedActionStatus ||
+          Number(correctiveAction.workflow_generation)!==Number(expectedGeneration) ||
+          Number(report.workflow_restart_count||0)!==Number(expectedGeneration) ||
+          Number(report.reopen_count||0)!==Number(expectedReopenCount) ||
+          ["closed","no_action","duplicate"].includes(String(report.status))) {
+        return json({ error:"OFFLINE_CONFLICT_NEEDS_REVIEW" },409);
       }
     }
 
