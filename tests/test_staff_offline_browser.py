@@ -585,6 +585,7 @@ class OfflineBrowserTests(unittest.TestCase):
         }""")
         self.page.locator("#rbhOfflineReview").click()
         self.page.get_by_text("Copy draft for online form").click()
+        self.page.wait_for_function("typeof window.__copied === 'string'")
         copied=self.page.evaluate("window.__copied")
         self.assertIn("Fictional inspection findings",copied)
         self.assertIn("Fictional cause",copied)
