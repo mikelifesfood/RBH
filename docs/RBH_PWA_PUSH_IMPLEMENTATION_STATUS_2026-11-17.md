@@ -3,6 +3,19 @@
 **Repository:** `mikelifesfood/RBH` — commits directly to `main`.
 **Supabase project:** `owhkxguiavgxzwvbxevj`.
 
+## Event-specific push text + self-assignment suppression — deployed November 17, 2026
+
+**Authorized improvement:** Make iPhone/desktop push labels actionable without exposing incident details; suppress redundant emails and push when a user assigns work to themselves. Continue to show all work in the RBH dashboard and preserve in-app notification/audit history.
+
+- Staff service worker `sw.js` now uses an **exact six-type allowlist** of fixed English labels; sender only supplies the validated event `type` and opaque notification `tag`. All provider-supplied titles, bodies, and URLs are ignored. Unrecognized types retain the safe generic fallback. Existing click-to-notification-center behavior and authenticated item navigation unchanged.
+- Push type → visible title: `new_report` → **New safety report**; `report_owner_assignment` → **Report assigned**; `action_assignment` or `corrective_action_assignment` → **Corrective action assigned**; `corrective_action_verification_requested` → **Verification required**; `corrective_action_changes_requested` → **Changes requested**. Body text is fixed and contains no report IDs, personal names, injuries, or detailed notes.
+- Email Edge Function `send-action-assignment-email` deployed **v21**: report owner, investigator, verifier, and corrective action self-assignment return `skipped: true, reason: SELF_ASSIGNMENT` *before* reserving an email event or sending Brevo email. **Changes-requested and verification-required follow-ups are never suppressed by this self-assignment rule**. Existing email templates/recipient and tenancy checks otherwise unchanged.
+- Push dispatcher `push-dispatch` deployed **v11**; source queue trigger independently rejects self-assigned report owner and corrective action assignment alerts when trustworthy assigning-actor information matches the recipient. Sender repeats the self-assignment check before actual delivery. Notification source and work items remain intact.
+- **Transactional database acceptance test (ROLLED BACK)**: self-assigned corrective action → 1 in-app notification, **0** queued pushes; assignment attributed to another employee → 1 in-app notification, **1** queued push. Both inserted notifications and the temporary action actor change were rolled back; no emails or phone pushes were sent during these tests.
+- GitHub Actions RBH PWA Push regression: **PASSED**, including all six labels, malicious payload cannot override content, default copy fallback, sender allowlist, and email/push self-suppression source guards. GitHub Pages deployment: **PASSED**.
+- Live gate after changes: global and RBH tenant delivery both **ON**, one minute cron active and succeeding, **0 outstanding queue tasks**, no transient test notifications persisted. Individual device subscriptions still require explicit opt-in; weekly digest remains held.
+- **Not independently exercised on a real iPhone after the new copy**: appearance of each of the six labels; **not sent** real Brevo self-assignment test emails (suppression was source-reviewed and code guard regression-tested). Monitor a normal new report or assignment to confirm expected copy and routing.
+
 ## RBH automatic push ACTIVATED — November 17, 2026
 - Explicit user authorization received to activate automatic RBH push **with notifications OFF by default for each user/device**. The existing opt-in control remains the only way to register a device. No automatic subscription, permission prompt, or bulk registration.
 - Verified `push_delivery_settings.enabled=true` and RBH `push_organization_settings.enabled=true`; other organizations have no enabled row. `rbh-pwa-push-dispatch` pg_cron job is active every minute.
