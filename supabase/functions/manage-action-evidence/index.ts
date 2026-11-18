@@ -192,6 +192,7 @@ Deno.serve(async (req: Request) => {
   }
 
   function authorizeSpecificAction(row: CorrectiveActionRow) {
+    if(!report || !caller)return 'NOT_AUTHORIZED';
     if (String(row.organization_id || "") !== String(report.organization_id || "")) {
       return "ORGANIZATION_MISMATCH";
     }
@@ -211,6 +212,7 @@ Deno.serve(async (req: Request) => {
   }
 
   function authorizeLegacyReportEvidence() {
+    if(!report || !caller)return 'NOT_AUTHORIZED';
     const assignedOwner =
       role === "supervisor" &&
       String(report.assigned_user_id || "") === String(caller.id);
@@ -225,6 +227,7 @@ Deno.serve(async (req: Request) => {
   }
 
   async function staffOfflineEnabled() {
+    if(!supabaseUrl || !anonKey)return false;
     // Do not use the service role to read a feature flag and thereby skip
     // session revocation. The authenticated RPC checks auth.sessions,
     // current tenant membership and active profile on EVERY call.
