@@ -2326,6 +2326,19 @@
     }else if(!oldId&&nextId===me){
       var claim=await sb.rpc("rbh_claim_unassigned_report",{p_report_id:r.id});
       if(claim.error)throw claim.error;
+    }else if(!oldId&&currentRole==="safety_manager"){
+      // An unclaimed report cannot be transferred by a nonowner. Claim first,
+      // then offer it to the selected eligible manager for acceptance.
+      var firstClaim=await sb.rpc("rbh_claim_unassigned_report",{p_report_id:r.id});
+      if(firstClaim.error)throw firstClaim.error;
+      r.report_owner_user_id=me;
+      r.report_owner_assigned_at=new Date().toISOString();
+      r.report_owner_assigned_by=me;
+      refreshIncidentOwnerHeader(r);refreshIncidentMeta(r);renderLiveRecordNotices();
+      renderHomeSnapshot();applyFilters();
+      var newOffer=await sb.rpc("rbh_request_report_transfer",{p_report_id:r.id,p_to_user_id:nextId});
+      if(newOffer.error)throw new Error("Report claimed by you, but the transfer offer could not be sent. Open Transfer and retry. "+newOffer.error.message);
+      return {changed:true,pending:true,targetName:profileName(selected)};
     }else if(!oldId&&currentRole==="admin"){
       var initial=await sb.rpc("rbh_set_report_owner",{p_report_id:r.id,p_owner_user_id:nextId});
       if(initial.error)throw initial.error;
@@ -4674,19 +4687,14 @@
       reviewOwnerName.textContent=ownerId&&ownerId===currentUserId()?"You":(ownerId&&profileById[ownerId]?profileName(profileById[ownerId]):"Unassigned");
       var canOffer=!!(r.report_owner_user_id&&canChangeReportOwner(r));
       reviewOwnerChange.hidden=!(unassigned||canOffer);
-      reviewOwnerChange.textContent=canOffer?"Transfer":"Change";
+      reviewOwnerChange.textContent=canOffer?"Transfer":"Assign / transfer";
       reviewOwnerChange.setAttribute("aria-label",canOffer?"Offer report ownership transfer":"Choose report owner");
       if(!unassigned){reviewOwnerField.hidden=true;reviewOwnerChange.setAttribute("aria-expanded","false");}
     }
     reviewOwnerChange.addEventListener("click",function(){
-      if(r.report_owner_user_id){
-        if(canChangeReportOwner(r))openReportOwnerModal(r);
-        return;
-      }
-      if(!canEditStep(r,1))return;
-      reviewOwnerField.hidden=!reviewOwnerField.hidden;
-      reviewOwnerChange.setAttribute("aria-expanded",String(!reviewOwnerField.hidden));
-      if(!reviewOwnerField.hidden)reviewOwnerSelect.focus();
+      // Stage 1 uses the same audited ownership modal as later stages;
+      // selecting someone else must never silently start their investigation.
+      if(canChangeReportOwner(r))openReportOwnerModal(r);
     });
     reviewOwnerSelect.addEventListener("change",function(){syncReviewOwner(canEditStep(r,1));});
 
@@ -5938,8 +5946,8 @@
       btn.textContent="Take control";btn.disabled=nextId!==self;return;
     }
     if(!currentId){
-      note.textContent=nextId===self?"Claim this unassigned report. You become its only editor.":"Admins may make the initial assignment of an unclaimed report.";
-      btn.textContent=nextId===self?"Claim report":"Assign initial owner";btn.disabled=false;return;
+      note.textContent=nextId===self?"Claim this unassigned report. You become its owner.":currentRole==="safety_manager"?"Claim this unassigned report, then offer it to "+name+". The recipient must accept before ownership transfers.":"Assign this unclaimed report to "+name+".";
+      btn.textContent=nextId===self?"Claim report":currentRole==="safety_manager"?"Claim and offer transfer":"Assign initial owner";btn.disabled=false;return;
     }
     note.textContent="Offer this report to "+name+". You remain its owner until they accept. An email and push notification will be issued.";
     btn.textContent="Send transfer request";btn.disabled=false;
@@ -5951,12 +5959,12 @@
     var adminTake=!!(r.report_owner_user_id&&!isCurrentReportOwner(r)&&currentRole==="admin");
     if(sel){
       if(adminTake)sel.innerHTML='<option value="'+esc(currentUserId())+'">'+esc(profileName(profileById[currentUserId()])||"Take ownership")+'</option>';
-      else if(!r.report_owner_user_id&&currentRole==="safety_manager")sel.innerHTML='<option value="'+esc(currentUserId())+'">'+esc(profileName(profileById[currentUserId()])||"Claim report")+'</option>';
+      else if(!r.report_owner_user_id&&currentRole==="safety_manager")sel.innerHTML=reportOwnerOptions(currentUserId());
       else sel.innerHTML=reportOwnerOptions(r.report_owner_user_id||currentUserId());
       sel.value=adminTake||(!r.report_owner_user_id&&currentRole==="safety_manager")?currentUserId():(r.report_owner_user_id||currentUserId());
     }
-    if(heading)heading.textContent=adminTake?"Admin — take report":(!r.report_owner_user_id?"Claim report":"Offer report transfer");
-    if(help)help.textContent=adminTake?"You are taking ownership without the existing owner's consent. A documented reason is required.":(!r.report_owner_user_id?"Claim this unassigned report before working on it.":"The new Safety Manager must accept this transfer before your access becomes read only.");
+    if(heading)heading.textContent=adminTake?"Admin — take report":(!r.report_owner_user_id?"Assign report owner":"Offer report transfer");
+    if(help)help.textContent=adminTake?"You are taking ownership without the existing owner's consent. A documented reason is required.":(!r.report_owner_user_id?"For a Safety Manager, offering an unassigned report first claims it. The recipient then accepts the transfer.":"The recipient must accept this transfer before your access becomes read only.");
     if($("reportOwnerReason"))$("reportOwnerReason").value="";
     if(err){err.textContent="";err.classList.remove("show");}
     updateReportOwnerModalState();$("reportOwnerBackdrop").classList.add("open");
@@ -5990,7 +5998,7 @@
       await loadReports(true);
     }catch(ex){
       console.error("report ownership",ex);
-      if(err){err.textContent=ex&&ex.message==="TAKEOVER_REASON_REQUIRED"?"An Admin takeover requires a reason.":"Unable to change ownership. Refresh and try again.";err.classList.add("show");}
+      if(err){err.textContent=ex&&ex.message==="TAKEOVER_REASON_REQUIRED"?"An Admin takeover requires a reason.":String(ex&&ex.message||"Unable to change ownership. Refresh and try again.");err.classList.add("show");}
     }finally{
       _ownerSave.textContent=old;
       if(reportOwnerModalReport)updateReportOwnerModalState();else _ownerSave.disabled=false;
