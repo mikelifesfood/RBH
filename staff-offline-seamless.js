@@ -167,7 +167,7 @@ async function stage(a,step,note){
  if((step!=='verification'&&!n)||n.length>5000)throw Error('NOTE_REQUIRED_UP_TO_5000_CHARACTERS');
  if(step==='action_completion'&&!a.canSubmit||step!=='action_completion'&&!a.canVerify)throw Error('ACTION_NOT_AUTHORIZED_FOR_OFFLINE');
  const entries=await listEncrypted(u,'queue');
- if(entries.some(x=>x.actionId===a.id&&['waiting','syncing','needs_review'].includes(x.status)))throw Error('ACTION_HAS_PENDING_SUBMISSION');
+ if(entries.some(x=>x.actionId===a.id&&['waiting','retry','syncing','needs_review'].includes(x.status)))throw Error('ACTION_HAS_PENDING_SUBMISSION');
  const prior=await draft(u,a.id);
  const item={operationId:crypto.randomUUID(),actionId:a.id,reportId:a.reportId,organizationId:u.organizationId,userId:u.userId,
   kind:KINDS[step],step,note:n,actionRevision:a.actionRevision,reportRevision:a.reportRevision,
@@ -203,9 +203,10 @@ async function flush(){
  const u=state.identity;
  try{
   const auth=await state.client.auth.getUser();
-  if(auth.error||auth.data?.user?.id!==u.userId)return;
+  if(auth.error||auth.data?.user?.id!==u.userId){state.lastSyncIssue=auth.error?.message||'SIGN_IN_REQUIRED';return;}
   const gate=await state.client.rpc('rbh_staff_offline_status');
-  if(gate.error||gate.data?.enabled!==true||gate.data?.protocolVersion!==1)return;
+  if(gate.error||gate.data?.enabled!==true||gate.data?.protocolVersion!==1){state.lastSyncIssue=gate.error?.message||'OFFLINE_ACCESS_CHECK_FAILED';return;}
+  state.lastSyncIssue=null;
   // Reclaim interrupted attempts after a browser crash or PWA force-close.
   // Reuse the durable operationId so the server's idempotency ledger prevents duplicates.
   const entries=(await listEncrypted(u,'queue')).filter(x=>['waiting','retry','syncing'].includes(x.status));
@@ -221,6 +222,7 @@ async function flush(){
     if(res.error)throw Error(res.error.message||'OFFLINE_COMMIT_FAILED');
     if(res.data?.ok!==true||res.data?.committed!==true||res.data.operationId!==item.operationId||
        res.data.actionId!==item.actionId||res.data.kind!==item.kind)throw Error('SERVER_RECEIPT_NOT_VERIFIED');
+    state.lastSyncIssue=null;
     item={...item,status:'synced',syncedAt:Date.now(),receipt:res.data};
     await putEncrypted(u,'queue',item.operationId,item);
     root.dispatchEvent?.(new CustomEvent('rbh-offline-action-synced',{detail:{actionId:item.actionId,reportId:item.reportId,kind:item.kind}}));
@@ -228,6 +230,7 @@ async function flush(){
       queued:false,files:[],synced:true,savedAt:Date.now()});
    }catch(e){
     const message=String(e.message||e);
+    state.lastSyncIssue=message;
     item={...item,status:conflictError(message)?'needs_review':'retry',lastError:message};
     await putEncrypted(u,'queue',item.operationId,item);
     root.dispatchEvent?.(new CustomEvent('rbh-offline-action-sync-delayed',{
@@ -237,7 +240,7 @@ async function flush(){
    }
    renderCounters();
   }
- }catch(e){console.warn('RBH automatic offline synchronization delayed',e);}
+ }catch(e){state.lastSyncIssue=String(e?.message||e);console.warn('RBH automatic offline synchronization delayed',e);}
  finally{state.busy=false;renderCounters();if(new URLSearchParams(location.search).has('offlineSync'))showSyncHandoff().catch(()=>{});}
 }
 async function counts(){
@@ -249,7 +252,7 @@ async function counts(){
 async function renderCounters(){
  const p=document.getElementById('rbhSeamlessStatus');
  if(!p||!state.identity)return;
- try{const c=await counts();p.textContent=c.pending+' waiting to sync · '+c.review+' need review · '+c.synced+' synced on this device';}
+ try{const c=await counts();p.textContent=c.pending+' waiting to sync · '+c.review+' need review · '+c.synced+' synced on this device'+(state.lastSyncIssue?' · Last sync issue: '+state.lastSyncIssue:'');}
  catch(_){p.textContent='Device status unavailable. Check local storage before leaving.';}
 }
 async function showSyncHandoff(){
@@ -274,10 +277,10 @@ async function showSyncHandoff(){
  const heading=banner.querySelector('#rbhOfflineSyncHeading'),detail=banner.querySelector('#rbhOfflineSyncDetail');
  if(c.review){
   heading.textContent='Offline work needs review';
-  detail.textContent=c.review+' item(s) need attention. '+c.pending+' waiting; '+c.synced+' confirmed. Check saved work before retrying.';
+  detail.textContent=c.review+' item(s) need attention. '+c.pending+' waiting; '+c.synced+' confirmed. '+(state.lastSyncIssue?'Last issue: '+state.lastSyncIssue+'. ':'')+'Review saved work for the stored note.';
  }else if(c.pending){
   heading.textContent='Offline work saved — not yet confirmed';
-  detail.textContent=c.pending+' item(s) still need a server receipt. Keep the dashboard open, or retry when connected. '+c.synced+' confirmed.';
+  detail.textContent=c.pending+' item(s) still need a server receipt. '+(state.lastSyncIssue?'Last issue: '+state.lastSyncIssue+'. ':'')+'Keep the dashboard open or tap Check / retry sync. '+c.synced+' confirmed.';
  }else{
   heading.textContent=c.synced?'Offline work synchronized':'No offline work awaiting sync';
   detail.textContent=c.synced?c.synced+' item(s) confirmed by RBH. You can continue working.':'No queued corrective-action updates on this device.';
