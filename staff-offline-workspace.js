@@ -12,7 +12,7 @@ const STEPS=[
   ['verification','Verification notes'],['changes_requested','Changes requested'],
   ['add_action_before_close','Additional corrective action'],['closure','Report closure preparation']
 ];
-let context=null,record=null;
+let context=null,record=null,restoreGeneration=0;
 function message(text,error){$('status').textContent=text;$('status').className=error?'err':'';}
 function workspaceScope(){return {organizationId:context.organizationId,userId:context.userId,
  reportId:'workspace',generation:0,step:WORKSPACE_STEP};}
@@ -25,6 +25,7 @@ function makeScope(){
     actionId:actionId||null,generation:Number(record.generation||0),step};
 }
 function clearEditor(){
+  restoreGeneration++;
   $('editorPanel').hidden=true;$('draftPhotos').value='';
   for(const name of ['draftNote','draftFindings','draftRootCause','draftPlanDescription','draftPlanOwner','draftPlanDue','draftPlanPriority','draftDecision'])$(name).value='';
   $('draftStep').replaceChildren();$('draftAction').replaceChildren();
@@ -84,14 +85,21 @@ function applyForm(data){
   }
 }
 async function restoreDraft(){
-  const scope=makeScope();
+  const generation=++restoreGeneration,scope=makeScope();
+  const stillCurrent=()=>generation===restoreGeneration &&
+    context!==null&&record!==null&&JSON.stringify(makeScope())===JSON.stringify(scope);
   try{
     const data=await store().readDraft(scope);
+    if(!stillCurrent())return; // older asynchronous step must never erase newer notes
     applyForm(data&&data.data);
     updateFieldsForStep();
-    await updateEvidenceCount();
+    const evidence=await store().listEvidence(scope);
+    if(!stillCurrent())return;
+    $('evidenceCount').textContent=evidence.length+' photo(s) saved locally for this step.';
     message(data?'Previously saved on this device — not submitted.':'New local draft — not submitted.');
-  }catch(e){message(e.message==='OFFLINE_DRAFT_CANNOT_DECRYPT'?'Incorrect offline passphrase or damaged draft.':e.message,true);}
+  }catch(e){
+    if(stillCurrent())message(e.message==='OFFLINE_DRAFT_CANNOT_DECRYPT'?'Incorrect offline passphrase or damaged draft.':e.message,true);
+  }
 }
 async function openRecord(item){
   record=item;$('editorTitle').textContent='Report #'+item.number+' — offline draft';
