@@ -273,6 +273,53 @@ class OfflineBrowserTests(unittest.TestCase):
         self.assertEqual(result,{'wrongTenant':True,'revokedSession':True,'featureOff':True,
           'crossTenant':True,'changedReport':True,'mutations':0,'unchanged':True})
 
+    def test_offline_snapshot_expiry_blocks_access_without_destroying_draft(self):
+        self.enroll()
+        self.page.evaluate("""async()=>{
+          const store=window.TeamWorktStaffOfflineFoundation;
+          store.unlock('long-demo-passphrase-2026');
+          const scope={organizationId:'org-1',userId:'user-1',reportId:'workspace',
+            generation:0,step:'workspace_index'};
+          const snap=await store.readDraft(scope);
+          await store.saveDraft(scope,{...snap.data,expiresAt:'2026-01-01T00:00:00.000Z'},'v1');
+          store.lock();
+        }""")
+        self.unlock()
+        self.page.get_by_text("OFFLINE_ACCESS_EXPIRED",exact=False).wait_for()
+        self.assertTrue(self.page.locator("#workspacePanel").is_hidden())
+        remaining=self.page.evaluate("""async()=>{
+          const f=window.TeamWorktStaffOfflineFoundation;
+          const locator=await f.resolveAccountLocator('offline-tester@example.invalid');
+          return locator && locator.organizationId==='org-1' && locator.userId==='user-1';
+        }""")
+        self.assertTrue(remaining)
+
+    def test_encrypted_local_drafts_and_photos_isolate_accounts(self):
+        self.enroll()
+        self.unlock()
+        result=self.page.evaluate("""async()=>{
+          const f=window.TeamWorktStaffOfflineFoundation;
+          const a={organizationId:'org-1',userId:'user-1',reportId:'report-123',
+            actionId:'action-456',generation:0,step:'action_completion'};
+          const b={...a,organizationId:'other-company'};
+          const userB={...a,userId:'other-user'};
+          await f.saveDraft(a,{note:'Fictional sensitive notes'},'rev1');
+          const file=new File([new Uint8Array([137,80,78,71])],'demo.png',{type:'image/png'});
+          const evidence='b7fd5a14-f238-435b-b39f-9bd1c4cc6a9e';
+          await f.saveEvidence(a,evidence,file);
+          const cross=await f.readDraft(b),user=await f.readDraft(userB);
+          const crossFile=await f.readEvidence(b,evidence);
+          const before=(await f.listEvidence(a)).length;
+          await f.deleteAccountWorkspace(b.organizationId,b.userId);
+          const after=(await f.listEvidence(a)).length;
+          const intact=await f.readDraft(a);
+          return {noTenantLeak:cross===null,noUserLeak:user===null,
+            noPhotoLeak:crossFile===null,
+            before,after,protected:intact?.data?.note==='Fictional sensitive notes'};
+        }""")
+        self.assertEqual(result,{'noTenantLeak':True,'noUserLeak':True,
+          'noPhotoLeak':True,'before':1,'after':1,'protected':True})
+
     def test_wrong_identity_passphrase_and_local_erase(self):
         self.enroll()
         self.unlock(email="wrong@example.invalid")
