@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS teamworkt_internal.staff_offline_operations (
   actor_id uuid NOT NULL,
   operation_id uuid NOT NULL,
   organization_id uuid NOT NULL,
+  actor_role text NOT NULL,
   action_id uuid NOT NULL,
   report_id uuid NOT NULL,
   request_sha256 text NOT NULL,
@@ -91,7 +92,8 @@ BEGIN
     WHERE actor_id=v_uid AND operation_id=p_operation_id
     FOR UPDATE;
   IF FOUND THEN
-    IF v_prior.organization_id IS DISTINCT FROM coalesce(v_profile.current_organization_id,v_profile.organization_id)
+    IF v_prior.actor_role IS DISTINCT FROM v_profile.app_role
+      OR v_prior.organization_id IS DISTINCT FROM coalesce(v_profile.current_organization_id,v_profile.organization_id)
       OR v_prior.request_sha256 <> v_hash OR v_prior.action_id <> p_action_id
     THEN RAISE EXCEPTION 'OFFLINE_OPERATION_KEY_REUSED'; END IF;
     -- Return exactly the original receipt: do not repeat any data mutation.
@@ -131,8 +133,8 @@ BEGIN
   );
 
   INSERT INTO teamworkt_internal.staff_offline_operations
-    (actor_id,operation_id,organization_id,action_id,report_id,request_sha256,receipt)
-  VALUES (v_uid,p_operation_id,v_report.organization_id,p_action_id,v_report.id,v_hash,v_receipt);
+    (actor_id,operation_id,organization_id,actor_role,action_id,report_id,request_sha256,receipt)
+  VALUES (v_uid,p_operation_id,v_report.organization_id,v_profile.app_role,p_action_id,v_report.id,v_hash,v_receipt);
   RETURN v_receipt;
 END;
 $function$;
