@@ -393,6 +393,9 @@ function wireAction(r,a,textarea,button,step){
  // Use the same durable idempotent operation path online and offline.
  // iOS may report navigator.onLine=true during airplane-mode transitions.
  button.addEventListener('click',async event=>{
+  // Connected browser: use the dashboard's normal immediate authenticated RPC.
+  // Intercept only offline submissions or an action already queued on device.
+  if(navigator.onLine!==false&&button.dataset.rbhOfflineQueued!=='yes')return;
   event.preventDefault();event.stopImmediatePropagation();
   if(button.dataset.rbhOfflineQueued==='yes'){
    hint.textContent='Already saved for sync. Checking for server confirmation…';
