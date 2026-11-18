@@ -90,3 +90,6 @@ Production dashboard/Service Worker, public reporter, report data, staff account
 - Offline review, investigation, action-plan, reassignment, close and reopen stages currently preserve structured notes and evidence but are **not yet one-click atomic official submissions**. Existing online RBH functions remain the authoritative way to finalize these stages.
 - Before deployment, confirm lifecycle transition matrix, refresh and conflict reconciliation, data-retention UX, monitoring/rollback, and final RBH pilot acceptance.
 - Preserve all existing report numbers and test records until the explicitly requested final reset. Continue holding the Weekly Safety Pulse recurring digest.
+
+### Safer isolation correction
+- The offline evidence implementation is now a **separate** staged Edge Function `manage-offline-action-evidence`. The branch no longer carries a replacement for the existing live `manage-action-evidence` endpoint, protecting current online uploads and removals from unintended regressions. The offline replay client invokes only the new endpoint. The endpoint is **not deployed** and remains restricted by the OFF-by-default organization feature gate plus active-session verification.
