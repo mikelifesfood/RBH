@@ -57,7 +57,7 @@ test('worker focuses an existing staff dashboard before opening a new window',as
 });
 test('public offline shell remains separate from signed-in dashboard',()=>{
   assert.match(sw,/if\(publicForm&&response\.ok/);
-  assert.match(sw,/if\(!publicForm&&!staffDashboard\)return/);
+  assert.match(sw,/if\(!publicForm&&!staffDashboard&&!staffWorkspace\)return/);
   assert.ok(!/cache\.put\(.*dashboard/i.test(sw));
   assert.match(dashboard,/dashboard\.webmanifest/);
   assert.match(dashboard,/id="rbhPushSettings"/);
