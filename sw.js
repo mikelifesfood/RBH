@@ -70,7 +70,10 @@ self.addEventListener('fetch',event=>{
 
   event.respondWith((async()=>{
     try{
-      const response=await fetch(req);
+      // Never accept a browser HTTP-cache hit as a live authenticated dashboard.
+      // In an actual offline state this network-only fetch must fail closed into
+      // the locked staff shell, not resurrect old privileged HTML.
+      const response=await fetch(req,{cache:(staffDashboard||staffWorkspace)?'no-store':'default'});
       if(publicForm&&response.ok&&response.type==='basic'){
         const cache=await caches.open(CACHE_NAME);
         await cache.put(FORM.href,response.clone());
