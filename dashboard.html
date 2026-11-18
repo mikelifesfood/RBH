@@ -7723,13 +7723,21 @@
     return !!(r&&currentUserId()&&String(r.report_owner_user_id||"")===currentUserId()&&isManager());
   }
   function canPerformVerification(r){
-    return !!(r&&!isResolvedReport(r)&&isManager()&&isVerifierAssignedToMe(r));
+    return !!(r&&!isResolvedReport(r)&&isManager()&&
+      (isVerifierAssignedToMe(r)||allCorrectiveActions.some(function(a){
+        return String(a.report_id)===String(r.id)&&String(a.verifier_user_id||"")===currentUserId()
+          &&a.status==="awaiting_verification"&&!a.retired_at;
+      })));
   }
   function canWorkInvestigation(r){
     return !!(r&&!isResolvedReport(r)&&isCurrentReportOwner(r));
   }
   function canWorkCorrectiveAction(r){
-    return !!(r&&!isResolvedReport(r)&&currentRole!=="read_only"&&isActionAssignedToMe(r));
+    return !!(r&&!isResolvedReport(r)&&currentRole!=="read_only"&&
+      (isActionAssignedToMe(r)||allCorrectiveActions.some(function(a){
+        return String(a.report_id)===String(r.id)&&String(a.owner_user_id||"")===currentUserId()
+          &&!a.retired_at&&["not_started","in_progress","changes_requested"].includes(a.status);
+      })));
   }
   function hasOperationalAccess(r){
     return !!(isCurrentReportOwner(r)||canWorkCorrectiveAction(r));
