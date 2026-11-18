@@ -50,6 +50,15 @@ async function render(){
  $('loading').textContent=items.length?'':'No assigned corrective actions were stored on this device. Connect to RBH and reopen the dashboard to refresh.';
  const wrap=$('actions');wrap.replaceChildren();
  const queues=await offline.listEncrypted(identity,'queue');
+ // Preserve access to saved work when the source assignment disappears.
+ for(const q of queues.filter(x=>x.status==='needs_review'||!items.some(a=>a.id===x.actionId))){
+  const archived=el('article','card');
+  archived.appendChild(el('h3','', 'Saved corrective action — '+q.status.replace(/_/g,' ')));
+  archived.appendChild(el('p','muted','Report '+q.reportId+' · Action '+q.actionId));
+  const copy=el('textarea');copy.readOnly=true;copy.value=q.note;archived.appendChild(copy);
+  archived.appendChild(el('p','muted','Your notes remain on this device. Reconnect and review the latest assignment before resubmitting.'));
+  wrap.appendChild(archived);
+ }
  for(const a of items){
   if(!a.canSubmit&&!a.canVerify)continue;
   const card=el('article','card');card.appendChild(el('p','muted','Report #'+a.reportNumber+(a.reportSite?' · '+a.reportSite:'')));
