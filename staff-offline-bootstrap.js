@@ -48,7 +48,7 @@ function buildIndex(){
       status:r.status||'new',priority:r.priority||'',description:String(r.description||'').slice(0,3000),
       findings:String(r.investigation_findings||'').slice(0,2500),
       rootCause:String(r.root_cause||'').slice(0,1500),
-      revision:r.updated_at,generation:Number(r.workflow_restart_count||0),
+      revision:r.updated_at,generation:Number(r.workflow_restart_count||0),reopenCount:Number(r.reopen_count||0),
       role,readOnly:role==='read_only',
       canEditReport:isManager||String(r.report_owner_user_id||'')===uid&&role==='supervisor',
       actions
