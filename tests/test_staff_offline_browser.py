@@ -225,6 +225,54 @@ class OfflineBrowserTests(unittest.TestCase):
         self.assertEqual(result,{'denied':True,'rejected':True,'transient':True,
           'mutations':2,'stable':True,'committed':True,'purged':True})
 
+    def test_manual_action_submission_rejects_tenant_session_and_feature_flag_mismatches(self):
+        self.enroll()
+        self.unlock()
+        self.page.add_script_tag(url=BASE+"/staff-offline-protocol.js")
+        self.page.add_script_tag(url=BASE+"/staff-offline-action-submit.js")
+        result=self.page.evaluate("""async()=>{
+          const f=window.TeamWorktStaffOfflineFoundation;
+          const scope={organizationId:'org-1',userId:'user-1',reportId:'report-123',
+            actionId:'action-456',generation:0,step:'action_completion'};
+          await f.saveDraft(scope,{note:'Fictional completion',reportRevision:'rev-1',
+            reopenCount:0,actionStatus:'in_progress'},'rev-1');
+          let mutations=0,gateEnabled=true,sessionValid=true,tenant='org-1',reportRevision='rev-1';
+          const client={
+            auth:{
+              getSession:async()=>({data:{session:sessionValid?{access_token:'test-only'}:null}}),
+              getUser:async()=>({data:{user:{id:'user-1'}}})
+            },
+            from(table){return {select(){return this;},eq(){return this;},async maybeSingle(){
+              return {data:table==='reports'?{id:'report-123',organization_id:tenant,
+                workflow_restart_count:0,reopen_count:0,updated_at:reportRevision,status:'investigation'}:
+                {id:'action-456',report_id:'report-123',organization_id:'org-1',
+                workflow_generation:0,status:'in_progress',updated_at:'rev-1',retired_at:null}};
+            }}},
+            async rpc(name,args){
+              if(name==='rbh_staff_offline_status')return {data:{enabled:gateEnabled,protocolVersion:1}};
+              mutations++;
+              return {data:{ok:true,committed:true,operationId:args.p_operation_id,
+                actionId:scope.actionId,reportId:scope.reportId,kind:'submit_action_completion'}};
+            }
+          };
+          const submit=window.TeamWorktStaffActionSubmit.submitOne;
+          const identity={organizationId:'org-1',userId:'user-1'};
+          async function denied(options){
+            try{await submit({client,scope,identity,confirm:true,...options});return false;}
+            catch{return true;}
+          }
+          const wrongTenant=await denied({identity:{organizationId:'org-other',userId:'user-1'}});
+          sessionValid=false;const revokedSession=await denied({});sessionValid=true;
+          gateEnabled=false;const featureOff=await denied({});gateEnabled=true;
+          tenant='org-other';const crossTenant=await denied({});tenant='org-1';
+          reportRevision='rev-2';const changedReport=await denied({});reportRevision='rev-1';
+          const unmodified=await f.readDraft(scope);
+          return {wrongTenant,revokedSession,featureOff,crossTenant,changedReport,
+            mutations,unchanged:unmodified?.data?.submission==null};
+        }""")
+        self.assertEqual(result,{'wrongTenant':True,'revokedSession':True,'featureOff':True,
+          'crossTenant':True,'changedReport':True,'mutations':0,'unchanged':True})
+
     def test_wrong_identity_passphrase_and_local_erase(self):
         self.enroll()
         self.unlock(email="wrong@example.invalid")
