@@ -127,6 +127,34 @@ async function prepare(){
   }finally{button.disabled=false;}
 }
 
+function formatLocalDraft(data){
+  if(!data||typeof data!=='object')return 'No draft text was saved.';
+  const lines=[];
+  if(typeof data.note==='string'&&data.note.trim())lines.push('Additional notes:\n'+data.note);
+  const fields=data.fields&&typeof data.fields==='object'?data.fields:{};
+  const labels=[
+    ['draftCategory','Proposed classification'],['draftSeverity','Proposed severity / priority'],
+    ['draftReportOwner','Proposed report owner'],['draftInvestigator','Proposed investigator'],
+    ['draftFindings','Investigation findings'],['draftRootCause','Root cause'],
+    ['draftDecision','Proposed verification decision']
+  ];
+  for(const [id,title] of labels){
+    if(typeof fields[id]==='string'&&fields[id].trim())
+      lines.push(title+':\n'+fields[id]);
+  }
+  if(Array.isArray(fields.plannedActions)){
+    fields.plannedActions.forEach((action,index)=>{
+      if(!action||!Object.values(action).some(v=>String(v||'').trim()))return;
+      lines.push('Proposed corrective action #'+(index+1)+'\n'+[
+        ['Description',action.description],['Proposed owner',action.owner],
+        ['Proposed due date',action.dueDate],['Proposed priority',action.priority]
+      ].filter(x=>String(x[1]||'').trim()).map(x=>x[0]+': '+x[1]).join('\n'));
+    });
+  }else if(String(fields.draftPlanDescription||'').trim()){
+    lines.push('Proposed corrective action:\n'+fields.draftPlanDescription);
+  }
+  return lines.join('\n\n') || 'Draft has no text. Review locally stored evidence attachments separately.';
+}
 async function reviewSavedDrafts(){
   const f=api(),u=state.identity,out=$('rbhOfflineDrafts');
   if(!out||!f||!u)return;
@@ -170,7 +198,7 @@ async function reviewSavedDrafts(){
           const serverRevision=action?action.updated_at:report?.updated_at;
           const conflict=stale||!saved||saved.serverRevision!==serverRevision;
           preview.textContent=(conflict?'NEEDS REVIEW: The server revision differs or access is unavailable. Do not overwrite newer work.\n\n':'')+
-            JSON.stringify(saved?.data??{},null,2);
+            formatLocalDraft(saved?.data);
           preview.hidden=false;btn.textContent='Hide saved draft';
         }catch(e){preview.textContent='Could not decrypt draft.';preview.hidden=false;}
       });
