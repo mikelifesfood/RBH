@@ -126,6 +126,11 @@ BEGIN
     v_result:=public.rbh_request_corrective_action_changes(p_action_id,p_note);
   END IF;
 
+  -- Guard against future changes to nested RPC behavior: never record a
+  -- successful idempotency receipt for a rejected or incomplete transition.
+  IF v_result IS NULL OR v_result->>'ok' IS DISTINCT FROM 'true'
+  THEN RAISE EXCEPTION 'OFFLINE_NESTED_TRANSITION_NOT_COMMITTED'; END IF;
+
   v_receipt:=jsonb_build_object(
     'ok',true,'committed',true,'operationId',p_operation_id,
     'actionId',p_action_id,'reportId',v_report.id,
