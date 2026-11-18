@@ -16,6 +16,10 @@ button,.link{display:inline-flex;align-items:center;justify-content:center;borde
 button.primary{background:#a1182c;color:#fff;width:100%}button.secondary,.link{background:#eceef2;color:#262c35}
 button:disabled{opacity:.55}.row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .status{font-weight:650;font-size:14px}.ok{color:#17673f}.bad{color:#a1182c}.pending{color:#865a09}
+#connectionHelp{border:1px solid #b4c6e2;border-radius:10px;padding:14px;margin:12px 0;background:#eef4fc}
+#connectionHelp strong{display:block;margin-bottom:5px}#connectionHelp p{margin:4px 0 12px}
+#connectionHelp.offline{background:#fff7e9;border-color:#e4c994}#connectionHelp.done{background:#ebf7ed;border-color:#a8d6b5}
+#goHome{background:#a1182c;color:#fff}#goHome[aria-disabled="true"]{opacity:.6}
 .actions{display:grid;gap:10px}.action{border:1px solid #d7dce4;padding:15px;border-radius:10px}
 #loading{min-height:3em}a{color:#8d1327}
 </style>
@@ -25,7 +29,12 @@ button:disabled{opacity:.55}.row{display:flex;align-items:center;justify-content
 <div class="card">
 <div class="row"><div><h2>My corrective actions</h2><p class="muted">Complete multiple actions, even without reception. Each submitted action is saved separately and syncs when you return online with the RBH dashboard open.</p></div><a class="link" href="./dashboard.html">Dashboard</a></div>
 <div class="state" id="summary" role="status" aria-live="polite">Loading securely saved work…</div>
-<button type="button" class="secondary" id="syncNow">Sync pending actions now</button>
+<div id="connectionHelp" class="offline" role="status" aria-live="polite">
+<strong id="connectionTitle">Checking saved work</strong>
+<p id="connectionMessage">Your changes stay on this device until a secure server receipt confirms synchronization.</p>
+<a id="goHome" class="link" href="./dashboard.html?offlineSync=1" aria-disabled="true">Go to dashboard &amp; sync</a>
+</div>
+<button type="button" class="secondary" id="syncNow">Check connection / sync status</button>
 </div>
 <div id="loading" class="muted"></div><section id="actions" class="actions" aria-label="Corrective actions"></section>
 <div class="card"><h3>Important</h3><p class="muted">Pending submissions are not official until RBH confirms synchronization. If an assignment changes or another user updates the report, your entry is kept for review instead of overwriting the server. Keep your phone locked and do not delete the app while work is pending.</p></div>
@@ -36,12 +45,31 @@ button:disabled{opacity:.55}.row{display:flex;align-items:center;justify-content
 'use strict';
 const $=id=>document.getElementById(id),offline=window.TeamWorktSeamlessOffline;
 let identity=null;
-function status(){const isOnline=navigator.onLine!==false;$('network').textContent=isOnline?'Online':'Offline — saving on device';}
+function status(){const isOnline=navigator.onLine!==false;$('network').textContent=isOnline?'Online — secure sync available':'Offline — saving on device';}
+function explainSync(pending,review,synced){
+ const online=navigator.onLine!==false,help=$('connectionHelp'),home=$('goHome');
+ help.className=online?'done':'offline';
+ home.setAttribute('aria-disabled',String(!online));
+ if(!online){
+  $('connectionTitle').textContent='Offline — your work stays on this device';
+  $('connectionMessage').textContent=pending?pending+' saved item(s) will be sent when you reconnect and open the dashboard. You can safely finish other actions now.':'You can enter corrective-action updates now. They will only be official after server confirmation.';
+ }else if(review){
+  $('connectionTitle').textContent='Connected — '+review+' item(s) need attention';
+  $('connectionMessage').textContent='Open the dashboard to check current assignments and resolve conflicts. Nothing needing review has been overwritten.';
+ }else if(pending){
+  $('connectionTitle').textContent='Connected — ready to sync '+pending+' item(s)';
+  $('connectionMessage').textContent='Choose Go to dashboard & sync. Stay signed in until the dashboard confirms receipt. Your entries are not submitted yet.';
+ }else{
+  $('connectionTitle').textContent=synced?'Up to date — '+synced+' item(s) confirmed':'Connected — ready for work';
+  $('connectionMessage').textContent=synced?'Your saved actions have a server receipt. Return to the dashboard to view the official status.':'No actions are waiting to sync on this device.';
+ }
+}
 function el(tag,cls,txt){const node=document.createElement(tag);if(cls)node.className=cls;if(txt!==undefined)node.textContent=txt;return node;}
 async function summary(){const u=identity;if(!u)return;const queue=await offline.listEncrypted(u,'queue');const pending=queue.filter(x=>['waiting','retry','syncing'].includes(x.status)).length;
 const review=queue.filter(x=>x.status==='needs_review').length,synced=queue.filter(x=>x.status==='synced').length;
 $('summary').textContent=pending+' saved on device — waiting to sync · '+review+' need review · '+synced+' synced';
 $('summary').className='state'+(review?' bad':pending?' pending':' ok');
+ explainSync(pending,review,synced);
 }
 async function render(){
  status();try{
@@ -67,7 +95,11 @@ async function render(){
   card.appendChild(el('h2','', 'Corrective Action #'+a.number));
   card.appendChild(el('p','',a.description));
   card.appendChild(el('p','muted','Server status at last sync: '+a.actionStatus));
-  const queued=queues.find(x=>x.actionId===a.id&&x.status!=='synced');
+  const latest=queues.filter(x=>x.actionId===a.id).sort((x,y)=>y.createdAt-x.createdAt)[0];
+  const queued=latest&&latest.status!=='synced'?latest:null;
+  if(latest?.status==='synced'){
+   card.appendChild(el('div','state ok','Confirmed — synced to RBH. Open the dashboard to see the current action status.'));
+  }
   if(queued){
    const p=el('div','state '+(queued.status==='needs_review'?'bad':'pending'),
     queued.status==='needs_review'?'Needs review — '+(queued.lastError||'server state changed'):'Saved on device — '+queued.status);
@@ -77,19 +109,19 @@ async function render(){
   const step=a.canSubmit?'action_completion':a.canVerify?'verification':null;
   if(!step){wrap.appendChild(card);continue;}
   const label=el('label','',step==='action_completion'?'What did you do?':'Verification note');card.appendChild(label);
-  const area=el('textarea');area.value=previous?.note||'';area.placeholder=step==='action_completion'?'Describe the completed work':'Describe the verification';area.disabled=!!queued;
+  const area=el('textarea');area.value=previous?.note||'';area.placeholder=step==='action_completion'?'Describe the completed work':'Describe the verification';area.disabled=!!queued||latest?.status==='synced';
   card.appendChild(area);let timer=null;
   const saving=el('p','muted status',queued?'This action is already queued.':'Changes are saved automatically.');card.appendChild(saving);
   area.addEventListener('input',()=>{clearTimeout(timer);saving.textContent='Saving…';timer=setTimeout(async()=>{try{
    await offline.saveNote(a,area.value,step);saving.textContent='Saved on device.';}catch(e){saving.textContent='Save failed: '+e.message;}},350);});
   if(step==='action_completion'){
    const photoLabel=el('label','','Evidence photos (optional)');card.appendChild(photoLabel);
-   const photos=el('input');photos.type='file';photos.accept='image/*';photos.multiple=true;photos.disabled=!!queued;card.appendChild(photos);
+   const photos=el('input');photos.type='file';photos.accept='image/*';photos.multiple=true;photos.disabled=!!queued||latest?.status==='synced';card.appendChild(photos);
    photos.addEventListener('change',async()=>{try{for(const f of photos.files)await offline.addPhoto(a,f);saving.textContent='Photo(s) encrypted on device.';}
    catch(e){saving.textContent='Photo save failed: '+e.message;}photos.value='';});
   }
   const submit=el('button','primary',step==='action_completion'?'Send for review':'Verify as complete');
-  submit.disabled=!!queued;
+  submit.disabled=!!queued||latest?.status==='synced';
   submit.addEventListener('click',async()=>{submit.disabled=true;try{
    await offline.stage(a,step,area.value);saving.textContent='Submitted on device. Waiting to sync — you can continue to another action.';
    await summary();}catch(e){saving.textContent='Could not save submission: '+e.message;submit.disabled=false;}});
@@ -98,11 +130,11 @@ async function render(){
  await summary();
  }catch(e){$('loading').textContent='Offline assignments unavailable: '+e.message+'. Sign in online to the RBH dashboard to prepare this device.';$('summary').textContent='Not prepared for offline work';}
 }
-$('syncNow').addEventListener('click',async()=>{if(navigator.onLine===false){$('summary').textContent='Still offline — submissions are safely stored on this device.';return;}
-$('summary').textContent='Reopen the RBH dashboard to authenticate and synchronize safely.';
-});
-window.addEventListener('online',()=>{status();$('summary').textContent='Connection restored — opening RBH to synchronize securely.';setTimeout(()=>{location.replace('./dashboard.html?offlineSync=1');},600);});
-window.addEventListener('offline',status);
+function goToDashboard(){if(navigator.onLine===false)return;location.assign('./dashboard.html?offlineSync=1');}
+$('syncNow').addEventListener('click',async()=>{if(navigator.onLine===false){await summary();return;}goToDashboard();});
+$('goHome').addEventListener('click',event=>{if(navigator.onLine===false){event.preventDefault();$('connectionMessage').textContent='Still offline. Your saved work is safe on this device. Reconnect before returning to the dashboard.';}});
+window.addEventListener('online',()=>{status();summary().catch(()=>{});});
+window.addEventListener('offline',()=>{status();summary().catch(()=>{});});
 render();
 })();
 </script>
