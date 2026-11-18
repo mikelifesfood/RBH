@@ -1,5 +1,17 @@
 name: Staff offline safety regression
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'staff-offline-*.js'
+      - 'staff-offline-*.html'
+      - 'sw.js'
+      - 'dashboard.html'
+      - 'tests/staff-offline-*.test.cjs'
+      - 'tests/test_staff_offline_browser.py'
+      - 'supabase/patches/*staff_offline*STAGED.sql'
+      - 'supabase/functions/manage-offline-action-evidence/index.ts'
+      - '.github/workflows/staff-offline-regression.yml'
   pull_request:
     paths:
       - 'staff-offline-*.js'
