@@ -14,17 +14,20 @@ Status: **IN PROGRESS — NOT DEPLOYED / NOT ACCEPTED**
 - Weekly Safety Pulse scheduled digest is ON HOLD. Test-data cleanup and report-number reset require explicit owner approval.
 
 ## Files added (feature branch only)
-- `staff-offline-foundation.js`: standalone, unreferenced browser module; encrypted JSON draft saves and reads; tenant/user/report/action/generation/step scope; PBKDF2-SHA256 + AES-GCM with per-record salt and IV; authenticated encryption binds ciphertext to record ID; verifies IDB read-back after transaction; supports lock, scoped listing, and verified deletion.
+- `staff-offline-foundation.js`: standalone, unreferenced browser module; encrypted JSON draft saves and reads, plus encrypted photo evidence bytes and filename/checksum metadata; tenant/user/report/action/generation/step scope; PBKDF2-SHA256 + AES-GCM with per-record salt and IV; authenticated encryption binds ciphertext to record ID; verifies IndexedDB read-back after transaction; supports lock, scoped listing, and verified deletion.
 - Explicit passphrase requirement (12+ characters); key/passphrase in memory only; not a JWT and not stored in localStorage, IndexedDB or Cache Storage. Passphrase recovery is **not** implemented. Avoid persisting data until a suitable user-facing key management and recovery policy is approved.
+- `staff-offline-protocol.js`: pure, side-effect-free intent state machine with explicitly confirmed operations, stale role/tenant/report/action/revision checks, and verified server receipts; does not initiate HTTP calls.
+- `supabase/patches/20261118_staff_offline_idempotent_action_commit_STAGED.sql`: not deployed; staged private idempotency ledger and additive RPC wrapper for three action transitions, preserving the existing audited RPC authorization logic. Requires database and transaction rollback testing before application.
+- `tests/staff-offline-protocol.test.cjs` and `.github/workflows/staff-offline-regression.yml`: 5 protocol tests including invalid confirmation, wrong tenant/role, stale revisions and receipt binding; GitHub Actions run #44298414282 **PASS** on the feature branch.
 
 ## Important security/design limits
 1. This module is **not imported into the dashboard**, feature-flagged OFF by omission, and is not an offline solution yet. No claim of real-device acceptance.
 2. User identity/tenant binding must be verified by the authenticated dashboard and server. Local scope arguments are never an authorization mechanism. Same-device data remain present until explicitly deleted; an offline device cannot immediately learn that a role was revoked.
 3. Encrypted draft contents are protected by the supplied passphrase. Draft identifiers, including user/report IDs and save times, are metadata visible in IndexedDB; review whether even this metadata is too sensitive for customer devices.
-4. Evidence/photo binary encryption, local snapshot rights, key recovery, UI wiring, workflow draft restoration, submission/outbox, conflict diffs, server-enforced idempotency and authorization, mobile startup and role tests are **NOT BUILT**.
+4. Evidence/photo encryption is staged but not integrated or device-tested. Local snapshot rights, key recovery, UI wiring, workflow draft restoration, submission/outbox, conflict diffs, deployed server-enforced idempotency and authorization, mobile startup and role tests are **NOT BUILT**.
 5. Passing a simple browser `navigator.onLine` test is insufficient. Reconnection must establish live authentication, permissions and revisions.
 6. Local browser storage can be cleared/evicted, especially on iOS. Never describe it as a guaranteed backup.
-7. No database migrations, data deletions, email/push changes, or production function deployments in this phase.
+7. SQL is staged in GitHub only. No database migrations, data deletions, email/push changes, or production function deployments in this phase.
 
 ## Workflow integration inventory — initial map
 | Staff step | Live operation/path | Offline strategy | Acceptance |
