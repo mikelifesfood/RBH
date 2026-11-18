@@ -1963,9 +1963,10 @@
 <div class="modal-backdrop" id="reportOwnerBackdrop">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="reportOwnerHeading">
     <h3 id="reportOwnerHeading">Change report owner</h3>
-    <p class="msub">The Report Owner is responsible for moving this report forward and receives report-level workflow emails. Changing the owner does not change anyone's role, access, or editing permissions.</p>
+    <p class="msub" id="reportOwnerHelp">Only the current owner may offer a transfer. The recipient must accept before ownership and editing rights change. Admins can take control with an audit reason.</p>
     <div class="field"><label for="reportOwnerSelect">Report owner</label><select id="reportOwnerSelect"></select></div>
-    <div class="report-owner-email-note neutral" id="reportOwnerEmailNote" role="status">Select a different owner to review what will happen before anything is saved or emailed.</div>
+    <div class="field" id="reportOwnerReasonWrap" hidden><label for="reportOwnerReason">Reason for Admin takeover</label><textarea id="reportOwnerReason" maxlength="500" placeholder="Reason for taking control of this report"></textarea></div>
+    <div class="report-owner-email-note neutral" id="reportOwnerEmailNote" role="status">Review the ownership change before continuing.</div>
     <div class="login-err" id="reportOwnerErr"></div>
     <div class="modal-actions"><button class="btn-secondary" id="reportOwnerCancel" type="button">Cancel</button><button class="btn-primary" id="reportOwnerSave" type="button">Confirm owner change</button></div>
   </div>
@@ -2261,10 +2262,14 @@
     return sendCorrectiveActionWorkflowEmail(r,action,"changes_requested");
   }
 
-  function canChangeReportOwner(r){ return !!(r&&isManager()&&!isResolvedReport(r)); }
+  function canChangeReportOwner(r){ return !!(r&&isManager()&&!isResolvedReport(r)&&(!r.report_owner_user_id||isCurrentReportOwner(r)||currentRole==="admin")); }
   function refreshIncidentOwnerHeader(r){
     var change=$("incidentOwnerChange");
-    if(change) change.hidden=change.disabled=!canChangeReportOwner(r);
+    if(change){
+      change.hidden=change.disabled=!canChangeReportOwner(r);
+      var word=change.querySelector("span:last-child");
+      if(word)word.textContent=!r.report_owner_user_id?"Claim":isCurrentReportOwner(r)?"Transfer":"Take control";
+    }
   }
   function refreshIncidentMeta(r){
     if(!r||!$("incidentMeta")) return;
@@ -4925,12 +4930,10 @@
       return summary;
     }
     function canCompleteCorrectiveAction(a){
-      if(!a||isResolvedReport(r)) return false;
-      if(isManager()) return true;
-      return currentRole==="supervisor" && currentUserId() && String(a.owner_user_id||"")===currentUserId();
+      return !!(a&&!isResolvedReport(r)&&currentRole!=="read_only"&&currentUserId()&&String(a.owner_user_id||"")===currentUserId());
     }
     function canVerifyCorrectiveAction(a){
-      return !!(a&&!isResolvedReport(r)&&isManager());
+      return !!(a&&!isResolvedReport(r)&&isManager()&&currentUserId()&&String(a.verifier_user_id||"")===currentUserId());
     }
     async function releaseLegacyCorrectiveActionVerifier(a){
       if(!a||!a.verifier_user_id||!isManager()) return true;
@@ -7647,25 +7650,25 @@
   function investigatorName(r){ var p=r&&r.investigator_user_id?profileById[String(r.investigator_user_id)]:null; return p?profileName(p):""; }
   function verifierName(r){ var p=r&&r.verifier_user_id?profileById[String(r.verifier_user_id)]:null; return p?profileName(p):""; }
   function isManager(){ return currentRole==="admin"||currentRole==="safety_manager"; }
-  function canVerify(){ return isManager(); }
+  function canVerify(){ return isManager(); } // Role capability only; record-level permissions below.
   function currentUserId(){ return currentSession&&currentSession.user?String(currentSession.user.id):""; }
   function isInvestigatorAssignedToMe(r){ return !!(r&&currentUserId()&&String(r.investigator_user_id||"")===currentUserId()); }
   function isActionAssignedToMe(r){ return !!(r&&currentUserId()&&String(r.assigned_user_id||"")===currentUserId()); }
   function isVerifierAssignedToMe(r){ return !!(r&&currentUserId()&&String(r.verifier_user_id||"")===currentUserId()); }
+  function isCurrentReportOwner(r){
+    return !!(r&&currentUserId()&&String(r.report_owner_user_id||"")===currentUserId()&&isManager());
+  }
   function canPerformVerification(r){
-    return !!(r&&isManager());
+    return !!(r&&!isResolvedReport(r)&&isManager()&&isVerifierAssignedToMe(r));
   }
   function canWorkInvestigation(r){
-    return !!(r&&!isResolvedReport(r)&&isManager());
+    return !!(r&&!isResolvedReport(r)&&isCurrentReportOwner(r));
   }
   function canWorkCorrectiveAction(r){
-    if(!r||isResolvedReport(r)) return false;
-    if(isManager()) return true;
-    return currentRole==="supervisor" && isActionAssignedToMe(r);
+    return !!(r&&!isResolvedReport(r)&&currentRole!=="read_only"&&isActionAssignedToMe(r));
   }
   function hasOperationalAccess(r){
-    if(isManager()) return true;
-    return currentRole==="supervisor" && isActionAssignedToMe(r);
+    return !!(isCurrentReportOwner(r)||canWorkCorrectiveAction(r));
   }
   function canEditStep(r,n){
     if(!r||isResolvedReport(r)) return false;
@@ -7675,18 +7678,13 @@
     // workflow restart so the audit trail stays intact.
     if(!stepState || stepState.state!=="current") return false;
     if(n===3 && ["new","under_review","assigned"].indexOf(String(r.status||"new"))<0) return false;
-    if(isManager()){
-      if(n===5) return canPerformVerification(r);
-      return true;
-    }
-    if(currentRole!=="supervisor") return false;
-    if(n>=1&&n<=3) return false;
-    if(n===4) return isActionAssignedToMe(r);
-    return false;
+    if(n===5) return canPerformVerification(r);
+    if(n===4) return canWorkCorrectiveAction(r);
+    return isCurrentReportOwner(r);
   }
-  function canEditReport(r){ return !isResolvedReport(r) && hasOperationalAccess(r); }
-  function canAddNotes(r){ return !isResolvedReport(r) && hasOperationalAccess(r); }
-  function canReopenReport(r){ return !!(r && isResolvedReport(r) && canVerify()); }
+  function canEditReport(r){ return !!(r&&!isResolvedReport(r)&&isCurrentReportOwner(r)); }
+  function canAddNotes(r){ return canEditReport(r); }
+  function canReopenReport(r){ return !!(r && isResolvedReport(r) && isCurrentReportOwner(r)); }
   function canManageUsers(){ return currentRole==="admin"; }
   function workflowHasProgress(r){
     if(!r || isResolvedReport(r)) return false;
@@ -7695,7 +7693,7 @@
       hasWorkflowValue(r.priority) || hasWorkflowValue(r.verifier_user_id) || (r.action_status&&r.action_status!=="not_started") ||
       hasWorkflowValue(r.action_completion_note) || hasWorkflowValue(r.action_verification_note);
   }
-  function canRestartWorkflow(r){ return !!(r && canVerify() && workflowHasProgress(r)); }
+  function canRestartWorkflow(r){ return !!(r && isCurrentReportOwner(r) && workflowHasProgress(r)); }
 
   function applyRoleUi(){
     var pill=$("rolePill");
@@ -9334,11 +9332,10 @@
       if(parseInt(a.workflow_generation||0,10)!==parseInt(r&&r.workflow_restart_count||0,10)) return false;
       var status=String(a.status||"not_started");
       if(["not_started","in_progress","changes_requested"].indexOf(status)<0) return false;
-      if(isManager()) return true;
-      return currentRole==="supervisor" && currentUserId() && String(a.owner_user_id||"")===currentUserId();
+      return currentRole!=="read_only"&&currentUserId()&&String(a.owner_user_id||"")===currentUserId();
     }
     if(!r || !String(r.corrective_action||"").trim() || !r.assigned_user_id) return false;
-    return canEditStep(r,4);
+    return canWorkCorrectiveAction(r);
   }
   function actionEvidenceUploadKey(reportId,correctiveActionId){
     return String(reportId)+":"+(correctiveActionId?String(correctiveActionId):"legacy");
