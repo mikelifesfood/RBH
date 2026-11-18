@@ -5890,6 +5890,57 @@
     }
   });
 
+  var pendingActionReassignment=null;
+  function closeOwnerActionDialog(){
+    if($("ownershipActionBackdrop"))$("ownershipActionBackdrop").classList.remove("open");
+    pendingActionReassignment=null;
+  }
+  document.addEventListener("click",function(e){
+    var button=e.target.closest&&e.target.closest("[data-reassign-action]");
+    if(!button)return;
+    var id=String(button.getAttribute("data-reassign-action")||"");
+    var report=activeIncident;
+    var action=allCorrectiveActions.find(function(a){return String(a.id)===id;});
+    if(!report||!action||String(action.report_id)!==String(report.id)||!isCurrentReportOwner(report)){
+      toast("Only the current Report Owner may reassign this corrective action.","err");return;
+    }
+    if(["awaiting_verification","verified"].includes(action.status)){toast("This action is already in review or verified.","err");return;}
+    pendingActionReassignment={reportId:report.id,actionId:id,oldOwner:String(action.owner_user_id||"")};
+    var sel=$("ownershipActionSelect");sel.innerHTML=assignmentOptions(action.owner_user_id||"");
+    sel.querySelectorAll("option").forEach(function(option){if(!option.value)option.remove();});
+    sel.value=String(action.owner_user_id||"");
+    $("ownershipActionReason").value="";
+    $("ownershipActionError").classList.remove("show");$("ownershipActionError").textContent="";
+    $("ownershipActionBackdrop").classList.add("open");sel.focus();
+  });
+  $("ownershipActionCancel").addEventListener("click",closeOwnerActionDialog);
+  $("ownershipActionBackdrop").addEventListener("click",function(e){if(e.target===$("ownershipActionBackdrop"))closeOwnerActionDialog();});
+  $("ownershipActionSave").addEventListener("click",async function(){
+    if(!pendingActionReassignment)return;
+    var sel=$("ownershipActionSelect"),reason=String($("ownershipActionReason").value||"").trim();
+    var target=String(sel.value||""),err=$("ownershipActionError"),btn=$("ownershipActionSave");
+    if(!target||target===pendingActionReassignment.oldOwner||!reason){
+      err.textContent="Choose a different eligible employee and enter a reassignment reason.";
+      err.classList.add("show");return;
+    }
+    btn.disabled=true;
+    try{
+      await assertOpenResourceFresh();
+      var result=await sb.rpc("rbh_reassign_owned_corrective_action",{
+        p_action_id:pendingActionReassignment.actionId,p_new_owner:target,p_reason:reason
+      });
+      if(result.error)throw result.error;
+      closeOwnerActionDialog();
+      toast("Corrective action reassigned. Email and opted-in push notifications are queued.","ok");
+      await loadReports(true);
+      // The prior owner loses authorization immediately, including for pending offline uploads.
+    }catch(e){
+      console.error("Reassign corrective action",e);
+      err.textContent="Unable to reassign. Confirm you still own the report, refresh, and retry.";
+      err.classList.add("show");
+    }finally{btn.disabled=false;}
+  });
+
   var DISPOSITION_LABELS={no_issue:"No issue found",informational:"Informational only",not_safety:"Not safety-related",duplicate:"Duplicate report",other:"Other"};
   function openDispositionModal(r, wrap, notesEl, presetStatus){
     if(!r || !canVerify()){ toast("Only an Admin or Safety Manager can close a report without corrective action.","err"); return; }
