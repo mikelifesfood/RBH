@@ -185,6 +185,11 @@ root.TeamWorktStaffOfflineUI=Object.freeze({
     refresh();
   },
   wireFocusedDraft,clearSubmittedDraft,
+  async hasOfflineWorkspace(){
+    if(!state.identity||!api())return false;
+    const locator=await api().resolveAccountLocator(state.identity.email);
+    return !!sameIdentity(locator,state.identity);
+  },
   async clearOnSignOut(){
     const old=state.identity;
     api()?.lock();state.identity=null;state.reports=[];state.actions=[];
