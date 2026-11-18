@@ -551,5 +551,44 @@ class OfflineBrowserTests(unittest.TestCase):
         self.assertNotIn("staff-offline-workspace.html",self.page.url)
 
 
+
+    def test_offline_recovered_draft_copy_preserves_fields_for_online_handoff(self):
+        self.enroll()
+        self.unlock()
+        self.page.evaluate("""async()=>{
+          const store=window.TeamWorktStaffOfflineFoundation;
+          const scope={organizationId:'org-1',userId:'user-1',reportId:'report-123',
+            generation:0,step:'investigation'};
+          await store.saveDraft(scope,{
+            note:'Human-review handoff required',
+            fields:{draftFindings:'Fictional inspection findings',draftRootCause:'Fictional cause'}
+          },'2026-11-18T12:00:00Z');
+        }""")
+        self.page.set_content(
+            '<main><section class="profile-card-section"><span id="rbhPushStatus"></span>'
+            '</section></main>'
+        )
+        self.page.add_script_tag(url=BASE+"/staff-offline-bootstrap.js")
+        self.page.evaluate("""async()=>{
+          Object.defineProperty(navigator,'clipboard',{configurable:true,
+            value:{writeText:async text=>window.__copied=text}});
+          const client={rpc:async()=>({data:{enabled:true,protocolVersion:1}})};
+          await window.TeamWorktStaffOfflineUI.init({
+            userId:'user-1',organizationId:'org-1',
+            email:'offline-tester@example.invalid',role:'supervisor'
+          },[{
+            id:'report-123',organization_id:'org-1',ref_no:77,
+            status:'investigation',updated_at:'2026-11-18T12:00:00Z',
+            workflow_restart_count:0
+          }],[],client);
+        }""")
+        self.page.locator("#rbhOfflineReview").click()
+        self.page.get_by_text("Copy draft for online form").click()
+        copied=self.page.evaluate("window.__copied")
+        self.assertIn("Fictional inspection findings",copied)
+        self.assertIn("Fictional cause",copied)
+        self.assertIn("Human-review handoff required",copied)
+
+
 if __name__=='__main__':
     unittest.main()
