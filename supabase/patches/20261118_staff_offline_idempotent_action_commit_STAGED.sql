@@ -47,7 +47,7 @@ DECLARE
 BEGIN
   IF v_uid IS NULL THEN RAISE EXCEPTION 'AUTH_REQUIRED'; END IF;
   IF p_operation_id IS NULL OR p_action_id IS NULL
-    OR p_kind NOT IN ('submit_action_completion','verify_action','request_action_changes')
+    OR p_kind IS NULL OR p_kind NOT IN ('submit_action_completion','verify_action','request_action_changes')
     OR p_expected_action_updated_at IS NULL OR p_expected_report_updated_at IS NULL
     OR p_expected_generation IS NULL OR p_expected_reopen_count IS NULL
     OR p_expected_action_status IS NULL OR length(coalesce(p_note,'')) > 5000
@@ -61,6 +61,12 @@ BEGIN
     'status',p_expected_action_status
   )::text,'UTF8')),'hex');
 
+  -- Even a replay requires current account eligibility. No stale JWT may read a
+  -- prior receipt after the RBH account is deactivated or moved to another tenant.
+  SELECT * INTO v_profile FROM public.profiles WHERE id=v_uid;
+  IF NOT FOUND OR NOT coalesce(v_profile.is_active,true) OR v_profile.access_deleted_at IS NOT NULL
+  THEN RAISE EXCEPTION 'OFFLINE_ACCESS_REVOKED'; END IF;
+
   -- Serialize duplicate operation IDs, including retries after lost HTTP responses.
   PERFORM pg_advisory_xact_lock(hashtextextended(v_uid::text||p_operation_id::text,0));
   SELECT * INTO v_prior
@@ -68,15 +74,12 @@ BEGIN
     WHERE actor_id=v_uid AND operation_id=p_operation_id
     FOR UPDATE;
   IF FOUND THEN
-    IF v_prior.request_sha256 <> v_hash OR v_prior.action_id <> p_action_id
+    IF v_prior.organization_id IS DISTINCT FROM coalesce(v_profile.current_organization_id,v_profile.organization_id)
+      OR v_prior.request_sha256 <> v_hash OR v_prior.action_id <> p_action_id
     THEN RAISE EXCEPTION 'OFFLINE_OPERATION_KEY_REUSED'; END IF;
     -- Return exactly the original receipt: do not repeat any data mutation.
     RETURN v_prior.receipt;
   END IF;
-
-  SELECT * INTO v_profile FROM public.profiles WHERE id=v_uid;
-  IF NOT FOUND OR NOT coalesce(v_profile.is_active,true) OR v_profile.access_deleted_at IS NOT NULL
-  THEN RAISE EXCEPTION 'OFFLINE_ACCESS_REVOKED'; END IF;
 
   SELECT * INTO v_action FROM public.report_corrective_actions WHERE id=p_action_id FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'OFFLINE_ACTION_NOT_FOUND'; END IF;
