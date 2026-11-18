@@ -1983,6 +1983,15 @@
     <div class="modal-actions"><button class="btn-secondary" id="ownershipActionCancel" type="button">Cancel</button><button class="btn-primary" id="ownershipActionSave" type="button">Confirm reassignment</button></div>
   </div>
 </div>
+<div class="modal-backdrop" id="ownershipVerifierBackdrop">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="ownershipVerifierHeading">
+    <h3 id="ownershipVerifierHeading">Assign corrective-action verifier</h3>
+    <p class="msub">A completed corrective action requires an explicitly assigned Safety Manager or Admin to verify it. Assigning a verifier does not change who owns or completed the action.</p>
+    <div class="field"><label for="ownershipVerifierSelect">Verifier</label><select id="ownershipVerifierSelect"></select></div>
+    <div class="login-err" id="ownershipVerifierError"></div>
+    <div class="modal-actions"><button class="btn-secondary" id="ownershipVerifierCancel" type="button">Cancel</button><button class="btn-primary" id="ownershipVerifierSave" type="button">Assign verifier</button></div>
+  </div>
+</div>
 <div class="modal-backdrop" id="addUserBackdrop">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="addUserHeading">
     <h3 id="addUserHeading">Add dashboard user</h3>
@@ -5026,7 +5035,9 @@
                 '</details>'+
               '</div>';
           } else {
-            review='<div class="multi-action-verifier-note"><b>Review required</b>An authorized reviewer must review the completed work and either verify it or send it back for changes.</div>';
+            review='<div class="multi-action-verifier-note"><b>Review required</b>'+
+              (a.verifier_user_id?'Only the assigned verifier can review this action.':'A verifier must be assigned before this action can be approved.')+'</div>'+
+              (isCurrentReportOwner(r)?'<button class="btn-secondary" type="button" data-assign-action-verifier="'+esc(a.id)+'">Assign / change verifier</button>':'');
           }
         } else if(status==="changes_requested"){
           review='<div class="ops-alert critical"><b>Changes requested</b>'+esc(a.verification_note||"The reviewer requested additional work.")+'</div>'+
@@ -5888,6 +5899,46 @@
       _ownerSave.textContent=old;
       if(reportOwnerModalReport)updateReportOwnerModalState();else _ownerSave.disabled=false;
     }
+  });
+
+  var pendingVerifierAction=null;
+  function closeVerifierDialog(){
+    $("ownershipVerifierBackdrop").classList.remove("open");pendingVerifierAction=null;
+  }
+  document.addEventListener("click",function(e){
+    var button=e.target.closest&&e.target.closest("[data-assign-action-verifier]");
+    if(!button)return;
+    var action=allCorrectiveActions.find(function(a){return String(a.id)===String(button.getAttribute("data-assign-action-verifier")||"");});
+    var report=activeIncident;
+    if(!report||!action||String(action.report_id)!==String(report.id)||!isCurrentReportOwner(report)){
+      toast("Only the current Report Owner can assign a verifier.","err");return;
+    }
+    if(action.status!=="awaiting_verification"){toast("This action is not ready for verification.","err");return;}
+    pendingVerifierAction={id:action.id,reportId:report.id};
+    $("ownershipVerifierSelect").innerHTML=verifierOptions(action.verifier_user_id||"");
+    $("ownershipVerifierSelect").value=action.verifier_user_id||"";
+    $("ownershipVerifierError").textContent="";$("ownershipVerifierError").classList.remove("show");
+    $("ownershipVerifierBackdrop").classList.add("open");
+  });
+  $("ownershipVerifierCancel").addEventListener("click",closeVerifierDialog);
+  $("ownershipVerifierBackdrop").addEventListener("click",function(e){if(e.target===$("ownershipVerifierBackdrop"))closeVerifierDialog();});
+  $("ownershipVerifierSave").addEventListener("click",async function(){
+    if(!pendingVerifierAction)return;
+    var target=String($("ownershipVerifierSelect").value||"");
+    var err=$("ownershipVerifierError"),btn=$("ownershipVerifierSave");
+    if(!target){err.textContent="Choose a Safety Manager or Admin verifier.";err.classList.add("show");return;}
+    btn.disabled=true;
+    try{
+      var response=await sb.rpc("rbh_set_corrective_action_verifier",{p_action_id:pendingVerifierAction.id,p_verifier_user_id:target});
+      if(response.error)throw response.error;
+      var report=allReports.find(function(x){return String(x.id)===String(pendingVerifierAction.reportId);});
+      var action=allCorrectiveActions.find(function(x){return String(x.id)===String(pendingVerifierAction.id);});
+      if(report&&action){action.verifier_user_id=target;await sendCorrectiveActionVerifierAssignmentEmail(report,action);}
+      closeVerifierDialog();
+      toast("Verifier assigned. The selected reviewer has been notified.","ok");
+      await loadReports(true);
+    }catch(e){console.error("Assign verifier",e);err.textContent="Could not assign the verifier. Refresh and retry.";err.classList.add("show");}
+    finally{btn.disabled=false;}
   });
 
   var pendingActionReassignment=null;
