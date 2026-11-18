@@ -3774,7 +3774,7 @@
         regulatoryReviewHtml(r)+
         '<div class="report-owner-step-card" data-report-owner-step>'+
           '<div class="review-owner-summary"><b>Report owner: <span data-review-owner-name></span></b><button type="button" class="review-text-action" data-review-owner-change aria-expanded="false" aria-controls="reviewOwnerField" aria-label="Change report owner" hidden>Change</button></div>'+
-          '<p>This person moves the whole report forward.</p><div id="reviewOwnerField" hidden><p>Your selection takes effect when you start the investigation.</p><label>Assign report to<span class="review-owner-picker"><select class="review-owner-select">'+reportOwnerOptions(r.report_owner_user_id||(isManager()?currentUserId():""))+'</select></span></label></div>'+
+          '<p>This person moves the whole report forward.</p><div id="reviewOwnerField" hidden><p>Select a Report Owner before starting the investigation.</p><label>Assign report to<span class="review-owner-picker"><select class="review-owner-select">'+reportOwnerOptions(r.report_owner_user_id||(isManager()?currentUserId():""))+'</select></span></label></div>'+
         '</div>'+
         '<div class="wizard-footer review-footer" data-next-step-footer="review">'+
           '<div class="wizard-footer-copy"><div class="review-screening-blocker" data-review-screening-blocker hidden><span data-review-screening-message role="status"></span><button type="button" class="review-text-action" data-review-screening-jump>Go to injury screening</button></div></div>'+
@@ -4669,20 +4669,24 @@
     var reviewOwnerChange=detail.querySelector("[data-review-owner-change]");
     var reviewOwnerField=detail.querySelector("#reviewOwnerField");
     function syncReviewOwner(editable){
-      editable=!!(editable&&!r.report_owner_user_id);
-      var ownerId=editable&&reviewOwnerSelect?reviewOwnerSelect.value:r.report_owner_user_id;
+      var unassigned=!!(editable&&!r.report_owner_user_id);
+      var ownerId=unassigned&&reviewOwnerSelect?reviewOwnerSelect.value:r.report_owner_user_id;
       reviewOwnerName.textContent=ownerId&&ownerId===currentUserId()?"You":(ownerId&&profileById[ownerId]?profileName(profileById[ownerId]):"Unassigned");
-      reviewOwnerChange.hidden=!editable;
-      if(!editable){
-        reviewOwnerField.hidden=true;
-        reviewOwnerChange.setAttribute("aria-expanded","false");
-      }
+      var canOffer=!!(r.report_owner_user_id&&canChangeReportOwner(r));
+      reviewOwnerChange.hidden=!(unassigned||canOffer);
+      reviewOwnerChange.textContent=canOffer?"Transfer":"Change";
+      reviewOwnerChange.setAttribute("aria-label",canOffer?"Offer report ownership transfer":"Choose report owner");
+      if(!unassigned){reviewOwnerField.hidden=true;reviewOwnerChange.setAttribute("aria-expanded","false");}
     }
     reviewOwnerChange.addEventListener("click",function(){
-      if(!canEditStep(r,1)||r.report_owner_user_id) return;
+      if(r.report_owner_user_id){
+        if(canChangeReportOwner(r))openReportOwnerModal(r);
+        return;
+      }
+      if(!canEditStep(r,1))return;
       reviewOwnerField.hidden=!reviewOwnerField.hidden;
       reviewOwnerChange.setAttribute("aria-expanded",String(!reviewOwnerField.hidden));
-      if(!reviewOwnerField.hidden) reviewOwnerSelect.focus();
+      if(!reviewOwnerField.hidden)reviewOwnerSelect.focus();
     });
     reviewOwnerSelect.addEventListener("change",function(){syncReviewOwner(canEditStep(r,1));});
 
