@@ -262,6 +262,8 @@ async function wireFocusedDraft(report,action,textarea,step){
     timer=setTimeout(async()=>{
       if(!textarea.isConnected||!api()?.isUnlocked())return;
       try{
+        const existing=await api().readDraft(scope);
+        if(existing?.data?.submission)throw Error("PENDING_OFFICIAL_SUBMISSION_RECONCILE_FIRST");
         await api().saveDraft(scope,{note:textarea.value,offlineOnly:true,
           reportRevision:report.updated_at,reopenCount:Number(report.reopen_count||0),
           actionStatus:action.status},revision);
