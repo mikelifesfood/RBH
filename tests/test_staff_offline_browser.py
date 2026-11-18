@@ -235,6 +235,65 @@ class OfflineBrowserTests(unittest.TestCase):
         self.assertEqual(outcome,{'onlineLegacy':1,'legacy':1,'attempts':2,'stable':True,
                                   'waiting':1,'synced':1})
 
+    def test_offline_photo_is_encrypted_and_uploaded_before_action_commit(self):
+        # Fictional in-browser data; no Supabase writes or real uploads.
+        self.page.goto(BASE + "/offline.html")
+        self.page.evaluate("""() => {
+          const panel=document.createElement('div');panel.id='rbhSeamlessPanel';
+          const status=document.createElement('p');status.id='rbhSeamlessStatus';
+          panel.append(status);document.body.append(panel);
+        }""")
+        self.page.add_script_tag(url=BASE + "/staff-offline-seamless.js")
+        result=self.page.evaluate("""async () => {
+          const id={userId:'photo-user',organizationId:'photo-org',role:'supervisor'};
+          const report={id:'photo-report',ref_no:70,organization_id:id.organizationId,
+            updated_at:'2026-11-18T20:00:00Z',status:'assigned',
+            workflow_restart_count:0,reopen_count:0};
+          const action={id:'photo-action',report_id:report.id,organization_id:id.organizationId,
+            action_number:1,owner_user_id:id.userId,status:'not_started',
+            updated_at:'2026-11-18T20:00:00Z',workflow_generation:0};
+          const trace={connected:true,uploads:0,commits:0,names:[],order:[]};
+          Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>trace.connected});
+          const client={
+            auth:{getUser:async()=>({data:{user:{id:id.userId}}})},
+            rpc:async(name,args)=>{
+              if(name==='rbh_staff_offline_status')return {data:{enabled:true,protocolVersion:1}};
+              if(name!=='rbh_commit_offline_corrective_action')throw Error('UNEXPECTED_RPC');
+              trace.commits++;trace.order.push('commit');
+              return {data:{ok:true,committed:true,operationId:args.p_operation_id,
+                actionId:action.id,kind:'submit_action_completion'}};
+            },
+            functions:{invoke:async(name,opts)=>{
+              if(name!=='manage-offline-action-evidence')throw Error('UNEXPECTED_FUNCTION');
+              if(opts.body.action==='capabilities')return {data:{ok:true,offlineProtocolVersion:1}};
+              const file=opts.body.get('files');
+              trace.uploads++;trace.names.push(file.name);trace.order.push('upload');
+              return {data:{ok:true,offlineProtocolVersion:1,clientEvidenceId:opts.body.get('clientEvidenceId'),
+                added:[{id:'fictional-photo'}]}};
+            }}
+          };
+          const offline=window.TeamWorktSeamlessOffline;
+          await offline.init(id,[report],[action],client);
+          trace.connected=false;
+          const file=new File([new Uint8Array([255,216,255,217])],'offline.jpg',{type:'image/jpeg'});
+          const count=await offline.addPhoto({id:action.id},file);
+          const encryptedDraft=await offline.draft(id,action.id);
+          const entry={id:action.id,reportId:report.id,actionStatus:action.status,
+            actionRevision:action.updated_at,reportRevision:report.updated_at,
+            generation:0,reopenCount:0,canSubmit:true};
+          await offline.stage(entry,'action_completion','Photo captured offline');
+          const before=await offline.counts();
+          trace.connected=true;
+          await offline.flush();
+          const after=await offline.counts();
+          return {count,files:encryptedDraft.files.length,pending:before.pending,
+            uploads:trace.uploads,commits:trace.commits,synced:after.synced,
+            names:trace.names,order:trace.order};
+        }""")
+        self.assertEqual(result,{'count':1,'files':1,'pending':1,'uploads':1,
+                                 'commits':1,'synced':1,'names':['offline.jpg'],
+                                 'order':['upload','commit']})
+
     def test_manual_official_action_submission_lost_response_replay(self):
         self.enroll()
         self.unlock()
