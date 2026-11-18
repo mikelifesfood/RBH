@@ -2947,7 +2947,8 @@
       var directAction=allCorrectiveActions.find(function(x){ return String(x.id)===String(directActionId); });
       var directActionReport=directAction&&allReports.find(function(x){ return String(x.id)===String(directAction.report_id); });
       clearRequestedWorkItemFromUrl();
-      if(directAction&&directActionReport){
+      if(directAction&&directActionReport&&
+         (isManager()||currentUserId()&&String(directAction.owner_user_id||"")===currentUserId())){
         openFocusedCorrectiveAction(directAction,"mywork");
         return;
       }
@@ -2957,7 +2958,7 @@
     if(directReportId){
       var directReport=allReports.find(function(x){ return String(x.id)===String(directReportId); });
       clearRequestedWorkItemFromUrl();
-      if(directReport){ openIncident(directReport,"mywork"); return; }
+      if(directReport&&reportVisibleInPersonalWorkspace(directReport)){ openIncident(directReport,"mywork"); return; }
       toast("That assigned record is unavailable or you no longer have access to it.","err");
     }
     // A fresh dashboard launch always begins at Home. Push notification
@@ -3384,7 +3385,7 @@
   }
   function renderList(){
     $("count").textContent=filtered.length+(filtered.length===1?" report":" reports");
-    if(!filtered.length){ listEl.innerHTML='<div class="state">'+(allReports.length?"No reports match your filters.":"No reports yet.")+'</div>'; return; }
+    if(!filtered.length){ listEl.innerHTML='<div class="state">'+(allReports.some(reportVisibleInPersonalWorkspace)?"No reports match your filters.":"No reports assigned to you yet.")+'</div>'; return; }
     listEl.innerHTML=""; filtered.forEach(function(r){ listEl.appendChild(card(r)); });
   }
 
@@ -8031,7 +8032,7 @@
     }
 
     if(!arr.length){
-      el.innerHTML='<div class="state">No open corrective actions.</div>';
+      el.innerHTML='<div class="state">No open corrective actions assigned to you.</div>';
       return;
     }
 
