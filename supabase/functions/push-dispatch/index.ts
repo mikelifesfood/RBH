@@ -48,7 +48,11 @@ Deno.serve(async req=>{
       service.from("report_user_notifications").select("id,organization_id,recipient_user_id,notification_type,report_id,corrective_action_id,acknowledged_at,resolved_at,created_at").eq("id",task.notification_id).maybeSingle(),
       service.from("user_push_subscriptions").select("id,organization_id,user_id,auth_session_id,endpoint,p256dh,auth_secret,disabled_at").eq("id",task.subscription_id).maybeSingle()
     ]);
-    let permitted=!!event&&!!device&&!device.disabled_at&&
+    if(!event||!device){
+      await service.from("push_delivery_outbox").update({status:"cancelled",last_error_code:"NOTIFICATION_OR_DEVICE_MISSING",updated_at:now}).eq("id",task.id).eq("status","claimed");
+      summary.cancelled++;continue;
+    }
+    let permitted=!device.disabled_at&&
       event.organization_id===task.organization_id&&device.organization_id===task.organization_id&&
       event.recipient_user_id===device.user_id&&allowed.has(event.notification_type)&&!event.acknowledged_at&&!event.resolved_at&&
       Date.now()-new Date(event.created_at).getTime()<48*60*60*1000&&
