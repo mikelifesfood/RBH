@@ -7608,19 +7608,22 @@
   async function loadPlatformContext(){
     isPlatformAdmin=false; currentOrgName=""; allOrgs=[];
     var user=currentSession&&currentSession.user;
-    if(user){
-      try{
-        var pa=await sb.from("platform_admins").select("user_id,role").eq("user_id",user.id).limit(1);
-        if(!pa.error) isPlatformAdmin=platformAdminExists(pa.data);
-      }catch(_e){}
-    }
     currentOrgId=(currentProfile&&(currentProfile.current_organization_id||currentProfile.organization_id))||null;
+    // These are unrelated lookups. A slow platform-admin check should not
+    // delay resolving the company name (or vice versa).
+    var contextTasks=[];
+    if(user){
+      contextTasks.push(sb.from("platform_admins").select("user_id,role").eq("user_id",user.id).limit(1));
+    }else contextTasks.push(Promise.resolve({data:[],error:null}));
     if(currentOrgId){
-      try{
-        var orgRes=await sb.from("organizations").select("id,name,slug,status,plan").eq("id",currentOrgId).maybeSingle();
-        if(!orgRes.error && orgRes.data){ currentOrgName=orgRes.data.name||""; allOrgs=[orgRes.data]; }
-      }catch(_e){}
-    }
+      contextTasks.push(sb.from("organizations").select("id,name,slug,status,plan").eq("id",currentOrgId).maybeSingle());
+    }else contextTasks.push(Promise.resolve({data:null,error:null}));
+    try{
+      var contextResults=await Promise.all(contextTasks);
+      var pa=contextResults[0],orgRes=contextResults[1];
+      if(!pa.error) isPlatformAdmin=platformAdminExists(pa.data);
+      if(!orgRes.error&&orgRes.data){currentOrgName=orgRes.data.name||"";allOrgs=[orgRes.data];}
+    }catch(_e){console.warn("RBH optional platform context unavailable",_e);}
     var hh=$("homeGreeting"); if(hh && currentOrgName) hh.textContent=currentOrgName+" Safety";
     refreshProfileCard();
   }
