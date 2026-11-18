@@ -101,9 +101,10 @@ async function render(){
    card.appendChild(el('div','state ok','Confirmed — synced to RBH. Open the dashboard to see the current action status.'));
   }
   if(queued){
-   const p=el('div','state '+(queued.status==='needs_review'?'bad':'pending'),
-    queued.status==='needs_review'?'Needs review — '+(queued.lastError||'server state changed'):'Saved on device — '+queued.status);
-   card.appendChild(p);
+   const message=queued.status==='needs_review'?'Needs review — '+(queued.lastError||'server state changed'):
+     'Saved on device — '+queued.status+(queued.lastError?' · Last sync issue: '+queued.lastError:'');
+   const p=el('div','state '+(queued.status==='needs_review'?'bad':'pending'),message);
+   p.setAttribute('role','status');card.appendChild(p);
   }
   const previous=await offline.draft(identity,a.id);
   const step=a.canSubmit?'action_completion':a.canVerify?'verification':null;
