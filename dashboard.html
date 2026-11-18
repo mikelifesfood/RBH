@@ -4709,6 +4709,7 @@
     detail._correctivePlanState=actionPlanState;
     invFindings.value=r.investigation_findings||"";
     invRoot.value=r.root_cause||"";
+    if(window.TeamWorktStaffOfflineUI) window.TeamWorktStaffOfflineUI.wireInvestigationDraft(r,invFindings,invRoot);
     syncInvestigationNextStepState();
     if(!canEditStep(r,2)){ [invFindings,invRoot,rootSave].forEach(function(x){if(x)x.disabled=true;}); }
     if(!canEditStep(r,3)){ [actionPlanSave,actionPlanAdd].forEach(function(x){if(x)x.disabled=true;}); }
@@ -5397,6 +5398,7 @@
         var res=await sb.rpc("rbh_submit_corrective_action_completion",{p_action_id:a.id,p_completion_note:note});
         if(res.error) throw res.error;
         await loadCorrectiveActionPlan();
+        if(window.TeamWorktStaffOfflineUI) window.TeamWorktStaffOfflineUI.clearSubmittedDraft(r,a,"action_completion");
         var submittedAction=actionPlanState.actions.find(function(x){return String(x.id||"")===String(a.id||"");})||a;
         loadAudit(r.id,auditEl); renderHomeSnapshot(); renderMyWork(); renderActions(); refreshRecordWorkflow(r,detail);
         setWizardStep(detail,r,4,true);
@@ -5443,6 +5445,7 @@
           var verifyRes=await sb.rpc("rbh_verify_corrective_action",{p_action_id:verifyAction.id,p_verification_note:verifyNote});
           if(verifyRes.error) throw verifyRes.error;
           await loadCorrectiveActionPlan();
+          if(window.TeamWorktStaffOfflineUI) window.TeamWorktStaffOfflineUI.clearSubmittedDraft(r,verifyAction,"verification");
           loadNotifications(true).catch(function(ex){console.error("notification refresh",ex);});
           loadAudit(r.id,auditEl); renderHomeSnapshot(); renderMyWork(); renderActions(); refreshRecordWorkflow(r,detail);
           var verifySummary=correctiveActionSummary(r);
@@ -5484,6 +5487,7 @@
           var changesRes=await sb.rpc("rbh_request_corrective_action_changes",{p_action_id:changesAction.id,p_verification_note:changesNote});
           if(changesRes.error) throw changesRes.error;
           await loadCorrectiveActionPlan();
+          if(window.TeamWorktStaffOfflineUI) window.TeamWorktStaffOfflineUI.clearSubmittedDraft(r,changesAction,"changes_requested");
           var refreshedChangesAction=actionPlanState.actions.find(function(x){return String(x.id||"")===String(changesAction.id||"");})||changesAction;
           loadNotifications(true).catch(function(ex){console.error("notification refresh",ex);});
           loadAudit(r.id,auditEl); renderHomeSnapshot(); renderMyWork(); renderActions(); refreshRecordWorkflow(r,detail);
@@ -5502,6 +5506,7 @@
       }
     });
 
+    if(window.TeamWorktStaffOfflineUI) window.TeamWorktStaffOfflineUI.wireWizardActionDrafts(detail,r,function(){return actionPlanState.actions;});
     loadCorrectiveActionPlan().catch(function(ex){console.error("corrective action plan load",ex);actionPlanState.loading=false;if(actionPlanList)actionPlanList.innerHTML='<div class="wizard-required show">Could not load the corrective-action plan. Refresh the record and try again.</div>';if(actionPlanAdd)actionPlanAdd.disabled=true;if(actionPlanSave)actionPlanSave.disabled=true;});
 
     if(rootSave) rootSave.addEventListener("click",async function(){ rootSave.disabled=true; try{await waitForInvestigationEvidenceUpload();await persistInvestigation(true);rootSaved.hidden=false;setTimeout(function(){rootSaved.hidden=true;},2200);showView("home");}catch(ex){console.error(ex);toast("Could not save the investigation.","err");}finally{rootSave.disabled=!canEditStep(r,2);} });
