@@ -149,7 +149,16 @@ Deno.serve(async req=>{
       if(event.notification_type==="report_owner_assignment"&&
         same(report.report_owner_assigned_by,event.recipient_user_id))permitted=false;
       if(event.notification_type==="corrective_action_assignment"&&action&&
-        same(action.updated_by||action.activated_by,event.recipient_user_id))permitted=false;
+        same(action.updated_by||action.activated_by,event.recipient_user_id)){
+        const {data:transfer}=await service.from("rbh_corrective_action_reassignments")
+          .select("id,created_at")
+          .eq("corrective_action_id",action.id)
+          .eq("new_owner_id",event.recipient_user_id)
+          .order("created_at",{ascending:false}).limit(1).maybeSingle();
+        const isExplicitTransfer=!!transfer&&
+          Math.abs(new Date(event.created_at).getTime()-new Date(transfer.created_at).getTime())<120000;
+        if(!isExplicitTransfer)permitted=false;
+      }
     }
     if(!permitted){
       await service.from("push_delivery_outbox").update({status:"cancelled",last_error_code:"RECIPIENT_NOT_CURRENT",updated_at:now}).eq("id",task.id).eq("status","claimed");
