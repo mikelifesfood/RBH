@@ -435,16 +435,9 @@ function wireAction(r,a,textarea,button,step){
  };
  root.addEventListener('rbh-offline-action-synced',onSynced);
  root.addEventListener('rbh-offline-action-sync-delayed',onDelayed);
- if(step==='action_completion'){
-  const input=document.createElement('input');input.type='file';input.accept='image/*';input.multiple=true;
-  input.setAttribute('aria-label','Add offline corrective-action photos');
-  const visibility=()=>{input.hidden=navigator.onLine!==false;};
-  visibility();root.addEventListener('online',visibility);root.addEventListener('offline',visibility);
-  textarea.insertAdjacentElement('afterend',input);
-  input.addEventListener('change',async()=>{try{for(const file of input.files)await addPhoto(entry,file);
-   hint.textContent='Photos encrypted on device; they will upload before submission.';}
-   catch(e){hint.textContent='Photo save failed: '+e.message;}input.value='';});
- }
+ // Evidence is selected via the existing Add evidence panel, which now
+ // calls addPhoto() offline. Do not inject a second native file chooser into
+ // the corrective-action form (it caused duplicate/confusing attachment UI).
 }
 async function signOut(){
  const u=state.identity;state.enabled=false;state.client=null;state.identity=null;
