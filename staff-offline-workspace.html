@@ -47,9 +47,23 @@
   <section id="editorPanel" hidden>
     <h2 id="editorTitle">Draft</h2>
     <p class="muted" id="editorHelp">This is a draft only. Return online to review and submit official changes.</p>
+    <p class="muted" id="reportSummary"></p>
     <label for="draftStep">Workflow step</label><select id="draftStep"></select>
     <label for="draftAction">Corrective action</label><select id="draftAction"></select>
-    <label for="draftNote">Notes to keep on this device</label><textarea id="draftNote" placeholder="Describe the work performed or information to review later."></textarea>
+    <div id="investigationFields" hidden>
+      <label for="draftFindings">Investigation findings — what happened?</label><textarea id="draftFindings"></textarea>
+      <label for="draftRootCause">Root cause — why did it happen?</label><textarea id="draftRootCause"></textarea>
+    </div>
+    <div id="actionPlanFields" hidden>
+      <label for="draftPlanDescription">Corrective action to add or update</label><textarea id="draftPlanDescription"></textarea>
+      <label for="draftPlanOwner">Proposed responsible person</label><input id="draftPlanOwner" type="text" autocomplete="off">
+      <label for="draftPlanDue">Proposed due date</label><input id="draftPlanDue" type="date">
+      <label for="draftPlanPriority">Proposed priority</label><select id="draftPlanPriority"><option value="">Not selected</option><option>low</option><option>medium</option><option>high</option><option>critical</option></select>
+    </div>
+    <div id="verificationFields" hidden>
+      <label for="draftDecision">Proposed verification decision</label><select id="draftDecision"><option value="">Choose after reviewing</option><option value="verify">Verify as complete</option><option value="changes_requested">Request changes</option></select>
+    </div>
+    <label for="draftNote">Additional notes</label><textarea id="draftNote" placeholder="Describe the work performed or information to review later."></textarea>
     <label for="draftPhotos">Evidence photos (10 MB maximum each)</label>
     <input id="draftPhotos" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" multiple>
     <p class="muted" id="evidenceCount"></p>
