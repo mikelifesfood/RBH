@@ -2983,7 +2983,7 @@
       var directActionReport=directAction&&allReports.find(function(x){ return String(x.id)===String(directAction.report_id); });
       clearRequestedWorkItemFromUrl();
       if(directAction&&directActionReport&&
-         (currentUserId()&&String(directAction.owner_user_id||"")===currentUserId())){
+         (currentUserId()&&(String(directAction.owner_user_id||"")===currentUserId()||String(directAction.verifier_user_id||"")===currentUserId()))){
         openFocusedCorrectiveAction(directAction,"mywork");
         return;
       }
@@ -4177,9 +4177,9 @@
     if(currentRole==="supervisor" && n===1 && isInvestigatorAssignedToMe(r) && r.involves_injury && ["yes","no","pending"].indexOf(String(r.calosha_screening_status||""))<0) return "You own this investigation, but an Admin or Safety Manager must complete the regulatory screening before Review can advance.";
     if(currentRole==="supervisor" && n<=3 && !isInvestigatorAssignedToMe(r)) return "This investigation is owned by "+(investigatorName(r)||"another dashboard user")+". You can review this step, but only the assigned investigator can change it.";
     if(currentRole==="supervisor" && n===4 && !isActionAssignedToMe(r)) return "This corrective action is owned by "+(assigneeName(r)||"another dashboard user")+". You can review it, but only the assigned action owner can change it.";
-    if(n===5 && !canVerify()) return "This step is waiting for an Admin or Safety Manager to verify the work.";
-    if(n===5 && isManager()) return "Review the completed work and evidence, then verify it or request changes.";
-    if(n===6 && !canVerify()) return "An Admin or Safety Manager closes the report after verification.";
+    if(n===5 && !canPerformVerification(r)) return "This step is waiting for the assigned verifier to review the work.";
+    if(n===5 && canPerformVerification(r)) return "Review the completed work and evidence, then verify it or request changes.";
+    if(n===6 && !isCurrentReportOwner(r)) return "The current Report Owner closes the report after verification.";
     return map[n]||"Follow the guided steps.";
   }
   function recommendedWizardStep(r){
@@ -5789,7 +5789,7 @@
   }
   function openRegulatoryFollowupModal(r,detail){
     if(!r||!r.involves_injury) return;
-    if(!canVerify()){ toast("Only an Admin or Safety Manager can update the injury regulatory follow-up.","err"); return; }
+    if(!isCurrentReportOwner(r)){ toast("Only the current Report Owner can update the regulatory follow-up.","err"); return; }
     regFollowupReport=r; regFollowupDetail=detail||null;
     $("regFollowupStatus").value=String(r.calosha_screening_status||"pending")||"pending";
     $("regFollowupAwareness").value=localDateTimeValue(r.calosha_awareness_at);
@@ -5994,7 +5994,7 @@
 
   var DISPOSITION_LABELS={no_issue:"No issue found",informational:"Informational only",not_safety:"Not safety-related",duplicate:"Duplicate report",other:"Other"};
   function openDispositionModal(r, wrap, notesEl, presetStatus){
-    if(!r || !canVerify()){ toast("Only an Admin or Safety Manager can close a report without corrective action.","err"); return; }
+    if(!r || !isCurrentReportOwner(r)){ toast("Only the current Report Owner can close this report.","err"); return; }
     if(r.involves_injury && !regulatoryFollowupResolved(r)){ toast("Resolve the injury regulatory follow-up before closing this report.","err"); return; }
     dispositionReport=r; dispositionWrap=wrap; dispositionNotesEl=notesEl;
     $("dHeading").textContent="Close report #"+r.ref_no+" — no investigation needed";
@@ -6012,7 +6012,7 @@
   document.addEventListener("keydown",function(e){ if(e.key==="Escape" && $("dispositionBackdrop").classList.contains("open")) closeDispositionModal(); });
   $("dSave").addEventListener("click",async function(){
     if(!dispositionReport) return;
-    if(!canVerify()){ toast("Only an Admin or Safety Manager can close a report without corrective action.","err"); closeDispositionModal(); return; }
+    if(!isCurrentReportOwner(r)){ toast("Only the current Report Owner can close this report.","err"); closeDispositionModal(); return; }
     if(dispositionReport.involves_injury && !regulatoryFollowupResolved(dispositionReport)){ $("dErr").textContent="Resolve the injury regulatory follow-up before closing this report."; $("dErr").classList.add("show"); return; }
     var reason=$("dReason").value, note=$("dNote").value.trim(), err=$("dErr");
     if(!reason){ err.textContent="Choose a closure reason."; err.classList.add("show"); return; }
@@ -9334,7 +9334,7 @@
       finally{if(completeBtn.isConnected)completeBtn.disabled=false;}
     });
     async function releaseLegacyReportVerifier(){
-      if(!r.verifier_user_id||!isManager()) return true;
+      if(!r.verifier_user_id||!isCurrentReportOwner(r)) return true;
       var vr=await sb.from("reports").update({verifier_user_id:null}).eq("id",r.id);
       if(vr.error) throw vr.error;
       r.verifier_user_id=null;
