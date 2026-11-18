@@ -93,7 +93,7 @@ begin
   from public.reports r
   where r.id = p_report_id;
 end;
-$function$
+$function$;
 
 
 -- Harden rbh_submit_corrective_action_completion
@@ -235,7 +235,7 @@ begin
     'completed_by', v_uid
   );
 end;
-$function$
+$function$;
 
 
 -- Harden rbh_verify_corrective_action
@@ -355,7 +355,7 @@ begin
     'verified_by', v_uid
   );
 end;
-$function$
+$function$;
 
 
 -- Harden rbh_request_corrective_action_changes
@@ -476,7 +476,7 @@ begin
     'reviewed_by', v_uid
   );
 end;
-$function$
+$function$;
 
 
 -- Harden rbh_can_manage_corrective_action_plan
@@ -502,7 +502,7 @@ AS $function$
         p.app_role in ('admin','safety_manager') and r.report_owner_user_id=p.id
       )
   );
-$function$
+$function$;
 
 
 -- Harden rbh_set_corrective_action_verifier
@@ -625,7 +625,7 @@ begin
     'verifier_user_id', p_verifier_user_id
   );
 end;
-$function$
+$function$;
 
 
 -- Report writes are owner-restricted, including SECURITY DEFINER RPCs.
