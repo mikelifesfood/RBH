@@ -235,7 +235,7 @@ async function flush(){
    renderCounters();
   }
  }catch(e){console.warn('RBH automatic offline synchronization delayed',e);}
- finally{state.busy=false;renderCounters();}
+ finally{state.busy=false;renderCounters();if(new URLSearchParams(location.search).has('offlineSync'))showSyncHandoff().catch(()=>{});}
 }
 async function counts(){
  if(!state.identity)return{pending:0,review:0,synced:0};
@@ -248,6 +248,37 @@ async function renderCounters(){
  if(!p||!state.identity)return;
  try{const c=await counts();p.textContent=c.pending+' waiting to sync · '+c.review+' need review · '+c.synced+' synced on this device';}
  catch(_){p.textContent='Device status unavailable. Check local storage before leaving.';}
+}
+async function showSyncHandoff(){
+ if(!new URLSearchParams(location.search).has('offlineSync')||!state.identity)return;
+ let banner=document.getElementById('rbhOfflineSyncHandoff');
+ if(!banner){
+  banner=document.createElement('section');banner.id='rbhOfflineSyncHandoff';
+  banner.setAttribute('role','status');banner.setAttribute('aria-live','polite');
+  banner.style.cssText='position:fixed;bottom:16px;left:16px;right:16px;z-index:1010;max-width:620px;margin:auto;padding:16px;border:2px solid #b5c7d9;border-radius:12px;background:#fff;color:#202733;box-shadow:0 10px 30px #0003;font:15px/1.45 system-ui,sans-serif';
+  const title=document.createElement('strong');title.id='rbhOfflineSyncHeading';
+  const detail=document.createElement('p');detail.id='rbhOfflineSyncDetail';detail.style.margin='7px 0 12px';
+  const buttons=document.createElement('div');buttons.style.cssText='display:flex;gap:9px;flex-wrap:wrap';
+  const retry=document.createElement('button');retry.type='button';retry.textContent='Check / retry sync';
+  const review=document.createElement('a');review.href='./staff-offline-seamless.html';review.textContent='Review saved work';
+  const dismiss=document.createElement('button');dismiss.type='button';dismiss.textContent='Dismiss';
+  for(const item of [retry,review,dismiss])item.style.cssText='display:inline-block;border:1px solid #b6c1cc;border-radius:8px;background:#f2f4f7;color:#202733;text-decoration:none;padding:10px 12px;font:600 13px system-ui;cursor:pointer';
+  retry.addEventListener('click',async()=>{retry.disabled=true;try{await flush();await showSyncHandoff();}finally{retry.disabled=false;}});
+  dismiss.addEventListener('click',()=>banner.remove());
+  buttons.append(retry,review,dismiss);banner.append(title,detail,buttons);document.body.appendChild(banner);
+ }
+ const c=await counts();
+ const heading=banner.querySelector('#rbhOfflineSyncHeading'),detail=banner.querySelector('#rbhOfflineSyncDetail');
+ if(c.review){
+  heading.textContent='Offline work needs review';
+  detail.textContent=c.review+' item(s) need attention. '+c.pending+' waiting; '+c.synced+' confirmed. Check saved work before retrying.';
+ }else if(c.pending){
+  heading.textContent='Offline work saved — not yet confirmed';
+  detail.textContent=c.pending+' item(s) still need a server receipt. Keep the dashboard open, or retry when connected. '+c.synced+' confirmed.';
+ }else{
+  heading.textContent=c.synced?'Offline work synchronized':'No offline work awaiting sync';
+  detail.textContent=c.synced?c.synced+' item(s) confirmed by RBH. You can continue working.':'No queued corrective-action updates on this device.';
+ }
 }
 function renderPanel(){
  const panel=document.getElementById('rbhSeamlessPanel');
@@ -311,7 +342,8 @@ async function init(identity,reports,actions,client){
   const link=document.getElementById('rbhSeamlessOpen');if(link)link.style.display='inline-flex';
   statusMessage('Offline work prepared securely for this device. No separate passphrase is required.');
   if(navigator.storage?.persist)navigator.storage.persist().catch(()=>{});
-  flush();
+  await flush();
+  await showSyncHandoff();
  }catch(e){
   state.enabled=false;
   const msg=String(e?.message||'DEVICE_PREPARATION_FAILED');
