@@ -46,8 +46,10 @@ $('summary').className='state'+(review?' bad':pending?' pending':' ok');
 async function render(){
  status();try{
  identity=await offline.offlineIdentity();
- const items=await offline.snapshot(identity);
- $('loading').textContent=items.length?'':'No assigned corrective actions were stored on this device. Connect to RBH and reopen the dashboard to refresh.';
+ let items=[];let expired=false;
+ try{items=await offline.snapshot(identity);}catch(_){expired=true;}
+ $('loading').textContent=expired?'Assigned work needs to be refreshed online. Previously submitted entries remain available below for recovery.':
+   items.length?'':'No assigned corrective actions were stored on this device. Connect to RBH and reopen the dashboard to refresh.';
  const wrap=$('actions');wrap.replaceChildren();
  const queues=await offline.listEncrypted(identity,'queue');
  // Preserve access to saved work when the source assignment disappears.
