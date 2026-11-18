@@ -217,7 +217,10 @@ $('unlockForm').addEventListener('submit',async event=>{
     context=data;
     $('unlockPanel').hidden=true;$('workspacePanel').hidden=false;$('offlinePassphrase').value='';
     $('syncLabel').textContent='Last synchronized: '+new Date(data.syncedAt).toLocaleString()+
-      ' · Expires: '+new Date(data.expiresAt).toLocaleString();
+      ' · Expires: '+new Date(data.expiresAt).toLocaleString()+
+      ' · Saved reports: '+data.records.length+
+      (Number(data.eligibleCount||0)>data.records.length?
+        ' of '+data.eligibleCount+' available assignments (device snapshot limited; unsaved assignments require internet)':'');
     renderRecordList();message('Offline access unlocked. Work remains on this device until you submit it online.');
   }catch(err){
     store()?.lock();
