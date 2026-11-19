@@ -185,16 +185,68 @@ async function uploadPhotos(item,u){
  for(const id of item.files){
   const file=await readEncrypted(u,'photo',id);if(!file)throw Error('LOCAL_EVIDENCE_NOT_FOUND');
   const cap=await state.client.functions.invoke('manage-offline-action-evidence',{body:{action:'capabilities',reportId:item.reportId,correctiveActionId:item.actionId}});
-  if(cap.error||!cap.data?.ok||cap.data?.offlineProtocolVersion!==1)throw Error('EVIDENCE_UPLOAD_PROTOCOL_UNAVAILABLE');
+  await evidenceFailure(cap);
+  if(cap.data?.offlineProtocolVersion!==1)throw Error('EVIDENCE_UPLOAD_PROTOCOL_UNAVAILABLE');
   const fd=new FormData();
   for(const [k,v] of Object.entries({action:'upload',reportId:item.reportId,correctiveActionId:item.actionId,
    clientEvidenceId:id,expectedActionRevision:item.actionRevision,expectedReportRevision:item.reportRevision,
    expectedActionStatus:item.actionStatus,expectedGeneration:String(item.generation),expectedReopenCount:String(item.reopenCount)}))fd.append(k,v);
   fd.append('files',new File([Uint8Array.from(atob(file.base64),c=>c.charCodeAt(0))],file.name,{type:file.type}));
   const res=await state.client.functions.invoke('manage-offline-action-evidence',{body:fd});
-  if(res.error||res.data?.ok!==true||res.data?.clientEvidenceId!==id||res.data?.offlineProtocolVersion!==1||
+  await evidenceFailure(res);
+  if(res.data?.clientEvidenceId!==id||res.data?.offlineProtocolVersion!==1||
    !Array.isArray(res.data.added)||res.data.added.length!==1)throw Error('EVIDENCE_RECEIPT_NOT_VERIFIED');
  }
+}
+async function evidenceFailure(res){
+ if(!res.error){
+  if(res.data?.ok!==true)throw Error(String(res.data?.error||'EVIDENCE_RECEIPT_NOT_VERIFIED'));
+  return;
+ }
+ let code='';
+ try{const ctx=res.error.context;const body=ctx?.clone?await ctx.clone().json():null;code=String(body?.error||'');}catch(_){}
+ if(code)throw Error(code);
+ if(res.error.context?.status===409)throw Error('OFFLINE_CONFLICT_NEEDS_REVIEW');
+ throw Error(res.error.message||'EVIDENCE_UPLOAD_PENDING_RETRY');
+}
+async function reviewAndRetry(actionId){
+ const u=state.identity,client=state.client;
+ if(!state.enabled||!u||!client||navigator.onLine===false)throw Error('CONNECT_AND_SIGN_IN_TO_REVIEW');
+ return serializeAction(u.organizationId+':'+u.userId+':'+actionId,async()=>{
+  const entries=await listEncrypted(u,'queue');
+  if(entries.some(x=>x.actionId===actionId&&['waiting','retry','syncing'].includes(x.status)))
+   throw Error('ACTION_ALREADY_WAITING_TO_SYNC');
+  const old=entries.filter(x=>x.actionId===actionId&&x.status==='needs_review')
+   .sort((a,b)=>b.createdAt-a.createdAt)[0];
+  if(!old)throw Error('NO_SUBMISSION_REQUIRES_REVIEW');
+  const [rr,ar]=await Promise.all([
+   client.from('reports').select('id,organization_id,status,updated_at,workflow_restart_count,reopen_count').eq('id',old.reportId).single(),
+   client.from('report_corrective_actions').select('id,report_id,organization_id,owner_user_id,status,updated_at,workflow_generation,activation_reopen_count,retired_at,activated_at').eq('id',old.actionId).single()
+  ]);
+  if(rr.error||ar.error)throw Error('LATEST_RECORD_UNAVAILABLE');
+  const report=rr.data,action=ar.data;
+  if(report.organization_id!==u.organizationId||action.organization_id!==u.organizationId||
+     action.report_id!==old.reportId||action.retired_at||!action.activated_at||
+     ['closed','duplicate','no_action'].includes(report.status)||
+     Number(report.workflow_restart_count||0)!==old.generation||
+     Number(report.reopen_count||0)!==old.reopenCount||
+     Number(action.workflow_generation||0)!==old.generation||
+     Number(action.activation_reopen_count||0)!==old.reopenCount||
+     action.status!==old.actionStatus||
+     !(['admin','safety_manager'].includes(u.role)||String(action.owner_user_id||'')===u.userId))
+   throw Error('WORKFLOW_CHANGED_CONTACT_REPORT_OWNER');
+  if(!root.confirm('Confirm the current action and your saved note/photo are still correct. Retry your saved submission using the current server revision?'))
+   return {cancelled:true};
+  // A new immutable operation ID is required when the expected revisions change.
+  // The previous encrypted submission remains for recovery and audit.
+  const next={...old,operationId:crypto.randomUUID(),actionRevision:action.updated_at,
+   reportRevision:report.updated_at,status:'waiting',lastError:null,createdAt:Date.now(),reviewedAt:Date.now()};
+  await putEncrypted(u,'queue',next.operationId,next);
+  await putEncrypted(u,'queue',old.operationId,{...old,status:'superseded',supersededBy:next.operationId});
+  await putEncrypted(u,'draft',old.actionId,{actionId:old.actionId,step:old.step,note:old.note,files:old.files,queued:true,savedAt:Date.now()});
+  renderCounters();flush();
+  return {queued:true};
+ });
 }
 function conflictError(msg){return /CONFLICT|REVOKED|DISABLED|MISMATCH|NOT_ACTIVE|NOT_FOUND|NOT_AUTHORIZED|EXPIRED|WORKFLOW|REUSED|INVALID|NOT_CURRENT|NOT_STARTED|RETIRED|ACCESS|PERMISSION|OFFLINE_SESSION|STALE/i.test(msg);}
 async function flush(){
@@ -372,7 +424,25 @@ function wireAction(r,a,textarea,button,step){
  textarea.dataset.seamlessWired='yes';
  let changed=false,timer;
  const hint=document.createElement('p');hint.className='field-help';hint.setAttribute('role','status');
- hint.textContent='Changes save securely on this device.';textarea.insertAdjacentElement('afterend',hint);
+ const recovery=document.createElement('button');recovery.type='button';recovery.hidden=true;
+ recovery.textContent='Review and retry saved submission';recovery.className='profile-secondary';
+ recovery.style.cssText='margin:8px 0 12px;min-height:44px;white-space:normal';
+ recovery.addEventListener('click',async()=>{
+  recovery.disabled=true;
+  try{
+   const result=await reviewAndRetry(entry.id);
+   if(result.queued){recovery.hidden=true;hint.textContent='Reviewed submission queued; checking server receipt…';}
+  }catch(e){hint.textContent='Your note and photo remain saved on this device. '+String(e.message||e);}
+  finally{recovery.disabled=false;}
+ });
+ hint.textContent='Changes save securely on this device.';textarea.insertAdjacentElement('afterend',hint);hint.insertAdjacentElement('afterend',recovery);
+ listEncrypted(u,'queue').then(rows=>{
+  if(!hint.isConnected)return;
+  const latest=rows.filter(x=>x.actionId===entry.id&&x.status!=='superseded').sort((a,b)=>b.createdAt-a.createdAt)[0];
+  if(latest?.status==='needs_review'){
+   recovery.hidden=false;hint.textContent='Saved on device. The server reported a conflict; review the current action before retrying.';
+  }
+ }).catch(()=>{});
  draft(u,a.id).then(old=>{
   if(!textarea.isConnected||!old)return;
   if(old.queued){
@@ -423,14 +493,16 @@ function wireAction(r,a,textarea,button,step){
  const onSynced=event=>{
   if(String(event.detail?.actionId)!==String(entry.id)||!hint.isConnected)return;
   hint.textContent='Synchronized with RBH. Your corrective action was submitted.';
+  recovery.hidden=true;
   button.dataset.rbhOfflineQueued='synced';
   button.textContent='Submitted for review';
   button.disabled=true;
  };
  const onDelayed=event=>{
   if(String(event.detail?.actionId)!==String(entry.id)||!hint.isConnected)return;
+  recovery.hidden=event.detail?.status!=='needs_review';
   hint.textContent=event.detail?.status==='needs_review'?
-   'Saved on this device — needs review before it can sync. Open View saved work and sync status in Profile.':
+   'Saved on this device — server conflict. Review the current action and retry your saved note and photo.':
    'Saved on this device — retrying when the connection is available.';
  };
  root.addEventListener('rbh-offline-action-synced',onSynced);
@@ -477,5 +549,5 @@ if(root.addEventListener){
  },15000);
 }
 root.TeamWorktSeamlessOffline=Object.freeze({init,refresh,wireAction,stage,saveNote,addPhoto,flush,counts,snapshot,
- offlineIdentity,draft,listEncrypted,signOut,hasPending,isEnabled:()=>state.enabled});
+ offlineIdentity,draft,listEncrypted,reviewAndRetry,signOut,hasPending,isEnabled:()=>state.enabled});
 })(window);
