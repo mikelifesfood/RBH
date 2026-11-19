@@ -1002,6 +1002,20 @@
   .archive-export-btn:hover{filter:brightness(1.07)}
   .archive-export-btn:disabled{opacity:.55;cursor:not-allowed}
   .archive-export-status{font-size:11.5px;color:var(--muted);text-align:right;min-height:16px;max-width:260px}
+  /* RBH pilot: show digest settings for context, but make their held state unmistakable. */
+  .digest-hold-label{display:inline-block;vertical-align:middle;margin-left:8px;padding:3px 9px;border:1px solid var(--line);border-radius:999px;background:var(--canvas-2);color:var(--muted);font-size:11px;font-weight:750;white-space:normal}
+  .digest-hold-note{margin:12px 0 2px!important;font-size:13px!important;color:var(--muted)!important}
+  #weeklyDigestPreferences .archive-export-btn:disabled{background:#d9dbe0!important;color:#6c7077!important;border:1px solid #c9cdd3!important;opacity:1!important;cursor:not-allowed!important;box-shadow:none!important;filter:none!important}
+  #weeklyDigestPreferences #weeklyDigestEnabled:disabled{accent-color:#aeb3bb;cursor:not-allowed}
+  #weeklyDigestPreferences .digest-hold-controls label{color:var(--muted)}
+  /* Equal-height Reporting & Records cards with their actions on the same bottom line. */
+  #adminPanelReporting .admin-settings-grid{align-items:stretch}
+  #adminPanelReporting .admin-records-archive{display:flex;flex-direction:column;justify-content:space-between;height:100%;gap:18px}
+  #adminPanelReporting .archive-copy{flex:1 1 auto}
+  #adminPanelReporting .archive-export-action{margin-top:auto;padding-top:10px;width:100%;align-items:stretch;min-width:0}
+  #adminPanelReporting .archive-export-btn{display:flex;align-items:center;justify-content:center;min-height:48px;width:100%;white-space:normal;text-align:center}
+  #adminPanelReporting .archive-export-status:empty{display:none}
+  #adminPanelReporting .archive-export-status:not(:empty){max-width:none;text-align:left}
   .role-legend{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin:0 0 16px;background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden}
   .role-card{border:0;border-left:1px solid var(--line);padding:14px 16px;background:transparent}
   .role-card:first-child{border-left:0}
@@ -1761,10 +1775,11 @@
             <p id="reportEmailModeStatus" role="status" aria-live="polite" style="margin-top:10px">Loading company email setting…</p>
             <p style="margin-top:6px">Off also suppresses high-priority injury intake emails. Reports remain saved and visible in the dashboard. No recipient roles are added or removed.</p>
           </div>
-          <div class="admin-info" id="weeklyDigestPreferences">
-            <h3>Weekly Safety Pulse digest</h3>
+          <div class="admin-info" id="weeklyDigestPreferences" data-pilot-hold="true">
+            <h3>Weekly Safety Pulse digest <span class="digest-hold-label">On hold for RBH pilot</span></h3>
             <p>A weekly summary of overdue corrective actions, work waiting for verification, and last week's new reports, closed reports, and completed actions. Emails include totals and a dashboard link, never incident details, names, or attachments.</p>
-            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:13px">
+            <p class="digest-hold-note">These controls are temporarily unavailable. Weekly digest emails remain off during RBH testing.</p>
+            <div class="digest-hold-controls" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:13px">
               <label style="display:inline-flex;align-items:center;gap:9px;font-size:14px;font-weight:700"><input id="weeklyDigestEnabled" type="checkbox" disabled> Enable weekly digest for this company</label>
               <button id="saveWeeklyDigest" type="button" class="archive-export-btn" disabled>Save digest setting</button>
               <button id="previewWeeklyDigest" type="button" class="archive-export-btn" disabled>Preview counts</button>
@@ -1825,10 +1840,10 @@
           <div class="admin-settings-heading user-settings-heading"><h3>Users &amp; Activity</h3><p>Manage dashboard access, user roles, and account history.</p></div>
           <div class="admin-info"><h3>Role-based access</h3><p>New dashboard users start as Read Only until an Admin assigns the appropriate role. Access can be updated at any time by another Admin.</p></div>
           <div class="role-legend">
-            <div class="role-card"><b>Admin</b><span>Full operational access plus user roles and account activation.</span></div>
-            <div class="role-card"><b>Safety Manager</b><span>Full incident, investigation, corrective-action, and verification access.</span></div>
-            <div class="role-card"><b>Supervisor</b><span>Can work investigations and corrective actions assigned to their account. Investigation ownership covers Review and Investigation; corrective-action ownership covers the assigned completion work.</span></div>
-            <div class="role-card"><b>Read Only</b><span>Can review reports, activity, and analytics without making changes.</span></div>
+            <div class="role-card"><b>Admin</b><span>Manage users and permissions, review and investigate reports, assign and reassign work, manage corrective actions, verify completed work, and close reports.</span></div>
+            <div class="role-card"><b>Safety Manager</b><span>Review and investigate reports, manage assigned report ownership, create and assign corrective actions, verify completed work, and close reports. Cannot manage user accounts.</span></div>
+            <div class="role-card"><b>Supervisor</b><span>View company reports and complete corrective actions specifically assigned to you, including completion notes and evidence. Cannot investigate reports, assign work, verify actions, or close reports.</span></div>
+            <div class="role-card"><b>Read Only</b><span>View company reports, activity, and analytics. Cannot edit reports, investigate, complete or verify corrective actions, assign work, or close reports.</span></div>
           </div>
           <div id="adminPermissionNote" class="permission-note"></div>
           <div class="admin-user-actions"><button class="add-user-btn" id="addUserBtn" type="button">+ Add dashboard user</button></div>
@@ -8636,8 +8651,9 @@
       if(res.error)throw res.error;
       var setting=res.data||{};
       enabled.checked=setting.enabled===true;
-      enabled.disabled=false; save.disabled=false; preview.disabled=false;
-      if(testBtn)testBtn.disabled=false;
+      // Pilot hold: display stored preference, but never activate interactive digest controls.
+      enabled.disabled=true; save.disabled=true; preview.disabled=true;
+      if(testBtn)testBtn.disabled=true;
       if(testStatus)testStatus.textContent="Test recipient: "+String((currentSession&&currentSession.user&&currentSession.user.email)||"your signed-in account")+".";
       status.textContent=(enabled.checked?"Company preference: On.":"Company preference: Off.")+
         (setting.delivery_ready===true?" Scheduled delivery is available.":" Live delivery remains disabled during the pilot.");
@@ -8648,7 +8664,7 @@
   }
   var weeklyDigestSave=$("saveWeeklyDigest");
   if(weeklyDigestSave) weeklyDigestSave.addEventListener("click",async function(){
-    if(currentRole!=="admin")return;
+    if(currentRole!=="admin"||$("weeklyDigestPreferences")?.dataset.pilotHold==="true")return;
     var enabled=$("weeklyDigestEnabled"),status=$("weeklyDigestStatus"),button=$("saveWeeklyDigest");
     if(!enabled||!status||!button)return;
     button.disabled=true; enabled.disabled=true; status.textContent="Saving weekly digest preference…";
@@ -8667,7 +8683,7 @@
   });
   var weeklyDigestPreviewBtn=$("previewWeeklyDigest");
   if(weeklyDigestPreviewBtn) weeklyDigestPreviewBtn.addEventListener("click",async function(){
-    if(currentRole!=="admin")return;
+    if(currentRole!=="admin"||$("weeklyDigestPreferences")?.dataset.pilotHold==="true")return;
     var button=$("previewWeeklyDigest"),panel=$("weeklyDigestPreview"),status=$("weeklyDigestStatus");
     if(!button||!panel)return;
     button.disabled=true;button.textContent="Loading preview…";
@@ -8690,7 +8706,7 @@
 
   var weeklyDigestTestBtn=$("sendWeeklyDigestTest");
   if(weeklyDigestTestBtn) weeklyDigestTestBtn.addEventListener("click",async function(){
-    if(currentRole!=="admin"||!currentSession||!currentSession.access_token)return;
+    if(currentRole!=="admin"||$("weeklyDigestPreferences")?.dataset.pilotHold==="true"||!currentSession||!currentSession.access_token)return;
     var button=$("sendWeeklyDigestTest"),status=$("weeklyDigestTestStatus");
     var recipient=String((currentSession.user&&currentSession.user.email)||"");
     if(!recipient){if(status)status.textContent="Your account has no verified email address.";return;}
