@@ -1085,6 +1085,8 @@
   .profile-card-section h4{font-size:15px;margin:0 0 4px}
   .profile-card-section>p{font-size:13px;color:var(--muted);line-height:1.5;margin:0 0 12px}
   .profile-danger-zone{background:var(--paper)}
+  /* Offline sync runs automatically; retain legacy status elements for its scripts but hide the settings panel. */
+  #rbhSeamlessPanel{display:none!important}
   .profile-action-row{display:flex;gap:8px;flex-wrap:wrap}
   .feedback-context{font-size:12px;color:var(--muted);background:var(--canvas);border-radius:var(--r);padding:8px 10px;margin:-4px 0 12px}
   .feedback-context:empty{display:none}
@@ -1900,6 +1902,7 @@
 
     <div class="profile-tabs" role="tablist" aria-label="Profile sections">
       <button class="profile-tab active" type="button" data-profile-tab="profile">Profile</button>
+      <button class="profile-tab" type="button" data-profile-tab="options">Options</button>
       <button class="profile-tab" type="button" data-profile-tab="security">Security</button>
     </div>
 
@@ -1914,11 +1917,13 @@
             <div class="field"><label for="profileJobTitle">Job title</label><input type="text" id="profileJobTitle" maxlength="100" placeholder="Optional"></div>
             <div class="field"><label for="profileDepartment">Department</label><input type="text" id="profileDepartment" maxlength="100" placeholder="Optional"></div>
             <div class="field"><label for="profileRole">App role</label><input type="text" id="profileRole" readonly aria-readonly="true"><div class="field-help">Only another Admin can change your access.</div></div>
-            <div class="field profile-span-2"><label for="profileLanguage">Preferred report language</label><select id="profileLanguage"><option value="auto">Automatic — use my device</option><option value="en">English</option><option value="es">Español</option></select><div class="field-help">This controls the default language used when you read a report. The original submitted wording is always preserved.</div></div>
-            <label class="setup-check profile-span-2"><input type="checkbox" id="profileGuidance" checked><span><b>Show workflow guidance</b><br>Keep short helper text visible while reviewing and completing reports. Regulatory warnings and required-field messages always remain visible.</span></label>
           </div>
           <button class="profile-primary" id="profileSave" type="submit">Save profile</button>
         </form>
+        <div class="profile-card-section profile-danger-zone">
+          <h4>Sessions</h4><p>Sign out of this browser, or sign out on all devices if another device should no longer have access.</p>
+          <div class="profile-action-row"><button class="profile-secondary" id="signout" type="button">Sign out</button><button class="profile-danger" id="signoutAll" type="button">Sign out on all devices</button></div>
+        </div>
         <div class="profile-card-section" id="rbhSeamlessPanel" aria-label="Automatic offline work">
           <h4>Offline sync (automatic)</h4>
           <p class="field-help">Corrective-action work can be saved securely on this device and synchronized when a connection returns. No separate offline password is needed.</p>
@@ -1927,6 +1932,25 @@
             <button class="profile-secondary" id="rbhSeamlessRetry" type="button">Check offline access</button>
             <a class="profile-secondary" id="rbhSeamlessOpen" style="display:none;text-decoration:none;align-items:center" href="./staff-offline-seamless.html">View saved work and sync status</a>
           </div>
+        </div>
+      </section>
+
+      <section class="profile-panel" data-profile-panel="options" hidden>
+        <div class="profile-section-title"><h3>Application preferences</h3><p>Choose how RBH Safety works for you.</p></div>
+        <div class="profile-card-section" id="rbhPushSettings" hidden>
+          <h4>Push notifications · this device</h4>
+          <p>Receive privacy-safe alerts about assigned safety work. You can opt in or disable this device at any time. Your email and in-app notifications remain available.</p>
+          <p class="field-help" id="rbhPushStatus" role="status" aria-live="polite">Checking device support…</p>
+          <div class="profile-action-row"><button class="profile-primary" id="rbhPushEnable" type="button" disabled>Enable push notifications</button><button class="profile-secondary" id="rbhPushDisable" type="button" hidden disabled>Disable notifications on this device</button><button class="profile-secondary" id="rbhPushTest" type="button" hidden disabled>Send test to this device</button></div>
+        </div>
+
+        <div class="profile-card-section">
+          <h4>Report preferences</h4>
+          <div class="profile-grid">
+            <div class="field profile-span-2"><label for="profileLanguage">Preferred report language</label><select id="profileLanguage" form="profileForm"><option value="auto">Automatic — use my device</option><option value="en">English</option><option value="es">Español</option></select><div class="field-help">This controls the default language used when you read a report. The original submitted wording is always preserved.</div></div>
+            <label class="setup-check profile-span-2"><input type="checkbox" id="profileGuidance" form="profileForm" checked><span><b>Show workflow guidance</b><br>Keep short helper text visible while reviewing and completing reports. Regulatory warnings and required-field messages always remain visible.</span></label>
+          </div>
+          <button class="profile-primary" id="profileOptionsSave" form="profileForm" type="submit">Save preferences</button>
         </div>
       </section>
 
@@ -1940,16 +1964,6 @@
         <div class="profile-card-section">
           <h4>Password reset email</h4><p>Send a secure password-reset link to your account email address.</p>
           <button class="profile-secondary" id="passwordReset" type="button">Email me a reset link</button>
-        </div>
-        <div class="profile-card-section" id="rbhPushSettings" hidden>
-          <h4>Push notifications · this device</h4>
-          <p>Receive privacy-safe alerts about assigned safety work. You can opt in or disable this device at any time. Your email and in-app notifications remain available.</p>
-          <p class="field-help" id="rbhPushStatus" role="status" aria-live="polite">Checking device support…</p>
-          <div class="profile-action-row"><button class="profile-primary" id="rbhPushEnable" type="button" disabled>Enable push notifications</button><button class="profile-secondary" id="rbhPushDisable" type="button" hidden disabled>Disable notifications on this device</button><button class="profile-secondary" id="rbhPushTest" type="button" hidden disabled>Send test to this device</button></div>
-        </div>
-        <div class="profile-card-section profile-danger-zone">
-          <h4>Sessions</h4><p>Sign out of this browser, or sign out on all devices if another device should no longer have access.</p>
-          <div class="profile-action-row"><button class="profile-secondary" id="signout" type="button">Sign out</button><button class="profile-danger" id="signoutAll" type="button">Sign out on all devices</button></div>
         </div>
       </section>
 
