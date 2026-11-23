@@ -1178,6 +1178,26 @@
   .help-coach-highlight{position:relative;z-index:2;outline:4px solid rgba(202,31,42,.28)!important;outline-offset:5px!important;box-shadow:0 0 0 9px rgba(202,31,42,.09)!important;transition:outline-color .2s,box-shadow .2s}
   @media(max-width:1023px),(pointer:coarse){.help-coach-fab,.help-coach-panel{display:none!important}}
 
+
+  /* Mobile navigation experiment: confined to narrow viewports; desktop is unchanged. */
+  .mobile-home-button,.mobile-bottom-nav,.mobile-profile-shortcuts{display:none}
+  @media(max-width:820px){
+    #appView .hamburger{display:none!important}
+    #appView .mobile-home-button{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;width:44px;height:44px;border:1px solid var(--line-strong);border-radius:var(--r);background:var(--paper);color:var(--ink);cursor:pointer}
+    #appView .mobile-home-button svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+    #appView .main{padding-bottom:calc(78px + env(safe-area-inset-bottom,0px))}
+    #appView .mobile-bottom-nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:stretch;position:fixed;bottom:0;left:0;right:0;z-index:25;min-height:70px;padding:6px 5px calc(6px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--paper);box-shadow:0 -4px 18px rgba(0,0,0,.06)}
+    #appView .mobile-tab{position:relative;display:flex;min-width:0;min-height:58px;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:0;border-radius:10px;background:transparent;color:var(--muted);font:700 10.5px/1.15 var(--sans);cursor:pointer;padding:6px 2px;text-align:center}
+    #appView .mobile-tab svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+    #appView .mobile-tab.active{color:var(--brand);background:var(--brand-tint)}
+    #appView .mobile-tab:focus-visible,#appView .mobile-home-button:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+    #appView .mobile-tab[hidden]{display:none!important}
+    .mobile-profile-shortcuts{display:grid;gap:8px;margin:0 0 18px}
+    .mobile-profile-shortcuts button{width:100%;text-align:left;display:flex;align-items:center;justify-content:space-between;padding:12px 14px;min-height:46px;border:1px solid var(--line);border-radius:var(--r);background:var(--paper);color:var(--ink);font:750 14px var(--sans);cursor:pointer}
+    .mobile-profile-shortcuts button[hidden]{display:none!important}
+    #appView .sb-backdrop,#appView .sidebar{display:none!important}
+  }
+
   /* ---------- 18. Responsive ---------- */
   @media(max-width:980px){.home-stats{grid-template-columns:repeat(3,minmax(0,1fr))}.home-stats .hs:nth-child(4){border-left:0}.home-stats .hs:nth-child(n+4){border-top:1px solid var(--line)}}
   @media(max-width:900px){
@@ -1617,6 +1637,7 @@
     <main class="main">
       <div class="topbar">
         <button class="hamburger" id="hamburger" type="button" aria-label="Menu">&#9776;</button>
+        <button class="mobile-home-button" id="mobileHomeButton" type="button" aria-label="Go to Home" title="Home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg></button>
         <h2 class="page-title" id="pageTitle">Home</h2>
         <div class="topbar-actions">
           <button class="notification-bell" id="notificationBell" type="button" aria-label="Notifications" aria-haspopup="true" aria-expanded="false" aria-controls="notificationPanel">
@@ -1893,6 +1914,12 @@
         </div>
       </footer>
     </main>
+    <nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="Mobile main navigation">
+      <button class="mobile-tab" type="button" data-mobile-view="mywork" aria-label="My Work"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="15" rx="2"/><path d="M8 5V3h8v2M3 10h18M9 14l2 2 4-4"/></svg><span>My Work</span></button>
+      <button class="mobile-tab" type="button" data-mobile-view="records" aria-label="Safety Inbox"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg><span>Safety Inbox</span></button>
+      <button class="mobile-tab" type="button" data-mobile-view="actions" aria-label="Corrective Actions"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg><span>Actions</span></button>
+      <button class="mobile-tab" type="button" data-mobile-view="profile" aria-label="My Profile" aria-haspopup="dialog" aria-controls="profileDrawer"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/></svg><span>Profile</span></button>
+    </nav>
   </div>
   <button class="help-coach-fab" id="helpCoachFab" type="button" aria-label="Open help" aria-haspopup="dialog" aria-expanded="false" aria-controls="helpCoachPanel">?</button>
   <aside class="help-coach-panel" id="helpCoachPanel" role="dialog" aria-modal="false" aria-labelledby="helpCoachTitle" aria-hidden="true">
@@ -1923,6 +1950,10 @@
 
     <div class="profile-scroll">
       <section class="profile-panel" data-profile-panel="profile">
+        <div class="mobile-profile-shortcuts" aria-label="More pages">
+          <button type="button" data-mobile-extra-view="metrics">Analytics <span aria-hidden="true">›</span></button>
+          <button type="button" data-mobile-extra-view="users" id="mobileAdminShortcut" hidden>Admin <span aria-hidden="true">›</span></button>
+        </div>
         <div class="profile-section-title"><h3>Personal information</h3><p>Keep your contact and work information current.</p></div>
         <form id="profileForm">
           <div class="profile-grid">
@@ -7622,9 +7653,9 @@
     document.querySelectorAll("[data-profile-panel]").forEach(function(p){ p.hidden=p.getAttribute("data-profile-panel")!==name; });
   }
   function openProfileDrawer(tab){
-    var bd=$("profileBackdrop"); if(!bd) return; fillProfileForm(); setProfileTab(tab||"profile"); closeSidebar(); bd.classList.add("open"); bd.setAttribute("aria-hidden","false"); document.body.style.overflow="hidden";
+    var bd=$("profileBackdrop"); if(!bd) return; fillProfileForm(); setProfileTab(tab||"profile"); closeSidebar(); bd.classList.add("open"); bd.setAttribute("aria-hidden","false"); document.body.style.overflow="hidden"; syncMobileNavigation();
   }
-  function closeProfileDrawer(){ var bd=$("profileBackdrop"); if(!bd) return; bd.classList.remove("open"); bd.setAttribute("aria-hidden","true"); document.body.style.overflow=""; }
+  function closeProfileDrawer(){ var bd=$("profileBackdrop"); if(!bd) return; bd.classList.remove("open"); bd.setAttribute("aria-hidden","true"); document.body.style.overflow=""; syncMobileNavigation(); }
 
   var _profileOpen=$("profileOpen"); if(_profileOpen) _profileOpen.addEventListener("click",function(){ openProfileDrawer("profile"); });
   var _profileClose=$("profileClose"); if(_profileClose) _profileClose.addEventListener("click",closeProfileDrawer);
@@ -7972,6 +8003,9 @@
     var myWorkNav=document.querySelector('.nav-item[data-view="mywork"]');
     var canOwnWork=currentRole!=="read_only";
     if(myWorkNav) myWorkNav.style.display=(canOwnWork?"":"none");
+    var mobileMyWork=document.querySelector('[data-mobile-view="mywork"]'); if(mobileMyWork) mobileMyWork.hidden=!canOwnWork;
+    var mobileAdmin=$("mobileAdminShortcut"); if(mobileAdmin) mobileAdmin.hidden=currentRole!=="admin";
+    syncMobileNavigation();
     var hot=$("homeOpenTitle"), hod=$("homeOpenDesc");
     if(hot) hot.textContent=canOwnWork?"Open My Work":"Open Safety Inbox";
     if(hod) hod.textContent=canOwnWork?"See investigations, corrective actions, and reviews that need your attention.":"Review reports and safety activity.";
@@ -8916,6 +8950,17 @@
     selectAdminTab(activeAdminTab,false);
   }
 
+  function syncMobileNavigation(){
+    var shown=document.querySelector(".view:not([hidden])");
+    var view=shown?shown.id.replace(/^view-/,""):"home";
+    var active=view==="myaction"?(focusedActionOrigin==="actions"?"actions":"mywork"):view;
+    var profileOpen=!!($("profileBackdrop")&&$("profileBackdrop").classList.contains("open"));
+    document.querySelectorAll("[data-mobile-view]").forEach(function(button){
+      var selected=profileOpen?button.dataset.mobileView==="profile":button.dataset.mobileView===active;
+      button.classList.toggle("active",selected);
+      if(selected)button.setAttribute("aria-current","page"); else button.removeAttribute("aria-current");
+    });
+  }
   function showView(name){
     if(name!=="incident"&&name!=="myaction"){ stopRecordPresence(); clearActiveOpenResource(); }
     if(name==="users" && currentRole!=="admin") name="home";
@@ -8935,6 +8980,7 @@
     if(name==="home") renderHomeSnapshot();
     refreshHelpCoachContext();
     closeSidebar();
+    syncMobileNavigation();
     scrollAppToTop();
   }
 
@@ -9388,6 +9434,22 @@
     if(n.getAttribute("data-view")==="records"){pulseTrendFilter=null;syncPulseTrendToolbar();applyFilters();}
     showView(n.getAttribute("data-view"));
   }); });
+  var mobileHome=$("mobileHomeButton"); if(mobileHome) mobileHome.addEventListener("click",function(){closeProfileDrawer();showView("home");});
+  document.querySelectorAll("[data-mobile-view]").forEach(function(button){
+    button.addEventListener("click",function(){
+      var target=button.dataset.mobileView;
+      if(target==="profile"){openProfileDrawer("profile");return;}
+      if(target==="records"){pulseTrendFilter=null;syncPulseTrendToolbar();applyFilters();}
+      showView(target);
+    });
+  });
+  document.querySelectorAll("[data-mobile-extra-view]").forEach(function(button){
+    button.addEventListener("click",function(){
+      var target=button.dataset.mobileExtraView;
+      if(target==="users"&&currentRole!=="admin")return;
+      closeProfileDrawer();showView(target);
+    });
+  });
   var _ptType=$("pulseTrendType"); if(_ptType)_ptType.addEventListener("change",function(){if(pulseTrendFilter){pulseTrendFilter.reportType=this.value;applyFilters();}});
   var _ptDays=$("pulseTrendDays"); if(_ptDays)_ptDays.addEventListener("change",function(){if(pulseTrendFilter){pulseTrendFilter.days=Number(this.value)||90;applyFilters();}});
   var _ptClear=$("pulseTrendClear"); if(_ptClear)_ptClear.addEventListener("click",function(){pulseTrendFilter=null;syncPulseTrendToolbar();setQuickFilter("all");});
