@@ -5206,7 +5206,7 @@
       if(!rows.length){
         var hasReviewable=allRows.some(function(a){return ["awaiting_verification","verified"].indexOf(String(a.status||""))>=0;});
         multiActionCompletionEl.innerHTML=hasReviewable?
-          '<div class="multi-action-verification-footer next-step-ready"><div class="mavf-status"><b>Ready for review</b><span>All corrective actions have been submitted. Review the completed work and make the verification decision.</span></div><button class="wizard-primary" type="button" data-go-to-verification>Review submitted work →</button></div>':
+          '<div class="multi-action-verification-footer next-step-ready"><div class="mavf-status"><b>'+(isCurrentReportOwner(r)?'Ready for review':'Submitted — awaiting verification')+'</b><span>'+(isCurrentReportOwner(r)?'All corrective actions have been submitted. Review the completed work and make the verification decision.':'All corrective actions have been submitted. The current Report Owner will review and verify the work.')+'</span></div>'+(isCurrentReportOwner(r)?'<button class="wizard-primary" type="button" data-go-to-verification>Review submitted work →</button>':'')+'</div>':
           '<div class="multi-action-stage-note"><b>No work needs updating here.</b> There are no corrective actions waiting for completion.</div>';
         return;
       }
@@ -5552,11 +5552,15 @@
         var action=actionPlanState.actions.find(function(a){return String(a.id)===open.dataset.caOpen;});
         if(action) openFocusedCorrectiveAction(action,"mywork");
       } else if(back) showView(back.dataset.caBack);
-      else if(e.target.closest("[data-ca-review]")&&isManager()) setWizardStep(detail,r,5,true);
+      else if(e.target.closest("[data-ca-review]")&&isCurrentReportOwner(r)) setWizardStep(detail,r,5,true);
     });
     if(multiActionCompletionEl) multiActionCompletionEl.addEventListener("click",async function(e){
       var reviewBtn=e.target.closest("[data-go-to-verification]");
       if(reviewBtn){
+        if(!isCurrentReportOwner(r) || isResolvedReport(r)){
+          toast("Only the current Report Owner can review submitted work.","err");
+          return;
+        }
         setWizardStep(detail,r,5,true);
         return;
       }
