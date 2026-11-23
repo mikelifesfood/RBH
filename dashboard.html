@@ -5699,7 +5699,19 @@
             setWizardStep(detail,r,5,true);
             toast("Corrective Action #"+verifyAction.action_number+" verified","ok");
           }
-        }catch(ex){console.error(ex);toast("Could not verify this corrective action.","err");}
+        }catch(ex){
+          console.error("corrective action verification failed",ex);
+          var reason=String(ex&&ex.message||"").trim();
+          if(reason==="STALE_RECORD"){
+            toast("This record changed since you opened it. Refresh the record and review the latest status before verifying.","err");
+          }else if(reason){
+            // Show the actual server/validation reason; do not imply that an
+            // authorization failure is merely a temporary refresh problem.
+            toast("Could not verify this corrective action: "+reason.slice(0,180),"err");
+          }else{
+            toast("Could not verify this corrective action. Reopen the record and try again.","err");
+          }
+        }
         finally{if(verifyBtn.isConnected)verifyBtn.disabled=false;}
         return;
       }
