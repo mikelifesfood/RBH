@@ -8435,10 +8435,10 @@
     return activeFocusedAction;
   }
   async function clearFocusedLegacyVerifier(a){
-    if(!a||!a.verifier_user_id||!isCurrentReportOwner(findReport(a.report_id))) return true;
-    var res=await sb.rpc("rbh_set_corrective_action_verifier",{p_action_id:a.id,p_verifier_user_id:null});
-    if(res.error) throw res.error;
-    a.verifier_user_id=null;
+    // The current report owner remains the assigned verifier. The previous
+    // implementation cleared this field, but the live RPC correctly rejects
+    // null because verification must stay routed to the current report owner.
+    // Match the working full-record verification flow: do not clear it.
     return true;
   }
   function showCorrectiveConfirmation(receipt){
@@ -8674,7 +8674,15 @@
         if(window.TeamWorktStaffOfflineUI) window.TeamWorktStaffOfflineUI.clearSubmittedDraft(r,a,"verification");
         loadNotifications(true).catch(function(ex){console.error("notification refresh",ex);});
         toast("Corrective Action #"+String(a.action_number||"")+" verified","ok");
-      }catch(ex){console.error(ex);toast("Could not verify this corrective action.","err");}
+      }catch(ex){
+        console.error("focused corrective action verification failed",ex);
+        var reason=String(ex&&ex.message||"").trim();
+        if(reason==="STALE_RECORD"){
+          toast("This record changed since you opened it. Refresh the record before verifying.","err");
+        }else{
+          toast("Could not verify this corrective action"+(reason?": "+reason.slice(0,180):". Reopen the action and try again."),"err");
+        }
+      }
       finally{if(verify.isConnected){verify.disabled=false;verify.textContent=old;}}
     });
 
