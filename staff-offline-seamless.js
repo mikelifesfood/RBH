@@ -135,6 +135,8 @@ async function saveNote(a,note,step){
 
  const previous=await draft(u,a.id);
  if(previous?.queued)return {queued:true};
+ // Only restore the previous note for the matching step. Keep shared
+ // evidence references, but never use completion text as an approval note.
  await putEncrypted(u,'draft',a.id,{actionId:a.id,step,note,savedAt:Date.now(),files:previous?.files||[]});
  return {queued:false};
 
@@ -448,10 +450,12 @@ function wireAction(r,a,textarea,button,step){
   if(old.queued){
    button.dataset.rbhOfflineQueued='yes';
    hint.textContent='This action was saved on this device and is waiting to sync. Do not submit it again.';
-   if(old.note&&!changed&&!textarea.value.trim())textarea.value=old.note;
+   if(old.step===step&&old.note&&!changed&&!textarea.value.trim())textarea.value=old.note;
    return;
   }
-  if(!changed&&old.note&&!textarea.value.trim())textarea.value=old.note;
+  // Completed-work, approval, and return notes belong to different steps.
+  // Never restore a note written for another workflow step.
+  if(old.step===step&&!changed&&old.note&&!textarea.value.trim())textarea.value=old.note;
  }).catch(()=>{hint.textContent='Local draft could not be restored.';});
  textarea.addEventListener('input',()=>{
   changed=true;clearTimeout(timer);hint.textContent='Saving on device…';
