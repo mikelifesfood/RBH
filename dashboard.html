@@ -135,7 +135,7 @@
   .st-corrective{background:#E4E4E8;color:var(--ink)}
   .st-closed,.reg-chip-no{background:var(--ok-tint);color:var(--ok)}
   .bg-injury{background:var(--brand);color:#fff}
-  .bg-overdue{background:var(--warn);color:#fff}
+  .bg-overdue{background:#A71930;color:#fff}
   .bg-due-today{background:var(--warn-tint);color:var(--warn)}
   .reg-chip{font-weight:700;font-size:12px;border-radius:999px;padding:5px 10px;white-space:nowrap}
   .role-pill{display:inline-flex;align-items:center;width:max-content;margin-top:5px;padding:3px 8px;border-radius:999px;font-size:11.5px;font-weight:700;border:1px solid var(--line-strong);color:var(--muted)}
@@ -309,6 +309,11 @@
   .attention-item:hover{background:var(--canvas);border-color:var(--line-strong)}
   .attention-item.attention-injury{border:2px solid var(--brand);padding:12px 13px}
   .attention-item.attention-injury:hover{border-color:var(--brand-hover);box-shadow:0 0 0 2px rgba(177,24,45,.08)}
+  /* One overdue action makes the whole report card stand out. */
+  .attention-item.record-overdue{background:#FFF1F3;border-color:#E6AAB4;border-left:5px solid #A71930;padding-left:10px}
+  .attention-item.record-overdue:hover{background:#FFE7EB;border-color:#A71930}
+  .attention-item.record-overdue .a-title{color:#831326}
+  .attention-item.attention-injury.record-overdue{border-left-width:5px;padding-left:10px}
   .attention-item .a-title{font-weight:700;font-size:14px}
   .attention-item .a-meta{grid-column:1/2;color:var(--muted);font-size:12.5px}
   .attention-item .a-tags{grid-column:2;grid-row:1/3;align-self:center;display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap;max-width:285px}
@@ -353,7 +358,11 @@
   .open-report{grid-row:2/4;grid-column:2/3;align-self:center;justify-self:end;width:max-content;white-space:nowrap;background:var(--paper);border:1px solid var(--line-strong);border-radius:var(--r);padding:7px 12px;color:var(--ink);font-weight:650;font-size:13px}
   .card-head:hover .open-report{border-color:var(--ink)}
   .card.inbox-active::before{background:var(--ink)}
-  .card.inbox-overdue::before{background:var(--warn)}
+  .card.inbox-overdue::before{background:#A71930}
+  .card.record-overdue{background:#FFF1F3}
+  .card.record-overdue::before{background:#A71930;width:5px}
+  .card.record-overdue .card-head:hover{background:#FFE7EB}
+  .card.record-overdue .ch-type{color:#831326}
   .card.inbox-injury::before{background:var(--brand)}
   .card.inbox-closed{background:var(--canvas)}
   .card.inbox-closed::before{background:var(--line-strong)}
@@ -835,7 +844,12 @@
   .task-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:transparent}
   .task-card:hover{background:var(--canvas)}
   .task-card.corrective-action-card::before{background:var(--ink)}
-  .task-card.corrective-action-card.ca-overdue::before{background:var(--warn)}
+  .task-card.corrective-action-card.ca-overdue::before{background:#A71930}
+  .task-card.record-overdue{background:#FFF1F3}
+  .task-card.record-overdue::before{background:#A71930;width:5px}
+  .task-card.record-overdue:hover{background:#FFE7EB}
+  .task-card.record-overdue .task-title{color:#831326}
+  .task-card.record-overdue .due-signal.over{color:#A71930}
   .task-title{font-weight:750;font-size:14.5px}
   .task-action{font-size:13.5px;grid-column:1/2;color:var(--ink-2)}
   .task-meta{font-size:12.5px;color:var(--muted);grid-column:1/2}
@@ -3573,7 +3587,7 @@
         ?" inbox-injury"
         :(isOverdue(r)?" inbox-overdue":" inbox-active"));
     var wrap=document.createElement("div");
-    wrap.className="card"+(resolved?" resolved":"")+inboxStateClass;
+    wrap.className="card"+(resolved?" resolved":"")+inboxStateClass+(isOverdue(r)?" record-overdue":"");
     wrap.setAttribute('data-report-id',r.id);
     var meta=[fmtDate(r.created_at),(r.reporter_name||"Anonymous")]; if(r.hazard_category) meta.push(r.hazard_category); if(reportOwnerName(r)) meta.push("Owner: "+reportOwnerName(r)); if(ENABLE_INVESTIGATOR_ASSIGNMENT_UI&&investigatorName(r)) meta.push("Investigator: "+investigatorName(r)); if(assigneeName(r)) meta.push("Action owner: "+assigneeName(r));
     var dueInfo=reportDueInfo(r); if(dueInfo.date) meta.push(dueInfo.state==="overdue"?("Overdue — due "+shortDate(dueInfo.date)):(dueInfo.state==="today"?"Due today":("Due "+shortDate(dueInfo.date))));
@@ -8118,8 +8132,8 @@
     el.dataset.homeAttentionSnapshot=attentionSnapshot;
     if(!items.length){ el.innerHTML='<div class="notes-empty">Nothing needs attention right now.</div>'; return; }
     el.innerHTML=''; items.forEach(function(r){
-      var b=document.createElement('button'); b.className='attention-item'+(r.involves_injury?' attention-injury':''); b.type='button';
-      var tag=r.action_status==="awaiting_verification"?'Verify':(isOverdue(r)?'Overdue':(r.involves_injury?'Injury':(r.status==='new'?'New':'Open')));
+      var b=document.createElement('button'); b.className='attention-item'+(r.involves_injury?' attention-injury':'')+(isOverdue(r)?' record-overdue':''); b.type='button';
+      var tag=isOverdue(r)?'Overdue':(r.action_status==="awaiting_verification"?'Verify':(r.involves_injury?'Injury':(r.status==='new'?'New':'Open')));
       var step=homeWorkflowStepInfo(r);
       var statusClass=(tag==='Overdue'?'bg-overdue':tag==='Injury'?'bg-injury':tag==='Verify'?'as-awaiting_verification':'st-new');
       b.innerHTML='<span class="a-title">#'+esc(r.ref_no)+' · '+esc(r.report_type||'Report')+'</span><span class="a-meta">'+esc((r.job_site?r.job_site+' · ':'')+(assigneeName(r)?'Assigned: '+assigneeName(r)+' · ':'')+fmtDate(r.created_at))+'</span><span class="a-tags"><span class="a-tag badge '+statusClass+'">'+tag+'</span><span class="a-tag a-step badge">Step '+esc(step.n)+' · '+esc(step.label)+'</span></span>';
@@ -8168,7 +8182,7 @@
   }
   function childWorkCard(a,mode){
     var r=findReport(a.report_id);
-    var b=document.createElement("button"); b.type="button"; b.className="task-card";
+    var b=document.createElement("button"); b.type="button"; b.className="task-card"+((isOverdue(a)||(r&&isOverdue(r)))?" record-overdue":"");
     var owner=a.owner_user_id&&profileById[String(a.owner_user_id)]?profileName(profileById[String(a.owner_user_id)]):"Not assigned";
     var info=escalationInfo(a), status=String(a.status||"not_started");
     var label=mode==="verify"
@@ -8182,7 +8196,7 @@
       : (a.due_date?shortDate(a.due_date):"No due date");
     b.innerHTML=
       '<div class="task-title">#'+esc(r&&r.ref_no)+' · Action #'+esc(a.action_number||"")+' · '+esc((r&&r.report_type)||"Report")+
-        '<span class="task-state">'+esc(label)+'</span></div>'+
+        '<span class="task-state">'+esc(label)+'</span>'+(isOverdue(a)?'<span class="badge bg-overdue">Overdue</span>':(r&&isOverdue(r)?'<span class="badge bg-overdue">Report overdue</span>':''))+'</div>'+
       '<div class="task-action">'+esc(a.description||"Corrective action")+'</div>'+
       '<div class="task-meta">'+esc(meta)+'</div>'+
       '<div class="task-due"><b class="due-signal '+(mode==="verify"?"":esc(info.cls))+'">'+
@@ -8192,12 +8206,12 @@
   }
   function myWorkCard(r){
     var step=homeWorkflowStepInfo(r);
-    var b=document.createElement("button"); b.type="button"; b.className="task-card";
+    var b=document.createElement("button"); b.type="button"; b.className="task-card"+(isOverdue(r)?" record-overdue":"");
     var status=(STATUS[r.status]||{}).l||String(r.status||"Open").replace(/_/g," ");
     var site=r.job_site?" · "+r.job_site:"";
     b.innerHTML=
       '<div class="task-title">#'+esc(r.ref_no)+' · '+esc(r.report_type||"Report")+
-      '<span class="task-state">Step '+esc(step.n)+' · '+esc(step.label)+'</span></div>'+
+      '<span class="task-state">Step '+esc(step.n)+' · '+esc(step.label)+'</span>'+(isOverdue(r)?'<span class="badge bg-overdue">Overdue</span>':'')+'</div>'+
       '<div class="task-action">Report Owner · '+esc(status)+'</div>'+
       '<div class="task-meta">Responsible for investigation, corrective-action planning and report completion'+esc(site)+'</div>';
     b.addEventListener("click",function(){openIncident(r,"mywork");});
@@ -8341,7 +8355,7 @@
 
       var b=document.createElement('button');
       b.type='button';
-      b.className='task-card corrective-action-card'+(isOverdue(a)?' ca-overdue':'');
+      b.className='task-card corrective-action-card'+(isOverdue(a)?' ca-overdue':'')+((isOverdue(a)||isOverdue(r))?' record-overdue':'');
 
       var escInfo=escalationInfo(a);
       var ownerProfile=a.owner_user_id?profileById[String(a.owner_user_id)]:null;
@@ -8350,7 +8364,7 @@
 
       b.innerHTML=
         '<div class="task-title">#'+esc(r.ref_no)+' · Action #'+esc(a.action_number||"")+' · '+esc(reportType)+
-          '<span class="task-state ca-status-'+esc(String(a.status||"not_started"))+'">'+esc(actionLabel(a.status||"not_started"))+'</span></div>'+
+          '<span class="task-state ca-status-'+esc(String(a.status||"not_started"))+'">'+esc(actionLabel(a.status||"not_started"))+'</span>'+(isOverdue(a)?'<span class="badge bg-overdue">Overdue</span>':(isOverdue(r)?'<span class="badge bg-overdue">Report overdue</span>':''))+'</div>'+
         '<div class="task-action">'+esc(a.description||'Corrective action needs to be documented.')+'</div>'+
         '<div class="task-meta">Assigned: <span class="assignment-name">'+esc(assignee)+'</span>'+
           (r.job_site?' · '+esc(r.job_site):'')+'</div>'+
