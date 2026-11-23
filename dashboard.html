@@ -1010,6 +1010,24 @@
   .phase1-empty{color:var(--muted);font-size:13px;line-height:1.5}
   @media(max-width:800px){.phase1-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
   @media(max-width:480px){.phase1-grid{grid-template-columns:1fr}.breaks{grid-template-columns:1fr}}
+  /* No-data pilot preview: muted shapes are not measured values. */
+  .phase1-preview-banner{border:1px solid var(--line);border-left:4px solid var(--brand);border-radius:var(--r);padding:15px 17px;background:var(--canvas)}
+  .phase1-preview-banner b{display:block;font-size:14px}
+  .phase1-preview-banner p{color:var(--muted);font-size:13px;line-height:1.55;margin:5px 0 0}
+  .phase1-preview-stat .n,.phase1-preview-stat .phase1-value{color:var(--muted)}
+  .phase1-preview-breakdown{min-width:0;padding:13px 15px;border:1px solid var(--line);border-radius:var(--r);background:var(--canvas)}
+  .phase1-placeholder-line{height:10px;background:var(--line);border-radius:8px;width:88%;margin:17px 0;opacity:.68}
+  .phase1-placeholder-line.short{width:49%}
+  .phase1-placeholder-line.medium{width:68%}
+  .phase1-preview-breaks{gap:12px}
+  .phase1-preview-bars{display:flex;align-items:flex-end;justify-content:space-around;gap:12px;height:135px;border-bottom:1px solid var(--line)}
+  .phase1-ghost-bar{flex:1;max-width:60px;height:42%;background:var(--line);opacity:.65;border-radius:5px 5px 0 0}
+  .phase1-ghost-bar:nth-child(2){height:65%}
+  .phase1-ghost-bar:nth-child(3){height:28%}
+  .phase1-ghost-bar:nth-child(4){height:76%}
+  .phase1-ghost-bar:nth-child(5){height:51%}
+  .phase1-ghost-bar:nth-child(6){height:36%}
+  .phase1-preview-chart .phase1-empty{margin-bottom:0}
   /* ---------- 15. Admin ---------- */
   .admin-settings-heading{margin:26px 0 12px;padding:0 2px 10px;border-bottom:2px solid var(--line-strong)}
   .admin-settings-heading h3{margin:0;color:var(--ink);font-size:20px;font-weight:850}
@@ -6477,7 +6495,46 @@
     if(!m) return;
     m.style.display="block";
     if(!allReports.length){
-      m.innerHTML='<div class="state"><b>No report data yet.</b><br>Safety analytics will populate as RBH submits reports and verifies corrective actions. No historical baseline or estimated savings are shown.</div>';
+      // Display the same Phase 1 dashboard structure before the first pilot report.
+      // Placeholders are presentation only: no simulated counts, severities, or trends.
+      function previewStat(label){
+        return '<div class="stat phase1-preview-stat"><div class="n" aria-label="No data yet">—</div><div class="k">'+label+'</div></div>';
+      }
+      function previewCard(label,note){
+        return '<div class="phase1-stat phase1-preview-stat"><div class="phase1-value" aria-label="No data yet">—</div><div class="phase1-label">'+label+'</div><div class="phase1-note">'+note+'</div></div>';
+      }
+      function previewBreakdown(label){
+        return '<div class="brk phase1-preview-breakdown"><h4>'+label+'</h4>'+
+          '<div class="phase1-placeholder-line" aria-hidden="true"></div>'+
+          '<div class="phase1-placeholder-line short" aria-hidden="true"></div>'+
+          '<div class="phase1-placeholder-line medium" aria-hidden="true"></div>'+
+          '<p class="phase1-empty">Breakdown appears after reports are submitted.</p></div>';
+      }
+      var overview=["Total","New","In progress","Closed","Injuries","Overdue"];
+      m.innerHTML=
+        '<div class="phase1-preview-banner" role="status"><b>Analytics preview · No report data yet</b><p>This is the layout RBH will use as safety reports and corrective actions are recorded. Dashes and faded charts are placeholders, not results or estimates.</p></div>'+
+        '<div class="phase1-heading"><h3>Operational overview</h3><p>Counts will populate from submitted safety reports.</p></div>'+
+        '<div class="stat-row phase1-overview-preview">'+overview.map(previewStat).join("")+'</div>'+
+        '<div class="phase1-heading"><h3>Corrective action performance</h3><p>Verified actions, on-time completion, and turnaround times appear as work is reviewed.</p></div>'+
+        '<div class="phase1-grid">'+
+          previewCard("Actions verified","Verified actions / activated actions")+
+          previewCard("Verified on time","Based on verification and due dates")+
+          previewCard("Average time to verification","Activation through verification")+
+          previewCard("Overdue corrective actions","Unverified actions past their due dates")+
+          previewCard("High-potential reports with verified fixes","Critical or Serious reports")+
+          previewCard("Repeated hazard/site combinations","Same category and site in 90 days")+
+        '</div>'+
+        '<div class="phase1-heading"><h3>Hazards and recurring patterns</h3><p>Report categories, potential severity, and job-site trends will display here.</p></div>'+
+        '<div class="breaks phase1-preview-breaks">'+
+          previewBreakdown("By type")+previewBreakdown("By potential severity")+
+          previewBreakdown("By hazard category")+previewBreakdown("By job site")+
+        '</div>'+
+        '<div class="phase1-repeats"><h4>Repeated hazards at the same site · last 90 days</h4><p class="phase1-empty">Recurring hazards will appear here once multiple reports share a hazard category and job site.</p></div>'+
+        '<div class="mc phase1-preview-chart"><div class="mc-title">Reports over the last 6 months</div>'+
+          '<div class="phase1-preview-bars" aria-hidden="true">'+
+            '<div class="phase1-ghost-bar"></div><div class="phase1-ghost-bar"></div><div class="phase1-ghost-bar"></div>'+
+            '<div class="phase1-ghost-bar"></div><div class="phase1-ghost-bar"></div><div class="phase1-ghost-bar"></div>'+
+          '</div><p class="phase1-empty">Monthly activity will appear as reports are submitted.</p></div>';
       return;
     }
     var total=allReports.length, cNew=0, cProg=0, cClosed=0, cOverdue=0, cInjury=0;
