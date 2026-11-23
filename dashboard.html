@@ -995,6 +995,21 @@
   .mc-x{font-size:12px;color:var(--muted);font-weight:600}
   .mc-v{font-size:12px;color:var(--ink);font-weight:700}
 
+  /* Phase 1 operational analytics: read-only, derived from existing records. */
+  .phase1-heading{margin:24px 0 12px}
+  .phase1-heading h3{font-size:19px;font-weight:850;margin:0 0 4px}
+  .phase1-heading p{font-size:12.5px;line-height:1.5;color:var(--muted);margin:0}
+  .phase1-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  .phase1-stat{min-width:0;padding:15px;border:1px solid var(--line);border-radius:var(--r);background:var(--canvas)}
+  .phase1-value{font-size:29px;font-weight:850;line-height:1.15;font-variant-numeric:tabular-nums}
+  .phase1-label{font-size:13px;font-weight:750;margin-top:7px}
+  .phase1-note{color:var(--muted);font-size:11.5px;line-height:1.45;margin-top:5px}
+  .phase1-repeats{border-top:1px solid var(--line);margin-top:20px;padding-top:16px}
+  .phase1-repeats h4{font-size:14px;font-weight:800;margin:0 0 7px}
+  .phase1-repeats .line{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding:8px 0;font-size:13px}
+  .phase1-empty{color:var(--muted);font-size:13px;line-height:1.5}
+  @media(max-width:800px){.phase1-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:480px){.phase1-grid{grid-template-columns:1fr}.breaks{grid-template-columns:1fr}}
   /* ---------- 15. Admin ---------- */
   .admin-settings-heading{margin:26px 0 12px;padding:0 2px 10px;border-bottom:2px solid var(--line-strong)}
   .admin-settings-heading h3{margin:0;color:var(--ink);font-size:20px;font-weight:850}
@@ -1785,7 +1800,7 @@
         </section>
 
         <section class="view" id="view-metrics" hidden>
-          <div class="section-head"><div><h2>Safety Analytics</h2><p>Track report volume, status, hazards, and response trends.</p></div></div>
+          <div class="section-head"><div><h2>Safety Analytics</h2><p>Track report volume, corrective-action performance, hazards, and recurring safety patterns.</p></div></div>
           <div class="metrics" id="metrics" style="display:none"></div>
         </section>
 
@@ -6459,27 +6474,102 @@
   /* ---------- Metrics ---------- */
   function renderMetrics(){
     var m=$("metrics");
-    if(!allReports.length){ m.style.display="block"; m.innerHTML='<div class="state"><b>No report data yet.</b><br>Analytics will appear here as safety reports are submitted.</div>'; return; }
+    if(!m) return;
     m.style.display="block";
+    if(!allReports.length){
+      m.innerHTML='<div class="state"><b>No report data yet.</b><br>Safety analytics will populate as RBH submits reports and verifies corrective actions. No historical baseline or estimated savings are shown.</div>';
+      return;
+    }
     var total=allReports.length, cNew=0, cProg=0, cClosed=0, cOverdue=0, cInjury=0;
     var byType={}, bySev={Critical:0,Serious:0,Moderate:0,Minor:0,Unspecified:0};
+    var byHazard={}, bySite={}, highPotentialReports={}, reportsById={}, repeatedGroups={};
+    var now=Date.now(), ninetyDays=90*86400000;
     allReports.forEach(function(r){
+      reportsById[String(r.id)]=r;
       if(r.status==="new") cNew++;
       if(r.status==="under_review"||r.status==="assigned"||r.status==="corrective_action") cProg++;
       if(r.status==="closed"||r.status==="no_action"||r.status==="duplicate") cClosed++;
       if(isOverdue(r)) cOverdue++;
       if(r.involves_injury) cInjury++;
       var t=r.report_type||"Other"; byType[t]=(byType[t]||0)+1;
-      var s=sevShort(r.potential_severity);
-      if(s==="Critical")bySev.Critical++; else if(s==="Serious")bySev.Serious++;
-      else if(s==="Moderate")bySev.Moderate++; else if(s==="Minor")bySev.Minor++; else bySev.Unspecified++;
+      var severity=sevShort(r.potential_severity);
+      if(severity==="Critical")bySev.Critical++; else if(severity==="Serious")bySev.Serious++;
+      else if(severity==="Moderate")bySev.Moderate++; else if(severity==="Minor")bySev.Minor++; else bySev.Unspecified++;
+      if(severity==="Critical"||severity==="Serious") highPotentialReports[String(r.id)]=true;
+      var hazard=String(r.hazard_category||"").trim();
+      var site=String(r.job_site||"").trim();
+      if(hazard) byHazard[hazard]=(byHazard[hazard]||0)+1;
+      if(site) bySite[site]=(bySite[site]||0)+1;
+      var submitted=Date.parse(r.created_at||"");
+      if(hazard&&Number.isFinite(submitted)&&submitted<=now&&submitted>=now-ninetyDays){
+        var key=hazard.toLocaleLowerCase()+"|"+site.toLocaleLowerCase();
+        if(!repeatedGroups[key])repeatedGroups[key]={hazard:hazard,site:site,n:0};
+        repeatedGroups[key].n++;
+      }
     });
-    function stat(n,k,alert){ return '<div class="stat'+(alert?" alert":"")+'"><div class="n">'+n+'</div><div class="k">'+k+'</div></div>'; }
-    function brk(title,obj){ var keys=Object.keys(obj).filter(function(k){return obj[k]>0;}); if(!keys.length) return "";
-      return '<div class="brk"><h4>'+esc(title)+'</h4>'+keys.map(function(k){return '<div class="line"><span>'+esc(k)+'</span><span>'+obj[k]+'</span></div>';}).join("")+'</div>'; }
+    var actions=(allCorrectiveActions||[]).filter(function(a){
+      var report=reportsById[String(a.report_id||"")];
+      return report&&correctiveActionInCurrentCycle(a,report);
+    });
+    var verified=0, overdueActions=0, eligibleOnTime=0, onTime=0, turnaroundDays=0, turnaroundCount=0;
+    var highPotentialFixed={};
+    actions.forEach(function(a){
+      var status=String(a.status||"");
+      if(status!=="verified"){
+        if(isOverdue(a))overdueActions++;
+        return;
+      }
+      verified++;
+      var verifiedAt=Date.parse(a.verified_at||"");
+      var due=String(a.due_date||"");
+      if(due&&Number.isFinite(verifiedAt)){
+        var dueEnd=Date.parse(due.slice(0,10)+"T23:59:59.999");
+        if(Number.isFinite(dueEnd)){
+          eligibleOnTime++;
+          if(verifiedAt<=dueEnd)onTime++;
+        }
+      }
+      var activated=Date.parse(a.activated_at||"");
+      if(Number.isFinite(verifiedAt)&&Number.isFinite(activated)&&verifiedAt>=activated){
+        turnaroundDays+=(verifiedAt-activated)/86400000;turnaroundCount++;
+      }
+      if(highPotentialReports[String(a.report_id)])highPotentialFixed[String(a.report_id)]=true;
+    });
+    var repeatRows=Object.keys(repeatedGroups).map(function(k){return repeatedGroups[k];})
+      .filter(function(x){return x.n>=2;})
+      .sort(function(a,b){return b.n-a.n||a.hazard.localeCompare(b.hazard);});
+    var percent=eligibleOnTime?Math.round(onTime/eligibleOnTime*100)+"%":"—";
+    var avgDays=turnaroundCount?(turnaroundDays/turnaroundCount).toFixed(1)+" days":"—";
+    var highFixed=Object.keys(highPotentialFixed).length;
+    function stat(n,k,alert){return '<div class="stat'+(alert?" alert":"")+'"><div class="n">'+n+'</div><div class="k">'+k+'</div></div>';}
+    function brk(title,obj){
+      var keys=Object.keys(obj).filter(function(k){return obj[k]>0;}).sort(function(a,b){return obj[b]-obj[a]||a.localeCompare(b);});
+      if(!keys.length)return "";
+      return '<div class="brk"><h4>'+esc(title)+'</h4>'+keys.slice(0,8).map(function(k){
+        return '<div class="line"><span>'+esc(k)+'</span><span>'+obj[k]+'</span></div>';
+      }).join("")+'</div>';
+    }
+    function pulse(value,label,note){
+      return '<div class="phase1-stat"><div class="phase1-value">'+esc(String(value))+'</div><div class="phase1-label">'+esc(label)+'</div><div class="phase1-note">'+esc(note)+'</div></div>';
+    }
+    var repeatHtml=repeatRows.length?repeatRows.slice(0,6).map(function(row){
+      return '<div class="line"><span>'+esc(row.hazard)+(row.site?' · '+esc(row.site):' · Site not recorded')+'</span><strong>'+row.n+'</strong></div>';
+    }).join(""):'<p class="phase1-empty">No repeated hazard category at the same site in the last 90 days.</p>';
     m.innerHTML=
       '<div class="stat-row">'+stat(total,"Total")+stat(cNew,"New")+stat(cProg,"In progress")+stat(cClosed,"Closed")+stat(cInjury,"Injuries",cInjury>0)+stat(cOverdue,"Overdue",cOverdue>0)+'</div>'+
-      '<div class="breaks">'+brk("By type",byType)+brk("By potential severity",bySev)+'</div>'+ monthChartHtml();
+      '<div class="phase1-heading"><h3>Corrective action performance</h3><p>Current workflow-cycle actions only. Verified means a reviewer approved the work; it does not prove an incident was prevented.</p></div>'+
+      '<div class="phase1-grid">'+
+        pulse(verified+" / "+actions.length,"Actions verified","Verified actions / activated actions")+
+        pulse(percent,"Verified on time",eligibleOnTime?onTime+" of "+eligibleOnTime+" verified actions with due dates":"No verified actions with due dates yet")+
+        pulse(avgDays,"Average time to verification",turnaroundCount+" verified actions with valid activation times")+
+        pulse(overdueActions,"Overdue corrective actions","Active, unverified actions past their due date")+
+        pulse(highFixed,"High-potential reports with verified fixes","Reports rated Critical or Serious; counted once each")+
+        pulse(repeatRows.length,"Repeated hazard/site combinations","Same hazard category and job site, last 90 days")+
+      '</div>'+
+      '<div class="phase1-heading"><h3>Hazards and recurring patterns</h3><p>Counts describe submitted reports, not injury probability or financial savings.</p></div>'+
+      '<div class="breaks">'+brk("By type",byType)+brk("By potential severity",bySev)+brk("By hazard category",byHazard)+brk("By job site",bySite)+'</div>'+
+      '<div class="phase1-repeats"><h4>Repeated hazards at the same site · last 90 days</h4>'+repeatHtml+'</div>'+
+      monthChartHtml();
   }
 
   /* ---------- CSV export ---------- */
