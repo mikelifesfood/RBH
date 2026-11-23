@@ -5675,7 +5675,16 @@
           await releaseLegacyCorrectiveActionVerifier(verifyAction);
           var verifyRes=await sb.rpc("rbh_verify_corrective_action",{p_action_id:verifyAction.id,p_verification_note:verifyNote});
           if(verifyRes.error) throw verifyRes.error;
-          await loadCorrectiveActionPlan();
+          // The verification is committed at this point. A subsequent refresh
+          // failure must not be reported as a failed verification.
+          try {
+            await loadCorrectiveActionPlan();
+          } catch(refreshError) {
+            console.error("verification saved, action refresh failed",refreshError);
+            if(window.TeamWorktStaffOfflineUI) window.TeamWorktStaffOfflineUI.clearSubmittedDraft(r,verifyAction,"verification");
+            toast("Corrective Action #"+verifyAction.action_number+" was verified, but the screen could not refresh. Reopen this record to see the saved status.","err");
+            return;
+          }
           if(window.TeamWorktStaffOfflineUI) window.TeamWorktStaffOfflineUI.clearSubmittedDraft(r,verifyAction,"verification");
           loadNotifications(true).catch(function(ex){console.error("notification refresh",ex);});
           loadAudit(r.id,auditEl); renderHomeSnapshot(); renderMyWork(); renderActions(); refreshRecordWorkflow(r,detail);
