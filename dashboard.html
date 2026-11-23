@@ -907,6 +907,10 @@
   .focused-action-section{padding:0 0 20px;margin:0 0 20px;border-bottom:1px solid var(--line)}
   .focused-action-section:last-child{border-bottom:0;margin-bottom:0;padding-bottom:0}
   .focused-action-section h3{font-weight:800;font-stretch:var(--condensed);font-size:21px;margin:0 0 12px}
+  .focused-action-request{background:#f8f7f5;border:1px solid var(--line);border-left:5px solid var(--brand);border-radius:var(--r);padding:20px 22px;margin:0 0 18px}
+  .focused-action-request-label{display:block;font-size:12px;font-weight:800;letter-spacing:.065em;text-transform:uppercase;color:var(--brand);margin:0 0 8px}
+  .focused-action-request .focused-action-description{font-size:21px;font-weight:800;line-height:1.4;margin:0;color:var(--ink);white-space:pre-wrap;overflow-wrap:anywhere}
+  .focused-action-assignment-heading{font-size:14px;font-weight:800;margin:0 0 10px;color:var(--ink)}
   .focused-action-description{font-size:17px;font-weight:700;line-height:1.45;margin:0 0 15px;color:var(--ink)}
   .focused-action-meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
   .focused-action-meta-item{padding:13px 14px;border-left:1px solid var(--line);min-width:0}
@@ -8546,7 +8550,10 @@
       html+='<div class="focused-action-callout"><b>Focused action view</b>You are viewing this corrective action by itself. Only the assigned owner or an authorized manager can update the completion work.</div>';
     }
 
-    html+='<section class="focused-action-section"><h3>Assigned work</h3><p class="focused-action-description">'+esc(a.description||"No corrective-action description recorded.")+'</p><div class="focused-action-meta">'+
+    html+='<section class="focused-action-section" aria-label="Assigned work"><h3>Assigned work</h3>'+
+      '<div class="focused-action-request"><span class="focused-action-request-label">Work requested</span>'+
+        '<p class="focused-action-description">'+esc(a.description||"No corrective-action description recorded.")+'</p></div>'+
+      '<div class="focused-action-assignment-heading">Assignment details</div><div class="focused-action-meta">'+
       focusedMeta("Assigned to",owner)+focusedMeta("Due date",due)+focusedMeta("Priority",priority)+focusedMeta("Type of fix",control)+
       '</div></section>';
 
