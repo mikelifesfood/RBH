@@ -5164,8 +5164,8 @@
 
       var footerHtml=allVerified?
         '<div class="multi-action-verification-footer next-step-ready">'+
-          '<div class="mavf-status"><b>Ready for the next step</b><span>All corrective actions are verified. You can now close the report.</span></div>'+
-          (!isResolvedReport(r)?'<button class="wizard-primary" type="button" data-all-actions-verified>Continue to Close →</button>':'')+
+          '<div class="mavf-status"><b>Ready for the next step</b><span>'+(isCurrentReportOwner(r)?'All corrective actions are verified. You can now close the report.':'All corrective actions are verified. The current Report Owner will continue to Close.')+'</span></div>'+
+          (!isResolvedReport(r)&&isCurrentReportOwner(r)?'<button class="wizard-primary" type="button" data-all-actions-verified>Continue to Close →</button>':'')+
         '</div>':
         '<div class="multi-action-verification-footer">'+
           '<div class="mavf-status"><b>'+verifiedCount+' of '+allRows.length+' corrective action'+(allRows.length===1?'':'s')+' verified.</b><span>'+
@@ -5591,6 +5591,10 @@
     if(multiActionVerificationStage) multiActionVerificationStage.addEventListener("click",async function(e){
       var allVerifiedBtn=e.target.closest("[data-all-actions-verified]");
       if(allVerifiedBtn){
+        if(!isCurrentReportOwner(r) || isResolvedReport(r)){
+          toast("Only the current Report Owner can continue to Close.","err");
+          return;
+        }
         var finalSummary=syncCorrectiveActionSummary();
         if(!finalSummary||finalSummary.total<1||finalSummary.verified!==finalSummary.total){
           toast("Every corrective action must be verified before continuing to Close.","err");
