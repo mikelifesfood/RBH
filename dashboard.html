@@ -1099,6 +1099,8 @@
   .impact-revision-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
   .impact-revision-actions button{min-height:42px}
   .impact-revision-meta{font-size:12.5px;line-height:1.5;white-space:pre-wrap}
+  .impact-revision-diff{border:1px solid #BDDCC5;border-radius:var(--r);padding:11px 13px;background:var(--paper);white-space:pre-wrap;font-size:12.5px;line-height:1.65;margin:10px 0}
+  .impact-revision-diff strong{font-weight:800}
   @media(max-width:620px){.impact-revision-actions{flex-direction:column}.impact-revision-actions button{width:100%}}
   .impact-history{border-top:1px solid var(--line);margin-top:17px;padding-top:14px;font-size:13px}
   .impact-history>summary{font-weight:800;cursor:pointer;padding:6px 0}
@@ -4193,6 +4195,7 @@
                   '<div class="impact-revision-actions"><button class="wizard-save" type="button" data-impact-propose>Submit proposed revision</button></div>'+
                 '</div>'+
                 '<div data-impact-pending hidden><p class="impact-revision-meta" data-impact-pending-summary></p>'+
+                  '<div class="impact-revision-diff" data-impact-pending-diff></div>'+
                   '<label class="impact-review-label">Review note (required when rejecting)<textarea data-impact-pending-note maxlength="3000" placeholder="Explain why the updated estimate is accepted or rejected"></textarea></label>'+
                   '<div class="impact-revision-actions" data-impact-pending-actions hidden><button class="wizard-primary" type="button" data-impact-apply>Apply revision</button><button class="wizard-save" type="button" data-impact-reject>Reject revision</button></div>'+
                 '</div>'+
@@ -4728,6 +4731,7 @@
     var proposalForm=shell.querySelector("[data-impact-proposal]");
     var pendingBox=shell.querySelector("[data-impact-pending]");
     var pendingSummary=shell.querySelector("[data-impact-pending-summary]");
+    var pendingDiff=shell.querySelector("[data-impact-pending-diff]");
     var pendingActions=shell.querySelector("[data-impact-pending-actions]");
     var pendingNote=shell.querySelector("[data-impact-pending-note]");
     var applyRevision=shell.querySelector("[data-impact-apply]");
@@ -4779,7 +4783,7 @@
         historyList.innerHTML=rows.map(function(row){
           var who=profileById&&row.actor_id&&profileById[String(row.actor_id)];
           var label={baseline:"Starting snapshot (Stage 4 enabled)",created:"Draft created",edited:"Draft updated",approved:"Approved",excluded:"Excluded"}[row.event_type]||"Assessment changed";
-          var fields=["potential_consequence","scenario_low_cost","scenario_high_cost","estimated_fix_cost","benchmark_source_name","benchmark_notes","assessment_notes"];
+          var fields=["potential_consequence","scenario_low_cost","scenario_high_cost","estimated_fix_cost","fix_cost_notes","benchmark_source_name","benchmark_source_url","benchmark_publication_year","benchmark_notes","assessment_notes"];
           var before=row.before_snapshot||{},after=row.after_snapshot||{};
           var changed=fields.filter(function(name){return String(before[name]??"")!==String(after[name]??"");});
           return '<div class="impact-history-entry"><strong>'+esc(label)+'</strong><span>'+esc(who?profileName(who):"Authorized user")+' · '+esc(fmtDate(row.happened_at))+'</span>'+
@@ -4832,6 +4836,27 @@
         pendingSummary.textContent="Pending revision submitted by "+(author?profileName(author):"Safety Advisor")+
           " on "+fmtDate(pendingRevision.created_at)+". Reason: "+pendingRevision.reason+
           ". Approved figures remain unchanged until applied.";
+        var fieldLabels={
+          potential_consequence:"Potential consequence",scenario_low_cost:"Scenario low cost",
+          scenario_high_cost:"Scenario high cost",estimated_fix_cost:"Cost of corrective action",
+          fix_cost_notes:"Cost of fix details",benchmark_source_name:"Benchmark source",
+          benchmark_source_url:"Source URL",benchmark_publication_year:"Publication year",
+          benchmark_notes:"Benchmark assumptions",assessment_notes:"Assessment notes"
+        };
+        var proposed=pendingRevision.proposed_values||{};
+        var differenceLines=keys.filter(function(k){
+          var oldValue=record&&record[k],newValue=proposed[k];
+          return String(oldValue??"").trim()!==String(newValue??"").trim();
+        }).map(function(k){
+          var oldValue=record&&record[k],newValue=proposed[k];
+          var money=["scenario_low_cost","scenario_high_cost","estimated_fix_cost"].indexOf(k)>=0;
+          function display(v){
+            if(v==null||String(v).trim()==="")return "(empty)";
+            return money?"$"+Number(v).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}):String(v);
+          }
+          return fieldLabels[k]+":\n  Current: "+display(oldValue)+"\n  Proposed: "+display(newValue);
+        });
+        pendingDiff.textContent=differenceLines.length?differenceLines.join("\n\n"):"No changes to the reviewed assessment fields.";
       }
       if(pendingUnavailable)revisionMessage.textContent="Revision status unavailable. Reopen this report to try again.";
       if(loaded)status.textContent=record?(dirty?"Unsaved changes":record.assessment_status==="approved"?"Approved":record.assessment_status==="excluded"?"Excluded":"Draft saved"):"Not started";
