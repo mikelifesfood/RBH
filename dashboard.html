@@ -2887,7 +2887,7 @@
       },
       {
         "title": "Know who can update it",
-        "text": "The current Report Owner (Admin or Safety Manager) can edit an active draft. Safety Advisors can edit assessment drafts during workflow steps 2, 3, and 4. Other roles can view the assessment but cannot change it.",
+        "text": "The current Report Owner (Admin or Safety Manager) can edit an active draft. Safety Advisors can edit drafts in steps 2–4 and after closure. Admins may finish assessments after closure; the current Safety Manager report owner retains permitted assessment access. Other roles can view but cannot edit.",
         "target": "#incidentBody [data-impact-panel]"
       },
       {
@@ -2907,7 +2907,7 @@
       },
       {
         "title": "Review changes after closure",
-        "text": "After a reviewed report is closed, a Safety Advisor may submit a documented proposed revision. Approved figures remain unchanged until the proposed revision is reviewed and applied. The assessment change history preserves prior values.",
+        "text": "After a report closes, Admins and Safety Advisors may create or finish an assessment draft. For one already approved or excluded, Admins and Safety Advisors use documented revision proposals instead of overwriting locked values. The assessment change history preserves prior versions.",
         "target": "#incidentBody [data-impact-history]"
       }
     ]
@@ -2926,18 +2926,18 @@
       },
       {
         "title": "Edit an active impact assessment",
-        "text": "Open a report during workflow steps 2–4 and expand Safety Impact Assessment. Research the consequence and supporting cost estimates, then save your draft. This does not advance the report workflow.",
+        "text": "Open an active report during steps 2–4 or any closed report, then expand Safety Impact Assessment. Research the consequence and supporting cost estimates, then save your draft. This does not change incident status.",
         "view": "incident",
         "target": "#incidentBody [data-impact-shell]"
       },
       {
         "title": "Review a completed draft",
-        "text": "When the investigation and corrective work meet readiness checks, the Safety Advisor may approve or exclude an assessment. Approval requires the documented scenario, cost range, source, and assumptions; exclusion requires a reason.",
+        "text": "Authorized Admins, Safety Managers and Safety Advisors can approve or exclude a draft after the required checks. This also works after report closure. Approval needs documented scenario, cost range, source, assumptions and verified corrective work; exclusion requires a reason.",
         "target": "#incidentBody [data-impact-review]"
       },
       {
         "title": "Propose a post-closure update",
-        "text": "On a closed report with a reviewed assessment, submit corrected figures with a reason. The prior approved values stay in effect until the proposed revision is reviewed and applied; consult the assessment history for the timeline.",
+        "text": "On a closed report, create a missing assessment or finish an unfinished draft at any time. If an assessment has already been reviewed, submit corrected figures as a documented revision. The prior reviewed values remain until the proposal is applied.",
         "target": "#incidentBody [data-impact-revision]"
       }
     ]
@@ -3187,7 +3187,7 @@
       },
       {
         "title": "Understand what your role can do",
-        "text": "Read Only staff cannot change workflow records. Safety Advisors can work specifically in Safety Impact Assessment, including applicable draft review and post-closure revisions; neither role owns, completes, verifies, or closes operational work."
+        "text": "Read Only staff cannot change workflow records. Safety Advisors may create, finish and review Safety Impact Assessments even after incident closure, and propose changes to reviewed assessments. Neither Safety Advisors nor Read Only users gain operational ownership, action completion, verification or closure rights."
       },
       {
         "title": "Download a report summary",
