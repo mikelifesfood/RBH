@@ -4084,7 +4084,7 @@
         '<div class="record-followers-preview" style="margin:20px 0 24px">'+
           '<label class="inv-l" for="investigationRecordFollowers">Record followers (email addresses) <small style="font-weight:400;color:var(--muted)">(optional)</small></label>'+
           '<input id="investigationRecordFollowers" type="text" inputmode="email" autocomplete="off" spellcheck="false" placeholder="name@company.com, another@company.com" aria-describedby="investigationRecordFollowersHelp" style="width:100%;box-sizing:border-box;min-height:46px;border:1px solid var(--border,#c9cbd1);border-radius:8px;padding:11px 13px;font:inherit">'+
-          '<div class="field-guidance" id="investigationRecordFollowersHelp">Separate email addresses with commas. Preview only — not saved or used for notifications yet.</div>'+
+          '<div class="field-guidance" id="investigationRecordFollowersHelp">Separate up to 20 email addresses with commas. New followers receive a report email after you save. Active followers receive a closeout email when the report is resolved. Remove an address and save to stop future closeout emails.</div>'+
         '</div>'+
 
         '<div class="wizard-footer" data-next-step-footer="investigation"><div class="wizard-footer-copy"><b data-next-step-title>Save your findings</b><span data-next-step-message>Answer both questions to continue, or save a draft to finish later.</span></div><div class="wizard-footer-actions"><button class="wizard-save root-save" data-step-save="2" type="button">Save draft and exit</button><span class="root-saved section-saved" hidden>Draft saved</span><button class="wizard-primary" data-step-complete="2" type="button">Save and continue to corrective actions →</button></div></div>'+
@@ -5508,6 +5508,9 @@
     }); }
 
     var invFindings=detail.querySelector(".inv-findings"), invRoot=detail.querySelector(".inv-root");
+    var followerInput=detail.querySelector("#investigationRecordFollowers");
+    var followerBlock=detail.querySelector(".record-followers-preview");
+    var followersLoaded=false,followersError=false;
     var rootSave=detail.querySelector(".root-save"), rootSaved=detail.querySelector(".root-saved"), actionPlanSave=detail.querySelector(".action-plan-save"), actionPlanSaved=detail.querySelector(".action-plan-saved");
     var actionPlanList=detail.querySelector("[data-corrective-action-plan]"), actionPlanAdd=detail.querySelector("[data-add-corrective-action]"), actionPlanOverviews=detail.querySelectorAll("[data-corrective-action-overview]"), multiActionCompletionEl=detail.querySelector("[data-multi-action-completion]"), multiActionVerificationStage=detail.querySelector("[data-multi-action-verification-stage]");
     var caDecisionRoot=detail.querySelector("[data-ca-decision]"), caPlanWorkspace=detail.querySelector("[data-ca-plan-workspace]"), caDecisionChoices=detail.querySelectorAll("[data-ca-decision-choice]"), caDecisionSummary=detail.querySelector("[data-ca-decision-summary]"), caDecisionSummaryTitle=detail.querySelector("[data-ca-decision-summary-title]"), caDecisionSummaryCopy=detail.querySelector("[data-ca-decision-summary-copy]"), caChangeDecision=detail.querySelector("[data-ca-change-decision]"), caNoActionPanel=detail.querySelector("[data-ca-no-action-panel]"), caNoActionReason=detail.querySelector("[data-ca-no-action-reason]"), caNoActionNote=detail.querySelector("[data-ca-no-action-note]"), caNoActionError=detail.querySelector("[data-ca-no-action-error]"), caNoActionContinue=detail.querySelector("[data-ca-no-action-continue]"), caNoActionNext=detail.querySelector("[data-ca-no-action-next]");
@@ -5548,6 +5551,26 @@
     detail._correctivePlanState=actionPlanState;
     invFindings.value=r.investigation_findings||"";
     invRoot.value=r.root_cause||"";
+    if(followerInput){
+      followerInput.disabled=true;
+      if(followerBlock)followerBlock.hidden=!isCurrentReportOwner(r);
+      if(isCurrentReportOwner(r)){
+        sb.from("rbh_report_followers").select("email")
+          .eq("report_id",r.id).eq("is_active",true).order("email",{ascending:true})
+          .then(function(result){
+            if(result.error)throw result.error;
+            if(!detail.isConnected)return;
+            followerInput.value=(result.data||[]).map(function(x){return x.email;}).join(", ");
+            followersLoaded=true;syncStepEditability();
+          }).catch(function(ex){
+            console.error("Followers load",ex);followersError=true;
+            if(!detail.isConnected)return;
+            var hint=detail.querySelector("#investigationRecordFollowersHelp");
+            if(hint)hint.textContent="Follower addresses could not be loaded. Reopen the report before saving to avoid losing recipients.";
+            followerInput.disabled=true;
+          });
+      }
+    }
     syncInvestigationNextStepState();
     if(!canEditStep(r,2)){ [invFindings,invRoot,rootSave].forEach(function(x){if(x)x.disabled=true;}); }
     else if(window.TeamWorktStaffOfflineUI) window.TeamWorktStaffOfflineUI.wireInvestigationDraft(r,invFindings,invRoot);
@@ -5594,7 +5617,16 @@
 
     async function persistInvestigation(showToast,advanceReopen){
       if(!canEditStep(r,2)) throw new Error("NOT_AUTHORIZED");
+      if(!followersLoaded||followersError)throw new Error("FOLLOWERS_NOT_LOADED");
       await assertOpenResourceFresh();
+      var emails=String(followerInput.value||"").split(",").map(function(email){return email.trim().toLowerCase();}).filter(Boolean);
+      emails=Array.from(new Set(emails));
+      if(emails.length>20)throw new Error("Enter no more than 20 followers.");
+      var emailPattern=/^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$/;
+      if(emails.some(function(email){return email.length>254||!emailPattern.test(email);}))
+        throw new Error("Enter valid follower emails separated by commas.");
+      var followerResult=await sb.rpc("rbh_set_report_followers",{p_report_id:r.id,p_emails:emails});
+      if(followerResult.error)throw followerResult.error;
       var findings=invFindings.value.trim()||null, cause=invRoot.value.trim()||null;
       var patch={investigation_findings:findings,root_cause:cause};
       if(advanceReopen && activeReopenStep(r)) patch.reopen_workflow_step=3;
@@ -6146,6 +6178,8 @@
       [invFindings,invRoot,rootSave].forEach(function(control){
         if(control) control.disabled=!investigationEditable;
       });
+      if(followerInput)followerInput.disabled=!investigationEditable||!followersLoaded||followersError;
+      if(followerBlock)followerBlock.hidden=!isCurrentReportOwner(r);
       if(investigationEditable && window.TeamWorktStaffOfflineUI) window.TeamWorktStaffOfflineUI.wireInvestigationDraft(r,invFindings,invRoot);
       var completeInvestigation=detail.querySelector('[data-step-complete="2"]');
       if(completeInvestigation) completeInvestigation.disabled=!investigationEditable;
@@ -6431,7 +6465,7 @@
     }
     loadCorrectiveActionPlan().catch(function(ex){console.error("corrective action plan load",ex);actionPlanState.loading=false;if(actionPlanList)actionPlanList.innerHTML='<div class="wizard-required show">Could not load the corrective-action plan. Refresh the record and try again.</div>';if(actionPlanAdd)actionPlanAdd.disabled=true;if(actionPlanSave)actionPlanSave.disabled=true;});
 
-    if(rootSave) rootSave.addEventListener("click",async function(){ rootSave.disabled=true; try{await waitForInvestigationEvidenceUpload();await persistInvestigation(true);rootSaved.hidden=false;setTimeout(function(){rootSaved.hidden=true;},2200);showView("home");}catch(ex){console.error(ex);toast("Could not save the investigation.","err");}finally{rootSave.disabled=!canEditStep(r,2);} });
+    if(rootSave) rootSave.addEventListener("click",async function(){ rootSave.disabled=true; try{await waitForInvestigationEvidenceUpload();await persistInvestigation(true);rootSaved.hidden=false;setTimeout(function(){rootSaved.hidden=true;},2200);showView("home");}catch(ex){console.error(ex);toast("Could not save investigation or followers: "+String(ex&&ex.message||"Please try again.").slice(0,130),"err");}finally{rootSave.disabled=!canEditStep(r,2);} });
     if(actionPlanSave) actionPlanSave.addEventListener("click",async function(){ actionPlanSave.disabled=true; try{await persistActionPlan(true,false);actionPlanSaved.hidden=false;setTimeout(function(){actionPlanSaved.hidden=true;},2200);showView("home");}catch(ex){console.error(ex);if(ex&&ex.message!=="PLAN_DESCRIPTION_REQUIRED")toast("Could not save the action plan.","err");}finally{actionPlanSave.disabled=!canEditStep(r,3);} });
 
     detail.addEventListener("click",async function(e){
@@ -6517,7 +6551,7 @@
       var previousLabel=complete2.textContent;
       complete2.textContent="Saving investigation…";
       try{await waitForInvestigationEvidenceUpload();await persistInvestigation(false,true);setWizardStep(detail,r,3,true);toast("Investigation complete — continue to Corrective Actions","ok");}
-      catch(ex){console.error(ex);toast("Could not complete Investigation.","err");}
+      catch(ex){console.error(ex);toast("Could not complete Investigation: "+String(ex&&ex.message||"Please try again.").slice(0,130),"err");}
       finally{if(complete2.isConnected){complete2.disabled=!canEditStep(r,2);complete2.textContent=previousLabel;}} });
 
     var complete3=detail.querySelector('[data-step-complete="3"]'); if(complete3) complete3.addEventListener("click",async function(){
