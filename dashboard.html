@@ -1028,6 +1028,28 @@
   .phase1-ghost-bar:nth-child(5){height:51%}
   .phase1-ghost-bar:nth-child(6){height:36%}
   .phase1-preview-chart .phase1-empty{margin-bottom:0}
+  /* RBH Phase 2 Stage 3: optional draft-only impact assessment. */
+  .impact-assessment-shell{margin:20px 0}
+  .impact-assessment-shell[hidden],.impact-assessment-panel [hidden]{display:none!important}
+  .impact-assessment-panel{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden}
+  .impact-assessment-panel>summary{padding:17px 18px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .impact-assessment-panel>summary span:first-child{display:grid;gap:4px}
+  .impact-assessment-panel>summary b{font-size:18px;font-weight:850}
+  .impact-assessment-panel>summary small{font-size:12px;font-weight:500;color:var(--muted)}
+  .impact-status{border:1px solid var(--line);background:var(--canvas);border-radius:999px;padding:5px 9px;font-size:11px;font-weight:750;white-space:nowrap}
+  .impact-assessment-content{padding:0 18px 18px;border-top:1px solid var(--line)}
+  .impact-intro,.impact-message{color:var(--muted);font-size:13px;line-height:1.5}
+  .impact-message{margin:10px 0}
+  .impact-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:14px}
+  .impact-fields label{display:grid;gap:7px;align-content:start;font-size:13px;font-weight:750;min-width:0}
+  .impact-fields label.impact-wide{grid-column:1/-1}
+  .impact-fields input,.impact-fields textarea{box-sizing:border-box;width:100%;border:1px solid var(--line-strong);background:var(--paper);color:var(--ink);border-radius:var(--r);padding:10px 12px;font:inherit;font-weight:400}
+  .impact-fields textarea{min-height:68px;resize:vertical}
+  .impact-fields input:disabled,.impact-fields textarea:disabled{background:var(--canvas);opacity:.75}
+  .impact-bottom{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px}
+  .impact-bottom p{color:var(--muted);font-size:12px;line-height:1.45;margin:0}
+  .impact-bottom button{flex-shrink:0}
+  @media(max-width:620px){.impact-fields{grid-template-columns:1fr}.impact-bottom{flex-direction:column;align-items:stretch}.impact-bottom button{width:100%}}
   /* ---------- 15. Admin ---------- */
   .admin-settings-heading{margin:26px 0 12px;padding:0 2px 10px;border-bottom:2px solid var(--line-strong)}
   .admin-settings-heading h3{margin:0;color:var(--ink);font-size:20px;font-weight:850}
@@ -3990,6 +4012,30 @@
         '<div data-close-step></div>'+
       '</section>'+
 
+      '<section class="impact-assessment-shell" data-impact-shell hidden aria-label="Safety Impact Assessment">'+
+        '<details class="impact-assessment-panel" data-impact-panel>'+
+          '<summary><span><b>Safety Impact Assessment</b><small>Optional · Draft only · Separate from workflow</small></span><span class="impact-status" data-impact-status>Not started</span></summary>'+
+          '<div class="impact-assessment-content">'+
+            '<p class="impact-intro">Document a potential consequence, illustrative cost scenario, and cost of the fix. This does not estimate actual savings, trigger emails, or change report progression.</p>'+
+            '<p class="impact-message" data-impact-message role="status">Loading assessment…</p>'+
+            '<div data-impact-form hidden>'+
+              '<div class="impact-fields">'+
+                '<label class="impact-wide">Potential consequence<textarea data-impact-field="potential_consequence" rows="3" maxlength="3000" placeholder="What might have happened if the hazard had not been addressed?"></textarea></label>'+
+                '<label>Scenario low cost ($)<input type="number" data-impact-field="scenario_low_cost" min="0" step="0.01" placeholder="Optional"></label>'+
+                '<label>Scenario high cost ($)<input type="number" data-impact-field="scenario_high_cost" min="0" step="0.01" placeholder="Optional"></label>'+
+                '<label>Cost of corrective action ($)<input type="number" data-impact-field="estimated_fix_cost" min="0" step="0.01" placeholder="Optional estimate"></label>'+
+                '<label>Benchmark publication year<input type="number" data-impact-field="benchmark_publication_year" min="1900" max="2100" step="1" placeholder="Optional"></label>'+
+                '<label class="impact-wide">Cost of fix details<textarea data-impact-field="fix_cost_notes" rows="2" maxlength="3000" placeholder="Materials, labor, or estimate assumptions"></textarea></label>'+
+                '<label>Benchmark / estimate source<input type="text" data-impact-field="benchmark_source_name" maxlength="500" placeholder="OSHA, NSC, internal quote, etc."></label>'+
+                '<label>Source URL<input type="url" data-impact-field="benchmark_source_url" maxlength="2000" placeholder="https://…"></label>'+
+                '<label class="impact-wide">Benchmark assumptions<textarea data-impact-field="benchmark_notes" rows="2" maxlength="4000" placeholder="Source year, injury type, and what the estimate covers"></textarea></label>'+
+                '<label class="impact-wide">Assessment notes<textarea data-impact-field="assessment_notes" rows="3" maxlength="4000" placeholder="Additional context for management"></textarea></label>'+
+              '</div>'+
+              '<div class="impact-bottom"><p data-impact-help>No values will count as savings or approved financial impact during Stage 3.</p><button type="button" class="wizard-save" data-impact-save hidden>Save assessment draft</button></div>'+
+            '</div>'+
+          '</div>'+
+        '</details>'+
+      '</section>'+
       '<details class="record-support"><summary>Notes &amp; activity history</summary><div class="record-support-body"><div class="support-grid">'+
         '<div class="d-section"><div class="d-sec-title-row"><span class="d-sec-title">Notes</span><button class="add-note" type="button">+ Add Note</button></div><div class="notes" data-notes></div></div>'+
         '<div class="d-section"><div class="d-sec-title">Activity timeline</div><p class="step-section-note">A readable history of submissions, updates, evidence, verification, and closure.</p><div class="audit" data-audit></div></div>'+
