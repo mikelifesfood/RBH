@@ -6837,6 +6837,168 @@
     finally{ btn.disabled=false; btn.textContent="Save note"; }
   });
 
+  /* Phase 2 Stage 5: read-only financial analytics; no calculation of savings. */
+  var financialAssessments=[],financialLoaded=false,financialLoading=false,financialLoadKey="",financialRequest=0;
+  function financialScopeKey(){return String(currentUserId()||"")+":"+String(currentOrgId||"");}
+  function financialDollar(n){
+    return "$"+Number(n).toLocaleString("en-US",{maximumFractionDigits:0});
+  }
+  function financialReportRows(){
+    var reports={};
+    (allReports||[]).forEach(function(r){reports[String(r.id)]=r;});
+    return financialAssessments.map(function(a){
+      var r=reports[String(a.report_id||"")];
+      if(!r||String(r.organization_id||"")!==String(a.organization_id||""))return null;
+      if(Number(a.workflow_restart_count||0)!==Number(r.workflow_restart_count||0)
+        ||Number(a.reopen_count||0)!==Number(r.reopen_count||0))return null;
+      return {assessment:a,report:r};
+    }).filter(Boolean);
+  }
+  function financialRefillSelect(id,values,placeholder){
+    var el=$(id);if(!el)return;
+    var selected=el.value;
+    el.innerHTML='<option value="all">'+esc(placeholder)+'</option>'+
+      values.sort(function(a,b){return a.localeCompare(b);}).map(function(v){
+        return '<option value="'+esc(v)+'">'+esc(v)+'</option>';
+      }).join("");
+    el.value=values.indexOf(selected)>=0?selected:"all";
+  }
+  function renderFinancialAnalytics(){
+    var root=$("financialImpactAnalytics"),results=$("financialImpactResults"),filters=$("financialImpactFilters");
+    if(!root||!results)return;
+    if(!financialLoaded||financialLoadKey!==financialScopeKey()){
+      filters.hidden=true;
+      results.innerHTML='<div class="financial-impact-empty">'+
+        (financialLoading?"Loading approved assessments…":"Financial assessments will appear once data has been loaded.")+'</div>';
+      return;
+    }
+    var rows=financialReportRows();
+    var sites=[],hazards=[],sources=[];
+    rows.forEach(function(entry){
+      var site=String(entry.report.job_site||"").trim();
+      var hazard=String(entry.report.hazard_category||"").trim();
+      var source=String(entry.assessment.benchmark_source_name||"").trim();
+      if(site&&sites.indexOf(site)<0)sites.push(site);
+      if(hazard&&hazards.indexOf(hazard)<0)hazards.push(hazard);
+      if(source&&sources.indexOf(source)<0)sources.push(source);
+    });
+    financialRefillSelect("financialImpactSite",sites,"All job sites");
+    financialRefillSelect("financialImpactHazard",hazards,"All hazard categories");
+    financialRefillSelect("financialImpactSource",sources,"All estimate sources");
+    filters.hidden=false;
+    var period=$("financialImpactPeriod").value;
+    var siteFilter=$("financialImpactSite").value;
+    var hazardFilter=$("financialImpactHazard").value;
+    var sourceFilter=$("financialImpactSource").value;
+    var now=Date.now(),periodDays=period==="all"?null:Number(period);
+    var selected=rows.filter(function(entry){
+      var r=entry.report,a=entry.assessment;
+      if(siteFilter!=="all"&&String(r.job_site||"").trim()!==siteFilter)return false;
+      if(hazardFilter!=="all"&&String(r.hazard_category||"").trim()!==hazardFilter)return false;
+      if(sourceFilter!=="all"&&String(a.benchmark_source_name||"").trim()!==sourceFilter)return false;
+      if(periodDays!==null){
+        var at=Date.parse(a.assessment_status==="draft"?(a.updated_at||a.created_at):(a.reviewed_at||""));
+        if(!Number.isFinite(at)||at>now||at<now-periodDays*86400000)return false;
+      }
+      return true;
+    });
+    var approved=selected.filter(function(entry){return entry.assessment.assessment_status==="approved";});
+    var draft=selected.filter(function(entry){return entry.assessment.assessment_status==="draft";}).length;
+    var excluded=selected.filter(function(entry){return entry.assessment.assessment_status==="excluded";}).length;
+    var validApproved=approved.filter(function(entry){
+      var a=entry.assessment;
+      return a.scenario_low_cost!=null&&a.scenario_high_cost!=null
+        &&Number.isFinite(Number(a.scenario_low_cost))&&Number.isFinite(Number(a.scenario_high_cost))
+        &&Number(a.scenario_high_cost)>=Number(a.scenario_low_cost);
+    });
+    var low=0,high=0,fix=0,fixCount=0;
+    validApproved.forEach(function(entry){
+      var a=entry.assessment;
+      low+=Number(a.scenario_low_cost);high+=Number(a.scenario_high_cost);
+      if(a.estimated_fix_cost!=null&&Number.isFinite(Number(a.estimated_fix_cost))){
+        fix+=Number(a.estimated_fix_cost);fixCount++;
+      }
+    });
+    function card(value,label,note){
+      return '<div class="financial-impact-stat"><div class="financial-impact-number">'+esc(String(value))+'</div>'+
+        '<div class="financial-impact-label">'+esc(label)+'</div><div class="financial-impact-note">'+esc(note)+'</div></div>';
+    }
+    var range=validApproved.length?financialDollar(low)+"–"+financialDollar(high):"—";
+    var cards='<div class="financial-impact-grid">'+
+      card(approved.length,"Approved assessments","Current workflow cycle; management approved")+
+      card(range,"Potential consequence costs","Sum of approved hypothetical scenario ranges")+
+      card(fixCount?financialDollar(fix):"—","Estimated correction costs",fixCount+" approved assessments include a fix estimate")+
+      card(draft,"Awaiting review","Draft assessments; excluded from financial totals")+
+      card(excluded,"Excluded assessments","Not included in financial totals")+
+      card(validApproved.length,"Cost scenarios documented","Approved assessments with complete ranges")+
+      '</div>';
+    var table="";
+    if(approved.length){
+      var ordered=approved.slice().sort(function(a,b){return Date.parse(b.assessment.reviewed_at||"")-Date.parse(a.assessment.reviewed_at||"");});
+      table='<div class="financial-impact-tablewrap"><table class="financial-impact-table"><thead><tr>'+
+        '<th>Report</th><th>Hazard / site</th><th>Benchmark source</th><th>Reviewed</th><th>Scenario range</th></tr></thead><tbody>'+
+        ordered.slice(0,50).map(function(entry){
+          var r=entry.report,a=entry.assessment;
+          var hasRange=a.scenario_low_cost!=null&&a.scenario_high_cost!=null;
+          return '<tr><td><button class="financial-impact-report-link" data-financial-report-id="'+esc(String(r.id))+'" type="button">#'+esc(String(r.ref_no||String(r.id).slice(0,8)))+'</button></td>'+
+          '<td>'+esc(String(r.hazard_category||r.report_type||"Other"))+'<div class="financial-impact-table-sub">'+esc(String(r.job_site||"Site not recorded"))+'</div></td>'+
+          '<td>'+esc(String(a.benchmark_source_name||"Not provided"))+'</td>'+
+          '<td>'+esc(a.reviewed_at?fmtDate(a.reviewed_at):"—")+'</td>'+
+          '<td class="financial-impact-money">'+(hasRange?esc(financialDollar(a.scenario_low_cost)+"–"+financialDollar(a.scenario_high_cost)):"—")+'</td></tr>';
+        }).join("")+'</tbody></table></div>'+
+        (ordered.length>50?'<p class="financial-impact-note">Showing the first 50 approved assessments for this filter.</p>':'');
+    }else{
+      table='<div class="financial-impact-empty"><b>No approved cost scenarios for these filters.</b>'+
+        '<div>Drafts and excluded assessments are never included in the financial totals. Approved cost scenarios will appear here once the Report Owner completes the assessment review.</div></div>';
+    }
+    results.innerHTML=cards+table;
+  }
+  async function loadFinancialAnalytics(force){
+    if(!currentUserId())return;
+    var key=financialScopeKey();
+    if(financialLoading)return;
+    if(!force&&financialLoaded&&financialLoadKey===key){
+      renderFinancialAnalytics();return;
+    }
+    financialLoading=true;financialLoaded=false;financialLoadKey=key;
+    var request=++financialRequest;
+    renderFinancialAnalytics();
+    try{
+      var rows=[],batchSize=500,offset=0;
+      while(true){
+        var query=sb.from("rbh_safety_impact_assessments")
+          .select("id,report_id,organization_id,workflow_restart_count,reopen_count,assessment_status,scenario_low_cost,scenario_high_cost,estimated_fix_cost,benchmark_source_name,reviewed_at,created_at,updated_at")
+          .order("created_at",{ascending:false}).range(offset,offset+batchSize-1);
+        if(currentOrgId)query=query.eq("organization_id",currentOrgId);
+        var response=await query;
+        if(response.error)throw response.error;
+        var chunk=response.data||[];
+        rows=rows.concat(chunk);
+        if(chunk.length<batchSize)break;
+        offset+=batchSize;
+      }
+      if(key!==financialScopeKey()||request!==financialRequest)return;
+      financialAssessments=rows;financialLoaded=true;
+      renderFinancialAnalytics();
+    }catch(ex){
+      if(key!==financialScopeKey()||request!==financialRequest)return;
+      console.error("Financial analytics load",ex);
+      var host=$("financialImpactResults");
+      if(host)host.innerHTML='<div class="financial-impact-empty">Could not load financial assessments. Reopen Analytics to retry; no financial values are being displayed.</div>';
+    }finally{financialLoading=false;}
+  }
+  ["financialImpactPeriod","financialImpactSite","financialImpactHazard","financialImpactSource"].forEach(function(id){
+    var el=$(id);if(el)el.addEventListener("change",renderFinancialAnalytics);
+  });
+  var impactResultHost=$("financialImpactResults");
+  if(impactResultHost)impactResultHost.addEventListener("click",function(event){
+    var button=event.target.closest("[data-financial-report-id]");
+    if(!button)return;
+    var id=button.getAttribute("data-financial-report-id");
+    var report=(allReports||[]).find(function(r){return String(r.id)===String(id);});
+    if(report)openIncident(report,"records");
+  });
+
   /* ---------- Metrics ---------- */
   function renderMetrics(){
     var m=$("metrics");
@@ -6975,6 +7137,7 @@
       '<div class="breaks">'+brk("By type",byType)+brk("By potential severity",bySev)+brk("By hazard category",byHazard)+brk("By job site",bySite)+'</div>'+
       '<div class="phase1-repeats"><h4>Repeated hazards at the same site · last 90 days</h4>'+repeatHtml+'</div>'+
       monthChartHtml();
+    if(financialLoaded&&financialLoadKey===financialScopeKey())renderFinancialAnalytics();
   }
 
   /* ---------- CSV export ---------- */
@@ -9526,7 +9689,7 @@
     var activeNav=name==="myaction"?(focusedActionOrigin==="actions"?"actions":"mywork"):name;
     document.querySelectorAll(".nav-item").forEach(function(n){ n.classList.toggle("active", n.getAttribute("data-view")===activeNav); });
     var pt=$("pageTitle"); if(pt) pt.textContent=PAGE_TITLES[name]||"";
-    if(name==="metrics") renderMetrics();
+    if(name==="metrics"){ renderMetrics(); loadFinancialAnalytics(true); }
     if(name==="mywork") renderMyWork();
     if(name==="actions") renderActions();
     if(name==="platform") loadPlatformDashboard();
