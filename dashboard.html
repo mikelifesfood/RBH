@@ -2070,7 +2070,7 @@
             <span class="users-result-count" id="adminUserResultCount"></span>
           </div>
           <div id="usersList"></div>
-          <div class="users-help"><b>User access and history</b><br>Deactivate temporarily blocks dashboard access. <b>Delete user</b> permanently removes login access while retaining the person&rsquo;s RBH profile and historical report/audit references. Removed users cannot be reactivated; create new access if they return later.</div>
+          <div class="users-help"><b>Safety Advisor</b> can research, edit, and review Safety Impact Assessments, including controlled post-closure revisions. This role does not manage investigations, corrective actions, or report closure.<br><br><b>User access and history</b><br>Deactivate temporarily blocks dashboard access. <b>Delete user</b> permanently removes login access while retaining the person&rsquo;s RBH profile and historical report/audit references. Removed users cannot be reactivated; create new access if they return later.</div>
           <div class="admin-user-history">
             <div class="admin-subhead">
               <div><h3>Admin activity</h3><p>Password resets, role changes, activation changes, and removed user access.</p></div>
@@ -2242,7 +2242,7 @@
     <div class="login-err" id="addUserErr"></div>
     <div class="field"><label for="addUserName">Full name</label><input type="text" id="addUserName" maxlength="120" autocomplete="off" placeholder="Employee name"></div>
     <div class="field"><label for="addUserEmail">Email</label><input type="email" id="addUserEmail" maxlength="254" autocomplete="off" placeholder="name@company.com"></div>
-    <div class="field"><label for="addUserRole">RBH role</label><select id="addUserRole"><option value="supervisor">Supervisor</option><option value="safety_manager">Safety Manager</option><option value="safety_advisor">Safety Advisor</option><option value="read_only">Read Only</option><option value="admin">Admin</option></select></div>
+    <div class="field"><label for="addUserRole">RBH role</label><select id="addUserRole"><option value="supervisor">Supervisor</option><option value="safety_manager">Safety Manager</option><option value="safety_advisor">Safety Advisor</option><option value="read_only">Read Only</option><option value="admin">Admin</option></select><div class="field-help">Safety Advisor: can document and review Safety Impact Assessments, including proposing audited revisions after report closure. Cannot manage the report workflow.</div></div>
     <label class="setup-check"><input type="checkbox" id="addUserSendEmail" checked><span><b>Send setup email</b><br>Recommended. The user receives a secure Brevo link to choose their own password and open RBH.</span></label>
     <div class="modal-actions">
       <button class="btn-secondary" id="addUserCancel" type="button">Cancel</button>
