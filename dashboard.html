@@ -1088,6 +1088,30 @@
   .impact-history-entry strong{color:var(--ink)}
   .impact-history-entry span{display:block;margin-top:3px;font-size:12px}
   @media(max-width:620px){.impact-review-actions{flex-direction:column}.impact-review-actions button{width:100%}}
+  /* Phase 2 Stage 5: read-only reviewed-financial scenario analytics. */
+  .financial-impact{margin-top:26px;background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:20px}
+  .financial-impact-head{display:flex;align-items:start;justify-content:space-between;gap:14px}
+  .financial-impact-head h3{font-size:21px;font-weight:850;margin:0 0 6px;color:var(--ink)}
+  .financial-impact-head p{color:var(--muted);font-size:13px;line-height:1.45;margin:0}
+  .financial-impact-badge{white-space:nowrap;background:var(--canvas);border:1px solid var(--line);padding:6px 10px;border-radius:20px;font-size:11px;font-weight:800}
+  .financial-impact-filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-top:18px}
+  .financial-impact-filters label{display:grid;gap:5px;min-width:0;font-size:12px;font-weight:750}
+  .financial-impact-filters select{width:100%;min-width:0;padding:9px 10px;border:1px solid var(--line-strong);border-radius:var(--r);color:var(--ink);background:var(--paper);font:inherit}
+  .financial-impact-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:17px}
+  .financial-impact-stat{min-width:0;border:1px solid var(--line);background:var(--canvas);border-radius:var(--r);padding:14px}
+  .financial-impact-number{font-size:24px;font-weight:850;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+  .financial-impact-label{font-size:13px;font-weight:750;margin-top:6px}
+  .financial-impact-note{font-size:11.5px;color:var(--muted);line-height:1.4;margin-top:5px}
+  .financial-impact-empty{margin-top:15px;background:var(--canvas);border-radius:var(--r);padding:16px;font-size:13px;color:var(--muted);line-height:1.5}
+  .financial-impact-tablewrap{overflow-x:auto;margin-top:18px}
+  .financial-impact-table{border-collapse:collapse;width:100%;min-width:590px;font-size:13px}
+  .financial-impact-table th,.financial-impact-table td{text-align:left;padding:10px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+  .financial-impact-table th{font-size:11.5px;color:var(--muted)}
+  .financial-impact-table td.financial-impact-money{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .financial-impact-table th:last-child{text-align:right}
+  .financial-impact-disclaimer{margin:18px 0 0;font-size:12px;line-height:1.5;color:var(--muted)}
+  @media(max-width:960px){.financial-impact-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.financial-impact-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:520px){.financial-impact{padding:14px}.financial-impact-filters{grid-template-columns:1fr}.financial-impact-grid{grid-template-columns:1fr}.financial-impact-head h3{font-size:18px}}
   /* ---------- 15. Admin ---------- */
   .admin-settings-heading{margin:26px 0 12px;padding:0 2px 10px;border-bottom:2px solid var(--line-strong)}
   .admin-settings-heading h3{margin:0;color:var(--ink);font-size:20px;font-weight:850}
@@ -1880,6 +1904,20 @@
         <section class="view" id="view-metrics" hidden>
           <div class="section-head"><div><h2>Safety Analytics</h2><p>Track report volume, corrective-action performance, hazards, and recurring safety patterns.</p></div></div>
           <div class="metrics" id="metrics" style="display:none"></div>
+          <section class="financial-impact" id="financialImpactAnalytics" aria-labelledby="financialImpactHeading">
+            <div class="financial-impact-head">
+              <div><h3 id="financialImpactHeading">Financial Risk &amp; Safety Impact</h3><p>Approved potential incident-cost scenarios and recorded estimated correction costs. Not realized savings.</p></div>
+              <span class="financial-impact-badge">Phase 2</span>
+            </div>
+            <div class="financial-impact-filters" id="financialImpactFilters" hidden>
+              <label>Period<select id="financialImpactPeriod"><option value="all">All review dates</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option><option value="365">Last 12 months</option></select></label>
+              <label>Job site<select id="financialImpactSite"><option value="all">All job sites</option></select></label>
+              <label>Hazard category<select id="financialImpactHazard"><option value="all">All hazard categories</option></select></label>
+              <label>Estimate source<select id="financialImpactSource"><option value="all">All estimate sources</option></select></label>
+            </div>
+            <div id="financialImpactResults" role="status" aria-live="polite">Loading financial assessments…</div>
+            <p class="financial-impact-disclaimer">Scenario totals represent hypothetical costs if incidents occurred. They are not expected losses, verified cost avoidance, workers' compensation payouts, insurance savings, or proof that an injury was prevented. Assumptions may overlap between hazards.</p>
+          </section>
         </section>
 
         <section class="view" id="view-users" hidden>
