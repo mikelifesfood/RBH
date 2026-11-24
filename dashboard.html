@@ -4976,6 +4976,67 @@
     }
     approve.addEventListener("click",function(){reviewDecision("approved");});
     exclude.addEventListener("click",function(){reviewDecision("excluded");});
+    proposeButton.addEventListener("click",async function(){
+      if(!loaded||loading||saving||revisionBusy||!canProposeRevision(report)||!dirty)return;
+      var reason=String(revisionReason.value||"").trim();
+      if(reason.length<10){revisionMessage.textContent="Explain the reason for the revision in at least 10 characters.";revisionReason.focus();return;}
+      var values;
+      try{values=collectValues();}catch(ex){revisionMessage.textContent=ex.message;return;}
+      if(!window.confirm("Submit these changes for documented review? The currently approved figures will remain unchanged."))return;
+      var key=cycleKey;
+      revisionBusy=true;sync(report,parseInt(detail.dataset.wizardStep||"0",10));
+      try{
+        var result=await sb.rpc("rbh_sia_advisor_propose_revision",{
+          p_assessment_id:record.id,p_values:values,p_reason:reason
+        });
+        if(result.error)throw result.error;
+        if(!result.data)throw new Error("Revision proposal was not confirmed.");
+        if(detail.isConnected&&cycleKey===key){
+          pendingRevision=result.data;
+          dirty=false;setForm(record);revisionReason.value="";
+          revisionMessage.textContent="Revision submitted for review. The currently approved figures have not changed.";
+        }
+      }catch(ex){
+        console.error("Impact revision proposal",ex);
+        if(detail.isConnected&&cycleKey===key)
+          revisionMessage.textContent="Unable to submit revision: "+String(ex&&ex.message||"Please try again.").slice(0,190);
+      }finally{revisionBusy=false;if(detail.isConnected)sync(report,parseInt(detail.dataset.wizardStep||"0",10));}
+    });
+    async function decideRevision(decision){
+      if(revisionBusy||!pendingRevision||!canReviewRevision(report))return;
+      var note=String(pendingNote.value||"").trim();
+      if(decision==="reject"&&!note){revisionMessage.textContent="Provide a reason for rejecting the revision.";pendingNote.focus();return;}
+      if(!window.confirm(decision==="apply"
+        ?"Apply this proposed assessment revision? The original reviewed figures will remain in the history."
+        :"Reject this proposed assessment revision?"))return;
+      var key=cycleKey,amendmentId=pendingRevision.id;
+      revisionBusy=true;sync(report,parseInt(detail.dataset.wizardStep||"0",10));
+      try{
+        var result=await sb.rpc("rbh_sia_advisor_review_revision",{
+          p_amendment_id:amendmentId,p_decision:decision,p_note:note||null
+        });
+        if(result.error)throw result.error;
+        if(!result.data)throw new Error("Revision decision was not confirmed.");
+        if(!detail.isConnected||cycleKey!==key)return;
+        if(decision==="apply"){
+          var latest=await sb.from("rbh_safety_impact_assessments").select("*").eq("id",record.id).single();
+          if(latest.error)throw latest.error;
+          if(!detail.isConnected||cycleKey!==key)return;
+          record=latest.data;
+          loadHistory(key,record.id);
+        }
+        pendingRevision=null;dirty=false;setForm(record);pendingNote.value="";
+        revisionMessage.textContent=decision==="apply"
+          ?"Revised assessment applied and recorded in change history."
+          :"Proposed revision rejected. The previously reviewed assessment is unchanged.";
+      }catch(ex){
+        console.error("Impact revision review",ex);
+        if(detail.isConnected&&cycleKey===key)
+          revisionMessage.textContent="Unable to review revision: "+String(ex&&ex.message||"Please refresh and try again.").slice(0,190);
+      }finally{revisionBusy=false;if(detail.isConnected)sync(report,parseInt(detail.dataset.wizardStep||"0",10));}
+    }
+    applyRevision.addEventListener("click",function(){decideRevision("apply");});
+    rejectRevision.addEventListener("click",function(){decideRevision("reject");});
     detail._syncImpactAssessment=sync;
     sync(initialReport,parseInt(detail.dataset.wizardStep||"0",10));
   }
