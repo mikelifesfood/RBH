@@ -13,7 +13,7 @@ h1{font-size:49px;letter-spacing:-1.8px;line-height:1.08;margin:0}.subtitle{font
 #qr{width:322px;height:322px;display:flex;align-items:center;justify-content:center;margin:20px auto;padding:10px;border:1px solid #ddd;background:white}
 #qr img,#qr canvas{max-width:300px;max-height:300px}
 .steps{font-size:16px;line-height:1.8;font-weight:650}
-.link{font-size:13px;overflow-wrap:anywhere}.link a{color:#8e1729}
+.poster-error{font-size:13px;line-height:1.45;color:#9e2020;font-weight:700}
 .notice{font-size:13px;line-height:1.6;text-align:left;border-top:1px solid #ddd;margin-top:26px;padding-top:19px}
 .footer{font-size:12px;color:#666;margin-top:21px}
 .err{color:#9e2020;font-weight:700}
@@ -32,7 +32,7 @@ h1{font-size:49px;letter-spacing:-1.8px;line-height:1.08;margin:0}.subtitle{font
 <section class="site"><h2 id="siteName">Loading site…</h2><p id="siteAddress"></p></section>
 <div id="qr" role="img" aria-label="QR code for the selected RBH job site"></div>
 <p class="steps">1. Open your phone's camera<br>2. Scan this job-site QR code<br>3. Submit your safety report</p>
-<p class="link" id="link">Site QR destination will appear here.</p>
+<p class="poster-error" id="posterError" role="alert" hidden></p>
 <p class="notice"><strong>Emergency?</strong> Call 911 and notify your supervisor first. Submit a report when safe. Reports can be anonymous. For concerns at another job site, choose the other-location option on the form.</p>
 <div class="footer">RBH Insulation · Job-site safety reporting · English / Español available on the report form</div>
 </main>
@@ -40,8 +40,8 @@ h1{font-size:49px;letter-spacing:-1.8px;line-height:1.08;margin:0}.subtitle{font
 (function(){
 "use strict";
 var urlParams=new URLSearchParams(location.search),code=urlParams.get('site')||'';
-var siteName=document.getElementById('siteName'),siteAddress=document.getElementById('siteAddress'),link=document.getElementById('link');
-function fail(message){siteName.textContent='Site QR unavailable';siteAddress.textContent='';link.textContent=message;link.classList.add('err');}
+var siteName=document.getElementById('siteName'),siteAddress=document.getElementById('siteAddress'),posterError=document.getElementById('posterError');
+function fail(message){siteName.textContent='Site QR unavailable';siteAddress.textContent='';posterError.textContent=message;posterError.hidden=false;}
 if(!/^[a-f0-9]{32}$/.test(code)){fail('Invalid site QR identifier. Open Admin to generate a new poster.');return;}
 if(!window.supabase||!window.QRCode){fail('The QR generator is unavailable. Check your internet connection and reload before printing.');return;}
 var sb=window.supabase.createClient('https://owhkxguiavgxzwvbxevj.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93aGt4Z3VpYXZneHp3dmJ4ZXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1Nzk4ODcsImV4cCI6MjEwNTE1NTg4N30.rBwR7sKelzzyTd6XpFrMIjg5W42TpEO_QefnOxzftrc');
@@ -54,8 +54,6 @@ sb.rpc('rbh_get_job_site',{p_code:code}).then(function(res){
  // Include a non-authoritative address fallback for first-time offline QR scans.
  destination.searchParams.set('address',info.address||info.name);
  var href=destination.href;
- var anchor=document.createElement('a');anchor.href=href;anchor.textContent=href;
- link.textContent='Or visit: ';link.appendChild(anchor);
  try{
   var qrTarget=document.getElementById('qr');
   new window.QRCode(qrTarget,{text:href,width:300,height:300,correctLevel:window.QRCode.CorrectLevel.M});
