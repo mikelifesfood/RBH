@@ -4553,7 +4553,7 @@
     var help=shell.querySelector("[data-impact-help]");
     var save=shell.querySelector("[data-impact-save]");
     var inputs=Array.from(shell.querySelectorAll("[data-impact-field]"));
-    var report=initialReport, record=null, cycleKey="", loaded=false, loading=false, saving=false;
+    var report=initialReport, record=null, cycleKey="", loaded=false, loading=false, loadFailed=false, saving=false;
     var keys=inputs.map(function(field){return field.getAttribute("data-impact-field");});
     function currentCycle(r){
       return String(r.id)+":"+Number(r.workflow_restart_count||0)+":"+Number(r.reopen_count||0);
@@ -4574,9 +4574,9 @@
       shell.hidden=!show;
       if(!show)return;
       if(key!==cycleKey){
-        cycleKey=key;record=null;loaded=false;setForm(null);
+        cycleKey=key;record=null;loaded=false;loadFailed=false;setForm(null);
         if(!loading)load();
-      }else if(!loaded&&!loading) load();
+      }else if(!loaded&&!loading&&!loadFailed) load();
       var canWrite=loaded&&!loading&&!saving&&editable(report);
       inputs.forEach(function(input){input.disabled=!canWrite;});
       save.hidden=!editable(report);
@@ -4605,10 +4605,11 @@
       }catch(ex){
         if(!detail.isConnected||cycleKey!==key)return;
         console.error("Impact assessment load",ex);
+        loadFailed=true;
         message.textContent="Could not load this assessment. Reopen the report to try again.";
       }finally{
         loading=false;
-        if(detail.isConnected&&cycleKey===key)sync(report,parseInt(detail.dataset.wizardStep||"0",10));
+        if(detail.isConnected)sync(report,parseInt(detail.dataset.wizardStep||"0",10));
       }
     }
     function optionalMoney(field){
