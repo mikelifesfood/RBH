@@ -1052,6 +1052,16 @@
   .impact-assessment-content{padding:0 18px 18px;border-top:1px solid var(--line)}
   .impact-intro,.impact-message{color:var(--muted);font-size:13px;line-height:1.5}
   .impact-message{margin:10px 0}
+  .impact-resources{margin:14px 0 20px;padding:15px 16px;background:var(--canvas);border:1px solid var(--line);border-radius:var(--r)}
+  .impact-resources-heading h4{font-size:15px;font-weight:850;margin:0 0 4px}
+  .impact-resources-heading p,.impact-resource-note{margin:0;font-size:12.5px;line-height:1.5;color:var(--muted)}
+  .impact-resources-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
+  .impact-resource-link{display:grid;align-content:start;gap:6px;text-decoration:none;padding:12px;border-radius:9px;background:var(--paper);border:1px solid var(--line);color:var(--ink);font-size:12.5px;line-height:1.4}
+  .impact-resource-link strong{font-size:13px;color:var(--brand);font-weight:800}
+  .impact-resource-link span{color:var(--muted)}
+  .impact-resource-link:hover,.impact-resource-link:focus-visible{border-color:var(--brand);text-decoration:none;outline-offset:2px}
+  .impact-resource-note{margin-top:12px}
+  @media(max-width:750px){.impact-resources-list{grid-template-columns:1fr}}
   .impact-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:14px}
   .impact-fields label{display:grid;gap:7px;align-content:start;font-size:13px;font-weight:750;min-width:0}
   .impact-fields label.impact-wide{grid-column:1/-1}
@@ -4031,6 +4041,15 @@
             '<p class="impact-intro">Document a potential consequence, illustrative cost scenario, and cost of the fix. This does not estimate actual savings, trigger emails, or change report progression.</p>'+
             '<p class="impact-message" data-impact-message role="status">Loading assessment…</p>'+
             '<div data-impact-form hidden>'+
+              '<div class="impact-resources" aria-labelledby="impactResourcesHeading">'+
+                '<div class="impact-resources-heading"><h4 id="impactResourcesHeading">Cost estimate resources</h4><p>Open a published tool or benchmark in a new tab, select the relevant injury or claim type, then enter an appropriate cost scenario and its source below.</p></div>'+
+                '<div class="impact-resources-list">'+
+                  '<a href="https://www.osha.gov/safetypays/estimator" target="_blank" rel="noopener noreferrer" class="impact-resource-link"><strong>OSHA Safety Pays calculator ↗</strong><span>Estimate direct and indirect costs for a selected workplace injury or illness.</span></a>'+
+                  '<a href="https://www.ncci.com/SecureDocuments/Injury_Severities_Dashboard.html" target="_blank" rel="noopener noreferrer" class="impact-resource-link"><strong>NCCI injury claim cost dashboard ↗</strong><span>Explore average lost-time workers&#39; compensation claim costs by injury characteristics.</span></a>'+
+                  '<a href="https://injuryfacts.nsc.org/work/costs/" target="_blank" rel="noopener noreferrer" class="impact-resource-link"><strong>NSC work injury cost benchmarks ↗</strong><span>View broad national workplace injury costs for context, not individual claim estimates.</span></a>'+
+                '</div>'+
+                '<p class="impact-resource-note">These resources do not automatically populate this form. Published costs are hypothetical scenarios, not confirmed savings or RBH claim predictions. Confirm source year and assumptions before saving.</p>'+
+              '</div>'+
               '<div class="impact-fields">'+
                 '<label class="impact-wide">Potential consequence<textarea data-impact-field="potential_consequence" rows="3" maxlength="3000" placeholder="What might have happened if the hazard had not been addressed?"></textarea></label>'+
                 '<label>Scenario low cost ($)<input type="number" data-impact-field="scenario_low_cost" min="0" step="0.01" placeholder="Optional"></label>'+
