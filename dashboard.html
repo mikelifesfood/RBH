@@ -2784,12 +2784,12 @@
   var HELP_GUIDES={
     submit_report:{
       title:"Submit a report",
-      roles:["admin","safety_manager","supervisor","read_only"],
+      roles:["admin","safety_manager","supervisor","read_only","safety_advisor"],
       steps:[
         {title:"Open the reporting form",text:"From Home, choose Submit a safety report. The employee reporting form opens in a new tab so you do not lose your place in the dashboard.",view:"home",target:"#homeCreate"},
         {title:"Describe what happened",text:"Complete the report using simple, factual information. Include where it happened, when it was noticed, what was seen, and what was done right away. Mark Injury or illness accurately when someone was actually hurt or became ill."},
         {title:"Add supporting files when helpful",text:"Photos or other files are optional, but add them when they make the condition easier to understand. Do not delay an urgent report just to gather perfect documentation."},
-        {title:"Submit the report",text:"After submission, the new report is added to the Safety Inbox. Active Admins and Safety Managers for the company receive the new-report notification automatically."}
+        {title:"Submit the report",text:"After submission, the report appears in the Safety Inbox. New-report emails go to active Admins and Safety Managers when that email setting is enabled; report submission does not require a dashboard login."}
       ]
     },
     review_incident:{
@@ -2808,7 +2808,7 @@
       title:"Complete my corrective action",
       roles:["admin","safety_manager","supervisor"],
       steps:[
-        {title:"Open your assigned action",text:"Open My Work and select the corrective action assigned to you. The focused action screen shows only that task so you cannot accidentally update another action.",view:"mywork",target:"#view-mywork .mywork-panel"},
+        {title:"Open your assigned action",text:"Open My Work and select a corrective action assigned to your account. Having an operational role alone does not let you complete someone else’s assigned work.",view:"mywork",target:"#view-mywork .mywork-panel"},
         {title:"Review what is required",text:"Check the corrective-action description, due date, priority, and any instructions or returned-review note before starting work."},
         {title:"Describe what was completed",text:"When the work is finished, enter a clear description of what was actually done. Be specific enough that the reviewer can understand the completed correction.",target:"#focusedCompletionNote"},
         {title:"Add evidence when it helps",text:"Attach a photo or supporting file when evidence makes the completed work easier to verify. Evidence is tied to this specific corrective action.",target:"#focusedActionEvidence"},
@@ -2842,15 +2842,15 @@
       steps:[
         {title:"Open Admin",text:"Use the Admin section to manage dashboard access, roles, password-reset actions, activation status, and user history.",view:"users",target:"#view-users"},
         {title:"Add a dashboard user",text:"Choose Add dashboard user. Enter the person's name and email, select the appropriate role, and send the setup email when access is ready.",target:"#addUserBtn"},
-        {title:"Choose the right role",text:"Admins manage users and the full workflow. Safety Managers can work the full incident workflow without Admin access. Supervisors work assigned items. Read Only users can review without changing records.",target:"#usersList"},
+        {title:"Choose the right role",text:"Admins manage users and can own report work. Safety Managers can own report workflows but cannot manage users. Supervisors complete assigned corrective actions. Safety Advisors work on impact assessments, including permitted reviews and revisions. Read Only users review reports without editing.",target:"#usersList"},
         {title:"Deactivate or remove access carefully",text:"Deactivate temporarily blocks access. Delete user removes login access while preserving the person's profile and historical report/audit references."},
         {title:"Review Admin activity",text:"Admin activity records role changes, access changes, password-reset actions, and removed-user events so important account changes remain traceable.",target:"#adminUserHistory"},
         {title:"Export company records",text:"Use Company records archive when RBH needs an independent retention copy. The ZIP includes Excel-compatible data files, a readable PDF for each report, and the original attachments with an attachment manifest and SHA-256 hashes.",target:"#companyRecordsArchive"}
       ]
     },
-    home_screen:{title:"Using Home",roles:["admin","safety_manager","supervisor","read_only"],steps:[
+    home_screen:{title:"Using Home",roles:["admin","safety_manager","supervisor","read_only","safety_advisor"],steps:[
       {title:"Start with what needs attention",text:"Home is your starting point. The summary and Needs your attention area surface new, overdue, injury, assigned, and review work based on your role.",view:"home",target:"#homeStats"},
-      {title:"Open your work",text:"Choose Open My Work when you want to see items assigned directly to you. Managers can also see work waiting for review.",target:"#homeOpen"},
+      {title:"Open your work or the inbox",text:"Assigned operational users can open My Work; Safety Advisors and Read Only users open Safety Inbox. Managers can also see work waiting for verification.",target:"#homeOpen"},
       {title:"Submit a report",text:"Choose Submit a safety report to open the employee reporting form in a new tab.",target:"#homeCreate"}
     ]},
     inbox_screen:{title:"Using Safety Inbox",roles:["admin","safety_manager","supervisor","read_only"],steps:[
@@ -2861,16 +2861,342 @@
       {title:"Use My Work as your personal queue",text:"My Work shows work tied to your account. Corrective-action owners see assigned actions; managers also see corrective actions waiting for a review decision.",view:"mywork",target:"#view-mywork .mywork-summary"},
       {title:"Open the task you need",text:"Select an assignment to open the focused work area. Complete only the task you are responsible for, then send it to the next person when ready.",target:"#myWorkList"}
     ]},
-    analytics_screen:{title:"Using Analytics",roles:["admin","safety_manager","read_only"],steps:[
+    analytics_screen:{title:"Using Analytics",roles:["admin","safety_manager","supervisor","read_only","safety_advisor"],steps:[
       {title:"Use Analytics for trends",text:"Analytics summarizes report volume, status, hazards, injuries, and response trends. It is a read-only view and does not change workflow records.",view:"metrics",target:"#view-metrics"},
       {title:"Return to the record for action",text:"When a metric points to something that needs follow-up, use Safety Inbox or My Work to open the underlying operational record."}
     ]},
     viewing_screen:{title:"Viewing records",roles:["read_only"],steps:[
-      {title:"Review without changing the workflow",text:"Read Only access lets you open reports, review notes, evidence, activity history, and analytics without changing workflow data.",view:"records",target:"#view-records"},
+      {title:"Review without changing the workflow",text:"Read Only users can open company reports and inspect notes, evidence, activity history, and analytics, but cannot change workflow data.",view:"records",target:"#view-records"},
       {title:"Use the PDF when you need a record copy",text:"Open a report and use Download PDF when you need the preserved report summary and attachment appendix. Your access remains read-only."}
     ]}
   };
-  var HELP_TOPIC_ORDER=["submit_report","review_incident","complete_action","review_completed","close_report","admin_users"];
+  Object.assign(HELP_GUIDES,{
+  "safety_assessment": {
+    "title": "Safety Impact Assessment",
+    "roles": [
+      "admin",
+      "safety_manager",
+      "safety_advisor"
+    ],
+    "steps": [
+      {
+        "title": "Understand the assessment",
+        "text": "This optional section documents a possible safety consequence, a hypothetical cost range, the cost of corrective work, and supporting sources. It is separate from the incident workflow and is not a claim of actual savings.",
+        "view": "incident",
+        "target": "#incidentBody [data-impact-shell]"
+      },
+      {
+        "title": "Know who can update it",
+        "text": "The current Report Owner (Admin or Safety Manager) can edit an active draft. Safety Advisors can edit assessment drafts during workflow steps 2, 3, and 4. Other roles can view the assessment but cannot change it.",
+        "target": "#incidentBody [data-impact-panel]"
+      },
+      {
+        "title": "Find credible cost information",
+        "text": "Use the listed OSHA, NCCI, or NSC resources, an internal estimate, or a documented quote. Enter a potential consequence, low and high scenario cost, source, and benchmark assumptions. These are illustrative, not losses or guaranteed savings.",
+        "target": "#incidentBody .impact-resources"
+      },
+      {
+        "title": "Save an incomplete draft",
+        "text": "Choose Save assessment draft. Incomplete estimates are allowed in drafts. Last saved shows when and by whom the record was updated; unsaved changes must be saved separately from the incident workflow.",
+        "target": "#incidentBody [data-impact-save]"
+      },
+      {
+        "title": "Approve or exclude",
+        "text": "An authorized reviewer can approve after required information is entered and corrective work is verified, or exclude with a reason. Missing mandatory approval fields are highlighted. Approval or exclusion locks the assessment; it does not close the safety report.",
+        "target": "#incidentBody [data-impact-review]"
+      },
+      {
+        "title": "Review changes after closure",
+        "text": "After a reviewed report is closed, a Safety Advisor may submit a documented proposed revision. Approved figures remain unchanged until the proposed revision is reviewed and applied. The assessment change history preserves prior values.",
+        "target": "#incidentBody [data-impact-history]"
+      }
+    ]
+  },
+  "safety_advisor": {
+    "title": "Working as a Safety Advisor",
+    "roles": [
+      "safety_advisor"
+    ],
+    "steps": [
+      {
+        "title": "Review company reports",
+        "text": "You may read reports and corrective actions within your company, but you cannot claim ownership, investigate the incident, perform corrective actions, verify operational work, close reports, or manage users.",
+        "view": "records",
+        "target": "#view-records"
+      },
+      {
+        "title": "Edit an active impact assessment",
+        "text": "Open a report during workflow steps 2–4 and expand Safety Impact Assessment. Research the consequence and supporting cost estimates, then save your draft. This does not advance the report workflow.",
+        "view": "incident",
+        "target": "#incidentBody [data-impact-shell]"
+      },
+      {
+        "title": "Review a completed draft",
+        "text": "When the investigation and corrective work meet readiness checks, the Safety Advisor may approve or exclude an assessment. Approval requires the documented scenario, cost range, source, and assumptions; exclusion requires a reason.",
+        "target": "#incidentBody [data-impact-review]"
+      },
+      {
+        "title": "Propose a post-closure update",
+        "text": "On a closed report with a reviewed assessment, submit corrected figures with a reason. The prior approved values stay in effect until the proposed revision is reviewed and applied; consult the assessment history for the timeline.",
+        "target": "#incidentBody [data-impact-revision]"
+      }
+    ]
+  },
+  "report_followers": {
+    "title": "Keep report followers informed",
+    "roles": [
+      "admin",
+      "safety_manager"
+    ],
+    "steps": [
+      {
+        "title": "Open Investigation",
+        "text": "Only the current Report Owner can edit followers during Step 2. Followers are email-only recipients; they do not gain dashboard access or permission to edit the report.",
+        "view": "incident",
+        "target": "#investigationRecordFollowers"
+      },
+      {
+        "title": "Enter trusted email addresses",
+        "text": "Enter up to 20 addresses separated by commas and save the investigation draft. Newly added followers receive an information-only email containing report details, with no login button or report link.",
+        "target": "#investigationRecordFollowers"
+      },
+      {
+        "title": "Keep the list current",
+        "text": "To stop future closure notices for an address, remove it and save while Step 2 is editable. Avoid sharing confidential report information with recipients who do not need it.",
+        "target": "#investigationRecordFollowers"
+      },
+      {
+        "title": "Report closure notification",
+        "text": "Active followers receive a final informational email when the report is resolved. It summarizes the outcome and each applicable corrective action, including recorded completion and verification details. Delivery should be confirmed in transactional email logs."
+      }
+    ]
+  },
+  "corrective_plan": {
+    "title": "Plan multiple corrective actions",
+    "roles": [
+      "admin",
+      "safety_manager"
+    ],
+    "steps": [
+      {
+        "title": "Finish the investigation",
+        "text": "The current Report Owner documents what happened and why. Step 3 asks whether additional corrective work is necessary. If no action is needed, document the decision and explanation.",
+        "view": "incident",
+        "target": "#incidentBody [data-ca-decision]"
+      },
+      {
+        "title": "Create one action for each fix",
+        "text": "For required corrective work, define each separate action, control type, responsible owner, due date, and priority. Assign multiple actions if the report needs several fixes.",
+        "target": "#incidentBody [data-wizard-step=\"3\"]"
+      },
+      {
+        "title": "Activate and notify owners",
+        "text": "When the action plan is activated, assigned owners receive individual assignment notifications when delivery is available. A saved draft plan does not mean corrective work has been completed."
+      },
+      {
+        "title": "Track completion and verification",
+        "text": "Each owner documents completion and optional evidence. The current Report Owner verifies each action separately or requests changes. All required actions must be verified before final closure; follow the workflow readiness checks."
+      },
+      {
+        "title": "Add work before closing",
+        "text": "If another correction becomes necessary before closure, use the controlled add-action process rather than silently editing an already completed workflow stage. Historic action records are preserved."
+      }
+    ]
+  },
+  "ownership": {
+    "title": "Assign and transfer report ownership",
+    "roles": [
+      "admin",
+      "safety_manager"
+    ],
+    "steps": [
+      {
+        "title": "Claim or assign a new report",
+        "text": "An eligible manager can start the Step 1 review of a new unassigned report. The selected Report Owner is committed when the workflow advances; simply selecting the dropdown does not send an email.",
+        "view": "incident",
+        "target": "#incidentBody [data-report-owner-step]"
+      },
+      {
+        "title": "Owner-only workflow decisions",
+        "text": "The current Report Owner controls investigation, corrective-action planning, verification, final closure, and most workflow changes. Being an Admin or Safety Manager does not automatically grant editing rights to every already-owned report."
+      },
+      {
+        "title": "Transfer or take control",
+        "text": "Use the available ownership change controls. A Safety Manager can act within the permitted transfer process; Admin takeover is a separate controlled path. Pending requests require their authorized decision.",
+        "target": "#incidentOwnerChange"
+      },
+      {
+        "title": "Check handoff notifications",
+        "text": "Report-owner assignment and applicable handoffs can generate notifications. Avoid assuming an email was delivered until its provider outcome is recorded. Ownership changes and related decisions are auditable."
+      }
+    ]
+  },
+  "notifications_overview": {
+    "title": "Emails, push and notification preferences",
+    "roles": [
+      "admin"
+    ],
+    "steps": [
+      {
+        "title": "Set initial report email delivery",
+        "text": "In Admin > Notifications, choose grouped, individual, or off for initial new-report emails. Those emails go to active Admins and Safety Managers. Disabling this setting does not disable other workflow messages.",
+        "view": "users",
+        "target": "#reportEmailPreferences"
+      },
+      {
+        "title": "Understand assignment messages",
+        "text": "Report owners and assigned corrective-action owners receive their relevant assignment notices. Submitted actions can notify the current Report Owner for verification; a changes-requested decision notifies the assigned action owner."
+      },
+      {
+        "title": "Understand follower messages",
+        "text": "When a follower is added in Step 2, an informational email is sent. When the report closes, active followers receive a resolution summary with all applicable corrective actions. Followers do not need dashboard accounts."
+      },
+      {
+        "title": "Control device alerts",
+        "text": "Push notifications depend on company settings, each user's device subscription, and permission to display notifications. In-app notifications are separate from emails. Users can review their own notification preferences in Profile."
+      },
+      {
+        "title": "Keep weekly digest on hold",
+        "text": "The weekly Safety Pulse email digest is currently paused for this pilot. Do not promise recurring digest emails until the scheduler and company settings are explicitly enabled and tested.",
+        "target": "#adminPanelNotifications"
+      }
+    ]
+  },
+  "job_sites": {
+    "title": "Manage job-site QR posters",
+    "roles": [
+      "admin"
+    ],
+    "steps": [
+      {
+        "title": "Open Job Sites & QR Codes",
+        "text": "In Admin, select Job Sites & QR Codes. Create each location with a clear name and optional address.",
+        "view": "users",
+        "target": "#adminTabSites"
+      },
+      {
+        "title": "Create and print a unique poster",
+        "text": "Each job site has its own QR code. Open its poster and choose Print / Save PDF. The printed poster uses the QR code instead of displaying a long destination URL.",
+        "target": "#jobSiteList"
+      },
+      {
+        "title": "Rename or deactivate responsibly",
+        "text": "Renaming a site preserves its QR code. Deactivating or deleting a site stops its code from resolving; existing reports keep their recorded location details."
+      },
+      {
+        "title": "Use the general company poster",
+        "text": "Reporting & Records also provides a company-wide QR poster for general safety submissions. Employees can submit without a dashboard login.",
+        "target": "#companyReportingPoster"
+      }
+    ]
+  },
+  "admin_records": {
+    "title": "Reporting, records and exports",
+    "roles": [
+      "admin"
+    ],
+    "steps": [
+      {
+        "title": "Open Reporting & Records",
+        "text": "In Admin, select Reporting & Records for the company-wide poster and records archive.",
+        "view": "users",
+        "target": "#adminTabReporting"
+      },
+      {
+        "title": "Print the company-wide QR poster",
+        "text": "Open the reporting poster, then Print / Save PDF. It points to the public reporting form without exposing a long web address on the printout.",
+        "target": "#companyReportingPoster"
+      },
+      {
+        "title": "Export a record archive",
+        "text": "When authorized retention or handoff requires it, export company records. Verify the resulting archive and store it securely because reports and attachments can contain sensitive incident information.",
+        "target": "#companyRecordsArchive"
+      }
+    ]
+  },
+  "profile_settings": {
+    "title": "Your profile and device preferences",
+    "roles": [
+      "admin",
+      "safety_manager",
+      "supervisor",
+      "read_only",
+      "safety_advisor"
+    ],
+    "steps": [
+      {
+        "title": "Open My Profile",
+        "text": "Select your name or avatar in the navigation to open your profile settings.",
+        "target": "#profileOpen"
+      },
+      {
+        "title": "Review your account options",
+        "text": "Check your profile details and available account options. Only Admins can change users' company roles and access.",
+        "target": "#profileOpen"
+      },
+      {
+        "title": "Control push notifications",
+        "text": "If your device and browser support push notifications, allow notifications and configure the offered preferences. Push can be disabled per device; email delivery is a separate system."
+      }
+    ]
+  },
+  "safety_pulse_help": {
+    "title": "Understand Safety Pulse and recent activity",
+    "roles": [
+      "admin",
+      "safety_manager",
+      "supervisor",
+      "read_only",
+      "safety_advisor"
+    ],
+    "steps": [
+      {
+        "title": "Read the headline metrics",
+        "text": "Safety Pulse shows report activity, unresolved reports, higher-severity open cases, and overdue work. Counts reflect reports visible to your company role; they are not a safety or compliance rating.",
+        "view": "home",
+        "target": "#safetyPulse"
+      },
+      {
+        "title": "Read Safety Impact Summary",
+        "text": "The smaller shaded panel shows draft assessments pending review, high-end hypothetical exposure from approved assessments, and estimated fix costs from approved assessments. Missing amounts show Not yet estimated, not zero.",
+        "target": "#safetyPulse"
+      },
+      {
+        "title": "Look for repeated hazards",
+        "text": "The hazard category and site breakdown helps spot patterns over the last 90 days. Use View analytics for deeper trends; use the Safety Inbox for the underlying reports."
+      },
+      {
+        "title": "Check recent activity",
+        "text": "Home shows the three latest meaningful workflow events. Choose Show all activity to see up to ten. The full audit record stays within each report.",
+        "target": "#homeActivity"
+      }
+    ]
+  },
+  "view_workflow": {
+    "title": "View a report safely",
+    "roles": [
+      "read_only",
+      "safety_advisor"
+    ],
+    "steps": [
+      {
+        "title": "Open reports in Safety Inbox",
+        "text": "You can review reports belonging to your company, including progress, corrective actions, attachments, and history, without changing the operational workflow.",
+        "view": "records",
+        "target": "#view-records"
+      },
+      {
+        "title": "Understand what your role can do",
+        "text": "Read Only staff cannot change workflow records. Safety Advisors can work specifically in Safety Impact Assessment, including applicable draft review and post-closure revisions; neither role owns, completes, verifies, or closes operational work."
+      },
+      {
+        "title": "Download a report summary",
+        "text": "Use Download PDF in the report workspace when you need a permitted record copy. Follow company rules for sharing or storing incident details."
+      }
+    ]
+  }
+});
+  var HELP_TOPIC_ORDER=["submit_report","review_incident","ownership","report_followers","corrective_plan","complete_action","review_completed","close_report","safety_assessment","safety_advisor","safety_pulse_help","home_screen","inbox_screen","mywork_screen","analytics_screen","view_workflow","profile_settings","admin_users","notifications_overview","job_sites","admin_records"];
 
   function helpCoachDesktop(){ return !!(window.matchMedia&&window.matchMedia("(min-width: "+HELP_COACH_MIN_WIDTH+"px) and (pointer: fine)").matches); }
   function helpCoachViewName(){
@@ -2881,31 +3207,39 @@
   function helpGuideAllowed(id){
     var g=HELP_GUIDES[id]; if(!g) return false;
     if((g.roles||[]).indexOf(currentRole)>=0) return true;
-    if(id==="review_incident"&&currentRole==="supervisor"&&activeIncident&&isInvestigatorAssignedToMe(activeIncident)) return true;
     return false;
   }
   function helpCoachContext(){
     var view=helpCoachViewName();
     if(view==="incident"&&activeIncident){
       var detail=$("incidentBody"), step=parseInt(detail&&detail.dataset.wizardStep||"1",10)||1;
+      if(currentRole==="safety_advisor")return {label:"Help with this screen — Safety Impact Assessment",guideId:"safety_assessment",step:0};
+      if(currentRole==="read_only")return {label:"Help with this screen — Viewing this record",guideId:"view_workflow",step:0};
       if(step===1&&helpGuideAllowed("review_incident")) return {label:"Help with this screen — Review",guideId:"review_incident",step:1};
       if(step===2&&helpGuideAllowed("review_incident")) return {label:"Help with this screen — Investigation",guideId:"review_incident",step:4};
       if(step===3&&helpGuideAllowed("review_incident")) return {label:"Help with this screen — Corrective Actions",guideId:"review_incident",step:5};
       if(step===4&&helpGuideAllowed("complete_action")) return {label:"Help with this screen — Complete Work",guideId:"complete_action",step:2};
       if(step===5&&helpGuideAllowed("review_completed")) return {label:"Help with this screen — Verify Work",guideId:"review_completed",step:1};
       if(step===6&&helpGuideAllowed("close_report")) return {label:"Help with this screen — Close",guideId:"close_report",step:0};
-      if(currentRole==="read_only"||currentRole==="safety_advisor") return {label:"Help with this screen — Viewing this record",guideId:"viewing_screen",step:0};
+      if(helpGuideAllowed("safety_assessment")) return {label:"Help with this screen — Safety Impact Assessment",guideId:"safety_assessment",step:0};
     }
     if(view==="myaction"){
       var status=String(activeFocusedAction&&activeFocusedAction.status||"");
       if(status==="awaiting_verification"&&helpGuideAllowed("review_completed")) return {label:"Help with this screen — Review completed work",guideId:"review_completed",step:1};
       if(helpGuideAllowed("complete_action")) return {label:"Help with this screen — Your corrective action",guideId:"complete_action",step:1};
     }
-    if(view==="users"&&helpGuideAllowed("admin_users")) return {label:"Help with this screen — Admin",guideId:"admin_users",step:0};
+    if(view==="users"&&currentRole==="admin"){
+      var activeAdmin=document.querySelector("[data-admin-tab][aria-selected='true']");
+      var adminTab=activeAdmin&&activeAdmin.getAttribute("data-admin-tab");
+      if(adminTab==="notifications")return {label:"Help with this screen — Notifications",guideId:"notifications_overview",step:0};
+      if(adminTab==="reporting")return {label:"Help with this screen — Reporting & Records",guideId:"admin_records",step:0};
+      if(adminTab==="sites")return {label:"Help with this screen — Job Sites & QR Codes",guideId:"job_sites",step:0};
+      return {label:"Help with this screen — Admin & Users",guideId:"admin_users",step:0};
+    }
     if(view==="mywork"&&helpGuideAllowed("mywork_screen")) return {label:"Help with this screen — My Work",guideId:"mywork_screen",step:0};
-    if(view==="records") return {label:"Help with this screen — Safety Inbox",guideId:(currentRole==="read_only"||currentRole==="safety_advisor")?"viewing_screen":"inbox_screen",step:0};
+    if(view==="records") return {label:"Help with this screen — Safety Inbox",guideId:(currentRole==="read_only"||currentRole==="safety_advisor")?"view_workflow":"inbox_screen",step:0};
     if(view==="metrics"&&helpGuideAllowed("analytics_screen")) return {label:"Help with this screen — Analytics",guideId:"analytics_screen",step:0};
-    if(view==="home"&&helpGuideAllowed("home_screen")) return {label:"Help with this screen — Home",guideId:"home_screen",step:0};
+    if(view==="home"&&helpGuideAllowed("home_screen")) return {label:"Help with this screen — Home & Safety Pulse",guideId:"safety_pulse_help",step:0};
     if(view==="actions"&&helpGuideAllowed("review_completed")) return {label:"Help with this screen — Corrective Actions",guideId:"review_completed",step:0};
     return null;
   }
