@@ -3213,7 +3213,7 @@
     var view=helpCoachViewName();
     if(view==="incident"&&activeIncident){
       var detail=$("incidentBody"), step=parseInt(detail&&detail.dataset.wizardStep||"1",10)||1;
-      if(currentRole==="safety_advisor")return {label:"Help with this screen — Safety Impact Assessment",guideId:"safety_assessment",step:0};
+      if(currentRole==="safety_advisor")return step>=2?{label:"Help with this screen — Safety Impact Assessment",guideId:"safety_assessment",step:0}:{label:"Help with this screen — Viewing this record",guideId:"view_workflow",step:0};
       if(currentRole==="read_only")return {label:"Help with this screen — Viewing this record",guideId:"view_workflow",step:0};
       if(step===1&&helpGuideAllowed("review_incident")) return {label:"Help with this screen — Review",guideId:"review_incident",step:1};
       if(step===2&&helpGuideAllowed("review_incident")) return {label:"Help with this screen — Investigation",guideId:"review_incident",step:4};
@@ -3247,27 +3247,34 @@
     if(!helpCoachDesktop()||!currentSession) return;
     var panel=$("helpCoachPanel"), fab=$("helpCoachFab"); if(!panel||!fab)return;
     panel.classList.add("open"); panel.setAttribute("aria-hidden","false"); fab.setAttribute("aria-expanded","true");
-    helpCoachState.guideId=null; helpCoachState.step=0; renderHelpCoachHome();
+    helpCoachState.guideId=null; helpCoachState.step=0;helpCoachShowAllTopics=false; renderHelpCoachHome();
   }
   function helpCoachClose(){
     var panel=$("helpCoachPanel"), fab=$("helpCoachFab"); if(panel){panel.classList.remove("open");panel.setAttribute("aria-hidden","true");} if(fab)fab.setAttribute("aria-expanded","false");
     document.querySelectorAll(".help-coach-highlight").forEach(function(el){el.classList.remove("help-coach-highlight");});
   }
+  var helpCoachShowAllTopics=false;
   function renderHelpCoachHome(){
     var body=$("helpCoachBody"), role=$("helpCoachRole"); if(!body)return;
     if(role) role.textContent="Showing help for "+roleLabel(currentRole);
     var context=helpCoachContext();
     var html='<h2 class="help-coach-question">What do you need help with?</h2><p class="help-coach-intro">Choose a task for short, step-by-step guidance without leaving the application.</p>';
-    if(context) html+='<button class="help-coach-context" type="button" data-help-context><span>Recommended</span><b>'+esc(context.label)+'</b></button>';
+    if(context) html+='<button class="help-coach-context" type="button" data-help-context><span>Recommended for this screen</span><b>'+esc(context.label)+'</b></button>';
+    var topics=HELP_TOPIC_ORDER.filter(function(id){return !!HELP_GUIDES[id]&&helpGuideAllowed(id)&&(!context||id!==context.guideId);});
+    var shown=helpCoachShowAllTopics?topics:topics.slice(0,5);
     html+='<div class="help-coach-topic-list">';
-    var visible=0;
-    HELP_TOPIC_ORDER.forEach(function(id){var g=HELP_GUIDES[id];if(g&&helpGuideAllowed(id)){visible++;html+='<button class="help-coach-topic" type="button" data-help-topic="'+esc(id)+'">'+esc(g.title)+'</button>';}});
+    shown.forEach(function(id){html+='<button class="help-coach-topic" type="button" data-help-topic="'+esc(id)+'">'+esc(HELP_GUIDES[id].title)+'</button>';});
     html+='</div>';
-    if(!visible) html+='<div class="help-coach-empty">No additional task guides are available for this role on the current screen.</div>';
+    if(!topics.length&&!context) html+='<div class="help-coach-empty">No additional task guides are available for this role on the current screen.</div>';
+    if(topics.length>5){
+      html+='<button type="button" class="help-coach-btn" data-help-more aria-expanded="'+String(helpCoachShowAllTopics)+'" style="margin-top:10px;width:100%">'+
+        (helpCoachShowAllTopics?'Show fewer topics':'See all '+topics.length+' help topics')+'</button>';
+    }
     html+='<a class="help-coach-reference" href="docs/RBH_Safety_Workflow_Reference_Guide.pdf" target="_blank" rel="noopener"><span>Full Reference Guide</span><b>Open the complete start-to-finish workflow guide ↗</b><small>PDF · Opens in a new tab · Uses sanitized example data</small></a>';
     body.innerHTML=html;
-    var c=body.querySelector("[data-help-context]"); if(c&&context)c.addEventListener("click",function(){openHelpGuide(context.guideId,context.step||0);});
+    var c=body.querySelector("[data-help-context]");if(c&&context)c.addEventListener("click",function(){openHelpGuide(context.guideId,context.step||0);});
     body.querySelectorAll("[data-help-topic]").forEach(function(btn){btn.addEventListener("click",function(){openHelpGuide(btn.getAttribute("data-help-topic"),0);});});
+    var more=body.querySelector("[data-help-more]");if(more)more.addEventListener("click",function(){helpCoachShowAllTopics=!helpCoachShowAllTopics;renderHelpCoachHome();});
   }
   function openHelpGuide(id,startStep){
     if(!HELP_GUIDES[id]||!helpGuideAllowed(id)) return;
