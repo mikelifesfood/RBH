@@ -4720,6 +4720,18 @@
     var save=shell.querySelector("[data-impact-save]");
     var review=shell.querySelector("[data-impact-review]"),approve=shell.querySelector("[data-impact-approve]"),exclude=shell.querySelector("[data-impact-exclude]");
     var reviewNote=shell.querySelector("[data-impact-review-note]"),reviewHint=shell.querySelector("[data-impact-review-hint]"),finalReview=shell.querySelector("[data-impact-final-review]"),historyList=shell.querySelector("[data-impact-history-list]");
+    var revision=shell.querySelector("[data-impact-revision]");
+    var revisionReason=shell.querySelector("[data-impact-revision-reason]");
+    var revisionMessage=shell.querySelector("[data-impact-revision-message]");
+    var proposeButton=shell.querySelector("[data-impact-propose]");
+    var proposalForm=shell.querySelector("[data-impact-proposal]");
+    var pendingBox=shell.querySelector("[data-impact-pending]");
+    var pendingSummary=shell.querySelector("[data-impact-pending-summary]");
+    var pendingActions=shell.querySelector("[data-impact-pending-actions]");
+    var pendingNote=shell.querySelector("[data-impact-pending-note]");
+    var applyRevision=shell.querySelector("[data-impact-apply]");
+    var rejectRevision=shell.querySelector("[data-impact-reject]");
+    var pendingRevision=null,pendingUnavailable=false,revisionBusy=false;
     var inputs=Array.from(shell.querySelectorAll("[data-impact-field]"));
     var report=initialReport, record=null, cycleKey="", loaded=false, loading=false, loadFailed=false, saving=false, reviewing=false, dirty=false;
     var keys=inputs.map(function(field){return field.getAttribute("data-impact-field");});
@@ -4729,13 +4741,30 @@
     function editable(r){
       return !!(r&&!isResolvedReport(r)&&String(r.status||"")!=="new"&&isCurrentReportOwner(r));
     }
+    function advisorDraftAllowed(r){
+      if(!r||currentRole!=="safety_advisor"||isResolvedReport(r)||String(r.status||"")==="new")return false;
+      var progress=workflowProgress(r),step=progress&&progress.current>=0?progress.current+1:6;
+      return step>=2&&step<=4;
+    }
+    function canReviewDraft(r){
+      return editable(r)||(currentRole==="safety_advisor"&&!isResolvedReport(r)&&canClose(r));
+    }
+    function canProposeRevision(r){
+      return !!(currentRole==="safety_advisor"&&r&&isResolvedReport(r)&&record&&
+        (record.assessment_status==="approved"||record.assessment_status==="excluded")&&
+        !pendingRevision&&!pendingUnavailable);
+    }
+    function canReviewRevision(r){
+      return !!(r&&isResolvedReport(r)&&pendingRevision&&
+        (currentRole==="safety_advisor"||isCurrentReportOwner(r)));
+    }
     function setForm(row){
       inputs.forEach(function(field){
         var value=row&&row[field.getAttribute("data-impact-field")];
         field.value=value==null?"":String(value);
       });
     }
-    function canEditDraft(r){return editable(r)&&(!record||record.assessment_status==="draft");}
+    function canEditDraft(r){return (editable(r)||advisorDraftAllowed(r))&&(!record||record.assessment_status==="draft");}
     async function loadHistory(key,id){
       if(!id){historyList.textContent="No revisions yet.";return;}
       try{
@@ -4764,14 +4793,15 @@
       shell.hidden=!show;
       if(!show)return;
       if(key!==cycleKey){
-        cycleKey=key;record=null;loaded=false;loadFailed=false;dirty=false;setForm(null);historyList.textContent="Loading history…";
+        cycleKey=key;record=null;pendingRevision=null;pendingUnavailable=false;loaded=false;loadFailed=false;dirty=false;setForm(null);historyList.textContent="Loading history…";
         if(!loading)load();
       }else if(!loaded&&!loading&&!loadFailed) load();
       var canWrite=loaded&&!loading&&!saving&&!reviewing&&canEditDraft(report);
-      inputs.forEach(function(input){input.disabled=!canWrite;});
+      var canRevise=loaded&&!loading&&!saving&&!reviewing&&!revisionBusy&&canProposeRevision(report);
+      inputs.forEach(function(input){input.disabled=!(canWrite||canRevise);});
       save.hidden=!canEditDraft(report);
       save.disabled=!canWrite;
-      review.hidden=!(loaded&&record&&record.assessment_status==="draft"&&editable(report));
+      review.hidden=!(loaded&&record&&record.assessment_status==="draft"&&canReviewDraft(report));
       approve.disabled=!loaded||reviewing||saving||dirty||!canClose(report);
       exclude.disabled=!loaded||reviewing||saving||dirty;
       reviewNote.disabled=reviewing||saving;
@@ -4785,7 +4815,24 @@
           (record.review_note?'<div>Review note: '+esc(record.review_note)+'</div>':'')+
           '<div>Potential incident scenarios are not actual savings.</div>';
       }
-      help.textContent=canEditDraft(report)?"Save separately from the incident workflow. Approval or exclusion locks the assessment.":"Read-only. Only the current Report Owner can edit an unreviewed draft.";
+      help.textContent=canEditDraft(report)?"Save separately from the incident workflow. Approval or exclusion locks the assessment.":
+        canProposeRevision(report)?"Adjust the fields above, document the changes, then submit a proposal. Approved values are unchanged until applied.":
+        "Read-only. Only authorized report owners or Safety Advisors during workflow steps 2–4 can edit drafts.";
+      revision.hidden=!(loaded&&record&&isResolvedReport(report)&&record.assessment_status!=="draft"&&
+        (currentRole==="safety_advisor"||isCurrentReportOwner(report)));
+      proposalForm.hidden=!canRevise;
+      proposeButton.disabled=!canRevise||!dirty;
+      pendingBox.hidden=!pendingRevision;
+      pendingActions.hidden=!canReviewRevision(report);
+      applyRevision.disabled=rejectRevision.disabled=revisionBusy;
+      pendingNote.disabled=revisionBusy;
+      if(pendingRevision){
+        var author=pendingRevision.created_by&&profileById[String(pendingRevision.created_by)];
+        pendingSummary.textContent="Pending revision submitted by "+(author?profileName(author):"Safety Advisor")+
+          " on "+fmtDate(pendingRevision.created_at)+". Reason: "+pendingRevision.reason+
+          ". Approved figures remain unchanged until applied.";
+      }
+      if(pendingUnavailable)revisionMessage.textContent="Revision status unavailable. Reopen this report to try again.";
       if(loaded)status.textContent=record?(record.assessment_status==="approved"?"Approved":record.assessment_status==="excluded"?"Excluded":dirty?"Unsaved edits":"Draft saved"):"Not started";
     }
     async function load(){
@@ -4799,6 +4846,14 @@
         if(result.error)throw result.error;
         if(!detail.isConnected||cycleKey!==key)return;
         record=result.data||null;
+        pendingRevision=null;pendingUnavailable=false;
+        if(record&&isResolvedReport(r)&&(currentRole==="safety_advisor"||isManager())){
+          var amendments=await sb.from("rbh_sia_advisor_amendments").select("*")
+            .eq("assessment_id",record.id).eq("status","pending").maybeSingle();
+          if(amendments.error)throw amendments.error;
+          if(!detail.isConnected||cycleKey!==key)return;
+          pendingRevision=amendments.data||null;
+        }
         setForm(record);dirty=false;reviewNote.value="";
         loaded=true;form.hidden=false;loadHistory(key,record&&record.id);
         message.textContent=record?"Draft assessment available.": "No impact assessment has been saved for this report yet.";
@@ -4845,8 +4900,13 @@
       try{
         // The existing Stage 2 RLS policies enforce organization, current report
         // ownership, active status, and exact workflow-cycle matching.
-        if(!editable(report)||key!==currentCycle(report))throw new Error("Report ownership or workflow cycle changed. Reopen the record.");
+        if(!canEditDraft(report)||key!==currentCycle(report))throw new Error("Assessment permission or workflow cycle changed. Reopen the record.");
         var uid=currentUserId(), result;
+        if(currentRole==="safety_advisor"){
+          result=await sb.rpc("rbh_sia_advisor_save_draft",{
+            p_report_id:report.id,p_values:values,p_expected_updated_at:record?record.updated_at:null
+          });
+        }else{
         if(record){
           result=await sb.from("rbh_safety_impact_assessments")
             .update(Object.assign({},values,{updated_by:uid,updated_at:new Date().toISOString()}))
@@ -4860,6 +4920,7 @@
               reopen_count:Number(report.reopen_count||0),
               created_by:uid,updated_by:uid
             })).select("*").single();
+        }
         }
         if(result.error)throw result.error;
         if(detail.isConnected&&cycleKey===key){
@@ -4880,7 +4941,7 @@
       dirty=true;sync(report,parseInt(detail.dataset.wizardStep||"0",10));
     });});
     async function reviewDecision(decision){
-      if(!loaded||loading||saving||reviewing||dirty||!editable(report)
+      if(!loaded||loading||saving||reviewing||dirty||!canReviewDraft(report)
           ||!record||record.assessment_status!=="draft")return;
       var note=String(reviewNote.value||"").trim();
       if(decision==="excluded"&&!note){message.textContent="Explain why the assessment is excluded.";reviewNote.focus();return;}
@@ -4891,7 +4952,7 @@
       reviewing=true;sync(report,parseInt(detail.dataset.wizardStep||"0",10));
       var key=cycleKey,id=record.id;
       try{
-        var result=await sb.rpc("rbh_review_safety_impact_assessment",{
+        var result=await sb.rpc(currentRole==="safety_advisor"?"rbh_sia_advisor_review_draft":"rbh_review_safety_impact_assessment",{
           p_assessment_id:id,p_decision:decision,p_note:note||null
         });
         if(result.error)throw result.error;
