@@ -3263,7 +3263,7 @@
   async function showApp(session){
     currentSession=session;
     if(setupPasswordModeRequested()){ showPasswordSetup(); return; }
-    loginView.style.display="none"; appView.style.display="block";
+    loginView.style.display="none"; appView.style.visibility="hidden"; appView.style.display="block";
     $("who").textContent=(session&&session.user&&session.user.email)||"";
     await upsertProfile(session);
     try{
@@ -3283,6 +3283,9 @@
     // the operational data arrives. Offline setup and notification refresh do
     // not need to hold the whole signed-in dashboard behind network/IndexedDB work.
     restoreSavedView();
+    // Reveal only after the restored tab or record has been selected;
+    // otherwise the default Home view briefly flashes during refresh.
+    appView.style.visibility="";
     if(window.TeamWorktSeamlessOffline && currentSession && currentOrgId){
       window.TeamWorktSeamlessOffline.init({
         userId:currentUserId(),organizationId:currentOrgId,
