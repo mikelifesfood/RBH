@@ -5199,17 +5199,15 @@
       var progress=workflowProgress(r),step=progress&&progress.current>=0?progress.current+1:6;
       return step>=2&&step<=4;
     }
-    function canReviewDraft(r){
-      return editable(r)||(currentRole==="safety_advisor"&&!isResolvedReport(r)&&canClose(r));
-    }
+    function canReviewDraft(r){return !!(record&&record.assessment_status==="draft"&&canEditDraft(r));}
     function canProposeRevision(r){
-      return !!(currentRole==="safety_advisor"&&r&&isResolvedReport(r)&&record&&
+      return !!((currentRole==="safety_advisor"||currentRole==="admin")&&r&&isResolvedReport(r)&&record&&
         (record.assessment_status==="approved"||record.assessment_status==="excluded")&&
         !pendingRevision&&!pendingUnavailable);
     }
     function canReviewRevision(r){
       return !!(r&&isResolvedReport(r)&&pendingRevision&&
-        (currentRole==="safety_advisor"||isCurrentReportOwner(r)));
+        (currentRole==="safety_advisor"||currentRole==="admin"||isCurrentReportOwner(r)));
     }
     function setForm(row){
       inputs.forEach(function(field){
@@ -5289,7 +5287,12 @@
       }
       return false;
     }
-    function canEditDraft(r){return (editable(r)||advisorDraftAllowed(r))&&(!record||record.assessment_status==="draft");}
+    function canEditDraft(r){
+      var closedAllowed=r&&isResolvedReport(r)&&(
+        currentRole==="safety_advisor"||currentRole==="admin"||
+        (currentRole==="safety_manager"&&isCurrentReportOwner(r)));
+      return !!((editable(r)||advisorDraftAllowed(r)||closedAllowed)&&(!record||record.assessment_status==="draft"));
+    }
     async function loadHistory(key,id){
       if(!id){historyList.textContent="No revisions yet.";return;}
       try{
@@ -5329,10 +5332,10 @@
       save.disabled=!canWrite;
       updateLastSaved();
       review.hidden=!(loaded&&record&&record.assessment_status==="draft"&&canReviewDraft(report));
-      approve.disabled=!loaded||reviewing||saving||dirty||!canClose(report);
+      approve.disabled=!loaded||reviewing||saving||dirty||!canReviewDraft(report);
       exclude.disabled=!loaded||reviewing||saving||dirty;
       reviewNote.disabled=reviewing||saving;
-      reviewHint.textContent=dirty?"Save changes to the draft before review.":(!canClose(report)?"Approval becomes available after corrective work is verified and the report is ready for closure. You may still exclude with a reason.":"Approval requires a documented consequence, costs, source, and assumptions. It locks the assessment.");
+      reviewHint.textContent=dirty?"Save changes to the draft before review.":"Approval requires a documented consequence, cost range, source and assumptions, plus verified corrective work. Exclusion requires a reason. These checks apply after closure.";
       finalReview.hidden=!(loaded&&record&&record.assessment_status!=="draft");
       if(!finalReview.hidden){
         var reviewer=record.reviewed_by&&profileById&&profileById[String(record.reviewed_by)];
@@ -5344,9 +5347,9 @@
       }
       help.textContent=canEditDraft(report)?"Save separately from the incident workflow. Approval or exclusion locks the assessment.":
         canProposeRevision(report)?"Adjust the fields above, document the changes, then submit a proposal. Approved values are unchanged until applied.":
-        "Read-only. Only authorized report owners or Safety Advisors during workflow steps 2–4 can edit drafts.";
+        "Read-only. Active drafts can be edited by the authorized Report Owner or Safety Advisor during steps 2–4. Closed drafts can be completed by Admins, Safety Advisors and the existing Safety Manager owner.";
       revision.hidden=!(loaded&&record&&isResolvedReport(report)&&record.assessment_status!=="draft"&&
-        (currentRole==="safety_advisor"||isCurrentReportOwner(report)));
+        (currentRole==="safety_advisor"||currentRole==="admin"||isCurrentReportOwner(report)));
       proposalForm.hidden=!canRevise;
       proposeButton.disabled=!canRevise||!dirty;
       pendingBox.hidden=!pendingRevision;
@@ -5451,30 +5454,12 @@
       saving=true;var original=save.textContent;save.textContent="Saving…";save.disabled=true;
       var key=cycleKey;
       try{
-        // The existing Stage 2 RLS policies enforce organization, current report
-        // ownership, active status, and exact workflow-cycle matching.
+        // Assessment-only RPC enforces role, organization, workflow cycle, review locks
+        // and last-saved conflict detection without changing the incident workflow.
         if(!canEditDraft(report)||key!==currentCycle(report))throw new Error("Assessment permission or workflow cycle changed. Reopen the record.");
-        var uid=currentUserId(), result;
-        if(currentRole==="safety_advisor"){
-          result=await sb.rpc("rbh_sia_advisor_save_draft",{
-            p_report_id:report.id,p_values:values,p_expected_updated_at:record?record.updated_at:null
-          });
-        }else{
-        if(record){
-          result=await sb.from("rbh_safety_impact_assessments")
-            .update(Object.assign({},values,{updated_by:uid,updated_at:new Date().toISOString()}))
-            .eq("id",record.id).eq("updated_at",record.updated_at).select("*").maybeSingle();
-          if(!result.error&&!result.data)throw new Error("This draft changed elsewhere. Reopen the report before editing.");
-        }else{
-          result=await sb.from("rbh_safety_impact_assessments")
-            .insert(Object.assign({},values,{
-              report_id:report.id,organization_id:report.organization_id,
-              workflow_restart_count:Number(report.workflow_restart_count||0),
-              reopen_count:Number(report.reopen_count||0),
-              created_by:uid,updated_by:uid
-            })).select("*").single();
-        }
-        }
+        var result=await sb.rpc("rbh_sia_save_draft_anytime",{
+          p_report_id:report.id,p_values:values,p_expected_updated_at:record?record.updated_at:null
+        });
         if(result.error)throw result.error;
         if(detail.isConnected&&cycleKey===key){
           record=result.data;loaded=true;dirty=false;status.textContent="Draft saved";loadHistory(key,record.id);
@@ -5504,7 +5489,6 @@
           ||!record||record.assessment_status!=="draft")return;
       var note=String(reviewNote.value||"").trim();
       if(decision==="excluded"&&!note){message.textContent="Explain why the assessment is excluded.";reviewNote.focus();return;}
-      if(decision==="approved"&&!canClose(report)){message.textContent="Verify corrective work before approving this assessment.";return;}
       if(decision==="approved"&&!validateApprovalFields())return;
       if(decision==="excluded")clearApprovalErrors();
       if(!window.confirm(decision==="approved"
@@ -5513,7 +5497,7 @@
       reviewing=true;sync(report,parseInt(detail.dataset.wizardStep||"0",10));
       var key=cycleKey,id=record.id;
       try{
-        var result=await sb.rpc(currentRole==="safety_advisor"?"rbh_sia_advisor_review_draft":"rbh_review_safety_impact_assessment",{
+        var result=await sb.rpc("rbh_sia_review_draft_anytime",{
           p_assessment_id:id,p_decision:decision,p_note:note||null
         });
         if(result.error)throw result.error;
