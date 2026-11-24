@@ -4810,7 +4810,7 @@
       finalReview.hidden=!(loaded&&record&&record.assessment_status!=="draft");
       if(!finalReview.hidden){
         var reviewer=record.reviewed_by&&profileById&&profileById[String(record.reviewed_by)];
-        finalReview.innerHTML='<b>'+esc(record.assessment_status==="approved"?"Approved · Read only":"Excluded · Read only")+'</b>'+
+        finalReview.innerHTML='<b>'+esc(record.assessment_status==="approved"?"Approved assessment":"Excluded assessment")+'</b>'+
           'Reviewed by '+esc(reviewer?profileName(reviewer):"Report Owner")+
           (record.reviewed_at?' · '+esc(fmtDate(record.reviewed_at)):'')+
           (record.review_note?'<div>Review note: '+esc(record.review_note)+'</div>':'')+
@@ -4834,7 +4834,7 @@
           ". Approved figures remain unchanged until applied.";
       }
       if(pendingUnavailable)revisionMessage.textContent="Revision status unavailable. Reopen this report to try again.";
-      if(loaded)status.textContent=record?(record.assessment_status==="approved"?"Approved":record.assessment_status==="excluded"?"Excluded":dirty?"Unsaved edits":"Draft saved"):"Not started";
+      if(loaded)status.textContent=record?(dirty?"Unsaved changes":record.assessment_status==="approved"?"Approved":record.assessment_status==="excluded"?"Excluded":"Draft saved"):"Not started";
     }
     async function load(){
       if(loading||!report||!detail.isConnected)return;
@@ -4857,7 +4857,7 @@
         }
         setForm(record);dirty=false;reviewNote.value="";
         loaded=true;form.hidden=false;loadHistory(key,record&&record.id);
-        message.textContent=record?"Draft assessment available.": "No impact assessment has been saved for this report yet.";
+        message.textContent=record?(record.assessment_status==="draft"?"Draft assessment available.":"Reviewed assessment available."): "No impact assessment has been saved for this report yet.";
       }catch(ex){
         if(!detail.isConnected||cycleKey!==key)return;
         console.error("Impact assessment load",ex);
@@ -4875,11 +4875,9 @@
       if(!Number.isFinite(number)||number<0||number>999999999999.99)throw new Error("Enter a valid nonnegative amount under one trillion dollars.");
       return Math.round(number*100)/100;
     }
-    save.addEventListener("click",async function(){
-      if(!loaded||loading||saving||!canEditDraft(report))return;
-      var values={}, fields={};
+    function collectValues(){
+      var values={},fields={};
       keys.forEach(function(key){fields[key]=shell.querySelector('[data-impact-field="'+key+'"]');});
-      try{
         ["scenario_low_cost","scenario_high_cost","estimated_fix_cost"].forEach(function(key){
           values[key]=optionalMoney(fields[key]);
         });
@@ -4895,7 +4893,13 @@
         keys.filter(function(key){return !(key in values);}).forEach(function(key){
           values[key]=String(fields[key].value||"").trim()||null;
         });
-      }catch(ex){message.textContent=ex.message;return;}
+      return values;
+    }
+    save.addEventListener("click",async function(){
+      if(!loaded||loading||saving||!canEditDraft(report))return;
+      var values;
+      try{values=collectValues();}
+      catch(ex){message.textContent=ex.message;return;}
       saving=true;var original=save.textContent;save.textContent="Saving…";save.disabled=true;
       var key=cycleKey;
       try{
@@ -4938,7 +4942,7 @@
       }
     });
     inputs.forEach(function(input){input.addEventListener("input",function(){
-      if(!loaded||!canEditDraft(report))return;
+      if(!loaded||!(canEditDraft(report)||canProposeRevision(report)))return;
       dirty=true;sync(report,parseInt(detail.dataset.wizardStep||"0",10));
     });});
     async function reviewDecision(decision){
