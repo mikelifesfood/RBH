@@ -150,6 +150,7 @@
   .role-pill.r-safety_manager{background:var(--ink);color:#fff;border-color:var(--ink)}
   .role-pill.r-supervisor{background:var(--warn-tint);color:var(--warn);border-color:var(--warn-line)}
   .role-pill.r-read_only{background:var(--canvas);color:var(--muted)}
+  .role-pill.r-safety_advisor{background:#E6F3E9;color:#245E38;border-color:#BDDCC5}
 
   /* ---------- 5. Sign-in ---------- */
   .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 16px;background:var(--chrome)}
@@ -1091,6 +1092,14 @@
   .impact-review-actions button{min-height:42px}
   .impact-final-review{border:1px solid var(--line);border-radius:var(--r);padding:14px 15px;margin-top:15px;background:var(--canvas);font-size:13px;line-height:1.55}
   .impact-final-review b{display:block;margin-bottom:4px}
+  .impact-revision{margin-top:16px;padding:15px;border:1px solid #BDDCC5;border-radius:var(--r);background:#E6F3E9}
+  .impact-revision h4{margin:0 0 7px;font-size:16px}
+  .impact-revision p{margin:0 0 11px;color:var(--ink-2);font-size:13px;line-height:1.5}
+  .impact-revision textarea{width:100%;box-sizing:border-box;min-height:76px;border:1px solid var(--line-strong);background:var(--paper);border-radius:var(--r);padding:10px 12px;font:inherit;resize:vertical}
+  .impact-revision-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  .impact-revision-actions button{min-height:42px}
+  .impact-revision-meta{font-size:12.5px;line-height:1.5;white-space:pre-wrap}
+  @media(max-width:620px){.impact-revision-actions{flex-direction:column}.impact-revision-actions button{width:100%}}
   .impact-history{border-top:1px solid var(--line);margin-top:17px;padding-top:14px;font-size:13px}
   .impact-history>summary{font-weight:800;cursor:pointer;padding:6px 0}
   .impact-history [data-impact-history-list]{padding:9px 0;color:var(--muted)}
@@ -2054,6 +2063,7 @@
               <option value="all">All roles</option>
               <option value="admin">Admin</option>
               <option value="safety_manager">Safety Manager</option>
+              <option value="safety_advisor">Safety Advisor</option>
               <option value="supervisor">Supervisor</option>
               <option value="read_only">Read Only</option>
             </select>
@@ -2232,7 +2242,7 @@
     <div class="login-err" id="addUserErr"></div>
     <div class="field"><label for="addUserName">Full name</label><input type="text" id="addUserName" maxlength="120" autocomplete="off" placeholder="Employee name"></div>
     <div class="field"><label for="addUserEmail">Email</label><input type="email" id="addUserEmail" maxlength="254" autocomplete="off" placeholder="name@company.com"></div>
-    <div class="field"><label for="addUserRole">RBH role</label><select id="addUserRole"><option value="supervisor">Supervisor</option><option value="safety_manager">Safety Manager</option><option value="read_only">Read Only</option><option value="admin">Admin</option></select></div>
+    <div class="field"><label for="addUserRole">RBH role</label><select id="addUserRole"><option value="supervisor">Supervisor</option><option value="safety_manager">Safety Manager</option><option value="safety_advisor">Safety Advisor</option><option value="read_only">Read Only</option><option value="admin">Admin</option></select></div>
     <label class="setup-check"><input type="checkbox" id="addUserSendEmail" checked><span><b>Send setup email</b><br>Recommended. The user receives a secure Brevo link to choose their own password and open RBH.</span></label>
     <div class="modal-actions">
       <button class="btn-secondary" id="addUserCancel" type="button">Cancel</button>
@@ -4175,6 +4185,18 @@
                 '<p class="impact-review-hint" data-impact-review-hint>Approval requires a documented consequence, cost range, benchmark source and assumptions, and verified corrective work.</p>'+
               '</div>'+
               '<div class="impact-final-review" data-impact-final-review hidden></div>'+
+              '<div class="impact-revision" data-impact-revision hidden>'+
+                '<h4>Post-closure assessment revision</h4>'+
+                '<p>Safety Advisors can propose updates to a reviewed assessment after a report is closed. Approved figures remain unchanged until the revision is reviewed and applied.</p>'+
+                '<div data-impact-proposal>'+
+                  '<label class="impact-review-label">Why are these figures being revised?<textarea data-impact-revision-reason maxlength="3000" placeholder="Document new evidence, cost data, or corrected assumptions (at least 10 characters)"></textarea></label>'+
+                  '<div class="impact-revision-actions"><button class="wizard-save" type="button" data-impact-propose>Submit proposed revision</button></div>'+
+                '</div>'+
+                '<div data-impact-pending hidden><p class="impact-revision-meta" data-impact-pending-summary></p>'+
+                  '<div class="impact-revision-actions" data-impact-pending-actions hidden><button class="wizard-primary" type="button" data-impact-apply>Apply revision</button><button class="wizard-save" type="button" data-impact-reject>Reject revision</button></div>'+
+                '</div>'+
+                '<p data-impact-revision-message role="status"></p>'+
+              '</div>'+
               '<details class="impact-history" data-impact-history><summary>Assessment change history</summary><div data-impact-history-list>Loading history…</div></details>'+
             '</div>'+
           '</div>'+
@@ -8686,7 +8708,7 @@
   /* ================= Phase 2 workspaces ================= */
   var lastOperationalView="records";
   var activeFocusedAction=null, focusedActionOrigin="mywork", focusedSubmissionReceiptId=null;
-  var ROLE_LABELS={admin:"Admin",safety_manager:"Safety Manager",supervisor:"Supervisor",read_only:"Read Only"};
+  var ROLE_LABELS={admin:"Admin",safety_manager:"Safety Manager",safety_advisor:"Safety Advisor",supervisor:"Supervisor",read_only:"Read Only"};
   var ACTION_LABELS={not_started:"Not started",in_progress:"In progress",awaiting_verification:"Ready for review",verified:"Verified",changes_requested:"Changes requested"};
 
   function roleLabel(v){ return ROLE_LABELS[v]||"Read Only"; }
@@ -8716,7 +8738,7 @@
     return !!(r&&!isResolvedReport(r)&&isCurrentReportOwner(r));
   }
   function canWorkCorrectiveAction(r){
-    return !!(r&&!isResolvedReport(r)&&currentRole!=="read_only"&&
+    return !!(r&&!isResolvedReport(r)&&currentRole!=="read_only"&&currentRole!=="safety_advisor"&&
       (isActionAssignedToMe(r)||allCorrectiveActions.some(function(a){
         return String(a.report_id)===String(r.id)&&String(a.owner_user_id||"")===currentUserId()
           &&!a.retired_at&&["not_started","in_progress","changes_requested"].includes(a.status);
@@ -8762,7 +8784,7 @@
     var platformNav=$("platformNav");
     if(platformNav) platformNav.style.display="none";
     var myWorkNav=document.querySelector('.nav-item[data-view="mywork"]');
-    var canOwnWork=currentRole!=="read_only";
+    var canOwnWork=currentRole!=="read_only"&&currentRole!=="safety_advisor";
     if(myWorkNav) myWorkNav.style.display=(canOwnWork?"":"none");
     var mobileMyWork=document.querySelector('[data-mobile-view="mywork"]'); if(mobileMyWork) mobileMyWork.hidden=!canOwnWork;
     var mobileAdmin=$("mobileAdminShortcut"); if(mobileAdmin) mobileAdmin.hidden=currentRole!=="admin";
@@ -8900,7 +8922,7 @@
     if(!uid) return [];
     return (allCorrectiveActions||[]).filter(function(a){
       var r=findReport(a.report_id);
-      if(!r||!isOpenOperational(r)||!correctiveActionInCurrentCycle(a,r)) return false;
+      if(!r||!isOpenOperational(r)||!correctiveActionInCurrentCycle(a,r)||currentRole==="safety_advisor") return false;
       if(String(a.owner_user_id||"")!==uid) return false;
       return ["not_started","in_progress","changes_requested"].indexOf(String(a.status||"not_started"))>=0;
     });
@@ -8962,7 +8984,7 @@
   }
   function renderMyWork(){
     var list=$("myWorkList"), summary=$("myWorkSummary"), count=$("myWorkCount"); if(!list||!summary) return;
-    var canOwn=currentRole!=="read_only", user=currentSession&&currentSession.user;
+    var canOwn=currentRole!=="read_only"&&currentRole!=="safety_advisor", user=currentSession&&currentSession.user;
     if(!canOwn||!user){
       list.innerHTML='<div class="state">My Work is available to Admins, Safety Managers, and Supervisors.</div>';
       summary.innerHTML='';
@@ -9737,7 +9759,7 @@
     if(name!=="incident"&&name!=="myaction"){ stopRecordPresence(); clearActiveOpenResource(); }
     if(name==="users" && currentRole!=="admin") name="home";
     if(name==="platform" && !isPlatformAdmin) name="home";
-    if(name==="mywork" && currentRole==="read_only") name="records";
+    if(name==="mywork" && (currentRole==="read_only"||currentRole==="safety_advisor")) name="records";
     if(name==="myaction" && !activeFocusedAction) name=(focusedActionOrigin==="actions"?"actions":"mywork");
     if(name!=="myaction") storeView(name);
     ["home","mywork","records","actions","myaction","metrics","platform","users","incident"].forEach(function(v){ var el=document.getElementById("view-"+v); if(el) el.hidden=(v!==name); });
