@@ -280,6 +280,18 @@
   .safety-pulse-label{font-size:13px;font-weight:750;margin-top:6px}
   .safety-pulse-detail{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.4}
   .safety-pulse-metric.attention .safety-pulse-value{color:var(--brand)}
+  /* Compact assessment snapshot lives inside Safety Pulse, not another home panel. */
+  .safety-pulse-impact{margin-top:14px;padding:14px 16px;background:var(--canvas);border:1px solid var(--line);border-radius:11px}
+  .safety-pulse-impact-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+  .safety-pulse-impact-head h3{font-size:14px;font-weight:800;margin:0}
+  .safety-pulse-impact-note{color:var(--muted);font-size:11.5px;line-height:1.45}
+  .safety-pulse-impact-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+  .safety-pulse-impact-tile{min-width:0;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:var(--paper)}
+  .safety-pulse-impact-value{font-size:22px;line-height:1.2;font-weight:850;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+  .safety-pulse-impact-value.is-empty{font-size:15px;color:var(--muted)}
+  .safety-pulse-impact-label{font-size:12px;font-weight:750;margin-top:5px}
+  .safety-pulse-impact-detail{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.4}
+  @media(max-width:520px){.safety-pulse-impact{padding:12px}.safety-pulse-impact-grid{grid-template-columns:1fr;gap:7px}.safety-pulse-impact-tile{padding:9px 11px}}
   .safety-pulse-bottom{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:15px}
   .safety-pulse-panel{min-width:0;border-top:1px solid var(--line);padding-top:13px}
   .safety-pulse-panel h3{font-size:14px;font-weight:800;margin:0 0 8px}
@@ -11262,8 +11274,77 @@
 
   /* Safety Pulse: derived only from reports already authorized for this account.
      This is descriptive reporting, not an incident risk score or compliance rating. */
+  var safetyPulseAssessmentState={organizationId:null,loading:false,loadedAt:0,rows:null,error:false};
+  function refreshSafetyPulseAssessments(){
+    var state=safetyPulseAssessmentState;
+    if(!currentOrgId)return;
+    if(state.organizationId!==currentOrgId){
+      state.organizationId=currentOrgId;state.rows=null;state.loadedAt=0;state.error=false;state.loading=false;
+    }
+    if(state.loading||(state.loadedAt&&Date.now()-state.loadedAt<45000))return;
+    state.loading=true;
+    var requestedOrg=currentOrgId;
+    sb.from("rbh_safety_impact_assessments")
+      .select("report_id,organization_id,workflow_restart_count,reopen_count,assessment_status,scenario_high_cost,estimated_fix_cost")
+      .eq("organization_id",requestedOrg).then(function(result){
+        if(state.organizationId!==requestedOrg)return;
+        state.loading=false;state.loadedAt=Date.now();
+        state.error=!!result.error;
+        state.rows=result.error?null:(result.data||[]);
+        if(result.error)console.warn("Safety Pulse assessment summary unavailable",result.error);
+        renderSafetyPulse();
+      }).catch(function(err){
+        if(state.organizationId!==requestedOrg)return;
+        state.loading=false;state.loadedAt=Date.now();state.error=true;state.rows=null;
+        console.warn("Safety Pulse assessment summary unavailable",err);
+        renderSafetyPulse();
+      });
+  }
+  function safetyPulseImpactHtml(){
+    var state=safetyPulseAssessmentState;
+    var available=state.organizationId===currentOrgId&&Array.isArray(state.rows)&&!state.error;
+    var pending=0,highTotal=0,fixTotal=0,hasHigh=false,hasFix=false;
+    if(available){
+      var visible={};
+      allReports.filter(reportVisibleInPersonalWorkspace).forEach(function(r){visible[String(r.id)]=r;});
+      state.rows.forEach(function(a){
+        var r=visible[String(a.report_id)];
+        if(!r||Number(a.workflow_restart_count||0)!==Number(r.workflow_restart_count||0)||
+          Number(a.reopen_count||0)!==Number(r.reopen_count||0))return;
+        if(a.assessment_status==="draft"){pending++;return;}
+        if(a.assessment_status!=="approved")return;
+        if(a.scenario_high_cost!==null&&a.scenario_high_cost!==undefined){
+          var high=Number(a.scenario_high_cost);
+          if(Number.isFinite(high)&&high>=0){highTotal+=high;hasHigh=true;}
+        }
+        if(a.estimated_fix_cost!==null&&a.estimated_fix_cost!==undefined){
+          var fix=Number(a.estimated_fix_cost);
+          if(Number.isFinite(fix)&&fix>=0){fixTotal+=fix;hasFix=true;}
+        }
+      });
+    }
+    function money(value){
+      return new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0}).format(value);
+    }
+    var loading=!available&&!state.error;
+    function tile(value,label,detail,empty){
+      return '<div class="safety-pulse-impact-tile"><div class="safety-pulse-impact-value'+(empty?' is-empty':'')+'">'+esc(value)+'</div>'+
+        '<div class="safety-pulse-impact-label">'+esc(label)+'</div>'+
+        '<div class="safety-pulse-impact-detail">'+esc(detail)+'</div></div>';
+    }
+    var fallback=loading?"Loading…":"Unavailable";
+    return '<div class="safety-pulse-impact" aria-label="Safety Impact Summary">'+
+      '<div class="safety-pulse-impact-head"><h3>Safety Impact Summary</h3><span class="safety-pulse-impact-note">Current report assessments</span></div>'+
+      '<div class="safety-pulse-impact-grid">'+
+      tile(available?String(pending):fallback,"Pending review","Saved draft assessments",!available)+
+      tile(available?(hasHigh?money(highTotal):"Not yet estimated"):fallback,"Potential exposure","Approved high-end estimates",!available||!hasHigh)+
+      tile(available?(hasFix?money(fixTotal):"Not yet estimated"):fallback,"Estimated fix costs","Approved cost estimates",!available||!hasFix)+
+      '</div><div class="safety-pulse-impact-note" style="margin-top:9px">Potential exposure is hypothetical, not an actual loss or verified savings. Only approved assessments contribute to cost totals.</div></div>';
+  }
+
   function renderSafetyPulse(){
     var host=$("safetyPulse"); if(!host)return;
+    refreshSafetyPulseAssessments();
     var now=Date.now(), day=86400000, recent=0, prior=0, openHigh=0, overdue=0;
     var seen={}, groups={}, leading=[], open=allReports.filter(function(r){return !isResolvedReport(r)&&reportVisibleInPersonalWorkspace(r);});
     allReports.filter(reportVisibleInPersonalWorkspace).forEach(function(r){
@@ -11314,7 +11395,7 @@
       metric(open.length,'Unresolved reports','All report dates',false)+
       metric(openHigh,'Higher-severity open','Critical or Serious',true)+
       metric(overdue,'Overdue reports','Unresolved work past due',true)+
-      '</div><div class="safety-pulse-bottom"><div class="safety-pulse-panel"><h3>Hazard categories by site · 90 days</h3>'+repeated+
+      '</div>'+safetyPulseImpactHtml()+'<div class="safety-pulse-bottom"><div class="safety-pulse-panel"><h3>Hazard categories by site · 90 days</h3>'+repeated+
       '<p class="safety-pulse-empty"><button class="safety-pulse-drill" id="safetyPulseBrowse" type="button">Browse all reports with filters</button></p>'+recurrenceNote+
       '</div><div class="safety-pulse-panel"><h3>Latest unresolved reports</h3>'+issues+'</div></div>';
     if(host.dataset.snapshot===html)return;
