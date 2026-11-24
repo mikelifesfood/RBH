@@ -1072,6 +1072,22 @@
   .impact-bottom p{color:var(--muted);font-size:12px;line-height:1.45;margin:0}
   .impact-bottom button{flex-shrink:0}
   @media(max-width:620px){.impact-fields{grid-template-columns:1fr}.impact-bottom{flex-direction:column;align-items:stretch}.impact-bottom button{width:100%}}
+  .impact-review{border-top:1px solid var(--line);margin-top:18px;padding-top:16px}
+  .impact-review h4{font-size:16px;font-weight:850;margin:0 0 5px}
+  .impact-review>p,.impact-review-hint{font-size:12.5px;line-height:1.5;color:var(--muted)}
+  .impact-review-label{display:grid;gap:7px;font-size:13px;font-weight:750;margin:12px 0}
+  .impact-review-label textarea{box-sizing:border-box;width:100%;padding:10px 12px;border:1px solid var(--line-strong);border-radius:var(--r);font:inherit}
+  .impact-review-actions{display:flex;gap:9px;flex-wrap:wrap}
+  .impact-review-actions button{min-height:42px}
+  .impact-final-review{border:1px solid var(--line);border-radius:var(--r);padding:14px 15px;margin-top:15px;background:var(--canvas);font-size:13px;line-height:1.55}
+  .impact-final-review b{display:block;margin-bottom:4px}
+  .impact-history{border-top:1px solid var(--line);margin-top:17px;padding-top:14px;font-size:13px}
+  .impact-history>summary{font-weight:800;cursor:pointer;padding:6px 0}
+  .impact-history [data-impact-history-list]{padding:9px 0;color:var(--muted)}
+  .impact-history-entry{padding:10px 0;border-bottom:1px solid var(--line)}
+  .impact-history-entry strong{color:var(--ink)}
+  .impact-history-entry span{display:block;margin-top:3px;font-size:12px}
+  @media(max-width:620px){.impact-review-actions{flex-direction:column}.impact-review-actions button{width:100%}}
   /* ---------- 15. Admin ---------- */
   .admin-settings-heading{margin:26px 0 12px;padding:0 2px 10px;border-bottom:2px solid var(--line-strong)}
   .admin-settings-heading h3{margin:0;color:var(--ink);font-size:20px;font-weight:850}
@@ -4062,7 +4078,15 @@
                 '<label class="impact-wide">Benchmark assumptions<textarea data-impact-field="benchmark_notes" rows="2" maxlength="4000" placeholder="Source year, injury type, and what the estimate covers"></textarea></label>'+
                 '<label class="impact-wide">Assessment notes<textarea data-impact-field="assessment_notes" rows="3" maxlength="4000" placeholder="Additional context for management"></textarea></label>'+
               '</div>'+
-              '<div class="impact-bottom"><p data-impact-help>No values will count as savings or approved financial impact during Stage 3.</p><button type="button" class="wizard-save" data-impact-save hidden>Save assessment draft</button></div>'+
+              '<div class="impact-bottom"><p data-impact-help>Draft scenario values are not actual savings. Saving an assessment does not change the report workflow.</p><button type="button" class="wizard-save" data-impact-save hidden>Save assessment draft</button></div>'+
+              '<div class="impact-review" data-impact-review hidden>'+
+                '<h4>Management review</h4><p>Current Report Owner only. An approved scenario is locked and is not a claim of money saved.</p>'+
+                '<label class="impact-review-label">Review note (required to exclude; optional to approve)<textarea data-impact-review-note rows="2" maxlength="3000" placeholder="Explain your decision or supporting rationale"></textarea></label>'+
+                '<div class="impact-review-actions"><button class="wizard-primary" type="button" data-impact-approve>Approve assessment</button><button class="wizard-save" type="button" data-impact-exclude>Exclude from financial reporting</button></div>'+
+                '<p class="impact-review-hint" data-impact-review-hint>Approval requires a documented consequence, cost range, benchmark source and assumptions, and verified corrective work.</p>'+
+              '</div>'+
+              '<div class="impact-final-review" data-impact-final-review hidden></div>'+
+              '<details class="impact-history" data-impact-history><summary>Assessment change history</summary><div data-impact-history-list>Loading history…</div></details>'+
             '</div>'+
           '</div>'+
         '</details>'+
