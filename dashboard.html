@@ -4637,7 +4637,7 @@
         if(!rows.length){historyList.textContent="No revisions yet.";return;}
         historyList.innerHTML=rows.map(function(row){
           var who=profileById&&row.actor_id&&profileById[String(row.actor_id)];
-          var label={created:"Draft created",edited:"Draft updated",approved:"Approved",excluded:"Excluded"}[row.event_type]||"Assessment changed";
+          var label={baseline:"Starting snapshot (Stage 4 enabled)",created:"Draft created",edited:"Draft updated",approved:"Approved",excluded:"Excluded"}[row.event_type]||"Assessment changed";
           var fields=["potential_consequence","scenario_low_cost","scenario_high_cost","estimated_fix_cost","benchmark_source_name","benchmark_notes","assessment_notes"];
           var before=row.before_snapshot||{},after=row.after_snapshot||{};
           var changed=fields.filter(function(name){return String(before[name]??"")!==String(after[name]??"");});
