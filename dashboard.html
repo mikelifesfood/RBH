@@ -4630,11 +4630,11 @@
         if(values.scenario_low_cost!==null&&values.scenario_high_cost!==null&&values.scenario_high_cost<values.scenario_low_cost)
           throw new Error("The high-cost scenario must be at least as large as the low-cost scenario.");
         var year=String(fields.benchmark_publication_year.value||"").trim();
-        if(year&&(!/^\\d{4}$/.test(year)||Number(year)<1900||Number(year)>2100))
+        if(year&&(year.length!==4||!Number.isInteger(Number(year))||Number(year)<1900||Number(year)>2100))
           throw new Error("Enter a valid four-digit benchmark publication year.");
         values.benchmark_publication_year=year?Number(year):null;
         var url=String(fields.benchmark_source_url.value||"").trim();
-        if(url&&!/^https?:\\/\\//i.test(url))throw new Error("Enter a source link beginning with https:// or http://.");
+        if(url&&!(url.toLowerCase().startsWith("https://")||url.toLowerCase().startsWith("http://")))throw new Error("Enter a source link beginning with https:// or http://.");
         values.benchmark_source_url=url||null;
         keys.filter(function(key){return !(key in values);}).forEach(function(key){
           values[key]=String(fields[key].value||"").trim()||null;
