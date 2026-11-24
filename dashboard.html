@@ -4607,8 +4607,10 @@
     var status=shell.querySelector("[data-impact-status]");
     var help=shell.querySelector("[data-impact-help]");
     var save=shell.querySelector("[data-impact-save]");
+    var review=shell.querySelector("[data-impact-review]"),approve=shell.querySelector("[data-impact-approve]"),exclude=shell.querySelector("[data-impact-exclude]");
+    var reviewNote=shell.querySelector("[data-impact-review-note]"),reviewHint=shell.querySelector("[data-impact-review-hint]"),finalReview=shell.querySelector("[data-impact-final-review]"),historyList=shell.querySelector("[data-impact-history-list]");
     var inputs=Array.from(shell.querySelectorAll("[data-impact-field]"));
-    var report=initialReport, record=null, cycleKey="", loaded=false, loading=false, loadFailed=false, saving=false;
+    var report=initialReport, record=null, cycleKey="", loaded=false, loading=false, loadFailed=false, saving=false, reviewing=false, dirty=false;
     var keys=inputs.map(function(field){return field.getAttribute("data-impact-field");});
     function currentCycle(r){
       return String(r.id)+":"+Number(r.workflow_restart_count||0)+":"+Number(r.reopen_count||0);
@@ -4622,6 +4624,28 @@
         field.value=value==null?"":String(value);
       });
     }
+    function canEditDraft(r){return editable(r)&&(!record||record.assessment_status==="draft");}
+    async function loadHistory(key,id){
+      if(!id){historyList.textContent="No revisions yet.";return;}
+      try{
+        var result=await sb.from("rbh_safety_impact_assessment_history")
+          .select("id,event_type,actor_id,happened_at,before_snapshot,after_snapshot")
+          .eq("assessment_id",id).order("id",{ascending:false}).limit(50);
+        if(result.error)throw result.error;
+        if(!detail.isConnected||key!==cycleKey)return;
+        var rows=result.data||[];
+        if(!rows.length){historyList.textContent="No revisions yet.";return;}
+        historyList.innerHTML=rows.map(function(row){
+          var who=profileById&&row.actor_id&&profileById[String(row.actor_id)];
+          var label={created:"Draft created",edited:"Draft updated",approved:"Approved",excluded:"Excluded"}[row.event_type]||"Assessment changed";
+          var fields=["potential_consequence","scenario_low_cost","scenario_high_cost","estimated_fix_cost","benchmark_source_name","benchmark_notes","assessment_notes"];
+          var before=row.before_snapshot||{},after=row.after_snapshot||{};
+          var changed=fields.filter(function(name){return String(before[name]??"")!==String(after[name]??"");});
+          return '<div class="impact-history-entry"><strong>'+esc(label)+'</strong><span>'+esc(who?profileName(who):"Authorized user")+' · '+esc(fmtDate(row.happened_at))+'</span>'+
+          (changed.length?'<span>Changed: '+esc(changed.join(", ").replace(/_/g," "))+'</span>':'')+'</div>';
+        }).join("");
+      }catch(ex){console.error("Impact history",ex);if(detail.isConnected&&key===cycleKey)historyList.textContent="History unavailable.";}
+    }
     function sync(r,n){
       report=r||report;
       if(!report||!detail.isConnected)return;
@@ -4629,19 +4653,29 @@
       shell.hidden=!show;
       if(!show)return;
       if(key!==cycleKey){
-        cycleKey=key;record=null;loaded=false;loadFailed=false;setForm(null);
+        cycleKey=key;record=null;loaded=false;loadFailed=false;dirty=false;setForm(null);historyList.textContent="Loading history…";
         if(!loading)load();
       }else if(!loaded&&!loading&&!loadFailed) load();
-      var canWrite=loaded&&!loading&&!saving&&editable(report);
+      var canWrite=loaded&&!loading&&!saving&&!reviewing&&canEditDraft(report);
       inputs.forEach(function(input){input.disabled=!canWrite;});
-      save.hidden=!editable(report);
+      save.hidden=!canEditDraft(report);
       save.disabled=!canWrite;
-      help.textContent=editable(report)
-        ?"Draft only. This separate save does not change incident workflow progress, approve a scenario, or send notifications."
-        :"Read-only. Only the current active Report Owner (Admin or Safety Manager) can edit while this report is open.";
-      if(loaded){
-        status.textContent=record?"Draft saved":"Not started";
+      review.hidden=!(loaded&&record&&record.assessment_status==="draft"&&editable(report));
+      approve.disabled=!loaded||reviewing||saving||dirty||!canClose(report);
+      exclude.disabled=!loaded||reviewing||saving||dirty;
+      reviewNote.disabled=reviewing||saving;
+      reviewHint.textContent=dirty?"Save changes to the draft before review.":(!canClose(report)?"Approval becomes available after corrective work is verified and the report is ready for closure. You may still exclude with a reason.":"Approval requires a documented consequence, costs, source, and assumptions. It locks the assessment.");
+      finalReview.hidden=!(loaded&&record&&record.assessment_status!=="draft");
+      if(!finalReview.hidden){
+        var reviewer=record.reviewed_by&&profileById&&profileById[String(record.reviewed_by)];
+        finalReview.innerHTML='<b>'+esc(record.assessment_status==="approved"?"Approved · Read only":"Excluded · Read only")+'</b>'+
+          'Reviewed by '+esc(reviewer?profileName(reviewer):"Report Owner")+
+          (record.reviewed_at?' · '+esc(fmtDate(record.reviewed_at)):'')+
+          (record.review_note?'<div>Review note: '+esc(record.review_note)+'</div>':'')+
+          '<div>Potential incident scenarios are not actual savings.</div>';
       }
+      help.textContent=canEditDraft(report)?"Save separately from the incident workflow. Approval or exclusion locks the assessment.":"Read-only. Only the current Report Owner can edit an unreviewed draft.";
+      if(loaded)status.textContent=record?(record.assessment_status==="approved"?"Approved":record.assessment_status==="excluded"?"Excluded":dirty?"Unsaved edits":"Draft saved"):"Not started";
     }
     async function load(){
       if(loading||!report||!detail.isConnected)return;
@@ -4654,8 +4688,8 @@
         if(result.error)throw result.error;
         if(!detail.isConnected||cycleKey!==key)return;
         record=result.data||null;
-        setForm(record);
-        loaded=true;form.hidden=false;
+        setForm(record);dirty=false;reviewNote.value="";
+        loaded=true;form.hidden=false;loadHistory(key,record&&record.id);
         message.textContent=record?"Draft assessment available.": "No impact assessment has been saved for this report yet.";
       }catch(ex){
         if(!detail.isConnected||cycleKey!==key)return;
@@ -4675,7 +4709,7 @@
       return Math.round(number*100)/100;
     }
     save.addEventListener("click",async function(){
-      if(!loaded||loading||saving||!editable(report))return;
+      if(!loaded||loading||saving||!canEditDraft(report))return;
       var values={}, fields={};
       keys.forEach(function(key){fields[key]=shell.querySelector('[data-impact-field="'+key+'"]');});
       try{
@@ -4718,7 +4752,7 @@
         }
         if(result.error)throw result.error;
         if(detail.isConnected&&cycleKey===key){
-          record=result.data;loaded=true;status.textContent="Draft saved";
+          record=result.data;loaded=true;dirty=false;status.textContent="Draft saved";loadHistory(key,record.id);
           message.textContent="Assessment draft saved. This has not approved a financial estimate or changed the report workflow.";
         }
       }catch(ex){
@@ -4730,6 +4764,41 @@
         if(save.isConnected){save.textContent=original;sync(report,parseInt(detail.dataset.wizardStep||"0",10));}
       }
     });
+    inputs.forEach(function(input){input.addEventListener("input",function(){
+      if(!loaded||!canEditDraft(report))return;
+      dirty=true;sync(report,parseInt(detail.dataset.wizardStep||"0",10));
+    });});
+    async function reviewDecision(decision){
+      if(!loaded||loading||saving||reviewing||dirty||!editable(report)
+          ||!record||record.assessment_status!=="draft")return;
+      var note=String(reviewNote.value||"").trim();
+      if(decision==="excluded"&&!note){message.textContent="Explain why the assessment is excluded.";reviewNote.focus();return;}
+      if(decision==="approved"&&!canClose(report)){message.textContent="Verify corrective work before approving this assessment.";return;}
+      if(!window.confirm(decision==="approved"
+        ?"Approve and lock this potential-cost assessment? It is not actual savings."
+        :"Exclude and lock this assessment from financial reporting?"))return;
+      reviewing=true;sync(report,parseInt(detail.dataset.wizardStep||"0",10));
+      var key=cycleKey,id=record.id;
+      try{
+        var result=await sb.rpc("rbh_review_safety_impact_assessment",{
+          p_assessment_id:id,p_decision:decision,p_note:note||null
+        });
+        if(result.error)throw result.error;
+        if(!result.data)throw new Error("Review not confirmed.");
+        if(detail.isConnected&&key===cycleKey){
+          record=result.data;dirty=false;setForm(record);loadHistory(key,id);
+          message.textContent=decision==="approved"
+            ?"Assessment approved and locked. This does not establish actual savings."
+            :"Assessment excluded and locked with your reason.";
+        }
+      }catch(ex){
+        console.error("Impact assessment review",ex);
+        if(detail.isConnected&&key===cycleKey)
+          message.textContent="Review failed: "+String(ex&&ex.message||"Please try again.").slice(0,200);
+      }finally{reviewing=false;if(detail.isConnected)sync(report,parseInt(detail.dataset.wizardStep||"0",10));}
+    }
+    approve.addEventListener("click",function(){reviewDecision("approved");});
+    exclude.addEventListener("click",function(){reviewDecision("excluded");});
     detail._syncImpactAssessment=sync;
     sync(initialReport,parseInt(detail.dataset.wizardStep||"0",10));
   }
