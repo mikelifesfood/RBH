@@ -3196,7 +3196,92 @@
     ]
   }
 });
-  var HELP_TOPIC_ORDER=["submit_report","review_incident","ownership","report_followers","corrective_plan","complete_action","review_completed","close_report","safety_assessment","safety_advisor","safety_pulse_help","home_screen","inbox_screen","mywork_screen","analytics_screen","view_workflow","profile_settings","admin_users","notifications_overview","job_sites","admin_records"];
+  Object.assign(HELP_GUIDES,{
+  "offline_reporting": {
+    "title": "Submit a report when offline",
+    "roles": [
+      "admin",
+      "safety_manager",
+      "supervisor",
+      "read_only",
+      "safety_advisor"
+    ],
+    "steps": [
+      {
+        "title": "Use the public reporting form",
+        "text": "The public safety form can save a report draft when a device loses connectivity. The saved draft is not yet an official submitted report.",
+        "view": "home",
+        "target": "#homeCreate"
+      },
+      {
+        "title": "Add information and evidence",
+        "text": "Describe the issue and add available photos. Keep the browser or installed app data until the report is successfully sent; clearing site storage can remove unsent information."
+      },
+      {
+        "title": "Reconnect and confirm submission",
+        "text": "Reconnect to the internet and follow the form's queue or retry instructions. Confirm you receive a successful submission instead of assuming a local draft was received. Avoid submitting the same report twice."
+      },
+      {
+        "title": "Know the difference from staff offline work",
+        "text": "Offline public reporting and offline staff investigation are separate features. Do not treat an offline staff draft as an approved investigation, completed action, or officially closed report."
+      }
+    ]
+  },
+  "report_history": {
+    "title": "Notes, evidence and report history",
+    "roles": [
+      "admin",
+      "safety_manager",
+      "supervisor",
+      "read_only",
+      "safety_advisor"
+    ],
+    "steps": [
+      {
+        "title": "Open the report",
+        "text": "Select the report in Safety Inbox to see the original submission, workflow stages, evidence and available notes.",
+        "view": "records",
+        "target": "#view-records"
+      },
+      {
+        "title": "Review the full record",
+        "text": "Expand Notes & activity history to view a trace of key updates and decisions. A three-item Recent Activity summary on Home is not a substitute for the full report history."
+      },
+      {
+        "title": "Know which actions are permitted",
+        "text": "Reading notes and history does not grant editing access. Only authorized owners and assigned operational users can perform their permitted workflow actions. The Safety Advisor role is limited to assessment-specific changes."
+      },
+      {
+        "title": "Export a readable copy",
+        "text": "Use the report PDF option if available for your role; treat its content as confidential workplace information."
+      }
+    ]
+  },
+  "reopen_report": {
+    "title": "Reopen or restart a report",
+    "roles": [
+      "admin",
+      "safety_manager"
+    ],
+    "steps": [
+      {
+        "title": "Decide whether reopening is necessary",
+        "text": "Use this only when new information or additional corrective work warrants an official new workflow cycle. A clarification can often be recorded as a note.",
+        "view": "records",
+        "target": "#view-records"
+      },
+      {
+        "title": "Follow the authorized controls",
+        "text": "The existing restart action is limited to the current Report Owner. Reopening a closed record goes back to Step 1 and clears the Report Owner for reassignment; role permissions and confirmation still apply."
+      },
+      {
+        "title": "Keep previous history",
+        "text": "The report, previous work, verification, evidence and closure history remain recorded. Do not overwrite an old cycle to hide a previous decision."
+      }
+    ]
+  }
+});
+  var HELP_TOPIC_ORDER=["submit_report","offline_reporting","review_incident","ownership","report_followers","corrective_plan","complete_action","review_completed","close_report","reopen_report","safety_assessment","safety_advisor","safety_pulse_help","home_screen","inbox_screen","mywork_screen","analytics_screen","view_workflow","report_history","profile_settings","admin_users","notifications_overview","job_sites","admin_records"];
 
   function helpCoachDesktop(){ return !!(window.matchMedia&&window.matchMedia("(min-width: "+HELP_COACH_MIN_WIDTH+"px) and (pointer: fine)").matches); }
   function helpCoachViewName(){
