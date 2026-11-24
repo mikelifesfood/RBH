@@ -1090,6 +1090,11 @@
   .impact-fields label.impact-wide{grid-column:1/-1}
   .impact-fields input,.impact-fields textarea{box-sizing:border-box;width:100%;border:1px solid var(--line-strong);background:var(--paper);color:var(--ink);border-radius:var(--r);padding:10px 12px;font:inherit;font-weight:400}
   .impact-fields textarea{min-height:68px;resize:vertical}
+  .impact-fields label.impact-required-missing{color:#9A1730}
+  .impact-fields label.impact-required-missing input,.impact-fields label.impact-required-missing textarea{border:2px solid #B4233D;background:#FFF4F5;box-shadow:0 0 0 2px rgba(180,35,61,.07)}
+  .impact-field-error{display:block;font-size:11.5px;font-weight:650;line-height:1.4;color:#9A1730}
+  .impact-validation-summary{margin:10px 0;padding:10px 13px;border:1px solid #E8B4BF;background:#FFF3F5;color:#831A31;border-radius:8px;font-size:12.5px;line-height:1.5}
+  .impact-validation-summary[hidden]{display:none}
   .impact-fields input:disabled,.impact-fields textarea:disabled{background:var(--canvas);opacity:.75}
   .impact-bottom{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px}
   .impact-bottom p{color:var(--muted);font-size:12px;line-height:1.45;margin:0}
@@ -4171,6 +4176,7 @@
           '<div class="impact-assessment-content">'+
             '<p class="impact-intro">Document a potential consequence, illustrative cost scenario, and cost of the fix. This does not estimate actual savings, trigger emails, or change report progression.</p>'+
             '<p class="impact-message" data-impact-message role="status">Loading assessment…</p>'+
+            '<div class="impact-validation-summary" data-impact-validation role="alert" hidden></div>'+
             '<div data-impact-form hidden>'+
               '<div class="impact-resources" aria-labelledby="impactResourcesHeading">'+
                 '<div class="impact-resources-heading"><h4 id="impactResourcesHeading">Cost estimate resources</h4><p>Open a published tool or benchmark in a new tab, select the relevant injury or claim type, then enter an appropriate cost scenario and its source below.</p></div>'+
@@ -4732,6 +4738,7 @@
     if(!shell)return;
     var panel=shell.querySelector("[data-impact-panel]");
     var message=shell.querySelector("[data-impact-message]");
+    var validationSummary=shell.querySelector("[data-impact-validation]");
     var form=shell.querySelector("[data-impact-form]");
     var status=shell.querySelector("[data-impact-status]");
     var help=shell.querySelector("[data-impact-help]");
@@ -4794,6 +4801,68 @@
       lastSaved.textContent="Last saved "+fmtDate(record.updated_at)+" · "+editorName;
       lastSaved.title="Assessment last saved by "+editorName;
     }
+
+    var approvalFieldLabels={
+      potential_consequence:"Potential consequence",
+      scenario_low_cost:"Scenario low cost ($)",
+      scenario_high_cost:"Scenario high cost ($)",
+      benchmark_source_name:"Benchmark / estimate source",
+      benchmark_notes:"Benchmark assumptions"
+    };
+    function clearApprovalErrors(){
+      inputs.forEach(function(field){
+        field.removeAttribute("aria-invalid");
+        var label=field.closest("label");
+        if(!label)return;
+        label.classList.remove("impact-required-missing");
+        var error=label.querySelector(".impact-field-error");
+        if(error)error.remove();
+      });
+      validationSummary.hidden=true;
+      validationSummary.textContent="";
+    }
+    function markApprovalField(fieldKey,reason){
+      var field=shell.querySelector('[data-impact-field="'+fieldKey+'"]');
+      if(!field)return null;
+      field.setAttribute("aria-invalid","true");
+      var label=field.closest("label");
+      if(label){
+        label.classList.add("impact-required-missing");
+        var error=label.querySelector(".impact-field-error");
+        if(!error){error=document.createElement("span");error.className="impact-field-error";label.appendChild(error);}
+        error.textContent=reason||"Required for approval";
+      }
+      return field;
+    }
+    function validateApprovalFields(){
+      clearApprovalErrors();
+      var missing=[];
+      Object.keys(approvalFieldLabels).forEach(function(key){
+        var field=shell.querySelector('[data-impact-field="'+key+'"]');
+        if(!field||!String(field.value||"").trim()){
+          missing.push(key);
+          markApprovalField(key,"Required to approve this assessment");
+        }
+      });
+      var low=shell.querySelector('[data-impact-field="scenario_low_cost"]');
+      var high=shell.querySelector('[data-impact-field="scenario_high_cost"]');
+      if(low&&high&&low.value.trim()&&high.value.trim()&&Number(high.value)<Number(low.value)){
+        if(missing.indexOf("scenario_high_cost")===-1)missing.push("scenario_high_cost");
+        markApprovalField("scenario_high_cost","Must be at least the low-cost estimate");
+      }
+      if(!missing.length)return true;
+      var descriptions=missing.map(function(key){return approvalFieldLabels[key];});
+      validationSummary.textContent="Approval needs "+missing.length+" field"+(missing.length===1?"":"s")+" completed or corrected: "+descriptions.join(", ")+". You may still save a draft without these fields.";
+      validationSummary.hidden=false;
+      message.textContent="Complete the highlighted fields and save the draft before approving.";
+      if(panel)panel.open=true;
+      var first=shell.querySelector('[data-impact-field="'+missing[0]+'"]');
+      if(first){
+        first.scrollIntoView({behavior:"smooth",block:"center"});
+        try{first.focus({preventScroll:true});}catch(_e){first.focus();}
+      }
+      return false;
+    }
     function canEditDraft(r){return (editable(r)||advisorDraftAllowed(r))&&(!record||record.assessment_status==="draft");}
     async function loadHistory(key,id){
       if(!id){historyList.textContent="No revisions yet.";return;}
@@ -4823,6 +4892,7 @@
       shell.hidden=!show;
       if(!show)return;
       if(key!==cycleKey){
+        clearApprovalErrors();
         cycleKey=key;record=null;pendingRevision=null;pendingUnavailable=false;loaded=false;loadFailed=false;dirty=false;setForm(null);historyList.textContent="Loading history…";
         if(!loading)load();
       }else if(!loaded&&!loading&&!loadFailed) load();
@@ -4906,7 +4976,7 @@
           if(!detail.isConnected||cycleKey!==key)return;
           pendingRevision=amendments.data||null;
         }
-        setForm(record);dirty=false;reviewNote.value="";
+        setForm(record);clearApprovalErrors();dirty=false;reviewNote.value="";
         loaded=true;form.hidden=false;loadHistory(key,record&&record.id);
         updateLastSaved();
         message.textContent=record?(record.assessment_status==="draft"?"Draft assessment available.":"Reviewed assessment available."): "No impact assessment has been saved for this report yet.";
@@ -4994,6 +5064,12 @@
       }
     });
     inputs.forEach(function(input){input.addEventListener("input",function(){
+      var label=input.closest("label");
+      if(label&&label.classList.contains("impact-required-missing")&&String(input.value||"").trim()){
+        label.classList.remove("impact-required-missing");
+        input.removeAttribute("aria-invalid");
+        var error=label.querySelector(".impact-field-error");if(error)error.remove();
+      }
       if(!loaded||!(canEditDraft(report)||canProposeRevision(report)))return;
       dirty=true;sync(report,parseInt(detail.dataset.wizardStep||"0",10));
     });});
@@ -5003,6 +5079,8 @@
       var note=String(reviewNote.value||"").trim();
       if(decision==="excluded"&&!note){message.textContent="Explain why the assessment is excluded.";reviewNote.focus();return;}
       if(decision==="approved"&&!canClose(report)){message.textContent="Verify corrective work before approving this assessment.";return;}
+      if(decision==="approved"&&!validateApprovalFields())return;
+      if(decision==="excluded")clearApprovalErrors();
       if(!window.confirm(decision==="approved"
         ?"Approve and lock this potential-cost assessment? It is not actual savings."
         :"Exclude and lock this assessment from financial reporting?"))return;
@@ -5015,15 +5093,21 @@
         if(result.error)throw result.error;
         if(!result.data)throw new Error("Review not confirmed.");
         if(detail.isConnected&&key===cycleKey){
-          record=result.data;dirty=false;setForm(record);loadHistory(key,id);
+          record=result.data;dirty=false;setForm(record);clearApprovalErrors();loadHistory(key,id);
           message.textContent=decision==="approved"
             ?"Assessment approved and locked. This does not establish actual savings."
             :"Assessment excluded and locked with your reason.";
         }
       }catch(ex){
         console.error("Impact assessment review",ex);
-        if(detail.isConnected&&key===cycleKey)
-          message.textContent="Review failed: "+String(ex&&ex.message||"Please try again.").slice(0,200);
+        if(detail.isConnected&&key===cycleKey){
+          var code=String(ex&&ex.message||"");
+          if(decision==="approved"&&/CONSEQUENCE_COST_RANGE_SOURCE_AND_ASSUMPTIONS_REQUIRED/.test(code)){
+            validateApprovalFields();
+          }else{
+            message.textContent="Review failed: "+(code||"Please try again.").slice(0,200);
+          }
+        }
       }finally{reviewing=false;if(detail.isConnected)sync(report,parseInt(detail.dataset.wizardStep||"0",10));}
     }
     approve.addEventListener("click",function(){reviewDecision("approved");});
