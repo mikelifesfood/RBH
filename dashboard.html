@@ -11370,16 +11370,19 @@
       });
       if(responses[1].error) console.warn("Recent corrective-action milestones unavailable",responses[1].error);
       else (responses[1].data||[]).forEach(function(a){
-        var type=String(a.event_type||"").toLowerCase();
-        // Skip ordinary edits; only show an action milestone or verification decision.
-        if(!/(complet|verif|approv|reopen|activat|clos|resolv|submit)/.test(type))return;
+        // Action audit event_type is usually "updated"; inspect before/after snapshots.
+        var before=a.old_snapshot||{},after=a.new_snapshot||{};
+        var kind="";
+        if(after.verified_at&&after.verified_at!==before.verified_at)kind="verified";
+        else if(after.completed_at&&after.completed_at!==before.completed_at)kind="completed";
+        else if(after.status!==before.status&&after.status==="verified")kind="verified";
+        else if(after.status!==before.status&&after.status==="completed")kind="completed";
+        else if(after.activated_at&&after.activated_at!==before.activated_at)kind="activated";
+        if(!kind)return;
         var report=findReport(a.report_id);
         if(!report||!reportVisibleInPersonalWorkspace(report))return;
         var number=a.action_number!=null?" #"+a.action_number:"";
-        var title=/verif|approv/.test(type)?"Corrective action"+number+" verified":
-          /complet|submit/.test(type)?"Corrective action"+number+" completed":
-          /reopen/.test(type)?"Corrective action"+number+" reopened":
-          /activat/.test(type)?"Corrective action"+number+" activated":"Corrective action"+number+" closed";
+        var title="Corrective action"+number+" "+kind;
         events.push({when:a.created_at,kind:"change",text:"#"+(map[a.report_id]||report.ref_no||"?")+" "+title,
           who:a.actor_email?auditActor(a.actor_email):(a.actor_id&&profileById[String(a.actor_id)]?profileName(profileById[String(a.actor_id)]):"")});
       });
