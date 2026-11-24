@@ -3184,15 +3184,21 @@
   /* Keep browser back/refresh restoration from reopening a workspace halfway down the page. */
   try{ if("scrollRestoration" in window.history) window.history.scrollRestoration="manual"; }catch(_scrollRestoreErr){}
 
-  function storedView(){ return "home"; }
+  // Remember navigation for this browser tab and signed-in workspace only.
+  // Do not share navigation history between staff accounts or organizations.
+  function navigationKey(key){ return key+":"+currentUserId()+":"+(currentOrgId||""); }
+  function storedView(){
+    try{ return sessionStorage.getItem(navigationKey(NAV_VIEW_KEY))||"home"; }
+    catch(_e){ return "home"; }
+  }
   function storeView(name){
     try{
-      localStorage.setItem(NAV_VIEW_KEY,name);
-      if(name!=="incident") localStorage.removeItem(NAV_INCIDENT_KEY);
+      sessionStorage.setItem(navigationKey(NAV_VIEW_KEY),name);
+      if(name!=="incident") sessionStorage.removeItem(navigationKey(NAV_INCIDENT_KEY));
     }catch(_e){}
   }
   function storeIncident(r,from){
-    try{ localStorage.setItem(NAV_INCIDENT_KEY,JSON.stringify({id:r&&r.id,from:from||"records"})); }catch(_e){}
+    try{ sessionStorage.setItem(navigationKey(NAV_INCIDENT_KEY),JSON.stringify({id:r&&r.id,from:from||"records"})); }catch(_e){}
   }
   function requestedReportIdFromUrl(){
     try{ return new URLSearchParams(window.location.search||"").get("report")||""; }catch(_e){ return ""; }
@@ -3229,10 +3235,25 @@
       if(directReport&&reportVisibleInPersonalWorkspace(directReport)){ openIncident(directReport,"mywork"); return; }
       toast("That assigned record is unavailable or you no longer have access to it.","err");
     }
-    // A fresh dashboard launch always begins at Home. Push notification
-    // and email deep links were handled above; do not restore a prior tab or
-    // record from shared browser storage after a PWA relaunch.
-    showView("home");
+    // Restore the last tab on refresh, without reopening it in another
+    // browser tab or for a different signed-in staff member.
+    var previous=storedView();
+    if(previous==="incident"){
+      try{
+        var savedIncident=JSON.parse(sessionStorage.getItem(navigationKey(NAV_INCIDENT_KEY))||"null");
+        var savedReport=savedIncident&&allReports.find(function(r){return String(r.id)===String(savedIncident.id);});
+        if(savedReport&&reportVisibleInPersonalWorkspace(savedReport)){
+          var origin=["mywork","actions","records"].indexOf(savedIncident.from)>=0?savedIncident.from:"records";
+          openIncident(savedReport,origin);
+          return;
+        }
+      }catch(_e){}
+      previous="records";
+    }
+    // Focused actions require live action context: return to their list.
+    if(previous==="myaction") previous="mywork";
+    if(["home","mywork","records","actions","metrics","platform","users"].indexOf(previous)<0) previous="home";
+    showView(previous);
   }
 
   $("mStatus").innerHTML=statusOptions("new");
