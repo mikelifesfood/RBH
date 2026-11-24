@@ -5625,7 +5625,7 @@
       var emailPattern=/^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$/;
       if(followersLoaded&&!followersError&&emails.some(function(email){return email.length>254||!emailPattern.test(email);}))
         throw new Error("Enter valid follower emails separated by commas.");
-      if(followersLoaded&&!followersError&&emails.join("\\u001f")!==originalFollowerEmails.join("\\u001f")){
+      if(followersLoaded&&!followersError&&JSON.stringify(emails)!==JSON.stringify(originalFollowerEmails)){
         var followerResult=await sb.rpc("rbh_set_report_followers",{p_report_id:r.id,p_emails:emails});
         if(followerResult.error)throw followerResult.error;
         originalFollowerEmails=emails.slice();
