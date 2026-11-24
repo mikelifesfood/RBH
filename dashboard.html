@@ -1094,7 +1094,9 @@
   .impact-bottom{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px}
   .impact-bottom p{color:var(--muted);font-size:12px;line-height:1.45;margin:0}
   .impact-bottom button{flex-shrink:0}
-  @media(max-width:620px){.impact-fields{grid-template-columns:1fr}.impact-bottom{flex-direction:column;align-items:stretch}.impact-bottom button{width:100%}}
+  .impact-save-actions{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px 14px;min-width:0}
+  .impact-last-saved{font-size:12px;line-height:1.4;color:var(--muted);text-align:right;overflow-wrap:anywhere}
+  @media(max-width:620px){.impact-fields{grid-template-columns:1fr}.impact-bottom{flex-direction:column;align-items:stretch}.impact-save-actions{flex-direction:column;align-items:stretch}.impact-last-saved{text-align:left}.impact-bottom button{width:100%}}
   .impact-review{border-top:1px solid var(--line);margin-top:18px;padding-top:16px}
   .impact-review h4{font-size:16px;font-weight:850;margin:0 0 5px}
   .impact-review>p,.impact-review-hint{font-size:12.5px;line-height:1.5;color:var(--muted)}
@@ -4191,7 +4193,7 @@
                 '<label class="impact-wide">Benchmark assumptions<textarea data-impact-field="benchmark_notes" rows="2" maxlength="4000" placeholder="Source year, injury type, and what the estimate covers"></textarea></label>'+
                 '<label class="impact-wide">Assessment notes<textarea data-impact-field="assessment_notes" rows="3" maxlength="4000" placeholder="Additional context for management"></textarea></label>'+
               '</div>'+
-              '<div class="impact-bottom"><p data-impact-help>Draft scenario values are not actual savings. Saving an assessment does not change the report workflow.</p><button type="button" class="wizard-save" data-impact-save hidden>Save assessment draft</button></div>'+
+              '<div class="impact-bottom"><p data-impact-help>Draft scenario values are not actual savings. Saving an assessment does not change the report workflow.</p><div class="impact-save-actions"><span class="impact-last-saved" data-impact-last-saved role="status" aria-live="polite">Not saved yet</span><button type="button" class="wizard-save" data-impact-save hidden>Save assessment draft</button></div></div>'+
               '<div class="impact-review" data-impact-review hidden>'+
                 '<h4>Management review</h4><p>Current Report Owner only. An approved scenario is locked and is not a claim of money saved.</p>'+
                 '<label class="impact-review-label">Review note (required to exclude; optional to approve)<textarea data-impact-review-note rows="2" maxlength="3000" placeholder="Explain your decision or supporting rationale"></textarea></label>'+
@@ -4734,6 +4736,7 @@
     var status=shell.querySelector("[data-impact-status]");
     var help=shell.querySelector("[data-impact-help]");
     var save=shell.querySelector("[data-impact-save]");
+    var lastSaved=shell.querySelector("[data-impact-last-saved]");
     var review=shell.querySelector("[data-impact-review]"),approve=shell.querySelector("[data-impact-approve]"),exclude=shell.querySelector("[data-impact-exclude]");
     var reviewNote=shell.querySelector("[data-impact-review-note]"),reviewHint=shell.querySelector("[data-impact-review-hint]"),finalReview=shell.querySelector("[data-impact-final-review]"),historyList=shell.querySelector("[data-impact-history-list]");
     var revision=shell.querySelector("[data-impact-revision]");
@@ -4781,6 +4784,16 @@
         field.value=value==null?"":String(value);
       });
     }
+    function updateLastSaved(){
+      if(!lastSaved)return;
+      if(!loaded||loading){lastSaved.textContent="Loading save details…";return;}
+      if(!record||!record.updated_at){lastSaved.textContent="Not saved yet";return;}
+      var editorId=record.updated_by||record.created_by;
+      var editor=editorId&&profileById[String(editorId)];
+      var editorName=editor?profileName(editor):"Authorized user";
+      lastSaved.textContent="Last saved "+fmtDate(record.updated_at)+" · "+editorName;
+      lastSaved.title="Assessment last saved by "+editorName;
+    }
     function canEditDraft(r){return (editable(r)||advisorDraftAllowed(r))&&(!record||record.assessment_status==="draft");}
     async function loadHistory(key,id){
       if(!id){historyList.textContent="No revisions yet.";return;}
@@ -4818,6 +4831,7 @@
       inputs.forEach(function(input){input.disabled=!(canWrite||canRevise);});
       save.hidden=!canEditDraft(report);
       save.disabled=!canWrite;
+      updateLastSaved();
       review.hidden=!(loaded&&record&&record.assessment_status==="draft"&&canReviewDraft(report));
       approve.disabled=!loaded||reviewing||saving||dirty||!canClose(report);
       exclude.disabled=!loaded||reviewing||saving||dirty;
@@ -4894,6 +4908,7 @@
         }
         setForm(record);dirty=false;reviewNote.value="";
         loaded=true;form.hidden=false;loadHistory(key,record&&record.id);
+        updateLastSaved();
         message.textContent=record?(record.assessment_status==="draft"?"Draft assessment available.":"Reviewed assessment available."): "No impact assessment has been saved for this report yet.";
       }catch(ex){
         if(!detail.isConnected||cycleKey!==key)return;
