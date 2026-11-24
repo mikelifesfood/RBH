@@ -401,6 +401,9 @@
   .pdf-language-select{width:auto;min-height:36px;padding:6px 32px 6px 10px;font-size:13px}
   .incident-owner-change{border:0;background:transparent;text-align:left;cursor:pointer}
   .incident-owner-change span:last-child{color:#245f8f;font-weight:750}
+  .incident-restart-workflow{border:0;background:transparent;text-align:left;cursor:pointer}
+  .incident-restart-workflow span:last-child{color:var(--brand);font-weight:750}
+  .incident-restart-workflow:hover{background:var(--brand-tint)}
   .incident-owner-change:hover,.incident-option-row[for="incidentGuidanceToggle"]:hover{background:var(--canvas)}
   .incident-option-row[for="incidentGuidanceToggle"]{cursor:pointer}
   .incident-option-row input[type="checkbox"]{width:16px;height:16px;margin:0 6px;accent-color:var(--ink)}
@@ -1907,6 +1910,7 @@
                     <select id="incidentLanguage"><option value="en">English</option><option value="es">Español</option></select>
                   </label>
                   <button class="incident-option-row incident-owner-change" id="incidentOwnerChange" type="button" aria-label="Change report owner" hidden><span>Report owner</span><span>Change</span></button>
+                  <button class="incident-option-row incident-restart-workflow" id="incidentRestartWorkflow" type="button" hidden><span>Restart workflow</span><span>Restart</span></button>
                   <label class="incident-option-row" for="incidentGuidanceToggle"><span>Show guidance</span><input type="checkbox" id="incidentGuidanceToggle"></label>
                 </div>
               </details>
@@ -2512,7 +2516,12 @@
   }
 
   function canChangeReportOwner(r){ return !!(r&&isManager()&&!isResolvedReport(r)&&(!r.report_owner_user_id||isCurrentReportOwner(r)||currentRole==="admin")); }
+  function refreshIncidentRestartOption(r){
+    var button=$("incidentRestartWorkflow");
+    if(button) button.hidden=button.disabled=!canRestartWorkflow(r);
+  }
   function refreshIncidentOwnerHeader(r){
+    refreshIncidentRestartOption(r);
     var change=$("incidentOwnerChange");
     if(change){
       change.hidden=change.disabled=!canChangeReportOwner(r);
@@ -4175,7 +4184,7 @@
         '<div class="d-section"><div class="d-sec-title-row"><span class="d-sec-title">Notes</span><button class="add-note" type="button">+ Add Note</button></div><div class="notes" data-notes></div></div>'+
         '<div class="d-section"><div class="d-sec-title">Activity timeline</div><p class="step-section-note">A readable history of submissions, updates, evidence, verification, and closure.</p><div class="audit" data-audit></div></div>'+
       '</div></div></details>'+
-      '<div class="detail-actions"><details class="more-menu"><summary>More actions</summary><div class="more-menu-list"><button class="reopen-record-btn" type="button" hidden>Reopen report</button><button class="restart-workflow-btn" type="button" hidden>Restart workflow</button></div></details><span class="pdf-language-wrap">PDF language <select class="pdf-language-select"><option value="viewer">My reading language</option><option value="original">Original record</option><option value="en">English</option><option value="es">Español</option></select></span><button class="pdf-btn" type="button">Download PDF</button></div>'+
+      '<div class="detail-actions"><details class="more-menu"><summary>More actions</summary><div class="more-menu-list"><button class="reopen-record-btn" type="button" hidden>Reopen report</button></div></details><span class="pdf-language-wrap">PDF language <select class="pdf-language-select"><option value="viewer">My reading language</option><option value="original">Original record</option><option value="en">English</option><option value="es">Español</option></select></span><button class="pdf-btn" type="button">Download PDF</button></div>'+
     '</div>';
   }
 
@@ -5093,7 +5102,7 @@
     if(!detail || !isResolvedReport(r)) return false;
     detail.classList.add("resolved-review");
     var reopenBtn=detail.querySelector(".reopen-record-btn"); if(reopenBtn) reopenBtn.hidden=!canReopenReport(r);
-    var restartBtn=detail.querySelector(".restart-workflow-btn"); if(restartBtn) restartBtn.hidden=true;
+    if(activeIncident && String(activeIncident.id)===String(r.id)) refreshIncidentRestartOption(r);
     var progress=workflowProgress(r), resolvedActionSummary=correctiveActionSummary(r);
     detail.querySelectorAll("[data-wizard-step]").forEach(function(panel){
       var n=parseInt(panel.getAttribute("data-wizard-step"),10), st=progress.steps[n-1];
@@ -5125,7 +5134,7 @@
     if(isResolvedReport(r)){ applyResolvedReviewMode(r,detail); return; }
     detail.classList.remove("resolved-review");
     var reopenBtn=detail.querySelector(".reopen-record-btn"); if(reopenBtn) reopenBtn.hidden=true;
-    var restartBtn=detail.querySelector(".restart-workflow-btn"); if(restartBtn) restartBtn.hidden=!canRestartWorkflow(r);
+    if(activeIncident && String(activeIncident.id)===String(r.id)) refreshIncidentRestartOption(r);
     var banner=detail.querySelector("[data-resolved-banner]");
     if(banner){
       if(r.last_reopened_at){
@@ -6390,8 +6399,6 @@
     var noteBtn=detail.querySelector(".add-note"); if(!canAddNotes(r))noteBtn.disabled=true; noteBtn.addEventListener("click",function(){if(canAddNotes(r))openNoteModal(r,wrap,notesEl);});
     var reopenBtn=detail.querySelector(".reopen-record-btn");
     if(reopenBtn){ reopenBtn.hidden=!canReopenReport(r); reopenBtn.addEventListener("click",function(){ if(canReopenReport(r)) openReopenModal(r,lastOperationalView); }); }
-    var restartBtn=detail.querySelector(".restart-workflow-btn");
-    if(restartBtn){ restartBtn.hidden=!canRestartWorkflow(r); restartBtn.addEventListener("click",function(){ if(canRestartWorkflow(r)) openRestartModal(r,lastOperationalView); }); }
     detail.querySelector(".pdf-btn").addEventListener("click",function(){ var ps=detail.querySelector(".pdf-language-select"); generatePdf(r,this,ps?ps.value:"viewer"); });
   }
 
@@ -6512,6 +6519,12 @@
   function closeReportOwnerModal(){ $("reportOwnerBackdrop").classList.remove("open"); reportOwnerModalReport=null; }
   var _ownerChange=$("incidentOwnerChange");if(_ownerChange)_ownerChange.addEventListener("click",function(){
     if(activeIncident){$("incidentOptions").open=false;openReportOwnerModal(activeIncident);}
+  });
+  var incidentRestart=$("incidentRestartWorkflow");
+  if(incidentRestart) incidentRestart.addEventListener("click",function(){
+    if(!activeIncident || !canRestartWorkflow(activeIncident)) return;
+    $("incidentOptions").open=false;
+    openRestartModal(activeIncident,lastOperationalView);
   });
   var incidentOptions=$("incidentOptions");
   document.addEventListener("click",function(e){if(incidentOptions.open&&!incidentOptions.contains(e.target))incidentOptions.open=false;});
