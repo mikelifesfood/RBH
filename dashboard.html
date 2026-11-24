@@ -5199,7 +5199,10 @@
       var progress=workflowProgress(r),step=progress&&progress.current>=0?progress.current+1:6;
       return step>=2&&step<=4;
     }
-    function canReviewDraft(r){return !!(record&&record.assessment_status==="draft"&&canEditDraft(r));}
+    function canReviewDraft(r){
+      return !!(record&&record.assessment_status==="draft"&&
+        (canEditDraft(r)||(currentRole==="safety_advisor"&&!isResolvedReport(r)&&canClose(r))));
+    }
     function canProposeRevision(r){
       return !!((currentRole==="safety_advisor"||currentRole==="admin")&&r&&isResolvedReport(r)&&record&&
         (record.assessment_status==="approved"||record.assessment_status==="excluded")&&
