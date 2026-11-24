@@ -2873,7 +2873,7 @@
       if(step===4&&helpGuideAllowed("complete_action")) return {label:"Help with this screen — Complete Work",guideId:"complete_action",step:2};
       if(step===5&&helpGuideAllowed("review_completed")) return {label:"Help with this screen — Verify Work",guideId:"review_completed",step:1};
       if(step===6&&helpGuideAllowed("close_report")) return {label:"Help with this screen — Close",guideId:"close_report",step:0};
-      if(currentRole==="read_only") return {label:"Help with this screen — Viewing this record",guideId:"viewing_screen",step:0};
+      if(currentRole==="read_only"||currentRole==="safety_advisor") return {label:"Help with this screen — Viewing this record",guideId:"viewing_screen",step:0};
     }
     if(view==="myaction"){
       var status=String(activeFocusedAction&&activeFocusedAction.status||"");
@@ -2882,7 +2882,7 @@
     }
     if(view==="users"&&helpGuideAllowed("admin_users")) return {label:"Help with this screen — Admin",guideId:"admin_users",step:0};
     if(view==="mywork"&&helpGuideAllowed("mywork_screen")) return {label:"Help with this screen — My Work",guideId:"mywork_screen",step:0};
-    if(view==="records") return {label:"Help with this screen — Safety Inbox",guideId:currentRole==="read_only"?"viewing_screen":"inbox_screen",step:0};
+    if(view==="records") return {label:"Help with this screen — Safety Inbox",guideId:(currentRole==="read_only"||currentRole==="safety_advisor")?"viewing_screen":"inbox_screen",step:0};
     if(view==="metrics"&&helpGuideAllowed("analytics_screen")) return {label:"Help with this screen — Analytics",guideId:"analytics_screen",step:0};
     if(view==="home"&&helpGuideAllowed("home_screen")) return {label:"Help with this screen — Home",guideId:"home_screen",step:0};
     if(view==="actions"&&helpGuideAllowed("review_completed")) return {label:"Help with this screen — Corrective Actions",guideId:"review_completed",step:0};
@@ -3608,7 +3608,7 @@
   function notificationReturnView(){
     var names=["home","mywork","records","actions","metrics","platform","users"];
     for(var i=0;i<names.length;i++){ var el=$("view-"+names[i]); if(el&&!el.hidden) return names[i]; }
-    return currentRole==="read_only"?"records":"mywork";
+    return (currentRole==="read_only"||currentRole==="safety_advisor")?"records":"mywork";
   }
   async function openNotificationItem(n){
     if(!n||!currentSession||!currentSession.user)return;
@@ -3803,7 +3803,7 @@
 
   function assignmentOptions(selected){
     var opts=['<option value="">Unassigned</option>'];
-    allProfiles.filter(function(p){ return p.is_active!==false && p.app_role!=="read_only"; })
+    allProfiles.filter(function(p){ return p.is_active!==false && p.app_role!=="read_only" && p.app_role!=="safety_advisor"; })
       .sort(function(a,b){ return profileName(a).localeCompare(profileName(b)); })
       .forEach(function(p){
         opts.push('<option value="'+esc(p.id)+'"'+(String(p.id)===String(selected||"")?' selected':'')+'>'+esc(profileName(p))+' · '+esc(roleLabel(p.app_role))+'</option>');
@@ -5703,7 +5703,7 @@
       return summary;
     }
     function canCompleteCorrectiveAction(a){
-      return !!(a&&!isResolvedReport(r)&&currentRole!=="read_only"&&currentUserId()&&String(a.owner_user_id||"")===currentUserId());
+      return !!(a&&!isResolvedReport(r)&&currentRole!=="read_only"&&currentRole!=="safety_advisor"&&currentUserId()&&String(a.owner_user_id||"")===currentUserId());
     }
     function canVerifyCorrectiveAction(a){
       return !!(a&&!isResolvedReport(r)&&isCurrentReportOwner(r));
@@ -9183,7 +9183,7 @@
   function currentCorrectiveActionWorkspaceRows(){
     // This tab is personal for every role. Managers use the dedicated
     // My Work review queue for team-wide verification, not the My Actions list.
-    var uid=currentUserId();if(!uid||currentRole==="read_only")return [];
+    var uid=currentUserId();if(!uid||currentRole==="read_only"||currentRole==="safety_advisor")return [];
     return (allCorrectiveActions||[]).filter(function(a){
       var r=findReport(a.report_id);
       if(!r||isResolvedReport(r)||!correctiveActionInCurrentCycle(a,r))return false;
@@ -9270,7 +9270,7 @@
 
   function focusedActionCanComplete(a,r){
     return !!(a&&r&&!isResolvedReport(r)&&correctiveActionInCurrentCycle(a,r)
-      &&currentRole!=="read_only"&&currentUserId()&&String(a.owner_user_id||"")===currentUserId());
+      &&currentRole!=="read_only"&&currentRole!=="safety_advisor"&&currentUserId()&&String(a.owner_user_id||"")===currentUserId());
   }
   function focusedActionCanVerify(a,r){
     return !!(a&&r&&!isResolvedReport(r)&&correctiveActionInCurrentCycle(a,r)&&isManager()
@@ -10374,7 +10374,7 @@
   var _ptType=$("pulseTrendType"); if(_ptType)_ptType.addEventListener("change",function(){if(pulseTrendFilter){pulseTrendFilter.reportType=this.value;applyFilters();}});
   var _ptDays=$("pulseTrendDays"); if(_ptDays)_ptDays.addEventListener("change",function(){if(pulseTrendFilter){pulseTrendFilter.days=Number(this.value)||90;applyFilters();}});
   var _ptClear=$("pulseTrendClear"); if(_ptClear)_ptClear.addEventListener("click",function(){pulseTrendFilter=null;syncPulseTrendToolbar();setQuickFilter("all");});
-  var _ho=$("homeOpen"); if(_ho) _ho.addEventListener("click", function(){ if(currentRole!=="read_only") showView("mywork"); else { var sf=$("statusFilter"); if(sf) sf.value="open"; showView("records"); applyFilters(); } });
+  var _ho=$("homeOpen"); if(_ho) _ho.addEventListener("click", function(){ if(currentRole!=="read_only"&&currentRole!=="safety_advisor") showView("mywork"); else { var sf=$("statusFilter"); if(sf) sf.value="open"; showView("records"); applyFilters(); } });
   var _hc=$("homeCreate"); if(_hc) _hc.addEventListener("click", function(){
     var formUrl=new URL("./index.html",window.location.href);
     formUrl.searchParams.set("from","dashboard");
@@ -10666,7 +10666,7 @@
       if(parseInt(a.workflow_generation||0,10)!==parseInt(r&&r.workflow_restart_count||0,10)) return false;
       var status=String(a.status||"not_started");
       if(["not_started","in_progress","changes_requested"].indexOf(status)<0) return false;
-      return currentRole!=="read_only"&&currentUserId()&&String(a.owner_user_id||"")===currentUserId();
+      return currentRole!=="read_only"&&currentRole!=="safety_advisor"&&currentUserId()&&String(a.owner_user_id||"")===currentUserId();
     }
     if(!r || !String(r.corrective_action||"").trim() || !r.assigned_user_id) return false;
     return canWorkCorrectiveAction(r);
