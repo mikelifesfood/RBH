@@ -4542,6 +4542,142 @@
     if(head && head.parentNode) head.insertAdjacentElement("afterend",note);
     else panel.insertBefore(note,panel.firstChild);
   }
+  /* Phase 2 Stage 3: standalone draft assessment, never part of workflow saves. */
+  function installImpactAssessment(detail,initialReport){
+    var shell=detail.querySelector("[data-impact-shell]");
+    if(!shell)return;
+    var panel=shell.querySelector("[data-impact-panel]");
+    var message=shell.querySelector("[data-impact-message]");
+    var form=shell.querySelector("[data-impact-form]");
+    var status=shell.querySelector("[data-impact-status]");
+    var help=shell.querySelector("[data-impact-help]");
+    var save=shell.querySelector("[data-impact-save]");
+    var inputs=Array.from(shell.querySelectorAll("[data-impact-field]"));
+    var report=initialReport, record=null, cycleKey="", loaded=false, loading=false, saving=false;
+    var keys=inputs.map(function(field){return field.getAttribute("data-impact-field");});
+    function currentCycle(r){
+      return String(r.id)+":"+Number(r.workflow_restart_count||0)+":"+Number(r.reopen_count||0);
+    }
+    function editable(r){
+      return !!(r&&!isResolvedReport(r)&&String(r.status||"")!=="new"&&isCurrentReportOwner(r));
+    }
+    function setForm(row){
+      inputs.forEach(function(field){
+        var value=row&&row[field.getAttribute("data-impact-field")];
+        field.value=value==null?"":String(value);
+      });
+    }
+    function sync(r,n){
+      report=r||report;
+      if(!report||!detail.isConnected)return;
+      var key=currentCycle(report), show=isResolvedReport(report)||((n||0)>=2&&(n||0)<=6);
+      shell.hidden=!show;
+      if(!show)return;
+      if(key!==cycleKey){
+        cycleKey=key;record=null;loaded=false;setForm(null);
+        if(!loading)load();
+      }else if(!loaded&&!loading) load();
+      var canWrite=loaded&&!loading&&!saving&&editable(report);
+      inputs.forEach(function(input){input.disabled=!canWrite;});
+      save.hidden=!editable(report);
+      save.disabled=!canWrite;
+      help.textContent=editable(report)
+        ?"Draft only. This separate save does not change incident workflow progress, approve a scenario, or send notifications."
+        :"Read-only. Only the current active Report Owner (Admin or Safety Manager) can edit while this report is open.";
+      if(loaded){
+        status.textContent=record?"Draft saved":"Not started";
+      }
+    }
+    async function load(){
+      if(loading||!report||!detail.isConnected)return;
+      loading=true;loaded=false;form.hidden=true;message.textContent="Loading assessment…";
+      var key=cycleKey, r=report;
+      try{
+        var result=await sb.from("rbh_safety_impact_assessments").select("*")
+          .eq("report_id",r.id).eq("workflow_restart_count",Number(r.workflow_restart_count||0))
+          .eq("reopen_count",Number(r.reopen_count||0)).maybeSingle();
+        if(result.error)throw result.error;
+        if(!detail.isConnected||cycleKey!==key)return;
+        record=result.data||null;
+        setForm(record);
+        loaded=true;form.hidden=false;
+        message.textContent=record?"Draft assessment available.": "No impact assessment has been saved for this report yet.";
+      }catch(ex){
+        if(!detail.isConnected||cycleKey!==key)return;
+        console.error("Impact assessment load",ex);
+        message.textContent="Could not load this assessment. Reopen the report to try again.";
+      }finally{
+        loading=false;
+        if(detail.isConnected&&cycleKey===key)sync(report,parseInt(detail.dataset.wizardStep||"0",10));
+      }
+    }
+    function optionalMoney(field){
+      var value=String(field.value||"").trim();
+      if(!value)return null;
+      var number=Number(value);
+      if(!Number.isFinite(number)||number<0||number>999999999999.99)throw new Error("Enter a valid nonnegative amount under one trillion dollars.");
+      return Math.round(number*100)/100;
+    }
+    save.addEventListener("click",async function(){
+      if(!loaded||loading||saving||!editable(report))return;
+      var values={}, fields={};
+      keys.forEach(function(key){fields[key]=shell.querySelector('[data-impact-field="'+key+'"]');});
+      try{
+        ["scenario_low_cost","scenario_high_cost","estimated_fix_cost"].forEach(function(key){
+          values[key]=optionalMoney(fields[key]);
+        });
+        if(values.scenario_low_cost!==null&&values.scenario_high_cost!==null&&values.scenario_high_cost<values.scenario_low_cost)
+          throw new Error("The high-cost scenario must be at least as large as the low-cost scenario.");
+        var year=String(fields.benchmark_publication_year.value||"").trim();
+        if(year&&(!/^\\d{4}$/.test(year)||Number(year)<1900||Number(year)>2100))
+          throw new Error("Enter a valid four-digit benchmark publication year.");
+        values.benchmark_publication_year=year?Number(year):null;
+        var url=String(fields.benchmark_source_url.value||"").trim();
+        if(url&&!/^https?:\\/\\//i.test(url))throw new Error("Enter a source link beginning with https:// or http://.");
+        values.benchmark_source_url=url||null;
+        keys.filter(function(key){return !(key in values);}).forEach(function(key){
+          values[key]=String(fields[key].value||"").trim()||null;
+        });
+      }catch(ex){message.textContent=ex.message;return;}
+      saving=true;var original=save.textContent;save.textContent="Saving…";save.disabled=true;
+      var key=cycleKey;
+      try{
+        // The existing Stage 2 RLS policies enforce organization, current report
+        // ownership, active status, and exact workflow-cycle matching.
+        if(!editable(report)||key!==currentCycle(report))throw new Error("Report ownership or workflow cycle changed. Reopen the record.");
+        var uid=currentUserId(), result;
+        if(record){
+          result=await sb.from("rbh_safety_impact_assessments")
+            .update(Object.assign({},values,{updated_by:uid,updated_at:new Date().toISOString()}))
+            .eq("id",record.id).eq("updated_at",record.updated_at).select("*").maybeSingle();
+          if(!result.error&&!result.data)throw new Error("This draft changed elsewhere. Reopen the report before editing.");
+        }else{
+          result=await sb.from("rbh_safety_impact_assessments")
+            .insert(Object.assign({},values,{
+              report_id:report.id,organization_id:report.organization_id,
+              workflow_restart_count:Number(report.workflow_restart_count||0),
+              reopen_count:Number(report.reopen_count||0),
+              created_by:uid,updated_by:uid
+            })).select("*").single();
+        }
+        if(result.error)throw result.error;
+        if(detail.isConnected&&cycleKey===key){
+          record=result.data;loaded=true;status.textContent="Draft saved";
+          message.textContent="Assessment draft saved. This has not approved a financial estimate or changed the report workflow.";
+        }
+      }catch(ex){
+        console.error("Impact assessment save",ex);
+        if(detail.isConnected&&cycleKey===key)
+          message.textContent="Could not save assessment: "+String(ex&&ex.message||"Please try again.").slice(0,190);
+      }finally{
+        saving=false;
+        if(save.isConnected){save.textContent=original;sync(report,parseInt(detail.dataset.wizardStep||"0",10));}
+      }
+    });
+    detail._syncImpactAssessment=sync;
+    sync(initialReport,parseInt(detail.dataset.wizardStep||"0",10));
+  }
+
   function setWizardStep(detail,r,n,force){
     if(!detail) return;
     n=parseInt(n,10)||recommendedWizardStep(r);
@@ -4559,6 +4695,7 @@
     updateCorrectiveLifecycle(detail,r);
     updateCompletedStepLock(detail,r,n);
     renderRecordProgress(r,detail.querySelector("[data-record-progress]"));
+    if(typeof detail._syncImpactAssessment==="function")detail._syncImpactAssessment(r,n);
     // A panel can become current without being rebuilt (for example Review ->
     // Investigation). Re-sync the actual form controls every time the visible
     // step changes so a stale disabled attribute can never survive a transition.
@@ -4774,6 +4911,7 @@
       var inlineReopen=banner.querySelector("[data-reopen-inline]"); if(inlineReopen) inlineReopen.addEventListener("click",function(){ openReopenModal(r,lastOperationalView); });
     }
     renderRecordProgress(r,detail.querySelector("[data-record-progress]"));
+    if(typeof detail._syncImpactAssessment==="function")detail._syncImpactAssessment(r,6);
     return true;
   }
   function refreshRecordWorkflow(r, detail){
@@ -4810,6 +4948,7 @@
 
   function buildDetail(r, detail, wrap){
     detail.innerHTML=detailHtml(r);
+    installImpactAssessment(detail,r);
     var guidanceToggle=$("incidentGuidanceToggle");
     if(guidanceToggle){
       guidanceToggle.checked=workflowGuidanceEnabled();
