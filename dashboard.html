@@ -1842,7 +1842,7 @@
           <div class="home-stats" id="homeStats"></div>
           <div class="attention-grid">
             <div class="home-panel"><div class="hp-head"><span class="hp-title">Needs your attention</span><button class="hp-link" data-view="records" type="button">Open inbox</button></div><div id="homeAttention" class="attention-list"></div></div>
-            <div class="home-panel"><div class="hp-head"><span class="hp-title">Recent activity</span></div><div id="homeActivity" class="activity"></div></div>
+            <div class="home-panel"><div class="hp-head"><span class="hp-title">Recent activity</span><button id="homeActivityToggle" class="hp-link" type="button" aria-controls="homeActivity" aria-expanded="false" hidden>Show all activity</button></div><div id="homeActivity" class="activity"></div></div>
           </div>
           <section class="safety-pulse" id="safetyPulse" aria-labelledby="safetyPulseTitle" aria-live="polite"></section>
         </section>
@@ -11342,35 +11342,76 @@
   }
 
   async function renderHomeActivity(){
-    var el=$("homeActivity"); if(!el) return;
+    var el=$("homeActivity"), toggle=$("homeActivityToggle"); if(!el||!toggle) return;
     if(!el.dataset.homeActivityLoaded&&!el.children.length) el.innerHTML='<div class="notes-empty">Loading…</div>';
     var events=[], map={};
-    allReports.forEach(function(r){ map[r.id]=r.ref_no; });
-    allReports.filter(reportVisibleInPersonalWorkspace).slice(0,25).forEach(function(r){ events.push({ when:r.created_at, kind:"report", text:"New report #"+r.ref_no+" — "+(r.report_type||"Report") }); });
+    allReports.forEach(function(r){map[r.id]=r.ref_no;});
+    allReports.filter(reportVisibleInPersonalWorkspace).slice(0,50).forEach(function(r){
+      events.push({when:r.created_at,kind:"report",text:"New report #"+r.ref_no+" — "+(r.report_type||"Report")});
+    });
+    // Home is a short summary of milestones, not a substitute for each report's full audit trail.
+    var keyFields={
+      status:true,report_owner_user_id:true,assigned_user_id:true,investigator_user_id:true,
+      verifier_user_id:true,action_status:true,action_completed_at:true,action_verified_at:true,
+      corrective_action_decision:true
+    };
     try{
-      var res=await sb.from("report_audit").select("*").order("created_at",{ascending:false}).limit(20);
-      (res.data||[]).forEach(function(a){
+      var responses=await Promise.all([
+        sb.from("report_audit").select("*").order("created_at",{ascending:false}).limit(100),
+        sb.from("report_corrective_action_audit").select("*").order("created_at",{ascending:false}).limit(100)
+      ]);
+      if(responses[0].error) throw responses[0].error;
+      (responses[0].data||[]).forEach(function(a){
+        if(!keyFields[a.field])return;
         var report=findReport(a.report_id);
         if(!report||!reportVisibleInPersonalWorkspace(report))return;
-        events.push({ when:a.created_at, kind:"change", text:"#"+(map[a.report_id]||"?")+"  "+fmtChange(a), who:a.actor_email?auditActor(a.actor_email):(a.actor_id&&profileById[String(a.actor_id)]?profileName(profileById[String(a.actor_id)]):"") });
+        events.push({when:a.created_at,kind:"change",text:"#"+(map[a.report_id]||report.ref_no||"?")+" "+fmtChange(a),
+          who:a.actor_email?auditActor(a.actor_email):(a.actor_id&&profileById[String(a.actor_id)]?profileName(profileById[String(a.actor_id)]):"")});
       });
-    }catch(e){ console.error(e); }
-    events.sort(function(a,b){ return new Date(b.when)-new Date(a.when); });
+      if(responses[1].error) console.warn("Recent corrective-action milestones unavailable",responses[1].error);
+      else (responses[1].data||[]).forEach(function(a){
+        var type=String(a.event_type||"").toLowerCase();
+        // Skip ordinary edits; only show an action milestone or verification decision.
+        if(!/(complet|verif|approv|reopen|activat|clos|resolv|submit)/.test(type))return;
+        var report=findReport(a.report_id);
+        if(!report||!reportVisibleInPersonalWorkspace(report))return;
+        var number=a.action_number!=null?" #"+a.action_number:"";
+        var title=/verif|approv/.test(type)?"Corrective action"+number+" verified":
+          /complet|submit/.test(type)?"Corrective action"+number+" completed":
+          /reopen/.test(type)?"Corrective action"+number+" reopened":
+          /activat/.test(type)?"Corrective action"+number+" activated":"Corrective action"+number+" closed";
+        events.push({when:a.created_at,kind:"change",text:"#"+(map[a.report_id]||report.ref_no||"?")+" "+title,
+          who:a.actor_email?auditActor(a.actor_email):(a.actor_id&&profileById[String(a.actor_id)]?profileName(profileById[String(a.actor_id)]):"")});
+      });
+    }catch(e){console.error("Recent activity",e);}
+    events.sort(function(a,b){return new Date(b.when)-new Date(a.when);});
     events=events.slice(0,10);
     var activitySnapshot=events.map(function(ev){return [ev.when,ev.kind,ev.text,ev.who||""].join("|");}).join("||");
-    if(el.dataset.homeActivityLoaded&&el.dataset.homeActivitySnapshot===activitySnapshot) return;
+    if(el.dataset.homeActivityLoaded&&el.dataset.homeActivitySnapshot===activitySnapshot)return;
     el.dataset.homeActivityLoaded="1";
     el.dataset.homeActivitySnapshot=activitySnapshot;
-    if(!events.length){ el.innerHTML='<div class="notes-empty">No activity yet.</div>'; return; }
-    var frag=document.createDocumentFragment();
-    events.forEach(function(ev){
-      var d=document.createElement("div"); d.className="act-row";
-      d.innerHTML='<span class="act-dot '+(ev.kind==="report"?"d-new":"d-chg")+'"></span><div class="act-main"><div class="act-t"></div><div class="act-m"></div></div>';
-      d.querySelector(".act-t").textContent=ev.text;
-      d.querySelector(".act-m").textContent=fmtDate(ev.when)+(ev.who?(" · "+ev.who):"");
-      frag.appendChild(d);
-    });
-    el.replaceChildren(frag);
+    function paint(){
+      var expanded=el.dataset.homeActivityExpanded==="true";
+      var shown=expanded?events:events.slice(0,3);
+      toggle.hidden=events.length<=3;
+      toggle.textContent=expanded?"Show less":"Show all activity ("+events.length+")";
+      toggle.setAttribute("aria-expanded",String(expanded));
+      if(!events.length){el.innerHTML='<div class="notes-empty">No activity yet.</div>';return;}
+      var frag=document.createDocumentFragment();
+      shown.forEach(function(ev){
+        var d=document.createElement("div");d.className="act-row";
+        d.innerHTML='<span class="act-dot '+(ev.kind==="report"?"d-new":"d-chg")+'"></span><div class="act-main"><div class="act-t"></div><div class="act-m"></div></div>';
+        d.querySelector(".act-t").textContent=ev.text;
+        d.querySelector(".act-m").textContent=fmtDate(ev.when)+(ev.who?(" · "+ev.who):"");
+        frag.appendChild(d);
+      });
+      el.replaceChildren(frag);
+    }
+    toggle.onclick=function(){
+      el.dataset.homeActivityExpanded=el.dataset.homeActivityExpanded==="true"?"false":"true";
+      paint();
+    };
+    paint();
   }
 
   function monthChartHtml(){
